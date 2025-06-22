@@ -1,0 +1,264 @@
+{
+  "politicians": [    {
+      "id": "narendra-modi",
+      "name": "Narendra Modi",
+      "party": "BJP",
+      "homeState": "Gujarat",
+      "image": "Narendra_Modi.png",
+      "partyLogo": "Bharatiya_Janata_Party_(icon).svg",
+      "primaryColor": "#FF9933","policies": [
+        {
+          "name": "Healthcare",
+          "bonus": 30
+        },
+        {
+          "name": "Infrastructure",
+          "bonus": 40
+        },
+        {
+          "name": "Economic Liberalization",
+          "bonus": 30
+        },
+        {
+          "name": "Anti-Corruption",
+          "bonus": 20
+        },
+        {
+          "name": "Hindutva",
+          "bonus": 40
+        },
+        {
+          "name": "National Defense",
+          "bonus": 30
+        }
+      ]    },    {
+      "id": "manmohan-singh",
+      "name": "Manmohan Singh",
+      "party": "INC",
+      "homeState": "Punjab",
+      "image": "Manmohan_Singh.png",
+      "partyLogo": "Indian_National_Congress_hand_logo.svg",
+      "primaryColor": "#138808",
+      "policies": [
+        {
+          "name": "Economic Liberalization",
+          "bonus": 40
+        },
+        {
+          "name": "Education",
+          "bonus": 30
+        },
+        {
+          "name": "Agricultural Reforms",
+          "bonus": 30
+        },
+        {
+          "name": "Public Sector",
+          "bonus": 40
+        },
+        {
+          "name": "Press Freedom",
+          "bonus": 30
+        },
+        {
+          "name": "Secularism",
+          "bonus": 40
+        }
+      ]    },    {
+      "id": "rahul-gandhi",
+      "name": "Rahul Gandhi",
+      "party": "INC",
+      "homeState": "Uttar Pradesh",
+      "image": "Rahul_Gandhi.png",
+      "partyLogo": "Indian_National_Congress_hand_logo.svg",
+      "primaryColor": "#138808","policies": [
+        {
+          "name": "Rural Development",
+          "bonus": 40
+        },
+        {
+          "name": "Land Reforms",
+          "bonus": 30
+        },
+        {
+          "name": "Privatization",
+          "bonus": 20
+        },
+        {
+          "name": "Anti-Corruption",
+          "bonus": 20
+        },
+        {
+          "name": "Secularism",
+          "bonus": 30
+        },
+        {
+          "name": "Caste Reservation",
+          "bonus": 30
+        }      ]    },    {
+      "id": "atal-bihari-vajpayee",
+      "name": "Atal Bihari Vajpayee",
+      "party": "BJP",
+      "homeState": "Uttar Pradesh",
+      "image": "Atal_Bihari_Vajpayee.png",
+      "partyLogo": "Bharatiya_Janata_Party_(icon).svg",
+      "primaryColor": "#FF9933",
+      "policies": [
+        {
+          "name": "Education",
+          "bonus": 30
+        },
+        {
+          "name": "Infrastructure",
+          "bonus": 40
+        },
+        {
+          "name": "Economic Liberalization",
+          "bonus": 30
+        },
+        {
+          "name": "Judicial Activism",
+          "bonus": 20
+        },
+        {
+          "name": "Hindi Language",
+          "bonus": 30
+        },
+        {
+          "name": "National Defense",
+          "bonus": 40
+        }      ]
+    },    {
+      "id": "arvind-kejriwal",
+      "name": "Arvind Kejriwal",
+      "party": "AAP",
+      "homeState": "Delhi",      "image": "Arvind_Kejriwal.png",
+      "partyLogo": "Aam_Aadmi_Party_logo_(English).svg",
+      "primaryColor": "#2196F3",
+      "policies": [
+        {
+          "name": "Anti-Corruption",
+          "bonus": 40
+        },
+        {
+          "name": "Education",
+          "bonus": 40
+        },
+        {
+          "name": "Healthcare",
+          "bonus": 30
+        },
+        {
+          "name": "Digital Transformation",
+          "bonus": 30
+        },
+        {
+          "name": "Water and Mineral Rights",
+          "bonus": 30
+        },
+        {
+          "name": "Women's Empowerment",
+          "bonus": 20
+        }      ]    },
+    {
+      "id": "mamata-banerjee",
+      "name": "Mamata Banerjee",
+      "party": "AITC",
+      "homeState": "West Bengal",
+      "image": "Mamata_Banerjee.png",
+      "partyLogo": "All_India_Trinamool_Congress_logo_(3).svg",
+      "primaryColor": "#00AAFF",
+      "policies": [
+        {
+          "name": "Women's Empowerment",
+          "bonus": 40
+        },
+        {
+          "name": "Agricultural Reforms",
+          "bonus": 30
+        },
+        {
+          "name": "Public Sector",
+          "bonus": 30
+        },
+        {
+          "name": "Press Freedom",
+          "bonus": 20
+        },
+        {
+          "name": "Secularism",
+          "bonus": 30
+        },
+        {
+          "name": "State's Rights",
+          "bonus": 30
+        }      ]
+    },    {
+      "id": "nitish-kumar",
+      "name": "Nitish Kumar",
+      "party": "JD(U)",
+      "homeState": "Bihar",      "image": "Nitish_Kumar.png",
+      "partyLogo": "Janata_Dal_(United)_Flag.svg",
+      "primaryColor": "#5CB85C",
+      "policies": [
+        {
+          "name": "Rural Development",
+          "bonus": 30
+        },
+        {
+          "name": "Women's Empowerment",
+          "bonus": 30
+        },
+        {
+          "name": "Law and Order",
+          "bonus": 20
+        },
+        {
+          "name": "Caste Reservation",
+          "bonus": 40
+        },
+        {
+          "name": "Anti-Corruption",
+          "bonus": 20
+        },
+        {
+          "name": "State's Rights",
+          "bonus": 30
+        }      ]    },
+    {
+      "id": "yogi-adityanath",
+      "name": "Yogi Adityanath",
+      "party": "BJP",
+      "homeState": "Uttar Pradesh",
+      "image": "Yogi_Adityanath.png",
+      "partyLogo": "Bharatiya_Janata_Party_(icon).svg",
+      "primaryColor": "#FF9933",
+      "policies": [
+        {
+          "name": "Healthcare",
+          "bonus": 30
+        },
+        {
+          "name": "Infrastructure",
+          "bonus": 30
+        },
+        {
+          "name": "Privatization",
+          "bonus": 20
+        },
+        {
+          "name": "Law and Order",
+          "bonus": 40
+        },
+        {
+          "name": "Hindutva",
+          "bonus": 40
+        },
+        {
+          "name": "Uniform Civil Code",
+          "bonus": 30
+        }
+      ]
+    }
+  ]
+}

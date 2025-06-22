@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>India Elections Game - Welcome</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="styles/welcome-screen.css" />
+  </head>
+  <body class="antialiased">    <div class="welcome-container">
+      <h1 class="game-title">India Elections Game</h1>
+      <p class="game-subtitle">Sign in to start your journey!</p>
+
+      <!-- User Info Display (hidden by default) -->
+      <div id="user-info-display" class="user-info-container" style="display: none;">
+        <!-- User info will be populated here after sign-in -->
+      </div>
+
+      <button id="google-sign-in-btn" class="start-game-btn">
+        Sign in with Google
+      </button>
+
+      <!-- Step 2: Politician Selection -->
+      <div class="step-container hidden" id="step-2">
+        <h2 class="step-title">Choose your leader</h2>
+        <p class="description-text">
+          Browse through the candidates and select who you want to represent in
+          the election campaign
+        </p>
+
+        <div class="slide-container">
+          <div id="card-stack" class="card-stack">
+            <!-- Cards will be dynamically inserted here -->
+          </div>
+        </div>
+        <div class="navigation-controls">
+          <button id="prev-btn" class="nav-btn">← Previous</button>
+          <button class="select-btn" onclick="selectCurrentPolitician()">
+            Select
+          </button>
+          <button id="next-btn" class="nav-btn">Next →</button>
+        </div>
+      </div>
+
+      <!-- Step 3: Game Summary -->
+      <div class="step-container hidden" id="step-3">
+        <h2 class="step-title">Setup Complete</h2>
+        <div class="selection-summary">
+          <h3>Your Selection</h3>
+          <div
+            id="player-summary"
+            class="flex items-center justify-center gap-4"
+          >
+            <!-- Player selection will be shown here -->
+          </div>
+        </div>
+        <div class="ai-opponent">
+          <h3>AI Opponent</h3>
+          <div id="ai-summary" class="flex items-center justify-center gap-4">
+            <!-- AI selection will be shown here -->
+          </div>
+          <!-- AI Difficulty Selector -->
+          <div class="ai-difficulty-selector mt-4">
+            <h4 class="text-sm font-semibold mb-2">Select AI Difficulty:</h4>
+            <div class="difficulty-options flex justify-center gap-3">
+              <button class="difficulty-btn active" data-difficulty="EASY">
+                Easy
+              </button>
+              <button class="difficulty-btn" data-difficulty="MEDIUM">
+                Medium
+              </button>
+              <button class="difficulty-btn" data-difficulty="HARD">
+                Hard
+              </button>
+            </div>
+            <div class="difficulty-description mt-2 text-xs opacity-80">
+              <span class="difficulty-desc easy active"
+                >Easy: AI makes random decisions and moves slowly.</span
+              >
+              <span class="difficulty-desc medium"
+                >Medium: AI targets specific state groups and prioritizes
+                campaigns where it's leading.</span
+              >
+              <span class="difficulty-desc hard"
+                >Hard: AI makes faster decisions, targets competitive states,
+                and employs strategic campaign tactics.</span
+              >
+            </div>
+          </div>
+        </div>
+
+        <!-- Random Events Toggle -->
+        <div class="random-events-toggle mt-4">
+          <h4 class="text-sm font-semibold mb-2">Game Features:</h4>
+          <div class="feature-options flex justify-center gap-4">
+            <label class="feature-toggle flex items-center gap-2">
+              <input type="checkbox" id="random-events-checkbox" class="w-4 h-4" checked>
+              <span class="text-sm">Random Events</span>
+            </label>
+          </div>
+          <div class="feature-description mt-2 text-xs opacity-80">
+            <span class="feature-desc">
+              Random positive/negative events affect states every other phase, impacting the leading player's popularity by 5-20%.
+            </span>
+          </div>
+        </div>
+
+        <button class="start-game-btn" onclick="startGame()">
+          Start Game!
+        </button>
+      </div>
+    </div>
+
+    <script type="module" src="js/welcome-screen.js"></script>
+  </body>
+</html>

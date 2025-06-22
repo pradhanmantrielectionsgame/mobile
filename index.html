@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">    
+    <title>India Elections Game V2</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/map.css">
+    <link rel="stylesheet" href="styles/panels.css">
+    <link rel="stylesheet" href="styles/policy-cards.css">
+    <link rel="stylesheet" href="styles/info-sections.css">
+    <link rel="stylesheet" href="styles/player-sections.css">
+    <link rel="stylesheet" href="styles/states-section.css">
+    <link rel="stylesheet" href="styles/actions-section.css">
+    <link rel="stylesheet" href="styles/status-section.css">    <link rel="stylesheet" href="styles/effects.css">
+    <link rel="stylesheet" href="styles/game-options.css">
+    <link rel="stylesheet" href="styles/group-domination.css">    <link rel="stylesheet" href="styles/tv-display.css">    <link rel="stylesheet" href="styles/help-screen.css">    <link rel="stylesheet" href="styles/rally.css">
+    <link rel="stylesheet" href="styles/game-over-screen.css">
+    <link rel="stylesheet" href="styles/special-rally.css">    <link rel="stylesheet" href="styles/special-shimmer.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google AdSense -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8278165454814257"
+         crossorigin="anonymous"></script>
+</head>
+<body>    <!-- Banner Ad -->
+    <div class="ad-banner-container">
+        <ins class="adsbygoogle"
+             style="display:block; width:100%; height:90px;"
+             data-ad-client="ca-pub-8278165454814257"
+             data-ad-slot="5855594739"
+             data-ad-format="auto"
+             data-full-width-responsive="true"></ins>
+    </div>
+    <script>
+         (adsbygoogle = window.adsbygoogle || []).push({});
+    </script>
+    
+    <!-- Game Container -->
+    <div class="game-container">
+    <div class="left-pane"><div class="info-section" id="player1-info">
+            <div class="player-name">
+                <span class="name">Sam</span>
+                <span class="party">(BJP)</span>
+            </div>
+            <div class="player-stats">
+                <div class="player-funds">250 M</div>
+            </div>
+        </div>
+
+        <div class="info-section" id="player2-info">
+            <h3>Player 2 Info</h3>
+            <div class="player-stats">
+                <!-- Player 2 stats will go here -->
+            </div>
+        </div>
+
+        <div class="info-section" id="states-info">
+            <h3>States Info</h3>
+            <div class="states-details">
+                <!-- States information will go here -->
+            </div>
+        </div>
+
+        <div class="info-section" id="actions-section">
+            <h3>Actions Log</h3>
+            <div id="actions-log">
+                <!-- Action logs will appear here -->
+            </div>
+        </div>
+    </div>    
+    <div class="main-pane">
+        <h2>Game Area</h2>        <div class="map-container">
+            <object id="india-map" data="INDIA_V2.svg" type="image/svg+xml"></object>
+        </div>        <div class="state-groups-panel">
+            <h3>Groups</h3>
+            <div class="button-grid">                
+                <button>Union Territory</button>
+                <button>Coastal India</button>
+                <button>Northeast India</button>
+                <button>South India</button>
+                <button>Hindi Heartland</button>
+                <button>Agricultural Region</button>
+                <button>Border Lands</button>
+                <button>Pilgrimage</button>
+                <button>Industrial Corridor</button>
+                <button>Manufacturing</button>
+                <button>Education</button>
+                <button>Tribal Lands</button>
+                <button>Travel and Tourism</button>
+                <button>Natural Resources</button>
+                <button>Minority Areas</button>
+            </div>
+        </div>
+        <div class="small-uts-panel">
+            <h3>Small Union Territories</h3>            <div class="small-uts-grid">
+                <button data-ut="INPY">Puducherry</button>
+                <button data-ut="INCH">Chandigarh</button>
+                <button data-ut="INDH" class="merged-ut">Dadra and Nagar Haveli and Daman and Diu</button>
+            </div>
+        </div>
+        <div class="tv-display-panel">
+            <div class="tv-frame">
+                <div class="tv-header">
+                    <h3>LIVE Updates</h3>
+                    <div class="tv-controls">
+                        <span class="tv-indicator"></span>
+                        <span class="tv-button"></span>
+                        <span class="tv-button"></span>
+                    </div>                </div>                <div class="tv-content">
+                    <div class="tv-screen">
+                        <!-- Rich notifications will be added here dynamically -->
+                    </div>
+                </div>
+            </div>
+        </div></div>    <div class="right-pane">
+        <h2 class="compact-heading">Game Options</h2>        <div class="info-section game-options">
+            <div class="options-grid">
+                <div class="option-button" id="new-game-button" data-tooltip="Start a New Game">
+                    <i class="option-icon fas fa-plus"></i>
+                    <span class="option-label">New Game</span>
+                </div>                <div class="option-button" id="sound-toggle" data-state="off" data-tooltip="Toggle Sound Effects">
+                    <i class="option-icon fas fa-volume-high"></i>
+                    <span class="option-label">Sound</span>
+                </div>
+                <div class="option-button" id="music-toggle" data-state="off" data-tooltip="Toggle Background Music">
+                    <i class="option-icon fas fa-music"></i>
+                    <span class="option-label">Music</span>
+                </div><div class="option-button" id="gameplay-toggle" data-state="on" data-tooltip="Pause/Resume Game (Stops Timer & AI)">
+                    <i class="option-icon fas fa-pause"></i>
+                    <span class="option-label">Pause</span>
+                </div>                <div class="option-button" id="help-toggle" data-state="off" data-tooltip="Show Help Guide">
+                    <i class="option-icon fas fa-circle-question"></i>
+                    <span class="option-label">Help</span>
+                </div>                <div class="option-button" id="random-events-toggle" data-state="on" data-tooltip="Toggle Random Events">
+                    <i class="option-icon fas fa-dice"></i>
+                    <span class="option-label">Events</span>
+                </div>
+                <div class="option-button" id="ai-difficulty-display" data-tooltip="Current AI Difficulty Level">
+                    <i class="option-icon fas fa-robot"></i>
+                    <span class="option-label" id="ai-difficulty-label">Easy</span>
+                </div>
+            </div>
+        </div>
+
+        <h2>Game Status</h2>        <div class="info-section game-status">
+            <div class="status-grid">
+                <div class="timer-row">
+                    <div class="timer-box">
+                        <h3>Phase</h3>
+                        <div class="phase-timer-container">
+                            <div class="status-value" id="game-phase">1 / 8</div>
+                        </div>
+                    </div>
+                    <div class="timer-box">
+                        <h3>Time remaining</h3>
+                        <div class="phase-timer-container">
+                            <div class="status-value" id="game-timer">0:30</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="seats-box">
+                    <h3>Projected Seats</h3>
+                    <div class="seat-projection-container">
+                        <div class="status-value player1" id="player1-seats">0</div>
+                        <div class="status-value others" id="others-seats">543</div>
+                        <div class="status-value player2" id="player2-seats">0</div>
+                    </div>                    <div class="seats-progress-bar">
+                        <div class="p1-bar"></div>
+                        <div class="others-bar"></div>
+                        <div class="p2-bar"></div>
+                    </div>
+                    <div class="parliament-status">Calculating...</div>
+                </div>
+            </div>        </div>        <h2>Campaigns</h2>
+        <div class="info-section campaigns-section">
+            <div class="policy-grid">
+            <!-- Social & Welfare -->
+            <div class="policy-card">
+                <h4>Social & Welfare</h4>
+                <div class="progress-item">
+                    <span class="progress-item-label">Education</span>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="social-1"></div>
+                    </div>
+                </div>                <div class="progress-item">
+                    <span class="progress-item-label">Rural Development</span>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="social-2"></div>
+                    </div>
+                </div>
+                <div class="progress-item">
+                    <span class="progress-item-label">Women's Empowerment</span>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="social-3"></div>
+                    </div>
+                </div>
+                <div class="progress-item">
+                    <span class="progress-item-label">Healthcare</span>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="social-4"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Land & Infrastructure -->
+            <div class="policy-card">
+                <h4>Land & Infrastructure</h4>
+                <div class="progress-item">
+                    <span class="progress-item-label">Land Reforms</span>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="land-1"></div>
+                    </div>
+                </div>
+                <div class="progress-item">
+                    <span class="progress-item-label">Agricultural Reforms</span>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="land-2"></div>
+                    </div>
+                </div>                <div class="progress-item">
+                    <span class="progress-item-label">Water and Mineral Rights</span>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="land-3"></div>
+                    </div>
+                </div>
+                <div class="progress-item">
+                    <span class="progress-item-label">Infrastructure</span>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="land-4"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Economy & Modernization -->
+            <div class="policy-card">
+                <h4>Economy & Modernization</h4>
+                <div class="progress-item">
+                    <span class="progress-item-label">Economic Liberalization</span>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="economy-1"></div>
+                    </div>
+                </div>
+                <div class="progress-item">
+                    <span class="progress-item-label">Privatization</span>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="economy-2"></div>
+                    </div>
+                </div>
+                <div class="progress-item">
+                    <span class="progress-item-label">Public Sector</span>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="economy-3"></div>
+                    </div>
+                </div>
+                <div class="progress-item">
+                    <span class="progress-item-label">Digital Transformation</span>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="economy-4"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Accountability & Justice -->
+            <div class="policy-card">
+                <h4>Accountability & Justice</h4>
+                <div class="progress-item">
+                    <span class="progress-item-label">Anti-Corruption</span>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="justice-1"></div>
+                    </div>
+                </div>
+                <div class="progress-item">
+                    <span class="progress-item-label">Judicial Activism</span>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="justice-2"></div>
+                    </div>
+                </div>
+                <div class="progress-item">
+                    <span class="progress-item-label">Press Freedom</span>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="justice-3"></div>
+                    </div>
+                </div>
+                <div class="progress-item">
+                    <span class="progress-item-label">Law and Order</span>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="justice-4"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Culture & Identity -->
+            <div class="policy-card">
+                <h4>Culture & Identity</h4>
+                <div class="progress-item">
+                    <span class="progress-item-label">Hindi Language</span>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="culture-1"></div>
+                    </div>
+                </div>
+                <div class="progress-item">
+                    <span class="progress-item-label">Hindutva</span>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="culture-2"></div>
+                    </div>
+                </div>
+                <div class="progress-item">
+                    <span class="progress-item-label">Secularism</span>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="culture-3"></div>
+                    </div>
+                </div>
+                <div class="progress-item">
+                    <span class="progress-item-label">Indigenous Rights</span>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="culture-4"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Governance & Security -->
+            <div class="policy-card">
+                <h4>Governance & Security</h4>
+                <div class="progress-item">
+                    <span class="progress-item-label">Caste Reservation</span>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="governance-1"></div>
+                    </div>
+                </div>
+                <div class="progress-item">
+                    <span class="progress-item-label">Uniform Civil Code</span>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="governance-2"></div>
+                    </div>
+                </div>
+                <div class="progress-item">
+                    <span class="progress-item-label">State's Rights</span>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="governance-3"></div>
+                    </div>
+                </div>
+                <div class="progress-item">
+                    <span class="progress-item-label">National Defense</span>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="governance-4"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Help Overlay -->
+    <div id="help-overlay" class="help-overlay" style="display: none;">
+        <div class="help-container">
+            <div class="help-header">
+                <h2><i class="fas fa-graduation-cap"></i> India Elections Game - Help Guide</h2>
+                <button id="close-help" class="close-help-btn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="help-content">
+                <div class="help-tabs">
+                    <button class="help-tab active" data-tab="overview">Game Overview</button>
+                    <button class="help-tab" data-tab="controls">Controls & Interface</button>
+                    <button class="help-tab" data-tab="gameplay">Gameplay</button>
+                    <button class="help-tab" data-tab="strategy">Strategy Tips</button>
+                </div>
+                
+                <div class="help-sections">
+                    <!-- Overview Tab -->
+                    <div class="help-section active" id="help-overview">
+                        <h3><i class="fas fa-info-circle"></i> Game Overview</h3>
+                        <div class="help-content-section">
+                            <h4>Objective</h4>
+                            <p>Win India's Lok Sabha Elections by securing at least <strong>272 out of 543 seats</strong>. You compete against an AI opponent across multiple phases of campaigning.</p>
+                            
+                            <h4>Game Phases</h4>
+                            <p>The election campaign is divided into <strong>8 phases</strong>, each lasting 30 seconds. Use your limited time and funds wisely!</p>
+                              <h4>Victory Conditions</h4>
+                            <ul>
+                                <li><strong>Majority Government:</strong> Get 272+ seats to form government (evaluated at the end of all 8 phases)</li>
+                                <li><strong>Hung Parliament:</strong> If neither player reaches 272 at the end, it's a tie</li>
+                            </ul>
+                            
+                            <h4>Your Resources</h4>
+                            <ul>
+                                <li><strong>Campaign Funds:</strong> Start with 250M, get more each phase</li>
+                                <li><strong>Time:</strong> Limited time per phase to make decisions</li>
+                                <li><strong>Strategic Planning:</strong> Choose where and how to spend wisely</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <!-- Controls Tab -->
+                    <div class="help-section" id="help-controls">                        <h3><i class="fas fa-mouse-pointer"></i> Controls & Interface</h3>                        <div class="help-content-section">
+                            <h4>Map Interaction</h4>
+                            <ul>
+                                <li><strong>Click on States:</strong> Invest funds directly in any state or UT (single campaign)</li>
+                                <li><strong>Shift + Click:</strong> Burst spend - invest 3x funds at once for maximum impact</li>
+                                <li><strong>R + Click:</strong> Deploy rally token for popularity boost</li>
+                                <li><strong>State Groups:</strong> Use group buttons to target multiple states at once</li>
+                                <li><strong>Small UTs:</strong> Special buttons for tiny territories like Puducherry</li>
+                            </ul>
+                            
+                            <h4>Campaign Policies</h4>
+                            <ul>
+                                <li><strong>Policy Cards:</strong> Right panel shows 6 policy categories</li>
+                                <li><strong>Investment:</strong> Click progress bars to invest in specific policies</li>
+                                <li><strong>Progress Tracking:</strong> Visual bars show your investment levels</li>
+                            </ul>
+                            
+                            <h4>Game Controls</h4>
+                            <ul>
+                                <li><strong>Pause:</strong> Space bar or pause button to pause/resume</li>
+                                <li><strong>Sound:</strong> Toggle sound effects and music</li>
+                                <li><strong>Events:</strong> Enable/disable random campaign events</li>
+                                <li><strong>Help:</strong> This guide (click Help button again to close)</li>
+                            </ul>
+                            
+                            <h4>Information Panels</h4>
+                            <ul>
+                                <li><strong>Player Info:</strong> Your funds and AI opponent status</li>
+                                <li><strong>States Info:</strong> Details about selected states</li>
+                                <li><strong>Actions Log:</strong> History of game events and actions</li>
+                                <li><strong>Game Status:</strong> Current phase, timer, seat projections</li>
+                                <li><strong>TV Display:</strong> Live updates and breaking news</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <!-- Gameplay Tab -->
+                    <div class="help-section" id="help-gameplay">
+                        <h3><i class="fas fa-gamepad"></i> How to Play</h3>
+                        <div class="help-content-section">
+                            <h4>Building Popularity</h4>
+                            <p>Your goal is to increase your popularity in states to win their seats:</p>
+                            <ul>
+                                <li><strong>Direct Investment:</strong> Click states on the map to invest funds</li>
+                                <li><strong>Policy Campaigns:</strong> Invest in policies that appeal to different regions</li>
+                                <li><strong>Group Strategies:</strong> Target state groups for regional dominance</li>
+                            </ul>
+                            
+                            <h4>Seat Calculation</h4>
+                            <p>Seats are awarded proportionally based on popularity:</p>
+                            <ul>
+                                <li>If you have 40% popularity in a state, you get ~40% of its seats</li>
+                                <li>Example: Uttar Pradesh (80 seats) with 40% popularity = 32 seats</li>
+                                <li>The AI and "Others" get the remaining seats based on their popularity</li>
+                            </ul>
+                            
+                            <h4>Policy Categories</h4>
+                            <ul>
+                                <li><strong>Social Policy:</strong> Hindutva, Uniform Civil Code, Hindi mandate, Secularism</li>
+                                <li><strong>Justice & Inclusion:</strong> Reservations, Women's rights, Tribal rights</li>
+                                <li><strong>Infrastructure:</strong> Highways, Ports, Smart Cities, Defense</li>
+                                <li><strong>Economic Policy:</strong> MGNREGA, GST, Digital India, Industry</li>
+                                <li><strong>Agriculture:</strong> Farm loans, River projects, GMOs, Farm bills</li>
+                                <li><strong>Health & Welfare:</strong> Swachh Bharat, Ayushman, Financial inclusion</li>
+                            </ul>
+                            
+                            <h4>Bonus Opportunities</h4>
+                            <ul>
+                                <li><strong>Group Domination:</strong> Get >50% in all states of a group for big bonuses</li>
+                                <li><strong>Policy Mastery:</strong> Max out policy investments for rewards</li>
+                                <li><strong>Regional Strongholds:</strong> Focus on specific regions for guaranteed wins</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <!-- Strategy Tab -->
+                    <div class="help-section" id="help-strategy">
+                        <h3><i class="fas fa-chess"></i> Strategy Tips</h3>
+                        <div class="help-content-section">
+                            <h4>Early Game (Phases 1-3)</h4>
+                            <ul>
+                                <li><strong>Secure Your Base:</strong> Focus on states where you start with an advantage</li>
+                                <li><strong>Broad Investment:</strong> Spread funds across multiple states initially</li>
+                                <li><strong>Policy Foundation:</strong> Start building key policy platforms</li>
+                                <li><strong>Monitor AI:</strong> Watch which states the AI is targeting</li>
+                            </ul>
+                            
+                            <h4>Mid Game (Phases 4-6)</h4>
+                            <ul>
+                                <li><strong>Regional Focus:</strong> Try to dominate entire state groups</li>
+                                <li><strong>Contested States:</strong> Fight for swing states where you're competitive</li>
+                                <li><strong>Policy Synergy:</strong> Align policies with regional preferences</li>
+                                <li><strong>Defensive Play:</strong> Protect your strongholds from AI attacks</li>
+                            </ul>
+                            
+                            <h4>End Game (Phases 7-8)</h4>
+                            <ul>
+                                <li><strong>Calculate Path to 272:</strong> Know exactly which seats you need</li>
+                                <li><strong>All-In Strategy:</strong> Concentrate remaining funds on winnable states</li>
+                                <li><strong>Block AI:</strong> Prevent AI from reaching 272 if you can't</li>
+                                <li><strong>Last-Minute Pushes:</strong> Use any remaining funds strategically</li>
+                            </ul>
+                            
+                            <h4>Regional Strategies</h4>
+                            <ul>
+                                <li><strong>Hindi Heartland:</strong> UP, Bihar, MP - High seat count, social policies important</li>
+                                <li><strong>South India:</strong> TN, AP, Karnataka, Kerala - Infrastructure and economic policies</li>
+                                <li><strong>Coastal States:</strong> Focus on ports and maritime development</li>
+                                <li><strong>Northeast:</strong> Tribal rights and border security matter</li>
+                                <li><strong>Agricultural Regions:</strong> Farm policies and rural development</li>
+                            </ul>
+                            
+                            <h4>Pro Tips</h4>
+                            <ul>
+                                <li><strong>Efficiency:</strong> Don't over-invest in states you've already secured</li>
+                                <li><strong>Information:</strong> Click states to see detailed popularity breakdowns</li>
+                                <li><strong>Timing:</strong> Save some funds for final phases when competition intensifies</li>
+                                <li><strong>Adaptation:</strong> Adjust strategy based on AI behavior and random events</li>
+                                <li><strong>Group Bonuses:</strong> Prioritize completing state groups for bonus funds</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>        </div>
+    </div>
+    </div> <!-- End of game-container -->
+
+<script type="module" src="js/main.js"></script>
+<script type="module" src="js/visual-effects.js"></script>
+<script type="module" src="js/color-utils.js"></script>
+<script type="module" src="js/drag-drop-utils.js"></script>
+<script type="module" src="js/map-controller.js"></script>
+<script type="module" src="js/game-timer.js"></script>
+<script type="module" src="js/player-info.js"></script>
+<script type="module" src="js/state-groups.js"></script>
+<script type="module" src="js/actions-log.js"></script>
+<script type="module" src="js/state-info.js"></script>
+<script type="module" src="js/policy-progress.js"></script>
+<script type="module" src="js/game-options.js"></script>
+<script type="module" src="js/tv-display.js"></script>
+<script type="module" src="js/game-over-screen.js"></script>
+<!-- Debug utilities - comment out in production -->
+<script type="module" src="js/debug-index.js"></script>
+</body>
+</html>
