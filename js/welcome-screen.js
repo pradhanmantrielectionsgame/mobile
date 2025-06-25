@@ -121,7 +121,7 @@ async function signInWithGoogle() {
         });        // Make selectCurrentPolitician globally available
         window.selectCurrentPolitician = () => {
           selectedPolitician = leaders[currentIndex];
-          gameConfig.player1Politician = selectedPolitician.name;
+          gameConfig.player1Politician = selectedPolitician; // Store complete object, not just name
           
           // Randomly select AI opponent (different party from player selection)
           const availableOpponents = leaders.filter(leader => 
@@ -135,7 +135,7 @@ async function signInWithGoogle() {
             leaders.filter(leader => leader.name !== selectedPolitician.name);
             
           const aiOpponent = finalOpponents[Math.floor(Math.random() * finalOpponents.length)];
-          gameConfig.player2Politician = aiOpponent.name;
+          gameConfig.player2Politician = aiOpponent; // Store complete object, not just name
           
           localStorage.setItem("gameConfig", JSON.stringify(gameConfig));
           console.log("Player selected:", selectedPolitician.name, `(${selectedPolitician.party})`);
@@ -399,7 +399,7 @@ function setupGameAfterSignIn(user) {
       });      // Make selectCurrentPolitician globally available
       window.selectCurrentPolitician = () => {
         selectedPolitician = leaders[currentIndex];
-        gameConfig.player1Politician = selectedPolitician.name;
+        gameConfig.player1Politician = selectedPolitician; // Store complete object, not just name
         
         // Randomly select AI opponent (different party from player selection)
         const availableOpponents = leaders.filter(leader => 
@@ -413,7 +413,7 @@ function setupGameAfterSignIn(user) {
           leaders.filter(leader => leader.name !== selectedPolitician.name);
           
         const aiOpponent = finalOpponents[Math.floor(Math.random() * finalOpponents.length)];
-        gameConfig.player2Politician = aiOpponent.name;
+        gameConfig.player2Politician = aiOpponent; // Store complete object, not just name
         
         localStorage.setItem("gameConfig", JSON.stringify(gameConfig));
         console.log("Player selected:", selectedPolitician.name, `(${selectedPolitician.party})`);

@@ -373,6 +373,19 @@ class PlayerInfo {
     }
   }
 
+  async loadPoliticiansData() {
+    try {
+      const response = await fetch("./politicians-data.json");
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error("Error loading politicians data:", error);
+      return null;
+    }
+  }
+
   update(data) {
     // Future updates to player info can be handled here
     if (!this.statsElement) return;

@@ -787,9 +787,14 @@ class StateInfo {
   // Get game configuration for dynamic party names
   loadGameConfiguration() {
     try {
-      const gameConfig = localStorage.getItem("gameConfig");
-      if (gameConfig) {
-        this.gameConfig = JSON.parse(gameConfig);
+      const storedConfig = localStorage.getItem("gameConfig");
+      if (storedConfig) {
+        const gameConfig = JSON.parse(storedConfig);
+        
+        this.gameConfig = {
+          player1Politician: gameConfig.player1Politician || { party: "Player 1" },
+          player2Politician: gameConfig.player2Politician || { party: "Player 2" },
+        };
       } else {
         console.warn("No game configuration found, using defaults");
         this.gameConfig = {

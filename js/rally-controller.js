@@ -599,11 +599,14 @@ class RallyController {
   loadGameConfiguration() {
     try {
       const cfg = localStorage.getItem("gameConfig");
-      this.gameConfig = cfg ? JSON.parse(cfg) : {
-        player1Politician: { party: "Player 1" },
-        player2Politician: { party: "Player 2" }
+      const gameConfig = cfg ? JSON.parse(cfg) : {};
+
+      this.gameConfig = {
+        player1Politician: gameConfig.player1Politician || { party: "Player 1" },
+        player2Politician: gameConfig.player2Politician || { party: "Player 2" }
       };
-    } catch {
+    } catch (error) {
+      console.error("Error loading game configuration for rally controller:", error);
       this.gameConfig = {
         player1Politician: { party: "Player 1" },
         player2Politician: { party: "Player 2" }

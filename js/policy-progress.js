@@ -355,8 +355,8 @@ function initializeCampaignProgressFromPoliticianBonuses() {
     }
 
     const gameConfig = JSON.parse(config);
-    const player1PoliticianName = gameConfig.player1Politician;
-    const player2PoliticianName = gameConfig.player2Politician;
+    const player1PoliticianName = gameConfig.player1Politician?.name || gameConfig.player1Politician;
+    const player2PoliticianName = gameConfig.player2Politician?.name || gameConfig.player2Politician;
 
     if (!player1PoliticianName || !player2PoliticianName) {
       console.warn("Missing politician names in game configuration");

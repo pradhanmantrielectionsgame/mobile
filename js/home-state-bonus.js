@@ -22,25 +22,37 @@ class HomeStateBonus {
 
         // Find home states from politicians data
         if (gameConfig.player1Politician) {
-          const player1Data = politiciansData.politicians.find(
-            politician => politician.name === gameConfig.player1Politician
-          );
-          if (player1Data) {
-            this.player1HomeState = player1Data.homeState;
+          // If it's already a complete object (new format), use it directly
+          if (typeof gameConfig.player1Politician === 'object' && gameConfig.player1Politician.homeState) {
+            this.player1HomeState = gameConfig.player1Politician.homeState;
+          } else {
+            // Legacy format: politician name as string
+            const player1Data = politiciansData.politicians.find(
+              politician => politician.name === gameConfig.player1Politician
+            );
+            if (player1Data) {
+              this.player1HomeState = player1Data.homeState;
+            }
           }
         }
 
         if (gameConfig.player2Politician) {
-          const player2Data = politiciansData.politicians.find(
-            politician => politician.name === gameConfig.player2Politician
-          );
-          if (player2Data) {
-            this.player2HomeState = player2Data.homeState;
+          // If it's already a complete object (new format), use it directly
+          if (typeof gameConfig.player2Politician === 'object' && gameConfig.player2Politician.homeState) {
+            this.player2HomeState = gameConfig.player2Politician.homeState;
+          } else {
+            // Legacy format: politician name as string
+            const player2Data = politiciansData.politicians.find(
+              politician => politician.name === gameConfig.player2Politician
+            );
+            if (player2Data) {
+              this.player2HomeState = player2Data.homeState;
+            }
           }
         }
 
         console.log(
-          `Initialized home states - Player 1: ${this.player1HomeState} (${gameConfig.player1Politician}), Player 2: ${this.player2HomeState} (${gameConfig.player2Politician})`,
+          `Initialized home states - Player 1: ${this.player1HomeState} (${gameConfig.player1Politician?.name || gameConfig.player1Politician}), Player 2: ${this.player2HomeState} (${gameConfig.player2Politician?.name || gameConfig.player2Politician})`,
         );
         this.initialized = true;
       }
@@ -310,7 +322,7 @@ window.testBonusSystem = async function() {
     // Test policy mapping
     const gameConfig = JSON.parse(localStorage.getItem("gameConfig") || "{}");
     if (gameConfig.player1Politician && gameConfig.player2Politician) {
-      console.log(`Game config loaded: P1=${gameConfig.player1Politician}, P2=${gameConfig.player2Politician}`);
+      console.log(`Game config loaded: P1=${gameConfig.player1Politician?.name || gameConfig.player1Politician}, P2=${gameConfig.player2Politician?.name || gameConfig.player2Politician}`);
     } else {
       console.log("❌ Game config not properly set");
     }
