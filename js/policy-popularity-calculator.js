@@ -18,12 +18,48 @@ class PolicyPopularityCalculator {
             
             // Load states data
             const statesResponse = await fetch('./data/states_data.json');
-            this.statesData = await statesResponse.json();
+            const rawStatesData = await statesResponse.json();
+            
+            // Transform the states data structure
+            this.statesData = this.transformStatesData(rawStatesData);
             
             console.log('Policy calculator data loaded successfully');
+            
+            // Run test to verify data loading
+            setTimeout(() => this.testDataLoading(), 100);
         } catch (error) {
             console.error('Error loading policy calculator data:', error);
         }
+    }
+
+    /**
+     * Transform the states data from array format to the expected format
+     */
+    transformStatesData(rawData) {
+        const states = {};
+        
+        rawData.forEach(stateData => {
+            const stateName = stateData.State;
+            const tags = [];
+            
+            // Convert boolean string values to tags
+            Object.keys(stateData).forEach(key => {
+                if (key !== 'State' && key !== 'LokSabhaSeats' && key !== 'SvgId') {
+                    if (stateData[key] === "TRUE") {
+                        tags.push(key);
+                    }
+                }
+            });
+            
+            states[stateName] = {
+                name: stateName,
+                tags: tags,
+                svgId: stateData.SvgId,
+                lokSabhaSeats: parseInt(stateData.LokSabhaSeats) || 0
+            };
+        });
+        
+        return { states };
     }
 
     /**
@@ -60,6 +96,17 @@ class PolicyPopularityCalculator {
         // Calculate effect
         const effect = baseMagnitude * (supports - opposes);
 
+        // Debug logging for the first few states
+        if (stateName === 'Uttar Pradesh' || stateName === 'Andhra Pradesh' || stateName === 'Gujarat') {
+            console.log(`DEBUG ${stateName}:`);
+            console.log(`  State tags: [${stateTags.join(', ')}]`);
+            console.log(`  Support tags: [${supportTags.join(', ')}]`);
+            console.log(`  Oppose tags: [${opposeTags.join(', ')}]`);
+            console.log(`  Base magnitude: ${baseMagnitude}`);
+            console.log(`  Supports: ${supports}, Opposes: ${opposes}`);
+            console.log(`  Effect: ${effect}`);
+        }
+
         return effect;
     }
 
@@ -77,9 +124,14 @@ class PolicyPopularityCalculator {
         let totalNegative = 0;
         let affectedStates = 0;
 
+        console.log(`\n=== Applying Policy Effects for ${policyName} ===`);
+        console.log(`Total states to check: ${Object.keys(this.statesData.states).length}`);
+
         // Calculate effects for all states
         for (const stateName in this.statesData.states) {
             const effect = this.calculatePolicyEffect(policyName, stateName);
+            
+            console.log(`${stateName}: effect = ${effect}`);
             
             if (effect !== 0) {
                 // Apply the effect to the state's popularity for the completing player
@@ -95,6 +147,9 @@ class PolicyPopularityCalculator {
                 }
             }
         }
+
+        console.log(`Final stats: ${effects.length} effects, ${affectedStates} affected states`);
+        console.log(`Total positive: ${totalPositive}, Total negative: ${totalNegative}`);
 
         // Create detailed notification
         this.showPolicyEffectNotification(policyName, effects, totalPositive, totalNegative, affectedStates, completingPlayerId);
@@ -176,8 +231,14 @@ class PolicyPopularityCalculator {
      * Formula: pop_change = BaseMagnitude * (supports - opposes)
      */
     applyCampaignCompletionBonus(stateName, playerId, popularityChange) {
-        // Find the state ID by name (need to convert from full name to state ID)
-        const stateId = this.findStateIdByName(stateName);
+        // Find the state data to get the SVG ID
+        const state = this.statesData?.states[stateName];
+        if (!state) {
+            console.warn(`Could not find state data for "${stateName}"`);
+            return;
+        }
+
+        const stateId = state.svgId; // Use the SVG ID for state identification
         if (!stateId) {
             console.warn(`Could not find state ID for "${stateName}"`);
             return;
@@ -186,7 +247,7 @@ class PolicyPopularityCalculator {
         // Apply the popularity change using the existing state info system
         if (window.stateInfo && typeof window.stateInfo.updateStatePopularityFromCampaign === 'function') {
             window.stateInfo.updateStatePopularityFromCampaign(stateId, playerId, popularityChange);
-            console.log(`Applied ${popularityChange > 0 ? '+' : ''}${popularityChange}% popularity change to ${stateName} for Player ${playerId}`);
+            console.log(`Applied ${popularityChange > 0 ? '+' : ''}${popularityChange}% popularity change to ${stateName} (${stateId}) for Player ${playerId}`);
         } else {
             console.warn('State info system not available for popularity updates');
         }
@@ -199,10 +260,9 @@ class PolicyPopularityCalculator {
         if (!this.statesData) return null;
         
         // Search through states to find the one with matching name
-        for (const [stateId, stateData] of Object.entries(this.statesData.states)) {
-            if (stateData.name === stateName || stateId === stateName) {
-                return stateId;
-            }
+        const state = this.statesData.states[stateName];
+        if (state) {
+            return state.svgId;
         }
         return null;
     }
@@ -290,6 +350,52 @@ class PolicyPopularityCalculator {
         const totalPositive = results.filter(r => r.effect > 0).reduce((sum, r) => sum + r.effect, 0);
         const totalNegative = results.filter(r => r.effect < 0).reduce((sum, r) => sum + Math.abs(r.effect), 0);
         console.log(`Net effect: +${totalPositive}% positive, -${totalNegative}% negative`);
+    }
+
+    /**
+     * Test function to verify data loading and transformation
+     */
+    testDataLoading() {
+        console.log('\n=== Testing Data Loading ===');
+        
+        if (!this.policyTags) {
+            console.log('❌ Policy tags not loaded');
+            return;
+        }
+        
+        if (!this.statesData) {
+            console.log('❌ States data not loaded');
+            return;
+        }
+        
+        console.log('✅ Data loaded successfully');
+        console.log(`Policy count: ${Object.keys(this.policyTags.policyTags).length}`);
+        console.log(`States count: ${Object.keys(this.statesData.states).length}`);
+        
+        // Test a few states
+        const testStates = ['Uttar Pradesh', 'Andhra Pradesh', 'Gujarat'];
+        testStates.forEach(stateName => {
+            const state = this.statesData.states[stateName];
+            if (state) {
+                console.log(`${stateName}: ${state.tags.length} tags - [${state.tags.join(', ')}]`);
+            } else {
+                console.log(`❌ ${stateName} not found`);
+            }
+        });
+        
+        // Test a policy
+        const testPolicy = 'Rural Development';
+        const policy = this.policyTags.policyTags[testPolicy];
+        if (policy) {
+            console.log(`\n${testPolicy} policy:`);
+            console.log(`  Base Magnitude: ${policy.baseMagnitude}`);
+            console.log(`  Support Tags: [${policy.supportTags.join(', ')}]`);
+            console.log(`  Oppose Tags: [${policy.opposeTags.join(', ')}]`);
+            
+            // Test effect calculation
+            const effect = this.calculatePolicyEffect(testPolicy, 'Uttar Pradesh');
+            console.log(`  Effect on Uttar Pradesh: ${effect}`);
+        }
     }
 }
 
