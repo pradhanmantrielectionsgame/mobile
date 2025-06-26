@@ -158,51 +158,36 @@ class PolicyPopularityCalculator {
     }
 
     /**
-     * Show detailed policy effect notification
+     * Show simplified policy effect notification using tags and base magnitude
      */
     showPolicyEffectNotification(policyName, effects, totalPositive, totalNegative, affectedStates, completingPlayerId) {
-        // Sort effects by magnitude for better display
-        const positiveEffects = effects.filter(e => e.effect > 0).sort((a, b) => b.effect - a.effect);
-        const negativeEffects = effects.filter(e => e.effect < 0).sort((a, b) => a.effect - b.effect);
+        // Get policy configuration from policy tags
+        const policy = this.policyTags?.policyTags[policyName];
+        if (!policy) {
+            console.warn(`Policy "${policyName}" not found in policy tags`);
+            return;
+        }
 
-        let message = `📜 ${policyName} Campaign Impact:\n`;
+        let messageParts = [`📜 ${policyName}:`];
         
-        if (positiveEffects.length > 0) {
-            message += `✅ Support Gained: `;
-            const topPositive = positiveEffects.slice(0, 3);
-            message += topPositive.map(e => `${e.state} (+${e.effect}%)`).join(', ');
-            if (positiveEffects.length > 3) {
-                message += ` and ${positiveEffects.length - 3} more states`;
-            }
-            message += `\n`;
+        // Show support tags with positive magnitude
+        if (policy.supportTags && policy.supportTags.length > 0) {
+            messageParts.push(`✅ +${policy.baseMagnitude} ${policy.supportTags.join(', ')}`);
+        } else if (policy.baseMagnitude > 0) {
+            // No specific support tags - show nationwide benefit
+            messageParts.push(`✅ +${policy.baseMagnitude}% nationwide!`);
         }
 
-        if (negativeEffects.length > 0) {
-            message += `❌ Support Lost: `;
-            const topNegative = negativeEffects.slice(0, 3);
-            message += topNegative.map(e => `${e.state} (${e.effect}%)`).join(', ');
-            if (negativeEffects.length > 3) {
-                message += ` and ${negativeEffects.length - 3} more states`;
-            }
-            message += `\n`;
+        // Show oppose tags with negative magnitude  
+        if (policy.opposeTags && policy.opposeTags.length > 0) {
+            messageParts.push(`❌ -${policy.baseMagnitude} ${policy.opposeTags.join(', ')}`);
         }
 
-        if (affectedStates === 0) {
-            message += `No significant impact across states`;
-        } else {
-            const netImpact = totalPositive - totalNegative;
-            message += `Net Impact: ${netImpact > 0 ? '+' : ''}${netImpact}% across ${affectedStates} states`;
-            
-            // Add player information if provided
-            if (completingPlayerId) {
-                const playerName = this.getPlayerName(completingPlayerId);
-                message += ` for ${playerName}`;
-            }
-        }
+        const message = messageParts.join('\n');
 
         // Show notification using the TV display system
         if (window.tvDisplay && typeof window.tvDisplay.addNewsUpdate === 'function') {
-            window.tvDisplay.addNewsUpdate(message, false, 4000); // Show for 4 seconds
+            window.tvDisplay.addNewsUpdate(message, false, 3000); // Show for 3 seconds (shorter since it's simpler)
         } else {
             console.log(message);
         }

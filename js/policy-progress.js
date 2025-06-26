@@ -95,10 +95,10 @@ function getPlayerPartyName(playerId) {
 }
 
 // Constants
-const CAMPAIGN_CLICK_COST = 10; // 10M per click
-const CAMPAIGN_MAX_COST = 100; // 100M total cost
+const CAMPAIGN_CLICK_COST = 20; // 20M per click
+const CAMPAIGN_MAX_COST = 200; // 200M total cost
 const CAMPAIGN_COMPLETION_BONUS = 15; // 15M bonus for completing a campaign
-const CAMPAIGN_MAX_CLICKS = 10; // 10 clicks to complete (100M total)
+const CAMPAIGN_MAX_CLICKS = 10; // 10 clicks to complete (200M total)
 
 // Function to update progress bar
 function updateProgressBar(category, index) {
@@ -224,8 +224,8 @@ function incrementPolicy(category, index, playerId) {
       console.warn(`Could not find policy name for ${category}-${index + 1}`);
     }
 
-    // Show completion notification
-    showCampaignCompletionNotification(category, index, dominantPlayer);
+    // Show completion notification with policy name if available
+    showCampaignCompletionNotification(category, index, dominantPlayer, policyName);
 
     // Log completion
     console.log(
@@ -252,22 +252,32 @@ function incrementPolicy(category, index, playerId) {
 }
 
 // Function to show campaign completion notification
-function showCampaignCompletionNotification(category, index, playerId) {
-  const progressId = `${category}-${index + 1}`;
-  const progressItem = document
-    .getElementById(progressId)
-    .closest(".progress-item");
-  const policyLabel = progressItem.querySelector(
-    ".progress-item-label",
-  ).textContent;
-
-  // Add news update to TV display with short 2-second duration
+function showCampaignCompletionNotification(category, index, playerId, policyName = null) {
   const playerName = getPlayerPartyName(playerId);
-  window.tvDisplay.addNewsUpdate(
-    `🎉 ${playerName} completes ${policyLabel}! +${CAMPAIGN_COMPLETION_BONUS}M`,
-    false,
-    2000
-  );
+  
+  // Use provided policy name or fall back to DOM lookup
+  let policyLabel;
+  if (policyName) {
+    policyLabel = policyName;
+  } else {
+    const progressId = `${category}-${index + 1}`;
+    const progressItem = document
+      .getElementById(progressId)
+      .closest(".progress-item");
+    policyLabel = progressItem.querySelector(
+      ".progress-item-label",
+    ).textContent;
+  }
+
+  // Create structured notification directly
+  window.tvDisplay.addNotification({
+    type: 'campaign-update',
+    title: `${policyLabel} Campaign Completed!`,
+    details: `${playerName} receives +${CAMPAIGN_COMPLETION_BONUS}M bonus`,
+    magnitude: `+${CAMPAIGN_COMPLETION_BONUS}M`,
+    timestamp: new Date(),
+    duration: 2000
+  });
 }
 
 // Function to show phase bonus notification
