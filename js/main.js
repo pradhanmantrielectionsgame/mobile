@@ -497,7 +497,7 @@ window.testHomeStateBonus = async function () {
 
   // Get all states and test each one
   console.log("Testing each state for home state match:");
-  const statesData = await fetch("states_data.json").then((res) => res.json());
+  const statesData = await fetch("data/states_data.json").then((res) => res.json());
 
   // Test home state bonus application
   for (const state of statesData) {

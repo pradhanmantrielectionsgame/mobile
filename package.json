@@ -1,0 +1,72 @@
+{
+  "name": "pradhanmantri-elections-game",
+  "version": "2.0.0",
+  "description": "A strategic political simulation game based on Indian elections where players compete to become the Prime Minister of India.",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx http-server -p 8080 -o",
+    "dev": "npx http-server -p 8080 -o -c-1",
+    "build": "echo 'Static site - no build required'",
+    "test": "echo 'Tests will be added in future versions'",
+    "lint": "echo 'Linting will be added in future versions'",
+    "format": "echo 'Formatting will be added in future versions'",
+    "deploy": "echo 'Deploy to GitHub Pages at https://pradhanmantrielectionsgame.github.io/'"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pradhanmantrielectionsgame/pradhanmantrielectionsgame.github.io.git"
+  },
+  "keywords": [
+    "game",
+    "politics",
+    "india",
+    "elections",
+    "strategy",
+    "simulation",
+    "browser-game",
+    "javascript",
+    "html5",
+    "political-simulation"
+  ],
+  "author": {
+    "name": "PradhanMantri Elections Game Team",
+    "url": "https://github.com/pradhanmantrielectionsgame"
+  },
+  "license": "PROPRIETARY",
+  "bugs": {
+    "url": "https://github.com/pradhanmantrielectionsgame/pradhanmantrielectionsgame.github.io/issues"
+  },
+  "homepage": "https://pradhanmantrielectionsgame.github.io/",
+  "engines": {
+    "node": ">=12.0.0",
+    "npm": ">=6.0.0"
+  },
+  "browserslist": [
+    "defaults",
+    "not IE 11",
+    "not dead"
+  ],
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  },
+  "dependencies": {},
+  "files": [
+    "index.html",
+    "welcome-screen.html",
+    "politician.html",
+    "player-info-only.html",
+    "js/",
+    "styles/",
+    "sounds/",
+    "assets/",
+    "data/",
+    "favicon.ico",
+    "README.md",
+    "LICENSE"
+  ],
+  "config": {
+    "port": 8080,
+    "host": "localhost"
+  },
+  "type": "module"
+}

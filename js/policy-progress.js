@@ -364,7 +364,7 @@ function initializeCampaignProgressFromPoliticianBonuses() {
     }
 
     // Load politicians data to get their policies
-    fetch("./politicians-data.json")
+    fetch("./data/politicians-data.json")
       .then((response) => response.json())
       .then((politiciansData) => {
         // Find politician objects by name

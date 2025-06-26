@@ -231,7 +231,7 @@ class GameOverScreen {
   loadParliamentSVG(container, results) {
     console.log("loadParliamentSVG called");
     // Load the Parliament_diagram.svg file
-    fetch("./Parliament_diagram.svg")
+    fetch("./assets/icons/Parliament_diagram.svg")
       .then((response) => response.text())
       .then((svgText) => {
         // Parse the SVG

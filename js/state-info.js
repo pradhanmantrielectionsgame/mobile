@@ -16,7 +16,7 @@ class StateInfo {
   }
   async initialize() {
     try {
-      const response = await fetch("states_data.json");
+      const response = await fetch("data/states_data.json");
       this.statesData = await response.json();
 
       // Pre-load state groups module for better performance

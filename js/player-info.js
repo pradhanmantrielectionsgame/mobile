@@ -375,7 +375,7 @@ class PlayerInfo {
 
   async loadPoliticiansData() {
     try {
-      const response = await fetch("./politicians-data.json");
+      const response = await fetch("./data/politicians-data.json");
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }

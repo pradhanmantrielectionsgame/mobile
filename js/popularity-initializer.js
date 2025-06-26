@@ -10,11 +10,11 @@ class PopularityInitializer {
   async initialize() {
     try {
       // Load states data
-      const response = await fetch("states_data.json");
+      const response = await fetch("data/states_data.json");
       this.statesData = await response.json();
 
       // Load politicians data for home state bonus
-      const politiciansResponse = await fetch("politicians-data.json");
+      const politiciansResponse = await fetch("data/politicians-data.json");
       this.politiciansData = await politiciansResponse.json();
       console.log("Loaded politicians data:", this.politiciansData);
 

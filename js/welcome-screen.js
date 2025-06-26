@@ -59,7 +59,7 @@ async function signInWithGoogle() {
     setupGameAfterSignIn(user);
 
     let politiciansData;
-    fetch("./politicians-data.json")
+    fetch("./data/politicians-data.json")
       .then((response) => response.json())
       .then((data) => {
         politiciansData = data;
@@ -337,7 +337,7 @@ function setupGameAfterSignIn(user) {
   cardStack.style.gap = "1rem";
 
   let politiciansData;
-  fetch("./politicians-data.json")
+  fetch("./data/politicians-data.json")
     .then((response) => response.json())
     .then((data) => {
       politiciansData = data;

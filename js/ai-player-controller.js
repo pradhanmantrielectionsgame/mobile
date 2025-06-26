@@ -183,7 +183,7 @@ class AIPlayerController {
       if (!this.statesData) {
         try {
           console.log("Loading states data for AI...");
-          const response = await fetch("states_data.json");
+          const response = await fetch("data/states_data.json");
           if (!response.ok) {
             throw new Error(
               `Failed to fetch states data: ${response.status} ${response.statusText}`,
@@ -642,7 +642,7 @@ class AIPlayerController {
 
     // Load states data if needed
     if (!this.statesData) {
-      const response = await fetch("states_data.json");
+      const response = await fetch("data/states_data.json");
       this.statesData = await response.json();
     }    // Find suitable states for rally that are in target groups
     const suitableStates = this.findSuitableStatesForStrategicRally();

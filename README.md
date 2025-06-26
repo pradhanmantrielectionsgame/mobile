@@ -4,7 +4,7 @@ A strategic political simulation game based on Indian elections where players co
 
 ## 🎮 Play the Game
 
-**Live Demo**: [https://samitwatve.github.io/PradhanMantri_Elections_Game/welcome-screen.html](https://samitwatve.github.io/PradhanMantri_Elections_Game/welcome-screen.html)
+**Live Demo**: [https://pradhanmantrielectionsgame.github.io/welcome-screen.html](https://pradhanmantrielectionsgame.github.io/welcome-screen.html)
 
 ## 🎯 Game Features
 
@@ -36,7 +36,7 @@ A strategic political simulation game based on Indian elections where players co
 
 ## 🚀 Getting Started
 
-1. Visit the [game website](https://samitwatve.github.io/PradhanMantri_Elections_Game/welcome-screen.html)
+1. Visit the [game website](https://pradhanmantrielectionsgame.github.io/welcome-screen.html)
 2. Enter your name and select politicians for both players
 3. Click "Start Game" to begin your political campaign
 4. Use the game controls to manage your campaign strategy
@@ -53,10 +53,32 @@ A strategic political simulation game based on Indian elections where players co
 ```
 ├── index.html              # Main game interface
 ├── welcome-screen.html     # Game setup screen
+├── politician.html         # Politician selection screen
+├── player-info-only.html   # Player info display
 ├── js/                     # JavaScript modules
+│   ├── main.js            # Main game controller
+│   ├── map-controller.js  # Map interaction logic
+│   ├── ai-player-controller.js # AI opponent logic
+│   └── ...                # Other game modules
 ├── styles/                 # CSS stylesheets
-├── sounds/                 # Audio files
-└── assets/                 # Images and SVG files
+│   ├── main.css           # Main styles
+│   ├── map.css            # Map-specific styles
+│   └── ...                # Component-specific styles
+├── sounds/                 # Audio files (MP3)
+├── assets/                 # Game assets
+│   ├── images/            # PNG/JPG images (politicians, backgrounds)
+│   └── icons/             # SVG files (logos, map, icons)
+├── data/                   # Game data (JSON files)
+│   ├── states_data.json   # Indian states information
+│   └── politicians-data.json # Politicians database
+├── docs/                   # Documentation
+│   ├── API.md             # API documentation
+│   ├── ARCHITECTURE.md    # System architecture
+│   └── DEPLOYMENT.md      # Deployment guide
+├── package.json            # Project configuration
+├── LICENSE                 # Proprietary license
+├── CONTRIBUTING.md         # Contribution guidelines
+└── README.md              # This file
 ```
 
 ## 🎮 Controls
@@ -74,10 +96,47 @@ A strategic political simulation game based on Indian elections where players co
 
 ## 🔧 Development
 
-To run locally:
-1. Clone the repository
-2. Open `welcome-screen.html` in a modern web browser
-3. Ensure all audio files are properly loaded
+### Prerequisites
+- Modern web browser (Chrome, Firefox, Safari, Edge)
+- Node.js (optional, for development server)
+
+### Local Development
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/pradhanmantrielectionsgame/pradhanmantrielectionsgame.github.io.git
+   cd PradhanMantri_Elections_Game
+   ```
+
+2. **Option A**: Open directly in browser
+   ```bash
+   # Simply open welcome-screen.html in your browser
+   open welcome-screen.html  # macOS
+   start welcome-screen.html # Windows
+   ```
+
+3. **Option B**: Use development server (recommended)
+   ```bash
+   # Install dependencies
+   npm install
+   
+   # Start development server
+   npm start
+   ```
+
+### Project Commands
+```bash
+npm start          # Start development server
+npm run dev        # Start with live reload
+npm run deploy     # See deployment instructions
+```
+
+### Contributing
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
+
+### Documentation
+- [API Documentation](docs/API.md) - Detailed API reference
+- [Architecture Guide](docs/ARCHITECTURE.md) - System architecture overview
+- [Deployment Guide](docs/DEPLOYMENT.md) - How to deploy the game
 
 ## 📜 License
 

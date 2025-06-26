@@ -23,7 +23,7 @@ class MapController {
   async initialize() {
     try {
       // Load states data
-      const response = await fetch("states_data.json");
+      const response = await fetch("data/states_data.json");
       this.statesData = await response.json();
 
       // Initialize home state bonus module
@@ -162,7 +162,7 @@ class MapController {
 
       try {
         if (!this.statesData) {
-          const response = await fetch("states_data.json");
+          const response = await fetch("data/states_data.json");
           this.statesData = await response.json();
         }
 

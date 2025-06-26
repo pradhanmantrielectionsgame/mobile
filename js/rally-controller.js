@@ -378,7 +378,7 @@ class RallyController {
       }
 
       if (!this.statesData) {
-        const response = await fetch("states_data.json");
+        const response = await fetch("data/states_data.json");
         this.statesData = await response.json();
       }
       for (const state of this.statesData) {
@@ -548,7 +548,7 @@ class RallyController {
     }
 
     if (!this.statesData) {
-      const resp = await fetch("states_data.json");
+      const resp = await fetch("data/states_data.json");
       this.statesData = await resp.json();
     }
 

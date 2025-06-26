@@ -49,7 +49,7 @@ class RandomEvents {
     
     // Load states data
     try {
-      const response = await fetch("states_data.json");
+      const response = await fetch("data/states_data.json");
       if (response.ok) {
         this.statesData = await response.json();
         console.log("States data loaded for random events");

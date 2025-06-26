@@ -11,7 +11,7 @@
       body {
         font-family: "Inter", sans-serif;
         background:
-          url("PradhanMantriBg.png") repeat-x center center/50% 95vh,
+          url("assets/images/PradhanMantriBg.png") repeat-x center center/50% 95vh,
           linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         min-height: 100vh;
         padding: 2rem;
@@ -372,7 +372,7 @@
       document.addEventListener("DOMContentLoaded", async function () {
         // Fetch the politicians data from JSON file
         try {
-          const response = await fetch("politicians-data.json");
+          const response = await fetch("data/politicians-data.json");
           if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
           }
@@ -404,7 +404,7 @@
         container.innerHTML = `
                 <div style="text-align: center; color: white; padding: 2rem;">
                     <h3>Error loading politicians data</h3>
-                    <p>Please ensure politicians-data.json file is available</p>
+                    <p>Please ensure data/politicians-data.json file is available</p>
                 </div>
             `;
       }

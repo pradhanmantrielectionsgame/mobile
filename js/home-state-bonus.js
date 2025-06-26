@@ -17,7 +17,7 @@ class HomeStateBonus {
         const gameConfig = JSON.parse(storedConfig);
 
         // Load politicians data to get home states
-        const response = await fetch("./politicians-data.json");
+        const response = await fetch("./data/politicians-data.json");
         const politiciansData = await response.json();
 
         // Find home states from politicians data

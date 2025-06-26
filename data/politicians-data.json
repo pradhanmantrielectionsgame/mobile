@@ -4,8 +4,8 @@
       "name": "Narendra Modi",
       "party": "BJP",
       "homeState": "Gujarat",
-      "image": "Narendra_Modi.png",
-      "partyLogo": "Bharatiya_Janata_Party_(icon).svg",
+      "image": "assets/images/Narendra_Modi.png",
+      "partyLogo": "assets/icons/Bharatiya_Janata_Party_(icon).svg",
       "primaryColor": "#FF9933","policies": [
         {
           "name": "Healthcare",
@@ -36,8 +36,8 @@
       "name": "Manmohan Singh",
       "party": "INC",
       "homeState": "Punjab",
-      "image": "Manmohan_Singh.png",
-      "partyLogo": "Indian_National_Congress_hand_logo.svg",
+      "image": "assets/images/Manmohan_Singh.png",
+      "partyLogo": "assets/icons/Indian_National_Congress_hand_logo.svg",
       "primaryColor": "#138808",
       "policies": [
         {
@@ -69,8 +69,8 @@
       "name": "Rahul Gandhi",
       "party": "INC",
       "homeState": "Uttar Pradesh",
-      "image": "Rahul_Gandhi.png",
-      "partyLogo": "Indian_National_Congress_hand_logo.svg",
+      "image": "assets/images/Rahul_Gandhi.png",
+      "partyLogo": "assets/icons/Indian_National_Congress_hand_logo.svg",
       "primaryColor": "#138808","policies": [
         {
           "name": "Rural Development",
@@ -100,8 +100,8 @@
       "name": "Atal Bihari Vajpayee",
       "party": "BJP",
       "homeState": "Uttar Pradesh",
-      "image": "Atal_Bihari_Vajpayee.png",
-      "partyLogo": "Bharatiya_Janata_Party_(icon).svg",
+      "image": "assets/images/Atal_Bihari_Vajpayee.png",
+      "partyLogo": "assets/icons/Bharatiya_Janata_Party_(icon).svg",
       "primaryColor": "#FF9933",
       "policies": [
         {
@@ -132,8 +132,8 @@
       "id": "arvind-kejriwal",
       "name": "Arvind Kejriwal",
       "party": "AAP",
-      "homeState": "Delhi",      "image": "Arvind_Kejriwal.png",
-      "partyLogo": "Aam_Aadmi_Party_logo_(English).svg",
+      "homeState": "Delhi",      "image": "assets/images/Arvind_Kejriwal.png",
+      "partyLogo": "assets/icons/Aam_Aadmi_Party_logo_(English).svg",
       "primaryColor": "#2196F3",
       "policies": [
         {
@@ -165,8 +165,8 @@
       "name": "Mamata Banerjee",
       "party": "AITC",
       "homeState": "West Bengal",
-      "image": "Mamata_Banerjee.png",
-      "partyLogo": "All_India_Trinamool_Congress_logo_(3).svg",
+      "image": "assets/images/Mamata_Banerjee.png",
+      "partyLogo": "assets/icons/All_India_Trinamool_Congress_logo_(3).svg",
       "primaryColor": "#00AAFF",
       "policies": [
         {
@@ -197,8 +197,8 @@
       "id": "nitish-kumar",
       "name": "Nitish Kumar",
       "party": "JD(U)",
-      "homeState": "Bihar",      "image": "Nitish_Kumar.png",
-      "partyLogo": "Janata_Dal_(United)_Flag.svg",
+      "homeState": "Bihar",      "image": "assets/images/Nitish_Kumar.png",
+      "partyLogo": "assets/icons/Janata_Dal_(United)_Flag.svg",
       "primaryColor": "#5CB85C",
       "policies": [
         {
@@ -230,8 +230,8 @@
       "name": "Yogi Adityanath",
       "party": "BJP",
       "homeState": "Uttar Pradesh",
-      "image": "Yogi_Adityanath.png",
-      "partyLogo": "Bharatiya_Janata_Party_(icon).svg",
+      "image": "assets/images/Yogi_Adityanath.png",
+      "partyLogo": "assets/icons/Bharatiya_Janata_Party_(icon).svg",
       "primaryColor": "#FF9933",
       "policies": [
         {
