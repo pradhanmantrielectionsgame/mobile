@@ -214,9 +214,9 @@ function incrementPolicy(category, index, playerId) {
     if (policyName) {
       console.log(`Applying policy effects for "${policyName}" completed by Player ${dominantPlayer}`);
       
-      // Apply policy effects to all states
+      // Apply policy effects to all states with the completing player ID
       if (window.policyCalculator) {
-        window.policyCalculator.applyPolicyEffects(policyName);
+        window.policyCalculator.applyPolicyEffects(policyName, dominantPlayer);
       } else {
         console.warn('Policy calculator not available');
       }
@@ -562,9 +562,9 @@ function initializePoliciesWithBonuses(player1Politician, player2Politician) {
         if (policyName) {
           console.log(`Applying initial policy effects for "${policyName}" completed by Player ${dominantPlayer}`);
           
-          // Apply policy effects to all states
+          // Apply policy effects to all states with the completing player ID
           if (window.policyCalculator) {
-            window.policyCalculator.applyPolicyEffects(policyName);
+            window.policyCalculator.applyPolicyEffects(policyName, dominantPlayer);
           } else {
             console.warn('Policy calculator not available for initial policy');
           }

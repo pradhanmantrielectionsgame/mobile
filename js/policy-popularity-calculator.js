@@ -64,9 +64,9 @@ class PolicyPopularityCalculator {
     }
 
     /**
-     * Apply policy effects to all states
+     * Apply policy effects to all states for campaign completion
      */
-    applyPolicyEffects(policyName) {
+    applyPolicyEffects(policyName, completingPlayerId) {
         if (!this.statesData) {
             console.warn('States data not loaded yet');
             return;
@@ -82,10 +82,8 @@ class PolicyPopularityCalculator {
             const effect = this.calculatePolicyEffect(policyName, stateName);
             
             if (effect !== 0) {
-                // Apply the effect to the state's popularity
-                if (typeof updateStatePopularity === 'function') {
-                    updateStatePopularity(stateName, effect);
-                }
+                // Apply the effect to the state's popularity for the completing player
+                this.applyCampaignCompletionBonus(stateName, completingPlayerId, effect);
                 
                 effects.push({ state: stateName, effect });
                 affectedStates++;
@@ -99,7 +97,7 @@ class PolicyPopularityCalculator {
         }
 
         // Create detailed notification
-        this.showPolicyEffectNotification(policyName, effects, totalPositive, totalNegative, affectedStates);
+        this.showPolicyEffectNotification(policyName, effects, totalPositive, totalNegative, affectedStates, completingPlayerId);
 
         return effects;
     }
@@ -107,15 +105,15 @@ class PolicyPopularityCalculator {
     /**
      * Show detailed policy effect notification
      */
-    showPolicyEffectNotification(policyName, effects, totalPositive, totalNegative, affectedStates) {
+    showPolicyEffectNotification(policyName, effects, totalPositive, totalNegative, affectedStates, completingPlayerId) {
         // Sort effects by magnitude for better display
         const positiveEffects = effects.filter(e => e.effect > 0).sort((a, b) => b.effect - a.effect);
         const negativeEffects = effects.filter(e => e.effect < 0).sort((a, b) => a.effect - b.effect);
 
-        let message = `📜 ${policyName} Policy Effects:\n`;
+        let message = `📜 ${policyName} Campaign Impact:\n`;
         
         if (positiveEffects.length > 0) {
-            message += `✅ Gained Support: `;
+            message += `✅ Support Gained: `;
             const topPositive = positiveEffects.slice(0, 3);
             message += topPositive.map(e => `${e.state} (+${e.effect}%)`).join(', ');
             if (positiveEffects.length > 3) {
@@ -125,7 +123,7 @@ class PolicyPopularityCalculator {
         }
 
         if (negativeEffects.length > 0) {
-            message += `❌ Lost Support: `;
+            message += `❌ Support Lost: `;
             const topNegative = negativeEffects.slice(0, 3);
             message += topNegative.map(e => `${e.state} (${e.effect}%)`).join(', ');
             if (negativeEffects.length > 3) {
@@ -139,14 +137,74 @@ class PolicyPopularityCalculator {
         } else {
             const netImpact = totalPositive - totalNegative;
             message += `Net Impact: ${netImpact > 0 ? '+' : ''}${netImpact}% across ${affectedStates} states`;
+            
+            // Add player information if provided
+            if (completingPlayerId) {
+                const playerName = this.getPlayerName(completingPlayerId);
+                message += ` for ${playerName}`;
+            }
         }
 
         // Show notification using the TV display system
-        if (typeof addNewsUpdate === 'function') {
-            addNewsUpdate(message);
+        if (window.tvDisplay && typeof window.tvDisplay.addNewsUpdate === 'function') {
+            window.tvDisplay.addNewsUpdate(message, false, 4000); // Show for 4 seconds
         } else {
             console.log(message);
         }
+    }
+
+    /**
+     * Get player name for notifications
+     */
+    getPlayerName(playerId) {
+        try {
+            const config = localStorage.getItem("gameConfig");
+            if (config) {
+                const gameConfig = JSON.parse(config);
+                return playerId === 1 
+                    ? gameConfig.player1Politician?.party || "Player 1"
+                    : gameConfig.player2Politician?.party || "Player 2";
+            }
+        } catch (error) {
+            console.warn("Could not load player names from config");
+        }
+        return `Player ${playerId}`;
+    }
+
+    /**
+     * Apply campaign completion bonus to a specific state's popularity
+     * Formula: pop_change = BaseMagnitude * (supports - opposes)
+     */
+    applyCampaignCompletionBonus(stateName, playerId, popularityChange) {
+        // Find the state ID by name (need to convert from full name to state ID)
+        const stateId = this.findStateIdByName(stateName);
+        if (!stateId) {
+            console.warn(`Could not find state ID for "${stateName}"`);
+            return;
+        }
+
+        // Apply the popularity change using the existing state info system
+        if (window.stateInfo && typeof window.stateInfo.updateStatePopularityFromCampaign === 'function') {
+            window.stateInfo.updateStatePopularityFromCampaign(stateId, playerId, popularityChange);
+            console.log(`Applied ${popularityChange > 0 ? '+' : ''}${popularityChange}% popularity change to ${stateName} for Player ${playerId}`);
+        } else {
+            console.warn('State info system not available for popularity updates');
+        }
+    }
+
+    /**
+     * Helper function to find state ID by state name
+     */
+    findStateIdByName(stateName) {
+        if (!this.statesData) return null;
+        
+        // Search through states to find the one with matching name
+        for (const [stateId, stateData] of Object.entries(this.statesData.states)) {
+            if (stateData.name === stateName || stateId === stateName) {
+                return stateId;
+            }
+        }
+        return null;
     }
 
     /**
@@ -181,6 +239,57 @@ class PolicyPopularityCalculator {
                 console.log('');
             }
         }
+    }
+
+    /**
+     * Debug function to test campaign completion effects
+     */
+    debugCampaignCompletion(policyName, playerId) {
+        console.log(`\n=== DEBUG: Campaign Completion for ${policyName} by Player ${playerId} ===`);
+        
+        const policy = this.policyTags?.policyTags[policyName];
+        if (!policy) {
+            console.log(`Policy "${policyName}" not found`);
+            return;
+        }
+
+        console.log(`Base Magnitude: ${policy.baseMagnitude}`);
+        console.log(`Support Tags: ${policy.supportTags?.join(', ') || 'None'}`);
+        console.log(`Oppose Tags: ${policy.opposeTags?.join(', ') || 'None'}`);
+        console.log('');
+
+        // Test with all states and show expected popularity changes
+        const results = [];
+        for (const stateName in this.statesData.states) {
+            const effect = this.calculatePolicyEffect(policyName, stateName);
+            if (effect !== 0) {
+                const state = this.statesData.states[stateName];
+                const stateTags = state.tags || [];
+                
+                results.push({
+                    name: stateName,
+                    effect: effect,
+                    tags: stateTags
+                });
+            }
+        }
+
+        // Sort by effect magnitude
+        results.sort((a, b) => Math.abs(b.effect) - Math.abs(a.effect));
+
+        console.log('Expected Popularity Changes:');
+        results.forEach(result => {
+            console.log(`${result.name}: ${result.effect > 0 ? '+' : ''}${result.effect}% (Tags: ${result.tags.join(', ')})`);
+        });
+
+        if (results.length === 0) {
+            console.log('No states would be affected by this policy');
+        }
+
+        console.log(`\nTotal states affected: ${results.length}`);
+        const totalPositive = results.filter(r => r.effect > 0).reduce((sum, r) => sum + r.effect, 0);
+        const totalNegative = results.filter(r => r.effect < 0).reduce((sum, r) => sum + Math.abs(r.effect), 0);
+        console.log(`Net effect: +${totalPositive}% positive, -${totalNegative}% negative`);
     }
 }
 
