@@ -417,6 +417,26 @@ document.addEventListener("DOMContentLoaded", () => {
     simulateNextPhase();
     setInterval(simulateNextPhase, 5000);
   };
+
+  // Debug: Make policy calculator available globally for testing
+  window.debugPolicyEffects = (policyName) => {
+    import('./policy-popularity-calculator.js').then(({ policyPopularityCalculator }) => {
+      policyPopularityCalculator.initialize().then(() => {
+        policyPopularityCalculator.debugPolicyEffects(policyName);
+      });
+    });
+  };
+
+  // Debug: Test applying a policy
+  window.testApplyPolicy = (policyName, playerId = 1) => {
+    import('./policy-popularity-calculator.js').then(({ policyPopularityCalculator }) => {
+      policyPopularityCalculator.applyPolicyToAllStates(policyName, playerId);
+    });
+  };
+
+  console.log("Debug functions available:");
+  console.log("- debugPolicyEffects('Hindi Language') - See policy effects on all states");
+  console.log("- testApplyPolicy('Hindi Language', 1) - Apply policy effects to all states");
 });
 
 function initializeMap() {

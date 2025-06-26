@@ -19,6 +19,46 @@ Object.keys(policyProgress).forEach((category) => {
 import { player1, player2 } from "./player-info.js";
 import { isGamePaused } from "./game-options.js";
 
+// Mapping from campaign categories and indices to actual policy names
+const POLICY_MAPPING = {
+  social: [
+    "Education",           // social-1
+    "Rural Development",   // social-2  
+    "Women's Empowerment", // social-3
+    "Healthcare"           // social-4
+  ],
+  land: [
+    "Land Reforms",               // land-1
+    "Agricultural Reforms",       // land-2
+    "Water and Mineral Rights",   // land-3
+    "Infrastructure"              // land-4
+  ],
+  economy: [
+    "Economic Liberalization", // economy-1
+    "Privatization",          // economy-2
+    "Public Sector",          // economy-3
+    "Digital Transformation"  // economy-4
+  ],
+  justice: [
+    "Anti-Corruption",  // justice-1
+    "Judicial Activism", // justice-2
+    "Press Freedom",     // justice-3
+    "Law and Order"      // justice-4
+  ],
+  culture: [
+    "Hindi Language",     // culture-1
+    "Hindutva",          // culture-2
+    "Secularism",        // culture-3
+    "Indigenous Rights"   // culture-4
+  ],
+  governance: [
+    "Caste Reservation",     // governance-1
+    "Uniform Civil Code",    // governance-2
+    "State's Rights",        // governance-3
+    "National Defense"       // governance-4
+  ]
+};
+
 // Game configuration for dynamic party names
 let gameConfig = null;
 
@@ -169,6 +209,21 @@ function incrementPolicy(category, index, playerId) {
       window.soundManager.playFanfare();
     }
 
+    // Get the actual policy name and apply effects to all states
+    const policyName = POLICY_MAPPING[category] && POLICY_MAPPING[category][index];
+    if (policyName) {
+      console.log(`Applying policy effects for "${policyName}" completed by Player ${dominantPlayer}`);
+      
+      // Apply policy effects to all states
+      if (window.policyCalculator) {
+        window.policyCalculator.applyPolicyEffects(policyName);
+      } else {
+        console.warn('Policy calculator not available');
+      }
+    } else {
+      console.warn(`Could not find policy name for ${category}-${index + 1}`);
+    }
+
     // Show completion notification
     showCampaignCompletionNotification(category, index, dominantPlayer);
 
@@ -185,6 +240,7 @@ function incrementPolicy(category, index, playerId) {
       category,
       index,
       dominantPlayer,
+      policyName
     });
   }
 
@@ -501,6 +557,21 @@ function initializePoliciesWithBonuses(player1Politician, player2Politician) {
         // Award one-time bonus
         dominantPlayerObj.updateFunds(CAMPAIGN_COMPLETION_BONUS);
 
+        // Get the actual policy name and apply effects to all states
+        const policyName = POLICY_MAPPING[category] && POLICY_MAPPING[category][index];
+        if (policyName) {
+          console.log(`Applying initial policy effects for "${policyName}" completed by Player ${dominantPlayer}`);
+          
+          // Apply policy effects to all states
+          if (window.policyCalculator) {
+            window.policyCalculator.applyPolicyEffects(policyName);
+          } else {
+            console.warn('Policy calculator not available for initial policy');
+          }
+        } else {
+          console.warn(`Could not find policy name for initial ${category}-${index + 1}`);
+        }
+
         // Show completion notification
         showCampaignCompletionNotification(category, index, dominantPlayer);
 
@@ -517,6 +588,7 @@ function initializePoliciesWithBonuses(player1Politician, player2Politician) {
           category,
           index,
           dominantPlayer,
+          policyName
         });
       }
     });
