@@ -1,14 +1,14 @@
 {
   "policyTags": {
     "Education": {
-      "tier": 2,
-      "baseMagnitude": 8,
+      "tier": 1,
+      "baseMagnitude": 12,
       "supportTags": ["Education", "Manufacturing"],
       "opposeTags": []
     },
     "Rural Development": {
-      "tier": 1,
-      "baseMagnitude": 12,
+      "tier": 2,
+      "baseMagnitude": 8,
       "supportTags": ["AgriculturalRegion", "NortheastIndia"],
       "opposeTags": ["IndustrialCorridor", "Manufacturing"]
     },
@@ -19,32 +19,32 @@
       "opposeTags": []
     },
     "Healthcare": {
-      "tier": 2,
-      "baseMagnitude": 8,
+      "tier": 1,
+      "baseMagnitude": 12,
       "supportTags": [],
       "opposeTags": []
     },
     "Land Reforms": {
-      "tier": 1,
-      "baseMagnitude": 12,
+      "tier": 2,
+      "baseMagnitude": 8,
       "supportTags": ["AgriculturalRegion", "TribalLands"],
       "opposeTags": ["IndustrialCorridor", "Manufacturing"]
     },
     "Agricultural Reforms": {
-      "tier": 1,
-      "baseMagnitude": 12,
+      "tier": 2,
+      "baseMagnitude": 8,
       "supportTags": ["AgriculturalRegion"],
       "opposeTags": ["IndustrialCorridor", "Manufacturing"]
     },
     "Water and Mineral Rights": {
-      "tier": 2,
-      "baseMagnitude": 8,
+      "tier": 3,
+      "baseMagnitude": 4,
       "supportTags": ["AgriculturalRegion", "TribalLands", "NaturalResources"],
       "opposeTags": ["IndustrialCorridor", "Manufacturing"]
     },
     "Infrastructure": {
-      "tier": 1,
-      "baseMagnitude": 12,
+      "tier": 3,
+      "baseMagnitude": 4,
       "supportTags": ["IndustrialCorridor", "Manufacturing"],
       "opposeTags": ["TribalLands", "AgriculturalRegion"]
     },
@@ -55,14 +55,14 @@
       "opposeTags": ["AgriculturalRegion"]
     },
     "Privatization": {
-      "tier": 2,
-      "baseMagnitude": 8,
+      "tier": 3,
+      "baseMagnitude": 4,
       "supportTags": ["IndustrialCorridor", "Manufacturing"],
       "opposeTags": ["AgriculturalRegion"]
     },
     "Public Sector": {
-      "tier": 2,
-      "baseMagnitude": 8,
+      "tier": 3,
+      "baseMagnitude": 4,
       "supportTags": ["AgriculturalRegion"],
       "opposeTags": ["IndustrialCorridor", "Manufacturing"]
     },
@@ -73,32 +73,32 @@
       "opposeTags": ["AgriculturalRegion", "Pilgrimage", "TribalLands"]
     },
     "Anti-Corruption": {
-      "tier": 3,
-      "baseMagnitude": 4,
+      "tier": 2,
+      "baseMagnitude": 8,
       "supportTags": [],
       "opposeTags": []
     },
     "Judicial Activism": {
-      "tier": 2,
-      "baseMagnitude": 8,
+      "tier": 3,
+      "baseMagnitude": 4,
       "supportTags": ["Education", "IndustrialCorridor"],
       "opposeTags": []
     },
     "Press Freedom": {
-      "tier": 2,
-      "baseMagnitude": 8,
+      "tier": 3,
+      "baseMagnitude": 4,
       "supportTags": ["Education", "MinorityAreas"],
       "opposeTags": []
     },
     "Law and Order": {
-      "tier": 1,
-      "baseMagnitude": 12,
+      "tier": 3,
+      "baseMagnitude": 4,
       "supportTags": ["BorderLands", "IndustrialCorridor"],
       "opposeTags": ["MinorityAreas", "TravelAndTourism"]
     },
     "Hindi Language": {
-      "tier": 1,
-      "baseMagnitude": 12,
+      "tier": 2,
+      "baseMagnitude": 8,
       "supportTags": ["HindiHeartland"],
       "opposeTags": ["SouthIndia", "NortheastIndia", "MinorityAreas"]
     },
@@ -109,8 +109,8 @@
       "opposeTags": ["MinorityAreas", "SouthIndia", "NortheastIndia"]
     },
     "Secularism": {
-      "tier": 2,
-      "baseMagnitude": 8,
+      "tier": 1,
+      "baseMagnitude": 12,
       "supportTags": ["MinorityAreas", "Education"],
       "opposeTags": ["HindiHeartland", "Pilgrimage"]
     },
