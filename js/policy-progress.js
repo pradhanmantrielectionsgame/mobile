@@ -95,10 +95,11 @@ function getPlayerPartyName(playerId) {
 }
 
 // Constants
-const CAMPAIGN_CLICK_COST = 20; // 20M per click
-const CAMPAIGN_MAX_COST = 200; // 200M total cost
-const CAMPAIGN_COMPLETION_BONUS = 15; // 15M bonus for completing a campaign
+const CAMPAIGN_CLICK_COST = 20; // 20M per click (base cost, will be modified by tier)
+const CAMPAIGN_MAX_COST = 200; // 200M total cost (base)
+const CAMPAIGN_COMPLETION_BONUS = 0; // No cash bonus for completing campaigns
 const CAMPAIGN_MAX_CLICKS = 10; // 10 clicks to complete (200M total)
+const CAMPAIGN_MAX_CLICKS_PER_PHASE = 5; // Maximum clicks per policy per phase
 
 // Function to update progress bar
 function updateProgressBar(category, index) {
@@ -131,6 +132,47 @@ function updateProgressBar(category, index) {
       progressBar.classList.remove("complete");
     }
   }
+
+  // Update campaign info display
+  updateCampaignInfoDisplay(category, index);
+}
+
+// Function to update campaign info display (apply tier classes)
+function updateCampaignInfoDisplay(category, index) {
+  const progressId = `${category}-${index + 1}`;
+  const progressItem = document.getElementById(progressId).closest(".progress-item");
+  
+  if (!progressItem) return;
+
+  // Get policy information
+  const policyName = POLICY_MAPPING[category] && POLICY_MAPPING[category][index];
+  if (!policyName) return;
+
+  let tier = 3; // default
+  
+  // Get tier information from policy tags
+  if (window.policyCalculator && window.policyCalculator.policyTags) {
+    const policy = window.policyCalculator.policyTags.policyTags[policyName];
+    if (policy) {
+      tier = policy.tier || 3;
+    }
+  }
+
+  // Remove existing tier classes
+  progressItem.classList.remove('tier-1', 'tier-2', 'tier-3');
+  
+  // Apply tier class for border styling
+  progressItem.classList.add(`tier-${tier}`);
+}
+
+// Function to get tier description
+function getTierDescription(tier) {
+  const descriptions = {
+    1: "Mega Policy - Major transformative policies with highest impact (40M per click)",
+    2: "Major Policy - Significant policies with moderate impact (30M per click)", 
+    3: "Standard Policy - Regular policies with smaller impact (20M per click)"
+  };
+  return descriptions[tier] || "Unknown tier";
 }
 
 // Function to update all progress bars
@@ -141,6 +183,56 @@ function updateAllProgressBars() {
     });
   });
   updateProgressItemUI();
+}
+
+// Track clicks per policy per phase
+const policyClicksThisPhase = {
+  social: Array(4).fill(0),
+  land: Array(4).fill(0),
+  economy: Array(4).fill(0),
+  justice: Array(4).fill(0),
+  culture: Array(4).fill(0),
+  governance: Array(4).fill(0),
+};
+
+// Function to get campaign cost based on policy tier
+function getCampaignCost(category, index) {
+  const policyName = POLICY_MAPPING[category] && POLICY_MAPPING[category][index];
+  if (!policyName) {
+    return CAMPAIGN_CLICK_COST; // fallback to base cost
+  }
+
+  // Load policy tags to determine tier
+  if (window.policyCalculator && window.policyCalculator.policyTags) {
+    const policy = window.policyCalculator.policyTags.policyTags[policyName];
+    if (policy && policy.tier) {
+      switch (policy.tier) {
+        case 1: return CAMPAIGN_CLICK_COST * 2; // Tier 1 (Mega): 40M per click
+        case 2: return CAMPAIGN_CLICK_COST * 1.5; // Tier 2 (Major): 30M per click  
+        case 3: return CAMPAIGN_CLICK_COST; // Tier 3 (Standard): 20M per click
+        default: return CAMPAIGN_CLICK_COST;
+      }
+    }
+  }
+  
+  return CAMPAIGN_CLICK_COST; // fallback
+}
+
+// Function to reset phase click counters
+function resetPhaseClickCounters() {
+  Object.keys(policyClicksThisPhase).forEach(category => {
+    policyClicksThisPhase[category].fill(0);
+  });
+  console.log("Phase click counters reset");
+  
+  // Update all campaign info displays to reflect reset counters
+  updateAllProgressBars();
+}
+
+// Function to check if player can make more clicks on this policy this phase
+function canClickPolicyThisPhase(category, index) {
+  const currentClicks = policyClicksThisPhase[category][index];
+  return currentClicks < CAMPAIGN_MAX_CLICKS_PER_PHASE;
 }
 
 // Function to increment progress for a specific policy
@@ -162,15 +254,27 @@ function incrementPolicy(category, index, playerId) {
     return false;
   }
 
+  // Check if player has reached click limit for this policy this phase
+  if (!canClickPolicyThisPhase(category, index)) {
+    console.log(`Cannot click policy ${category}-${index + 1}: phase limit reached (${CAMPAIGN_MAX_CLICKS_PER_PHASE} clicks)`);
+    // Play invalid action sound (only for Player 1)
+    if (window.soundManager && playerId === 1) {
+      window.soundManager.playInvalidAction();
+    }
+    return false;
+  }
+
   const player = playerId === 1 ? player1 : player2;
+  const campaignCost = getCampaignCost(category, index);
 
   // Check if campaign is already completed
   if (policy.player1 + policy.player2 >= 100) {
     console.log(`Campaign ${category}-${index + 1} is already completed`);
     return false;
   }
-  // Check if player has enough funds
-  if (!player.canSpend(CAMPAIGN_CLICK_COST)) {
+  
+  // Check if player has enough funds (using tiered cost)
+  if (!player.canSpend(campaignCost)) {
     // Play invalid action sound (only for Player 1)
     if (window.soundManager && playerId === 1) {
       window.soundManager.playInvalidAction();
@@ -180,8 +284,11 @@ function incrementPolicy(category, index, playerId) {
     return false;
   }
 
-  // Spend funds
-  player.updateFunds(-CAMPAIGN_CLICK_COST);
+  // Spend funds (using tiered cost)
+  player.updateFunds(-campaignCost);
+
+  // Track click for this phase
+  policyClicksThisPhase[category][index]++;
 
   // Increment player's contribution
   if (playerId === 1) {
@@ -190,19 +297,17 @@ function incrementPolicy(category, index, playerId) {
     policy.player2 = Math.min(100, policy.player2 + 10);
   }
 
-  // Update the progress bar
+  // Update the progress bar and campaign info
   updateProgressBar(category, index);
   updateProgressItemUI();
 
   // Check if campaign is now completed
   if (policy.player1 + policy.player2 >= 100 && !policy.completed) {
     policy.completed = true;
-    // Award completion bonus to the player who contributed more
+    // Determine dominant player (who contributed more)
     const dominantPlayer = policy.player1 > policy.player2 ? 1 : 2;
-    const dominantPlayerObj = dominantPlayer === 1 ? player1 : player2;
 
-    // Award one-time bonus
-    dominantPlayerObj.updateFunds(CAMPAIGN_COMPLETION_BONUS);
+    // No cash bonus for completion - only policy effects reward
 
     // Play fanfare sound for Player 1 campaign completion
     if (dominantPlayer === 1 && window.soundManager) {
@@ -246,7 +351,7 @@ function incrementPolicy(category, index, playerId) {
 
   // Log action
   console.log(
-    `Player ${playerId} contributed ${CAMPAIGN_CLICK_COST}M to ${category}-${index + 1}`,
+    `Player ${playerId} contributed ${campaignCost}M to ${category}-${index + 1}`,
   );
   return true;
 }
@@ -273,8 +378,7 @@ function showCampaignCompletionNotification(category, index, playerId, policyNam
   window.tvDisplay.addNotification({
     type: 'campaign-update',
     title: `${policyLabel} Campaign Completed!`,
-    details: `${playerName} receives +${CAMPAIGN_COMPLETION_BONUS}M bonus`,
-    magnitude: `+${CAMPAIGN_COMPLETION_BONUS}M`,
+    details: `${playerName} implements nationwide policy effects`,
     timestamp: new Date(),
     duration: 2000
   });
@@ -392,11 +496,18 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Listen for phase changes to award bonuses
-  window.addEventListener("gamePhaseChanged", awardPhaseCompletionBonuses);
+  // Listen for phase changes to award bonuses and reset click counters
+  window.addEventListener("gamePhaseChanged", () => {
+    awardPhaseCompletionBonuses();
+    resetPhaseClickCounters();
+  });
 
   // Initialize campaign progress from politician bonuses after a short delay
-  setTimeout(initializeCampaignProgressFromPoliticianBonuses, 500);
+  setTimeout(() => {
+    initializeCampaignProgressFromPoliticianBonuses();
+    // Also initialize campaign info displays after policy data is loaded
+    setTimeout(updateAllProgressBars, 200);
+  }, 500);
 });
 
 // Export functions for use in other modules
@@ -405,6 +516,11 @@ window.incrementPolicy = incrementPolicy;
 window.updateAllProgressBars = updateAllProgressBars;
 window.initializeCampaignProgressFromPoliticianBonuses =
   initializeCampaignProgressFromPoliticianBonuses;
+window.getCampaignCost = getCampaignCost;
+window.resetPhaseClickCounters = resetPhaseClickCounters;
+window.canClickPolicyThisPhase = canClickPolicyThisPhase;
+window.updateCampaignInfoDisplay = updateCampaignInfoDisplay;
+window.getTierDescription = getTierDescription;
 
 // Function to initialize campaign progress based on politician bonuses
 function initializeCampaignProgressFromPoliticianBonuses() {
