@@ -94,9 +94,10 @@
             right: 0;
             height: var(--states-banner-height);
             background: #262a45;
-            display: flex;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            grid-template-areas: "state-info menu";
             align-items: center;
-            justify-content: space-between;
             padding: 0 12px;
             font-size: 14px;
             z-index: 8;
@@ -106,11 +107,19 @@
             text-overflow: ellipsis;
         }
         
-        .state-info-content {
+        .state-info-section {
+            grid-area: state-info;
             display: flex;
             align-items: center;
             flex: 1;
             overflow: hidden;
+        }
+        
+        .menu-section {
+            grid-area: menu;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
         .menu-button {
@@ -329,11 +338,44 @@
             height: 100% !important;
         }
         
+        /* SVG Map Interactive Styles */
+        #map-container svg path {
+            transition: all 0.2s ease;
+        }
+        
+        #map-container svg path:hover {
+            filter: brightness(1.2);
+        }
+        
+        #map-container svg path.clickable {
+            cursor: pointer;
+        }
+        
+        #map-container svg path.selected {
+            stroke: #4CAF50 !important;
+            stroke-width: 2 !important;
+        }
+        
         /* Responsive adjustments */
         @media (orientation: portrait) {
             #map-container {
                 max-width: 100vw;
                 max-height: calc(100vh - var(--banner-height) - var(--player-banner-height) - var(--states-banner-height) - var(--state-groups-banner-height) - var(--campaigns-banner-height));
+            }
+        }
+        
+        /* Small viewport adjustments */
+        @media (max-width: 400px) {
+            .states-info-banner {
+                font-size: 12px;
+            }
+            
+            .state-name {
+                font-size: 12px;
+            }
+            
+            .state-stats span {
+                font-size: 11px;
             }
         }
         
@@ -458,15 +500,18 @@
     
     <!-- Banner 3: States info -->
     <div class="states-info-banner" id="states-banner">
-        <div class="state-info-content">
+        <div class="state-info-section">
             <span class="state-name">Select a state to view details...</span>
             <div class="state-stats">
                 <span>Seats: --</span>
-                <span>Population: --</span>
-                <span>Last Winner: --</span>
+                <span>P1: --%</span>
+                <span>P2: --%</span>
+                <span>Others: --%</span>
             </div>
         </div>
-        <button class="menu-button" id="menu-btn" title="Game Options">☰</button>
+        <div class="menu-section">
+            <button class="menu-button" id="menu-btn" title="Game Options">☰</button>
+        </div>
     </div>
     
     <!-- Map container -->
@@ -541,36 +586,128 @@
     </div>
     
     <script>
-        // Sample state data for demonstration
-        const stateData = {
-            'Uttar Pradesh': { seats: 80, population: '200M', lastWinner: 'BJP' },
-            'Maharashtra': { seats: 48, population: '112M', lastWinner: 'BJP' },
-            'Tamil Nadu': { seats: 39, population: '72M', lastWinner: 'AIADMK' },
-            'West Bengal': { seats: 42, population: '91M', lastWinner: 'TMC' },
-            'Bihar': { seats: 40, population: '104M', lastWinner: 'NDA' },
-            'Karnataka': { seats: 28, population: '61M', lastWinner: 'Congress' },
-            'Gujarat': { seats: 26, population: '60M', lastWinner: 'BJP' },
-            'Rajasthan': { seats: 25, population: '69M', lastWinner: 'Congress' }
-        };
+        // Load states data and generate popularity data
+        let statesData = [];
+        let statePopularity = {};
         
-        let currentStateIndex = 0;
-        const stateNames = Object.keys(stateData);
+        // Load states data from JSON file
+        async function loadStatesData() {
+            try {
+                const response = await fetch('data/states_data.json');
+                statesData = await response.json();
+                
+                // Generate random popularity data for each state
+                statesData.forEach(state => {
+                    // Generate random popularity percentages that sum to 100
+                    const player1 = Math.floor(Math.random() * 60) + 20; // 20-80%
+                    const player2 = Math.floor(Math.random() * (80 - player1)) + 10; // 10-remaining%
+                    const others = 100 - player1 - player2;
+                    
+                    statePopularity[state.SvgId] = {
+                        player1: player1,
+                        player2: player2,
+                        others: others
+                    };
+                });
+                
+                console.log('States data loaded:', statesData.length, 'states');
+                console.log('Sample popularity data:', statePopularity);
+                
+            } catch (error) {
+                console.error('Error loading states data:', error);
+                // Fallback data
+                statesData = [
+                    { State: "Uttar Pradesh", LokSabhaSeats: "80", SvgId: "INUP" },
+                    { State: "Maharashtra", LokSabhaSeats: "48", SvgId: "INMH" },
+                    { State: "Tamil Nadu", LokSabhaSeats: "39", SvgId: "INTN" }
+                ];
+            }
+        }
         
-        function updateStateInfo(stateName) {
+        // Find state by SVG ID
+        function findStateById(svgId) {
+            return statesData.find(state => state.SvgId === svgId);
+        }
+        
+        // Update state info banner
+        function updateStateInfo(svgId) {
+            const state = findStateById(svgId);
+            const popularity = statePopularity[svgId];
             const banner = document.getElementById('states-banner');
-            const data = stateData[stateName];
             
-            if (data) {
-                const stateInfoContent = banner.querySelector('.state-info-content');
-                stateInfoContent.innerHTML = `
-                    <span class="state-name">${stateName}</span>
+            if (state && popularity) {
+                const stateInfoSection = banner.querySelector('.state-info-section');
+                stateInfoSection.innerHTML = `
+                    <span class="state-name">${state.State}</span>
                     <div class="state-stats">
-                        <span>Seats: ${data.seats}</span>
-                        <span>Pop: ${data.population}</span>
-                        <span>Last: ${data.lastWinner}</span>
+                        <span>Seats: ${state.LokSabhaSeats}</span>
+                        <span>P1: ${popularity.player1}%</span>
+                        <span>P2: ${popularity.player2}%</span>
+                        <span>Others: ${popularity.others}%</span>
                     </div>
                 `;
+                console.log(`Updated info for ${state.State} (${svgId})`);
+            } else {
+                console.log(`No data found for SVG ID: ${svgId}`);
             }
+        }
+        
+        // Handle SVG path clicks
+        function handleStateClick(event) {
+            const target = event.target;
+            let svgId = null;
+            
+            // Check if clicked element has an ID
+            if (target.id) {
+                svgId = target.id;
+            }
+            // Check if clicked element's parent has an ID (for grouped elements)
+            else if (target.parentElement && target.parentElement.id) {
+                svgId = target.parentElement.id;
+            }
+            
+            if (svgId && findStateById(svgId)) {
+                updateStateInfo(svgId);
+                
+                // Add visual feedback (optional)
+                target.style.stroke = '#ff6b6b';
+                target.style.strokeWidth = '2';
+                setTimeout(() => {
+                    target.style.stroke = '';
+                    target.style.strokeWidth = '';
+                }, 500);
+            } else if (svgId) {
+                console.log(`Clicked SVG element with ID: ${svgId}, but no matching state found`);
+            }
+        }
+        
+        // Add hover effects to SVG paths
+        function addMapInteractivity(svgElement) {
+            const paths = svgElement.querySelectorAll('path[id], g[id]');
+            
+            paths.forEach(path => {
+                const svgId = path.id;
+                const state = findStateById(svgId);
+                
+                if (state) {
+                    // Make it clickable
+                    path.style.cursor = 'pointer';
+                    
+                    // Add hover effect
+                    path.addEventListener('mouseenter', () => {
+                        path.style.fill = '#4CAF50';
+                        path.style.opacity = '0.8';
+                    });
+                    
+                    path.addEventListener('mouseleave', () => {
+                        path.style.fill = '';
+                        path.style.opacity = '';
+                    });
+                    
+                    // Add click handler
+                    path.addEventListener('click', handleStateClick);
+                }
+            });
         }
         
         function updateGameStats() {
@@ -603,26 +740,54 @@
                     svgElement.style.width = '100%';
                     svgElement.style.height = '100%';
                     
-                    console.log('India map loaded with 3-banner layout');
+                    console.log('India map loaded with states data integration');
                     
-                    // Add click handler for demo - cycle through states
-                    svgElement.addEventListener('click', () => {
-                        updateStateInfo(stateNames[currentStateIndex]);
-                        currentStateIndex = (currentStateIndex + 1) % stateNames.length;
-                    });
+                    // Add interactivity to the map
+                    addMapInteractivity(svgElement);
                 }
             } catch (error) {
                 console.error('Error loading map:', error);
                 // Fallback display
                 document.getElementById('map-container').innerHTML = 
-                    '<div style="color: #fff; text-align: center; padding: 20px;">Map loading failed. Click to cycle states.</div>';
-                
-                // Still enable state cycling on fallback
-                document.getElementById('map-container').addEventListener('click', () => {
-                    updateStateInfo(stateNames[currentStateIndex]);
-                    currentStateIndex = (currentStateIndex + 1) % stateNames.length;
-                });
+                    '<div style="color: #fff; text-align: center; padding: 20px;">Map loading failed. States data still available.</div>';
             }
+        }
+        
+        // Simulate dynamic popularity changes (for demonstration)
+        function simulatePopularityChanges() {
+            setInterval(() => {
+                // Randomly update a few states' popularity
+                const stateIds = Object.keys(statePopularity);
+                const randomStates = stateIds.slice(0, 3); // Update first 3 states
+                
+                randomStates.forEach(svgId => {
+                    if (statePopularity[svgId]) {
+                        // Small random changes (±5%)
+                        const change1 = (Math.random() - 0.5) * 10;
+                        const change2 = (Math.random() - 0.5) * 10;
+                        
+                        let newP1 = Math.max(5, Math.min(85, statePopularity[svgId].player1 + change1));
+                        let newP2 = Math.max(5, Math.min(85, statePopularity[svgId].player2 + change2));
+                        
+                        // Ensure total doesn't exceed 100
+                        if (newP1 + newP2 > 95) {
+                            const total = newP1 + newP2;
+                            newP1 = (newP1 / total) * 95;
+                            newP2 = (newP2 / total) * 95;
+                        }
+                        
+                        const newOthers = 100 - newP1 - newP2;
+                        
+                        statePopularity[svgId] = {
+                            player1: Math.round(newP1),
+                            player2: Math.round(newP2),
+                            others: Math.round(newOthers)
+                        };
+                    }
+                });
+                
+                console.log('Popularity updated for', randomStates.length, 'states');
+            }, 15000); // Update every 15 seconds
         }
         
         // Action button functionality
@@ -639,8 +804,92 @@
                     stateGroups.forEach(g => g.classList.remove('active'));
                     // Add active class to clicked group
                     group.classList.add('active');
-                    console.log('Selected state group:', group.textContent);
+                    
+                    const groupName = group.textContent.trim();
+                    console.log('Selected state group:', groupName);
+                    
+                    // Filter states by group
+                    if (groupName.toLowerCase() === 'all') {
+                        resetMapHighlighting();
+                    } else {
+                        filterStatesByGroup(groupName);
+                    }
                 });
+            });
+            
+            // Add an "All" option to reset filtering
+            const banner = document.getElementById('state-groups-banner');
+            const allGroup = document.createElement('div');
+            allGroup.className = 'state-group active';
+            allGroup.textContent = 'All';
+            allGroup.addEventListener('click', () => {
+                document.querySelectorAll('.state-group').forEach(g => g.classList.remove('active'));
+                allGroup.classList.add('active');
+                resetMapHighlighting();
+            });
+            banner.insertBefore(allGroup, banner.firstChild);
+        }
+        
+        // Handle state group filtering
+        function filterStatesByGroup(groupName) {
+            const svgElement = document.querySelector('#map-container svg');
+            if (!svgElement) return;
+            
+            const paths = svgElement.querySelectorAll('path[id], g[id]');
+            
+            // Reset all paths
+            paths.forEach(path => {
+                path.style.opacity = '0.3';
+                path.style.filter = '';
+            });
+            
+            // Highlight states that match the group criteria
+            statesData.forEach(state => {
+                const path = svgElement.querySelector(`#${state.SvgId}`);
+                if (path && shouldHighlightState(state, groupName)) {
+                    path.style.opacity = '1';
+                    path.style.filter = 'brightness(1.1)';
+                }
+            });
+        }
+        
+        // Determine if a state should be highlighted for a group
+        function shouldHighlightState(state, groupName) {
+            switch(groupName.toLowerCase()) {
+                case 'north':
+                    return ['INDL', 'INHR', 'INPB', 'INJK', 'INHP', 'INUT', 'INCH'].includes(state.SvgId);
+                case 'south':
+                    return state.SouthIndia === 'TRUE';
+                case 'northeast':
+                    return state.NortheastIndia === 'TRUE';
+                case 'coastal':
+                    return state.CoastalIndia === 'TRUE';
+                case 'tribal':
+                    return state.TribalLands === 'TRUE';
+                case 'agricultural':
+                    return state.AgriculturalRegion === 'TRUE';
+                case 'industrial':
+                    return state.IndustrialCorridor === 'TRUE' || state.Manufacturing === 'TRUE';
+                case 'border':
+                    return state.BorderLands === 'TRUE';
+                case 'urban':
+                    return state.Education === 'TRUE' || state.IndustrialCorridor === 'TRUE';
+                case 'hills':
+                    return ['INHP', 'INUT', 'INSK', 'INAR', 'INJK'].includes(state.SvgId);
+                default:
+                    return true;
+            }
+        }
+        
+        // Reset map highlighting
+        function resetMapHighlighting() {
+            const svgElement = document.querySelector('#map-container svg');
+            if (!svgElement) return;
+            
+            const paths = svgElement.querySelectorAll('path[id], g[id]');
+            paths.forEach(path => {
+                path.style.opacity = '';
+                path.style.filter = '';
             });
         }
         
@@ -694,7 +943,11 @@
             });
         }
         
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Load states data first
+            await loadStatesData();
+            
+            // Then load the map and other components
             loadMap();
             updateGameStats();
             initStateGroups();
@@ -703,9 +956,13 @@
             // Modal functionality
             initOptionsModal();
             
-            // Initial state display
+            // Start popularity simulation
+            simulatePopularityChanges();
+            
+            // Show initial state info after data is loaded
             setTimeout(() => {
-                updateStateInfo('Uttar Pradesh');
+                // Show Uttar Pradesh by default (INUP)
+                updateStateInfo('INUP');
             }, 1000);
         });
     </script>
