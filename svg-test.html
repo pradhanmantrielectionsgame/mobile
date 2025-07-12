@@ -10,7 +10,11 @@
             --panel: #1e2238;
             --accent: #3b40bd;
             --text: #fff;
-            --banner-height: 40px;
+            --banner-height: 35px; /* Reduced to make room for bottom banners */
+            --player-banner-height: 42px; /* Reduced slightly */
+            --states-banner-height: 32px; /* Reduced slightly */
+            --state-groups-banner-height: 44px;
+            --campaigns-banner-height: 100px; /* Increased for better visibility */
         }
         
         * { box-sizing: border-box; }
@@ -41,7 +45,7 @@
             top: var(--banner-height);
             left: 0;
             right: 0;
-            height: 48px;
+            height: var(--player-banner-height);
             background: var(--panel);
             display: flex;
             align-items: center;
@@ -85,13 +89,14 @@
         /* Banner 3: States info */
         .states-info-banner {
             position: fixed;
-            top: calc(var(--banner-height) + 48px);
+            top: calc(var(--banner-height) + var(--player-banner-height));
             left: 0;
             right: 0;
-            height: 36px;
+            height: var(--states-banner-height);
             background: #262a45;
             display: flex;
             align-items: center;
+            justify-content: space-between;
             padding: 0 12px;
             font-size: 14px;
             z-index: 8;
@@ -101,10 +106,193 @@
             text-overflow: ellipsis;
         }
         
+        .state-info-content {
+            display: flex;
+            align-items: center;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        .menu-button {
+            background: none;
+            border: none;
+            color: var(--text);
+            font-size: 18px;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: background-color 0.2s ease;
+            flex-shrink: 0;
+        }
+        
+        .menu-button:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
         .state-name {
             font-weight: bold;
             margin-right: 12px;
         }
+        
+        /* Banner 4: State Groups (Bottom) */
+        .state-groups-banner {
+            position: fixed;
+            bottom: var(--campaigns-banner-height);
+            left: 0;
+            right: 0;
+            height: var(--state-groups-banner-height);
+            background: #2a3048;
+            display: flex;
+            align-items: center;
+            padding: 0 8px;
+            font-size: 12px;
+            z-index: 8;
+            border-top: 1px solid #444;
+            overflow-x: auto;
+            overflow-y: hidden;
+            white-space: nowrap;
+        }
+        
+        .state-group {
+            display: inline-flex;
+            align-items: center;
+            background: #3a4060;
+            border-radius: 16px;
+            padding: 4px 8px;
+            margin-right: 6px;
+            font-size: 11px;
+            flex-shrink: 0;
+            border: 1px solid #4a5070;
+        }
+        
+        .state-group.active {
+            background: var(--accent);
+            border-color: #5a60dd;
+        }
+        
+        /* Banner 5: Campaigns (Bottom, Taller) */
+        .campaigns-banner {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: var(--campaigns-banner-height);
+            background: #1a1f35;
+            padding: 8px;
+            z-index: 8;
+            border-top: 2px solid #333;
+            overflow-y: auto;
+        }
+        
+        .campaigns-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            gap: 6px;
+            height: 100%;
+        }
+        
+        .campaign-card {
+            background: #2a3048;
+            border-radius: 8px;
+            padding: 6px;
+            border: 1px solid #3a4060;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .campaign-card:hover {
+            background: #3a4060;
+            border-color: var(--accent);
+        }
+        
+        .campaign-card.active {
+            background: var(--accent);
+            border-color: #5a60dd;
+        }
+        
+        .campaign-number {
+            font-weight: bold;
+            font-size: 9px;
+            opacity: 0.8;
+            margin-bottom: 2px;
+        }
+        
+        .campaign-name {
+            font-size: 9px;
+            line-height: 1.2;
+        }
+        
+        /* Modal backdrop */
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: none;
+            z-index: 50;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-backdrop.open {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: var(--panel);
+            width: 90%;
+            max-width: 400px;
+            max-height: 80vh;
+            border-radius: 12px;
+            padding: 20px;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+        
+        .close-btn {
+            position: absolute;
+            top: 12px;
+            right: 14px;
+            font-size: 22px;
+            background: #a33;
+            border: none;
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            color: #fff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-content h2 {
+            margin: 0 0 20px 0;
+            color: var(--text);
+            font-size: 20px;
+        }
+        
+        .card {
+            border: 1px solid #4f5ca8;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 8px;
+            background: rgba(75, 80, 168, 0.1);
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        
+        .card:hover {
+            background: rgba(75, 80, 168, 0.2);
+        }
+        
         
         .state-stats {
             display: flex;
@@ -113,13 +301,13 @@
             opacity: 0.9;
         }
         
-        /* Map container - adjusted for banners */
+        /* Map container - adjusted for all banners */
         #map-container {
             position: absolute;
-            top: calc(var(--banner-height) + 48px + 36px); /* All three banners */
+            top: calc(var(--banner-height) + var(--player-banner-height) + var(--states-banner-height));
             left: 0;
             right: 0;
-            bottom: 0;
+            bottom: calc(var(--state-groups-banner-height) + var(--campaigns-banner-height));
             display: flex;
             align-items: center;
             justify-content: center;
@@ -145,7 +333,7 @@
         @media (orientation: portrait) {
             #map-container {
                 max-width: 100vw;
-                max-height: calc(100vh - var(--banner-height) - 48px - 36px);
+                max-height: calc(100vh - var(--banner-height) - var(--player-banner-height) - var(--states-banner-height) - var(--state-groups-banner-height) - var(--campaigns-banner-height));
             }
         }
         
@@ -229,10 +417,10 @@
             }
         }
         
-        /* Action button for demo purposes */
+        /* Action button - positioned above state groups banner */
         .action-button {
             position: fixed;
-            bottom: 20px;
+            bottom: calc(var(--campaigns-banner-height) + var(--state-groups-banner-height) + 8px);
             right: 20px;
             width: 56px;
             height: 56px;
@@ -270,19 +458,87 @@
     
     <!-- Banner 3: States info -->
     <div class="states-info-banner" id="states-banner">
-        <span class="state-name">Select a state to view details...</span>
-        <div class="state-stats">
-            <span>Seats: --</span>
-            <span>Population: --</span>
-            <span>Last Winner: --</span>
+        <div class="state-info-content">
+            <span class="state-name">Select a state to view details...</span>
+            <div class="state-stats">
+                <span>Seats: --</span>
+                <span>Population: --</span>
+                <span>Last Winner: --</span>
+            </div>
         </div>
+        <button class="menu-button" id="menu-btn" title="Game Options">☰</button>
     </div>
     
     <!-- Map container -->
     <div id="map-container"></div>
     
+    <!-- Banner 4: State Groups (Bottom) -->
+    <div class="state-groups-banner" id="state-groups-banner">
+        <div class="state-group active">North</div>
+        <div class="state-group">South</div>
+        <div class="state-group">East</div>
+        <div class="state-group">West</div>
+        <div class="state-group">Central</div>
+        <div class="state-group">Northeast</div>
+        <div class="state-group">Hills</div>
+        <div class="state-group">Coastal</div>
+        <div class="state-group">Urban</div>
+        <div class="state-group">Rural</div>
+        <div class="state-group">Industrial</div>
+        <div class="state-group">Agricultural</div>
+        <div class="state-group">Tribal</div>
+        <div class="state-group">Metro</div>
+        <div class="state-group">Border</div>
+        <div class="state-group">Island</div>
+    </div>
+    
+    <!-- Banner 5: Campaigns (Bottom, Taller) -->
+    <div class="campaigns-banner" id="campaigns-banner">
+        <div class="campaigns-grid">
+            <div class="campaign-card active">
+                <div class="campaign-number">1</div>
+                <div class="campaign-name">Rally</div>
+            </div>
+            <div class="campaign-card">
+                <div class="campaign-number">2</div>
+                <div class="campaign-name">TV Ads</div>
+            </div>
+            <div class="campaign-card">
+                <div class="campaign-number">3</div>
+                <div class="campaign-name">Social Media</div>
+            </div>
+            <div class="campaign-card">
+                <div class="campaign-number">4</div>
+                <div class="campaign-name">Door-to-Door</div>
+            </div>
+            <div class="campaign-card">
+                <div class="campaign-number">5</div>
+                <div class="campaign-name">Print Media</div>
+            </div>
+            <div class="campaign-card">
+                <div class="campaign-number">6</div>
+                <div class="campaign-name">Radio Ads</div>
+            </div>
+        </div>
+    </div>
+    
     <!-- Action button -->
     <button class="action-button" id="action-btn" title="Actions">⚡</button>
+    
+    <!-- Options Modal -->
+    <div id="options-modal" class="modal-backdrop">
+        <div class="modal-content">
+            <button class="close-btn">&times;</button>
+            <h2>Game Options</h2>
+            <div class="card">🆕 New Game</div>
+            <div class="card">🔊 Toggle Sound</div>
+            <div class="card">🎵 Toggle Music</div>
+            <div class="card">⏸️ Pause / Resume</div>
+            <div class="card">❓ Help</div>
+            <div class="card">🎲 Random Events</div>
+            <div class="card">💀 Hard Mode</div>
+        </div>
+    </div>
     
     <script>
         // Sample state data for demonstration
@@ -305,7 +561,8 @@
             const data = stateData[stateName];
             
             if (data) {
-                banner.innerHTML = `
+                const stateInfoContent = banner.querySelector('.state-info-content');
+                stateInfoContent.innerHTML = `
                     <span class="state-name">${stateName}</span>
                     <div class="state-stats">
                         <span>Seats: ${data.seats}</span>
@@ -373,9 +630,78 @@
             alert('Action button clicked! This would open campaign options in the full game.');
         });
         
+        // State groups functionality
+        function initStateGroups() {
+            const stateGroups = document.querySelectorAll('.state-group');
+            stateGroups.forEach(group => {
+                group.addEventListener('click', () => {
+                    // Remove active class from all groups
+                    stateGroups.forEach(g => g.classList.remove('active'));
+                    // Add active class to clicked group
+                    group.classList.add('active');
+                    console.log('Selected state group:', group.textContent);
+                });
+            });
+        }
+        
+        // Campaigns functionality
+        function initCampaigns() {
+            const campaignCards = document.querySelectorAll('.campaign-card');
+            campaignCards.forEach(card => {
+                card.addEventListener('click', () => {
+                    // Remove active class from all cards
+                    campaignCards.forEach(c => c.classList.remove('active'));
+                    // Add active class to clicked card
+                    card.classList.add('active');
+                    const campaignName = card.querySelector('.campaign-name').textContent;
+                    console.log('Selected campaign:', campaignName);
+                });
+            });
+        }
+        
+        // Options modal functionality
+        function initOptionsModal() {
+            const optionsModal = document.getElementById('options-modal');
+            const menuBtn = document.getElementById('menu-btn');
+            const closeBtn = optionsModal.querySelector('.close-btn');
+            
+            // Open modal
+            menuBtn.addEventListener('click', () => {
+                optionsModal.classList.add('open');
+            });
+            
+            // Close modal via close button
+            closeBtn.addEventListener('click', () => {
+                optionsModal.classList.remove('open');
+            });
+            
+            // Close modal via backdrop click
+            optionsModal.addEventListener('click', (e) => {
+                if (e.target === optionsModal) {
+                    optionsModal.classList.remove('open');
+                }
+            });
+            
+            // Handle card clicks
+            const cards = optionsModal.querySelectorAll('.card');
+            cards.forEach(card => {
+                card.addEventListener('click', () => {
+                    const action = card.textContent.trim();
+                    console.log('Selected option:', action);
+                    // Add your action handling logic here
+                    optionsModal.classList.remove('open');
+                });
+            });
+        }
+        
         document.addEventListener('DOMContentLoaded', () => {
             loadMap();
             updateGameStats();
+            initStateGroups();
+            initCampaigns();
+            
+            // Modal functionality
+            initOptionsModal();
             
             // Initial state display
             setTimeout(() => {
