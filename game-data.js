@@ -36,12 +36,18 @@ let gameState = {
         }
     },
     currentPhase: 1,
-    maxPhases: 8,
+    maxPhases: 10,
     gameStarted: false
 };
 
-// Game configuration
-const gameConfig = {
+// Game configuration - will be loaded from JSON file
+let gameConfig = {
+    // Default fallback values
+    gameSettings: {
+        totalPhases: 10,
+        phaseDurationSeconds: 30,
+        refreshFundsPerPhase: 500
+    },
     rallySystem: {
         maxRalliesPerState: 2,
         popularityBoost: 8,
@@ -52,6 +58,13 @@ const gameConfig = {
         basePopularityGain: 5,
         costMultiplier: 1.5
     },
+    bonuses: {
+        campaignCompletion: 300,
+        regionalDominance: {
+            baseBonus: 200,
+            carryForwardBonus: 50
+        }
+    },
     gameBalance: {
         dominantTerritoryMinPopularity: 35,
         dominantTerritoryMaxPopularity: 60,
@@ -59,8 +72,32 @@ const gameConfig = {
     }
 };
 
+// Load game configuration from JSON
+async function loadGameConfig() {
+    try {
+        const response = await fetch('data/game-config.json');
+        const config = await response.json();
+        
+        // Merge with existing config to preserve any runtime modifications
+        gameConfig = { ...gameConfig, ...config };
+        
+        // Update game state with new values
+        gameState.maxPhases = gameConfig.gameSettings.totalPhases;
+        
+        console.log('Game configuration loaded from file:', gameConfig);
+        return gameConfig;
+    } catch (error) {
+        console.error('Failed to load game configuration, using defaults:', error);
+        return gameConfig;
+    }
+}
+
 // Get game configuration
-function getGameConfig() {
+async function getGameConfig() {
+    // Ensure config is loaded
+    if (!gameConfig.gameSettings) {
+        await loadGameConfig();
+    }
     return gameConfig;
 }
 
@@ -1095,13 +1132,17 @@ function useSpecialRallyToken(playerId) {
 }
 
 // Reset rally tokens at the start of each phase
-function resetRallyTokensForPhase() {
-    gameState.player1.rallyTokens.simple = 2;
-    gameState.player1.rallyTokens.special = 2;
-    gameState.player2.rallyTokens.simple = 2;
-    gameState.player2.rallyTokens.special = 2;
+async function resetRallyTokensForPhase() {
+    const config = await getGameConfig();
+    const simpleTokens = config.rallySystem?.simpleRallyTokens || 2;
+    const specialTokens = config.rallySystem?.specialRallyTokens || 2;
     
-    console.log('Rally tokens reset for new phase');
+    gameState.player1.rallyTokens.simple = simpleTokens;
+    gameState.player1.rallyTokens.special = specialTokens;
+    gameState.player2.rallyTokens.simple = simpleTokens;
+    gameState.player2.rallyTokens.special = specialTokens;
+    
+    console.log(`Rally tokens reset for new phase: ${simpleTokens} simple, ${specialTokens} special`);
     updateRallyTokenDisplay();
 }
 

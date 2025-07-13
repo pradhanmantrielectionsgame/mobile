@@ -41,8 +41,8 @@ async function loadPolicyTags() {
 }
 
 // Initialize rally system for all states
-function initializeRallySystem() {
-    const config = getGameConfig();
+async function initializeRallySystem() {
+    const config = await getGameConfig();
     const statesData = getStatesData();
     
     // Initialize used rallies tracker for each state
@@ -50,14 +50,16 @@ function initializeRallySystem() {
         rallyTokens.player1.used[state.State] = 0;
         rallyTokens.player2.used[state.State] = 0;
     });
+    
+    console.log('Rally system initialized for', statesData.length, 'states');
 }
 
-// Reset rally tokens at start of each phase
-function resetRallyTokensForPhase() {
-    const config = getGameConfig();
-    rallyTokens.player1.available = config.rallySystem.maxRalliesPerPhase;
-    rallyTokens.player2.available = config.rallySystem.maxRalliesPerPhase;
-}
+// Reset rally tokens at start of each phase (deprecated - use the one in game-data.js)
+// function resetRallyTokensForPhase() {
+//     const config = getGameConfig();
+//     rallyTokens.player1.available = config.rallySystem.maxRalliesPerPhase;
+//     rallyTokens.player2.available = config.rallySystem.maxRalliesPerPhase;
+// }
 
 // Generate campaign grid
 function generateCampaignGrid() {
@@ -477,3 +479,42 @@ function showRallyInstructions() {
     
     document.body.insertAdjacentHTML('beforeend', modalHTML);
 }
+
+// Master campaign system initialization function
+async function initializeCampaignSystem() {
+    console.log('Initializing campaign system...');
+    
+    try {
+        // Check if required data is loaded
+        const statesData = getStatesData();
+        if (!statesData || statesData.length === 0) {
+            console.warn('States data not loaded yet, skipping rally system initialization');
+        } else {
+            // Initialize rally system (now async)
+            await initializeRallySystem();
+        }
+        
+        // Initialize campaign modal (doesn't depend on states data)
+        if (typeof initCampaignModal === 'function') {
+            initCampaignModal();
+        } else {
+            console.warn('initCampaignModal function not found');
+        }
+        
+        // Initialize rally button (doesn't depend on states data)
+        if (typeof initRallyButton === 'function') {
+            initRallyButton();
+        } else {
+            console.warn('initRallyButton function not found');
+        }
+        
+        console.log('Campaign system initialized successfully');
+        return true;
+    } catch (error) {
+        console.error('Failed to initialize campaign system:', error);
+        return false;
+    }
+}
+
+// Make the function available globally
+window.initializeCampaignSystem = initializeCampaignSystem;

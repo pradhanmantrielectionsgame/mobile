@@ -116,17 +116,39 @@ async function loadMap() {
     }
 }
 
-// Update game stats (timer simulation)
+// Initialize game systems (phase system integration)
+async function initializeGame() {
+    try {
+        // Load game configuration first
+        await loadGameConfig();
+        
+        // Initialize data systems
+        await loadStatesData();
+        await loadPoliticiansData();
+        
+        // Initialize phase system and auto-start
+        await initializePhaseSystem();
+        
+        // Auto-start the phase system
+        startPhaseSystem();
+        
+        // Initialize other systems
+        initStateGroups();
+        updateGameStats();
+        await initializeCampaignSystem();
+        
+        console.log('Game systems initialized successfully');
+        
+    } catch (error) {
+        console.error('Failed to initialize game systems:', error);
+    }
+}
+
+// Game stats management (replace dummy timer)
 function updateGameStats() {
-    const timer = document.getElementById('timer-display');
-    
-    // Example of dynamic updates (in a real game, this would come from game logic)
-    setInterval(() => {
-        const minutes = Math.floor(Math.random() * 5);
-        const seconds = Math.floor(Math.random() * 60);
-        const phase = Math.floor(Math.random() * 8) + 1;
-        timer.textContent = `Phase ${phase}/8 | ${minutes}:${seconds.toString().padStart(2, '0')}`;
-    }, 10000);
+    // The phase system now handles timer updates
+    // This function can be used for other game stat updates
+    console.log('Game stats system ready');
 }
 
 // State groups functionality
@@ -350,19 +372,14 @@ function initOptionsModal() {
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('Initializing Pradhan Mantri Elections Game...');
     
-    // Load states data first
-    await loadStatesData();
-    
-    // Load politicians data
-    await loadPoliticiansData();
+    // Initialize all game systems
+    await initializeGame();
     
     // Load policy tags for campaigns
     await loadPolicyTags();
     
     // Then load the map and other components
     loadMap();
-    updateGameStats();
-    initStateGroups();
     initUnionTerritories();
     
     // Modal functionality

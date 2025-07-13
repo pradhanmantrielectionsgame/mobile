@@ -764,6 +764,71 @@ svg[width][height] {
     100% { box-shadow: 0 0 5px rgba(100, 100, 255, 0.3); }
 }
 
+/* Phase Management System Styles */
+.timer-warning {
+    animation: timer-warning-pulse 1s ease-in-out infinite alternate;
+    background: #ff5722 !important;
+    color: white !important;
+}
+
+@keyframes timer-warning-pulse {
+    from {
+        opacity: 1;
+        transform: scale(1);
+    }
+    to {
+        opacity: 0.8;
+        transform: scale(1.02);
+    }
+}
+
+.phase-message {
+    animation: phase-message-slide 0.5s ease-out;
+}
+
+@keyframes phase-message-slide {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+/* Enhanced timer display */
+#timer-display {
+    transition: all 0.3s ease;
+    cursor: pointer;
+    user-select: none;
+}
+
+#timer-display:hover {
+    transform: scale(1.02);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+/* Phase transition effects */
+.phase-transition {
+    animation: phase-transition 0.5s ease-in-out;
+}
+
+@keyframes phase-transition {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; transform: scale(0.98); }
+    100% { opacity: 1; transform: scale(1); }
+}
+
+/* Game start indicator */
+.game-started #timer-display {
+    border-left: 3px solid #4CAF50;
+}
+
+.game-paused #timer-display {
+    border-left: 3px solid #FF9800;
+}
+
 /* Responsive Design - Mobile */
 @media (max-width: 320px) {
     .seats-segment { font-size: 7px; }

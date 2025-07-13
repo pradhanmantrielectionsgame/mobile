@@ -1,0 +1,44 @@
+{
+  "gameSettings": {
+    "totalPhases": 10,
+    "phaseDurationSeconds": 30,
+    "refreshFundsPerPhase": 500
+  },
+  "playerSettings": {
+    "startingFunds": 2000,
+    "maxFunds": 10000
+  },
+  "rallySystem": {
+    "maxRalliesPerState": 2,
+    "popularityBoost": 8,
+    "tokensPerPhase": 2,
+    "simpleRallyTokens": 2,
+    "specialRallyTokens": 2
+  },
+  "campaign": {
+    "maxCampaignsPerState": 3,
+    "basePopularityGain": 5,
+    "costMultiplier": 1.5
+  },
+  "bonuses": {
+    "campaignCompletion": 300,
+    "regionalDominance": {
+      "baseBonus": 200,
+      "carryForwardBonus": 50
+    }
+  },
+  "gameBalance": {
+    "dominantTerritoryMinPopularity": 35,
+    "dominantTerritoryMaxPopularity": 60,
+    "competitiveMaxPopularity": 34
+  },
+  "audio": {
+    "enableSounds": true,
+    "volume": 0.5
+  },
+  "ui": {
+    "showCountdownWarning": true,
+    "countdownWarningSeconds": 10,
+    "autoAdvancePhases": true
+  }
+}
