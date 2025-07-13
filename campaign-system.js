@@ -6,6 +6,12 @@ let policyTags = null;
 let campaignProgress = {};
 let campaignClicks = {};
 
+// Rally system variables
+let rallyTokens = {
+    player1: { available: 2, used: {} }, // used tracks rallies per state
+    player2: { available: 2, used: {} }
+};
+
 // Load policy tags data
 async function loadPolicyTags() {
     try {
@@ -32,6 +38,25 @@ async function loadPolicyTags() {
         console.error('Error loading policy tags:', error);
         return false;
     }
+}
+
+// Initialize rally system for all states
+function initializeRallySystem() {
+    const config = getGameConfig();
+    const statesData = getStatesData();
+    
+    // Initialize used rallies tracker for each state
+    statesData.forEach(state => {
+        rallyTokens.player1.used[state.State] = 0;
+        rallyTokens.player2.used[state.State] = 0;
+    });
+}
+
+// Reset rally tokens at start of each phase
+function resetRallyTokensForPhase() {
+    const config = getGameConfig();
+    rallyTokens.player1.available = config.rallySystem.maxRalliesPerPhase;
+    rallyTokens.player2.available = config.rallySystem.maxRalliesPerPhase;
 }
 
 // Generate campaign grid
@@ -180,10 +205,119 @@ function handleCampaignClick(e, policyName, policyData, progress, totalClicks, c
         showCampaignMessage(`${playerData.name} invested ₹${cost}M in ${policyName}`, 'success');
     }
     
+    // Check and award bonuses
+    checkAndAwardBonuses();
+    
     // Regenerate grid to show updates
     generateCampaignGrid();
     
     console.log(`${playerId} invested in ${policyName}. Total progress: ${newTotal}%`);
+}
+
+// Check and award bonuses
+function checkAndAwardBonuses() {
+    const config = getGameConfig();
+    
+    // Check policy completion bonuses
+    Object.keys(campaignProgress).forEach(policyName => {
+        const progress = campaignProgress[policyName];
+        if (progress.completed && !progress.bonusAwarded) {
+            // Award bonus to player with majority contribution
+            const p1Contribution = progress.player1;
+            const p2Contribution = progress.player2;
+            
+            if (p1Contribution > p2Contribution) {
+                updatePlayerFunds('player1', config.bonuses.campaignCompletion);
+                showCampaignMessage(`Policy completion bonus: ₹${config.bonuses.campaignCompletion / 1000000}M awarded to Player 1!`, 'success');
+            } else if (p2Contribution > p1Contribution) {
+                updatePlayerFunds('player2', config.bonuses.campaignCompletion);
+                showCampaignMessage(`Policy completion bonus: ₹${config.bonuses.campaignCompletion / 1000000}M awarded to Player 2!`, 'success');
+            }
+            
+            progress.bonusAwarded = true;
+        }
+    });
+    
+    // Check regional dominance bonuses
+    checkRegionalDominanceBonuses();
+}
+
+// Check regional dominance bonuses
+function checkRegionalDominanceBonuses() {
+    const config = getGameConfig();
+    const statesData = getStatesData();
+    
+    ['player1', 'player2'].forEach(playerId => {
+        // Check each regional group
+        ['SouthIndia', 'HindiHeartland', 'NortheastIndia', 'CoastalIndia'].forEach(regionField => {
+            const regionStates = statesData.filter(state => state[regionField] === 'TRUE');
+            const allDominant = regionStates.every(state => {
+                const stateIndex = getStateIndex(state.State);
+                return stateIndex !== -1 && gameState.popularity[stateIndex][playerId] > 50;
+            });
+            
+            if (allDominant) {
+                const bonusKey = `${playerId}_${regionField}_bonus`;
+                if (!gameState.bonusesAwarded) gameState.bonusesAwarded = {};
+                
+                if (!gameState.bonusesAwarded[bonusKey]) {
+                    // First time achieving dominance - award initial bonus
+                    updatePlayerFunds(playerId, config.bonuses.regionalDominance.baseBonus);
+                    gameState.bonusesAwarded[bonusKey] = true;
+                    showCampaignMessage(`Regional dominance achieved in ${regionField.replace(/([A-Z])/g, ' $1').trim()}! ₹${config.bonuses.regionalDominance.baseBonus / 1000000}M bonus!`, 'success');
+                }
+                
+                // Award carry-forward bonus every phase
+                updatePlayerFunds(playerId, config.bonuses.regionalDominance.carryForwardBonus);
+            }
+        });
+    });
+}
+
+// Handle rally button click for a specific state
+function handleRallyClick(stateName, playerId) {
+    const config = getGameConfig();
+    const playerTokens = rallyTokens[playerId];
+    
+    // Check if player has available rally tokens
+    if (playerTokens.available <= 0) {
+        showCampaignMessage(`No rally tokens remaining for this phase!`, 'error');
+        return false;
+    }
+    
+    // Check if state has reached maximum rallies
+    if (playerTokens.used[stateName] >= config.rallySystem.maxRalliesPerState) {
+        showCampaignMessage(`Maximum rallies reached for ${stateName}!`, 'error');
+        return false;
+    }
+    
+    // Conduct rally
+    playerTokens.available--;
+    playerTokens.used[stateName]++;
+    
+    // Boost popularity using the new system
+    const popularityBoost = config.rallySystem.popularityBoost;
+    const stateData = statesData.find(state => state.State === stateName);
+    
+    if (stateData) {
+        // Use the new updateStatePopularity function
+        const success = updateStatePopularity(stateData.SvgId, playerId, popularityBoost, `rally in ${stateName}`);
+        
+        if (success) {
+            showCampaignMessage(`Rally successful in ${stateName}! +${popularityBoost}% popularity`, 'success');
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+// Get available rally information for display
+function getRallyInfo(playerId) {
+    return {
+        available: rallyTokens[playerId].available,
+        used: rallyTokens[playerId].used
+    };
 }
 
 // Show campaign messages

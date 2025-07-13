@@ -42,15 +42,20 @@ function addMapInteractivity(svgElement) {
             // Make it clickable
             path.style.cursor = 'pointer';
             
+            // Store original color for hover effects
+            const originalFill = path.style.fill;
+            
             // Add hover effect
             path.addEventListener('mouseenter', () => {
-                path.style.fill = '#4CAF50';
                 path.style.opacity = '0.8';
+                path.style.stroke = '#fff';
+                path.style.strokeWidth = '2';
             });
             
             path.addEventListener('mouseleave', () => {
-                path.style.fill = '';
                 path.style.opacity = '';
+                path.style.stroke = '';
+                path.style.strokeWidth = '';
             });
             
             // Add click handler
@@ -79,6 +84,13 @@ async function loadMap() {
             
             // Add interactivity to the map
             addMapInteractivity(svgElement);
+            
+            // Apply initial map colors based on popularity
+            setTimeout(() => {
+                if (typeof updateMapColors === 'function') {
+                    updateMapColors();
+                }
+            }, 500);
         }
     } catch (error) {
         console.error('Error loading map:', error);
