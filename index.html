@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pradhan Mantri Elections Game</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Banner 1: Projected Seats Progress Bar -->
+    <div class="camera-notch-banner">
+        <div class="projected-seats-container">
+            <div class="seats-progress-bar" id="seats-progress-bar">
+                <div class="seats-segment p1" id="p1-segment"></div>
+                <div class="seats-segment others" id="others-segment"></div>
+                <div class="seats-segment p2" id="p2-segment"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Banner 2: Player info and game stats -->
+    <div class="player-stats-banner">
+        <div class="player-info">
+            <span class="avatar p1"></span>
+            <span class="funds-display" id="p1-funds">₹1600M</span>
+        </div>
+        
+        <div class="player-info">
+            <span class="funds-display" id="p2-funds">₹850M</span>
+            <span class="avatar p2"></span>
+        </div>
+    </div>
+    
+    <!-- Banner 3: States info -->
+    <div class="states-info-banner" id="states-banner">
+        <div class="state-info-section">
+            <div class="state-name">Select a state to view details...</div>
+            <div class="state-stats">
+                <span>Seats: --</span>
+                <span>P1: --%</span>
+                <span>P2: --%</span>
+                <span>Others: --%</span>
+            </div>
+        </div>
+        <div class="menu-section">
+            <button class="menu-button" id="menu-btn" title="Game Options">☰</button>
+        </div>
+    </div>
+    
+    <!-- Map container -->
+    <div id="map-container"></div>
+    
+    <!-- Timer pill overlay with Union Territories -->
+    <div class="timer-pill" id="timer-pill">
+        <div class="timer-display" id="timer-display">
+            Phase 1/8 | 2:45
+        </div>
+        <div class="union-territories-container" id="ut-container">
+            <button class="ut-button" data-svg-id="INDL">New Delhi</button>
+            <button class="ut-button" data-svg-id="INCH">Chandigarh</button>
+            <button class="ut-button" data-svg-id="INDH">DNH</button>
+            <button class="ut-button" data-svg-id="INPY">Puducherry</button>
+            <button class="ut-button" data-svg-id="INLD">Lakshadweep</button>
+            <button class="ut-button" data-svg-id="INAN">A&N Islands</button>
+        </div>
+    </div>
+    
+    <!-- Banner 4: State Groups (Bottom) - 4x4 Grid -->
+    <div class="state-groups-banner" id="state-groups-banner">
+        <div class="state-groups-grid">
+            <div class="state-group active">All</div>
+            <div class="state-group">Union territory</div>
+            <div class="state-group">Coastal india</div>
+            <div class="state-group">Northeast india</div>
+            <div class="state-group">South india</div>
+            <div class="state-group">Hindi heartland</div>
+            <div class="state-group">Agricultural region</div>
+            <div class="state-group">Border lands</div>
+            <div class="state-group">Pilgrimage</div>
+            <div class="state-group">Industrial corridor</div>
+            <div class="state-group">Manufacturing</div>
+            <div class="state-group">Education</div>
+            <div class="state-group">Tribal lands</div>
+            <div class="state-group">Travel and tourism</div>
+            <div class="state-group">Natural resources</div>
+            <div class="state-group">Minority areas</div>
+        </div>
+    </div>
+    
+    <!-- Action buttons -->
+    <button class="action-button left" id="campaign-btn" title="Campaigns">⚡</button>
+    <button class="action-button right rally-button" id="rally-btn" title="Rallies">📢</button>
+    
+    <!-- Campaign Modal -->
+    <div id="campaign-modal" class="campaign-modal">
+        <div class="campaign-content">
+            <button class="close-btn">&times;</button>
+            <h2>Campaign Policies</h2>
+            <div class="campaign-grid" id="campaign-grid">
+                <!-- Campaign items will be generated dynamically -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Options Modal -->
+    <div id="options-modal" class="modal-backdrop">
+        <div class="modal-content">
+            <button class="close-btn">&times;</button>
+            <h2>Game Options</h2>
+            <div class="card">🆕 New Game</div>
+            <div class="card">🔊 Toggle Sound</div>
+            <div class="card">🎵 Toggle Music</div>
+            <div class="card">⏸️ Pause / Resume</div>
+            <div class="card">❓ Help</div>
+            <div class="card">🎲 Random Events</div>
+            <div class="card">💀 Hard Mode</div>
+        </div>
+    </div>
+    
+    <!-- Scripts -->
+    <script src="game-data.js"></script>
+    <script src="campaign-system.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

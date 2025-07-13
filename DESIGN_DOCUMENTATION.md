@@ -478,11 +478,73 @@ The design implements a mobile-first approach with progressive enhancement for l
 
 ---
 
-**Version**: Mobile UI Overhaul - Campaign System Implementation  
+## File Structure
+
+### Modular Architecture (NEW)
+The codebase has been refactored from a single monolithic file into a clean, maintainable modular structure:
+
+#### Core Files
+- **`index.html`** (73 lines) - Clean HTML structure with semantic markup
+- **`styles.css`** (499 lines) - All CSS styles including responsive design
+- **`app.js`** (218 lines) - Main application logic, map loading, and UI interactions
+- **`game-data.js`** (206 lines) - Data loading, state management, and seats calculation
+- **`campaign-system.js`** (164 lines) - Campaign functionality and modal handling
+
+#### Benefits of Modular Structure
+- **Separation of Concerns**: HTML, CSS, and JavaScript are properly separated
+- **Maintainability**: Each file has a specific purpose and is under 500 lines
+- **Performance**: Browser can cache CSS/JS files separately
+- **Collaboration**: Multiple developers can work on different files simultaneously
+- **Debugging**: Issues can be isolated to specific functional areas
+- **Scalability**: Easy to add new features without making files too large
+
+#### File Responsibilities
+
+**`index.html`**
+- Semantic HTML structure
+- Modal containers
+- Button elements
+- Script and stylesheet references
+
+**`styles.css`**
+- CSS custom properties (variables)
+- Responsive design breakpoints
+- Component styling (banners, modals, buttons)
+- Campaign system styling
+- Mobile-first responsive design
+
+**`app.js`**
+- Main application initialization
+- Map loading and SVG interaction
+- State group filtering
+- Union Territory highlighting
+- Modal management
+- UI event handlers
+
+**`game-data.js`**
+- States data loading from JSON
+- Popularity simulation
+- Projected seats calculation
+- State information management
+- Group filtering logic
+
+**`campaign-system.js`**
+- Policy tags loading
+- Campaign modal generation
+- Investment tracking
+- Progress calculation
+- Campaign completion logic
+
+### Legacy Files
+- **`svg-test.html`** - Original monolithic file (deprecated, kept for reference)
+
+---
+
+**Version**: Mobile UI Overhaul - Modular Architecture Implementation  
 **Last Updated**: July 12, 2025  
-**File**: svg-test.html  
+**Main File**: index.html  
 **Repository**: pradhanmantrielectionsgame.github.io  
-**Recent Changes**: Implemented comprehensive campaign system with tier-based policy investments, moved action button to left side, added rally button on right side, created 10-click campaign completion system with real-time progress tracking
+**Recent Changes**: Refactored monolithic svg-test.html into 5 modular files for better maintainability, implemented comprehensive campaign system with tier-based policy investments, moved action button to left side, added rally button on right side, created 10-click campaign completion system with real-time progress tracking
 
 ## Major UI Changes in This Version
 

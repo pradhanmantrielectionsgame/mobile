@@ -1,0 +1,682 @@
+/* CSS Variables */
+:root {
+    --bg: #0f1125;
+    --panel: #1e2238;
+    --accent: #3b40bd;
+    --text: #fff;
+    --banner-height: 35px;
+    --player-banner-height: 42px;
+    --states-banner-height: 32px;
+    --state-groups-banner-height: 80px;
+}
+
+/* Base Styles */
+* { 
+    box-sizing: border-box; 
+}
+
+body { 
+    margin: 0; 
+    padding: 0; 
+    height: 100vh; 
+    font-family: Arial, Helvetica, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+}
+
+/* Banner 1: Camera notch area - Projected Seats Progress Bar */
+.camera-notch-banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--banner-height);
+    background: #1a1f36;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    padding: 0 8px;
+    border-bottom: 1px solid #333;
+}
+
+.projected-seats-container {
+    width: 100%;
+    height: 20px;
+    position: relative;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #2a2f48;
+    border: 1px solid #3a4060;
+}
+
+.seats-progress-bar {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    position: relative;
+}
+
+.seats-segment {
+    height: 100%;
+    transition: width 0.3s ease;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-weight: bold;
+    color: white;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+    min-width: 0;
+}
+
+.seats-segment.p1 {
+    background: linear-gradient(90deg, #4eb85a 0%, #5ac461 100%);
+}
+
+.seats-segment.others {
+    background: linear-gradient(90deg, #6b7280 0%, #8b9bb5 100%);
+}
+
+.seats-segment.p2 {
+    background: linear-gradient(90deg, #e65c5c 0%, #f56565 100%);
+}
+
+/* Banner 2: Player info and game stats */
+.player-stats-banner {
+    position: fixed;
+    top: var(--banner-height);
+    left: 0;
+    right: 0;
+    height: var(--player-banner-height);
+    background: var(--panel);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 12px;
+    z-index: 9;
+    border-bottom: 1px solid #333;
+}
+
+.player-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+}
+
+.avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.avatar.p1 { background: #5ac461; }
+.avatar.p2 { background: #e65c5c; }
+
+.funds-display {
+    font-size: 14px;
+    color: #4CAF50;
+    font-weight: bold;
+}
+
+/* Timer pill and Union Territories */
+.timer-pill {
+    position: fixed;
+    top: calc(var(--banner-height) + var(--player-banner-height) + var(--states-banner-height) + 12px);
+    right: 20px;
+    background: rgba(38, 42, 69, 0.9);
+    border-radius: 16px;
+    border: 1px solid #3a4060;
+    backdrop-filter: blur(10px);
+    z-index: 12;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto repeat(3, 1fr);
+    gap: 6px;
+    padding: 8px;
+    width: auto;
+    height: auto;
+}
+
+.timer-display {
+    grid-column: 1 / -1;
+    padding: 6px 12px;
+    font-size: 14px;
+    font-weight: bold;
+    text-align: center;
+    background: rgba(59, 64, 189, 0.3);
+    border-radius: 8px;
+    border: 1px solid #4a5080;
+}
+
+.union-territories-container {
+    display: contents;
+}
+
+.ut-button {
+    background: rgba(59, 64, 189, 0.8);
+    border: 1px solid #4a5080;
+    border-radius: 8px;
+    color: white;
+    font-size: 10px;
+    font-weight: bold;
+    padding: 6px 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+    min-height: 28px;
+    min-width: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1.1;
+}
+
+.ut-button:hover {
+    background: rgba(90, 96, 221, 0.9);
+    border-color: #5a60a0;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.ut-button.selected {
+    background: var(--accent);
+    border-color: #5a60dd;
+    box-shadow: 0 0 8px rgba(59, 64, 189, 0.5);
+}
+
+.ut-button.group-highlighted {
+    background: rgba(76, 175, 80, 0.8);
+    border-color: #4CAF50;
+    box-shadow: 0 0 8px rgba(76, 175, 80, 0.4);
+}
+
+/* Banner 3: States info - Enhanced Two-Row Layout */
+.states-info-banner {
+    position: fixed;
+    top: calc(var(--banner-height) + var(--player-banner-height));
+    left: 0;
+    right: 0;
+    height: var(--states-banner-height);
+    background: #262a45;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas: "state-info menu";
+    align-items: center;
+    padding: 0 12px;
+    font-size: 14px;
+    z-index: 8;
+    border-bottom: 1px solid #444;
+    overflow: hidden;
+}
+
+.state-info-section {
+    grid-area: state-info;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    flex: 1;
+    overflow: hidden;
+    min-height: 100%;
+    gap: 1px;
+}
+
+.menu-section {
+    grid-area: menu;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.menu-button {
+    background: none;
+    border: none;
+    color: var(--text);
+    font-size: 18px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+    flex-shrink: 0;
+}
+
+.menu-button:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.state-name {
+    font-weight: bold;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 13px;
+    line-height: 1.2;
+    margin: 0;
+}
+
+.state-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 12px;
+    opacity: 0.9;
+    line-height: 1.2;
+    margin: 0;
+}
+
+.state-stats span {
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* Banner 4: State Groups (Bottom) - 4x4 Grid */
+.state-groups-banner {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: var(--state-groups-banner-height);
+    background: #2a3048;
+    padding: 4px;
+    z-index: 8;
+    border-top: 1px solid #444;
+}
+
+.state-groups-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(4, 1fr);
+    gap: 2px;
+    height: 100%;
+    width: 100%;
+}
+
+.state-group {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #3a4060;
+    border-radius: 4px;
+    font-size: 9px;
+    text-align: center;
+    border: 1px solid #4a5070;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 2px;
+    line-height: 1.1;
+}
+
+.state-group:hover {
+    background: #4a5080;
+    border-color: #5a60a0;
+}
+
+.state-group.active {
+    background: var(--accent);
+    border-color: #5a60dd;
+    color: #fff;
+}
+
+/* Map container */
+#map-container {
+    position: absolute;
+    top: calc(var(--banner-height) + var(--player-banner-height) + var(--states-banner-height));
+    left: 0;
+    right: 0;
+    bottom: var(--state-groups-banner-height);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 3px solid #333;
+    box-sizing: border-box;
+    background: #21263d;
+}
+
+.map-container svg {
+    width: 100%;
+    height: 100%;
+    max-width: 100%;
+    max-height: 100%;
+    display: block;
+}
+
+svg[width][height] {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+/* SVG Map Interactive Styles */
+#map-container svg path {
+    transition: all 0.2s ease;
+}
+
+#map-container svg path:hover {
+    filter: brightness(1.2);
+}
+
+#map-container svg path.clickable {
+    cursor: pointer;
+}
+
+#map-container svg path.selected {
+    stroke: #4CAF50 !important;
+    stroke-width: 2 !important;
+}
+
+/* Action buttons */
+.action-button {
+    position: fixed;
+    bottom: calc(var(--state-groups-banner-height) + 8px);
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: none;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    z-index: 15;
+    transition: all 0.2s ease;
+}
+
+.action-button.left {
+    left: 20px;
+}
+
+.action-button.right {
+    right: 20px;
+}
+
+.action-button:hover {
+    background: #5a60dd;
+    transform: scale(1.05);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+}
+
+.rally-button {
+    background: #e65c5c;
+}
+
+.rally-button:hover {
+    background: #f56565;
+}
+
+/* Modal styles */
+.modal-backdrop, .campaign-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: none;
+    z-index: 50;
+    align-items: center;
+    justify-content: center;
+}
+
+.campaign-modal {
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 100;
+    padding: 20px;
+}
+
+.modal-backdrop.open, .campaign-modal.open {
+    display: flex;
+}
+
+.modal-content, .campaign-content {
+    background: var(--panel);
+    width: 90%;
+    max-width: 400px;
+    max-height: 80vh;
+    border-radius: 12px;
+    padding: 20px;
+    overflow-y: auto;
+    position: relative;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.campaign-content {
+    max-width: 500px;
+}
+
+.close-btn {
+    position: absolute;
+    top: 12px;
+    right: 14px;
+    font-size: 22px;
+    background: #a33;
+    border: none;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content h2, .campaign-content h2 {
+    margin: 0 0 20px 0;
+    color: var(--text);
+    font-size: 20px;
+}
+
+.campaign-content h2 {
+    font-size: 24px;
+    text-align: center;
+}
+
+.card {
+    border: 1px solid #4f5ca8;
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 8px;
+    background: rgba(75, 80, 168, 0.1);
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.card:hover {
+    background: rgba(75, 80, 168, 0.2);
+}
+
+/* Campaign System Styles */
+.campaign-grid {
+    display: grid;
+    gap: 12px;
+}
+
+.campaign-item {
+    background: rgba(30, 30, 60, 0.8);
+    border-radius: 8px;
+    padding: 12px;
+    border: 2px solid rgba(100, 100, 255, 0.2);
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.campaign-item:hover {
+    background: rgba(30, 30, 60, 0.9);
+    transform: translateY(-2px);
+}
+
+/* Tier-based styling */
+.campaign-item.tier-1 {
+    border-color: #ffd700;
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.1) 0%, rgba(30, 30, 60, 0.8) 100%);
+    box-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
+}
+
+.campaign-item.tier-1:hover {
+    border-color: #ffed4e;
+    box-shadow: 0 0 15px rgba(255, 237, 78, 0.6);
+}
+
+.campaign-item.tier-2 {
+    border-color: #c0c0c0;
+    background: linear-gradient(135deg, rgba(192, 192, 192, 0.1) 0%, rgba(30, 30, 60, 0.8) 100%);
+    box-shadow: 0 0 8px rgba(192, 192, 192, 0.3);
+}
+
+.campaign-item.tier-2:hover {
+    border-color: #d4d4d4;
+    box-shadow: 0 0 15px rgba(212, 212, 212, 0.6);
+}
+
+.campaign-item.tier-3 {
+    border-color: #cd7f32;
+    background: linear-gradient(135deg, rgba(205, 127, 50, 0.1) 0%, rgba(30, 30, 60, 0.8) 100%);
+    box-shadow: 0 0 8px rgba(205, 127, 50, 0.3);
+}
+
+.campaign-item.tier-3:hover {
+    border-color: #daa251;
+    box-shadow: 0 0 15px rgba(218, 162, 81, 0.6);
+}
+
+.campaign-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+}
+
+.campaign-title {
+    font-size: 16px;
+    font-weight: bold;
+    color: #e0e0ff;
+    flex: 1;
+    margin-right: 8px;
+}
+
+.campaign-cost {
+    font-size: 12px;
+    color: #4CAF50;
+    font-weight: bold;
+    flex-shrink: 0;
+}
+
+.campaign-progress {
+    margin-bottom: 8px;
+}
+
+.campaign-progress-bar {
+    width: 100%;
+    height: 8px;
+    background: rgba(40, 40, 80, 0.3);
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+}
+
+.campaign-progress-fill {
+    height: 100%;
+    width: 0%;
+    transition: width 0.6s ease;
+    position: relative;
+}
+
+.campaign-progress-fill.player1 {
+    background: linear-gradient(90deg, #4eb85a 0%, #5ac461 100%);
+}
+
+.campaign-progress-fill.player2 {
+    background: linear-gradient(90deg, #e65c5c 0%, #f56565 100%);
+}
+
+.campaign-progress-fill.complete {
+    animation: glow-pulse 2s infinite;
+}
+
+@keyframes glow-pulse {
+    0% { box-shadow: 0 0 5px rgba(100, 100, 255, 0.3); }
+    50% { box-shadow: 0 0 15px rgba(100, 100, 255, 0.8); }
+    100% { box-shadow: 0 0 5px rgba(100, 100, 255, 0.3); }
+}
+
+/* Responsive Design - Mobile */
+@media (max-width: 320px) {
+    .seats-segment { font-size: 7px; }
+    .states-info-banner { height: 38px; }
+    .state-name { font-size: 12px; }
+    .state-stats { font-size: 11px; gap: 6px; }
+    :root { --state-groups-banner-height: 75px; }
+    .state-group { font-size: 7px; padding: 1px; }
+    .timer-pill { gap: 3px; padding: 4px; }
+    .timer-display { font-size: 10px; padding: 3px 6px; }
+    .ut-button { font-size: 7px; padding: 3px 4px; min-height: 20px; min-width: 60px; }
+}
+
+@media (max-width: 400px) {
+    .state-group { font-size: 8px; }
+    .timer-pill { gap: 4px; padding: 6px; }
+    .timer-display { font-size: 12px; padding: 4px 8px; }
+    .ut-button { font-size: 8px; padding: 4px 6px; min-height: 24px; min-width: 70px; }
+}
+
+@media (max-width: 480px) {
+    .campaign-content { padding: 15px; border-radius: 8px; }
+    .campaign-content h2 { font-size: 18px; margin-bottom: 15px; }
+    .campaign-grid { gap: 8px; }
+    .campaign-item { padding: 8px; }
+    .campaign-title { font-size: 13px; }
+    .campaign-cost { font-size: 10px; }
+    .action-button { width: 48px; height: 48px; font-size: 20px; }
+    .action-button.left { left: 15px; }
+    .action-button.right { right: 15px; }
+}
+
+@media (max-width: 768px) {
+    .campaign-content { margin: 10px; max-height: 90vh; width: calc(100% - 20px); }
+    .campaign-content h2 { font-size: 20px; }
+    .campaign-title { font-size: 14px; }
+    .campaign-cost { font-size: 11px; }
+    .states-info-banner { height: 36px; }
+    .state-name { font-size: 15px; }
+    .state-stats { font-size: 14px; }
+}
+
+/* Responsive Design - Desktop */
+@media (min-width: 768px) {
+    .player-info { font-size: 18px; }
+    .timer-pill { gap: 8px; padding: 10px; }
+    .timer-display { font-size: 18px; padding: 8px 16px; }
+    .funds-display { font-size: 18px; }
+    .state-group { font-size: 11px; }
+    .ut-button { font-size: 12px; padding: 8px 10px; min-height: 32px; min-width: 90px; }
+}
+
+@media (min-width: 1024px) {
+    .player-info { font-size: 28px; }
+    .timer-pill { gap: 10px; padding: 12px; }
+    .timer-display { font-size: 28px; padding: 12px 24px; }
+    .funds-display { font-size: 28px; }
+    .avatar { width: 36px; height: 36px; }
+    .state-group { font-size: 14px; }
+    .state-name { font-size: 18px; }
+    .state-stats { font-size: 16px; }
+    .ut-button { font-size: 14px; padding: 10px 12px; min-height: 36px; min-width: 100px; }
+}
+
+@media (min-width: 1440px) {
+    .player-info { font-size: 34px; }
+    .timer-pill { gap: 12px; padding: 16px; }
+    .timer-display { font-size: 34px; padding: 16px 32px; }
+    .funds-display { font-size: 34px; }
+    .avatar { width: 44px; height: 44px; }
+    .state-group { font-size: 16px; }
+    .state-name { font-size: 20px; }
+    .state-stats { font-size: 18px; }
+    .ut-button { font-size: 16px; padding: 12px 16px; min-height: 40px; min-width: 110px; }
+}
+
+@media (orientation: portrait) {
+    #map-container {
+        max-width: 100vw;
+        max-height: calc(100vh - var(--banner-height) - var(--player-banner-height) - var(--states-banner-height) - var(--state-groups-banner-height));
+    }
+}
