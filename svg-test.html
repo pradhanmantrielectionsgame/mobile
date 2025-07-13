@@ -197,13 +197,19 @@
             box-shadow: 0 0 8px rgba(59, 64, 189, 0.5);
         }
         
+        .ut-button.group-highlighted {
+            background: rgba(76, 175, 80, 0.8);
+            border-color: #4CAF50;
+            box-shadow: 0 0 8px rgba(76, 175, 80, 0.4);
+        }
+        
         .funds-display {
             font-size: 14px;
             color: #4CAF50;
             font-weight: bold;
         }
         
-        /* Banner 3: States info */
+        /* Banner 3: States info - Enhanced Two-Row Layout */
         .states-info-banner {
             position: fixed;
             top: calc(var(--banner-height) + var(--player-banner-height));
@@ -220,16 +226,17 @@
             z-index: 8;
             border-bottom: 1px solid #444;
             overflow: hidden;
-            white-space: nowrap;
-            text-overflow: ellipsis;
         }
         
         .state-info-section {
             grid-area: state-info;
             display: flex;
-            align-items: center;
+            flex-direction: column;
+            justify-content: center;
             flex: 1;
             overflow: hidden;
+            min-height: 100%;
+            gap: 1px;
         }
         
         .menu-section {
@@ -257,7 +264,12 @@
         
         .state-name {
             font-weight: bold;
-            margin-right: 12px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-size: 13px;
+            line-height: 1.2;
+            margin: 0;
         }
         
         /* Banner 4: State Groups (Bottom) - 4x4 Grid */
@@ -375,9 +387,67 @@
         
         .state-stats {
             display: flex;
-            gap: 16px;
-            font-size: 13px;
+            flex-wrap: wrap;
+            gap: 8px;
+            font-size: 12px;
             opacity: 0.9;
+            line-height: 1.2;
+            margin: 0;
+        }
+        
+        .state-stats span {
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        
+        /* Responsive adjustments for two-row layout */
+        @media (max-width: 320px) {
+            .states-info-banner {
+                height: 38px; /* Slightly taller for two rows */
+            }
+            
+            .state-name {
+                font-size: 12px;
+            }
+            
+            .state-stats {
+                font-size: 11px;
+                gap: 6px;
+            }
+        }
+        
+        @media (min-width: 768px) {
+            .states-info-banner {
+                height: 36px;
+            }
+            
+            .state-name {
+                font-size: 15px;
+            }
+            
+            .state-stats {
+                font-size: 14px;
+            }
+        }
+        
+        @media (min-width: 1024px) {
+            .state-name {
+                font-size: 18px;
+            }
+            
+            .state-stats {
+                font-size: 16px;
+            }
+        }
+        
+        @media (min-width: 1440px) {
+            .state-name {
+                font-size: 20px;
+            }
+            
+            .state-stats {
+                font-size: 18px;
+            }
         }
         
         /* Map container - adjusted for state groups banner only */
@@ -436,18 +506,6 @@
         
         /* Small viewport adjustments */
         @media (max-width: 400px) {
-            .states-info-banner {
-                font-size: 12px;
-            }
-            
-            .state-name {
-                font-size: 12px;
-            }
-            
-            .state-stats span {
-                font-size: 11px;
-            }
-            
             .state-group {
                 font-size: 8px;
             }
@@ -529,14 +587,6 @@
                 font-size: 18px;
             }
             
-            .states-info-banner {
-                font-size: 18px;
-            }
-            
-            .state-stats {
-                font-size: 16px;
-            }
-            
             .state-group {
                 font-size: 11px;
             }
@@ -571,14 +621,6 @@
             
             .funds-display {
                 font-size: 28px;
-            }
-            
-            .states-info-banner {
-                font-size: 28px;
-            }
-            
-            .state-stats {
-                font-size: 26px;
             }
             
             .avatar {
@@ -620,14 +662,6 @@
             
             .funds-display {
                 font-size: 34px;
-            }
-            
-            .states-info-banner {
-                font-size: 34px;
-            }
-            
-            .state-stats {
-                font-size: 32px;
             }
             
             .avatar {
@@ -705,7 +739,7 @@
     <!-- Banner 3: States info -->
     <div class="states-info-banner" id="states-banner">
         <div class="state-info-section">
-            <span class="state-name">Select a state to view details...</span>
+            <div class="state-name">Select a state to view details...</div>
             <div class="state-stats">
                 <span>Seats: --</span>
                 <span>P1: --%</span>
@@ -740,21 +774,21 @@
     <div class="state-groups-banner" id="state-groups-banner">
         <div class="state-groups-grid">
             <div class="state-group active">All</div>
-            <div class="state-group">North</div>
-            <div class="state-group">South</div>
-            <div class="state-group">East</div>
-            <div class="state-group">West</div>
-            <div class="state-group">Central</div>
-            <div class="state-group">Northeast</div>
-            <div class="state-group">Hills</div>
-            <div class="state-group">Coastal</div>
-            <div class="state-group">Urban</div>
-            <div class="state-group">Rural</div>
-            <div class="state-group">Industrial</div>
-            <div class="state-group">Agricultural</div>
-            <div class="state-group">Tribal</div>
-            <div class="state-group">Metro</div>
-            <div class="state-group">Border</div>
+            <div class="state-group">Union territory</div>
+            <div class="state-group">Coastal india</div>
+            <div class="state-group">Northeast india</div>
+            <div class="state-group">South india</div>
+            <div class="state-group">Hindi heartland</div>
+            <div class="state-group">Agricultural region</div>
+            <div class="state-group">Border lands</div>
+            <div class="state-group">Pilgrimage</div>
+            <div class="state-group">Industrial corridor</div>
+            <div class="state-group">Manufacturing</div>
+            <div class="state-group">Education</div>
+            <div class="state-group">Tribal lands</div>
+            <div class="state-group">Travel and tourism</div>
+            <div class="state-group">Natural resources</div>
+            <div class="state-group">Minority areas</div>
         </div>
     </div>
     
@@ -901,7 +935,7 @@
             return statesData.find(state => state.SvgId === svgId);
         }
         
-        // Update state info banner
+        // Update state info banner with two-row layout
         function updateStateInfo(svgId) {
             const state = findStateById(svgId);
             const popularity = statePopularity[svgId];
@@ -910,7 +944,7 @@
             if (state && popularity) {
                 const stateInfoSection = banner.querySelector('.state-info-section');
                 stateInfoSection.innerHTML = `
-                    <span class="state-name">${state.State}</span>
+                    <div class="state-name">${state.State}</div>
                     <div class="state-stats">
                         <span>Seats: ${state.LokSabhaSeats}</span>
                         <span>P1: ${popularity.player1}%</span>
@@ -1086,11 +1120,17 @@
                     // Filter states by group
                     if (groupName.toLowerCase() === 'all') {
                         resetMapHighlighting();
+                        updateGroupStatistics('all', statesData);
                     } else {
                         filterStatesByGroup(groupName);
                     }
                 });
             });
+            
+            // Initialize with "All" group statistics
+            setTimeout(() => {
+                updateGroupStatistics('all', statesData);
+            }, 100);
         }
         
         // Union Territories functionality
@@ -1098,7 +1138,7 @@
             const utButtons = document.querySelectorAll('.ut-button');
             utButtons.forEach(button => {
                 button.addEventListener('click', () => {
-                    // Remove selected class from all UT buttons
+                    // Remove selected class from all UT buttons (but keep group highlighting)
                     utButtons.forEach(btn => btn.classList.remove('selected'));
                     // Add selected class to clicked button
                     button.classList.add('selected');
@@ -1113,10 +1153,14 @@
                     // Highlight the UT on the map
                     highlightUnionTerritory(svgId);
                     
-                    // Reset state groups to "All"
+                    // Reset state groups to "All" (but keep individual UT selection)
                     const stateGroups = document.querySelectorAll('.state-group');
                     stateGroups.forEach(g => g.classList.remove('active'));
                     stateGroups[0].classList.add('active'); // "All" is first
+                    
+                    // Reset map highlighting but preserve this UT selection
+                    resetMapHighlighting();
+                    highlightUnionTerritory(svgId);
                 });
             });
         }
@@ -1151,63 +1195,155 @@
             console.log('Highlighted Union Territory:', svgId);
         }
         
-        // Handle state group filtering
+        // Handle state group filtering with UT button highlighting
         function filterStatesByGroup(groupName) {
             const svgElement = document.querySelector('#map-container svg');
             if (!svgElement) return;
             
             const paths = svgElement.querySelectorAll('path[id], g[id]');
+            const utButtons = document.querySelectorAll('.ut-button');
             
-            // Reset all paths
+            // Reset all map paths
             paths.forEach(path => {
                 path.style.opacity = '0.3';
                 path.style.filter = '';
+                path.style.stroke = '';
+                path.style.strokeWidth = '';
             });
             
+            // Reset all UT buttons
+            utButtons.forEach(button => {
+                button.classList.remove('group-highlighted');
+                button.style.opacity = '0.4';
+                button.style.transform = '';
+            });
+            
+            // If "All" is selected, reset everything to normal
+            if (groupName.toLowerCase() === 'all') {
+                paths.forEach(path => {
+                    path.style.opacity = '';
+                    path.style.filter = '';
+                });
+                utButtons.forEach(button => {
+                    button.style.opacity = '';
+                });
+                return;
+            }
+            
             // Highlight states that match the group criteria
+            let matchingStates = [];
             statesData.forEach(state => {
-                const path = svgElement.querySelector(`#${state.SvgId}`);
-                if (path && shouldHighlightState(state, groupName)) {
-                    path.style.opacity = '1';
-                    path.style.filter = 'brightness(1.1)';
+                if (shouldHighlightState(state, groupName)) {
+                    matchingStates.push(state);
+                    const path = svgElement.querySelector(`#${state.SvgId}`);
+                    if (path) {
+                        path.style.opacity = '1';
+                        path.style.filter = 'brightness(1.2) drop-shadow(0 0 3px #4CAF50)';
+                        path.style.stroke = '#4CAF50';
+                        path.style.strokeWidth = '1';
+                    }
+                    
+                    // Highlight corresponding UT button if it's a Union Territory
+                    if (state.UnionTerritory === 'TRUE') {
+                        const utButton = document.querySelector(`[data-svg-id="${state.SvgId}"]`);
+                        if (utButton) {
+                            utButton.classList.add('group-highlighted');
+                            utButton.style.opacity = '1';
+                            utButton.style.transform = 'scale(1.05)';
+                        }
+                    }
                 }
             });
+            
+            console.log(`Filtered by "${groupName}": ${matchingStates.length} states/UTs highlighted`);
+            console.log('Matching states:', matchingStates.map(s => s.State).join(', '));
+            
+            // Update state info banner with group statistics
+            updateGroupStatistics(groupName, matchingStates);
         }
         
-        // Determine if a state should be highlighted for a group
-        function shouldHighlightState(state, groupName) {
-            switch(groupName.toLowerCase()) {
-                case 'north':
-                    return ['INDL', 'INHR', 'INPB', 'INJK', 'INHP', 'INUT', 'INCH'].includes(state.SvgId);
-                case 'south':
-                    return state.SouthIndia === 'TRUE';
-                case 'northeast':
-                    return state.NortheastIndia === 'TRUE';
-                case 'coastal':
-                    return state.CoastalIndia === 'TRUE';
-                case 'tribal':
-                    return state.TribalLands === 'TRUE';
-                case 'agricultural':
-                    return state.AgriculturalRegion === 'TRUE';
-                case 'industrial':
-                    return state.IndustrialCorridor === 'TRUE' || state.Manufacturing === 'TRUE';
-                case 'border':
-                    return state.BorderLands === 'TRUE';
-                case 'urban':
-                    return state.Education === 'TRUE' || state.IndustrialCorridor === 'TRUE';
-                case 'hills':
-                    return ['INHP', 'INUT', 'INSK', 'INAR', 'INJK'].includes(state.SvgId);
-                default:
-                    return true;
+        // Update state info banner with group statistics
+        function updateGroupStatistics(groupName, matchingStates) {
+            const banner = document.getElementById('states-banner');
+            const stateInfoSection = banner.querySelector('.state-info-section');
+            
+            if (groupName.toLowerCase() === 'all') {
+                // Show default message when "All" is selected
+                stateInfoSection.innerHTML = `
+                    <div class="state-name">Select a state to view details...</div>
+                    <div class="state-stats">
+                        <span>Total: ${statesData.length} states/UTs</span>
+                        <span>Seats: ${statesData.reduce((sum, state) => sum + parseInt(state.LokSabhaSeats), 0)}</span>
+                        <span>States: ${statesData.filter(s => s.UnionTerritory === 'FALSE').length}</span>
+                        <span>UTs: ${statesData.filter(s => s.UnionTerritory === 'TRUE').length}</span>
+                    </div>
+                `;
+            } else {
+                const totalSeats = matchingStates.reduce((sum, state) => sum + parseInt(state.LokSabhaSeats), 0);
+                const stateCount = matchingStates.filter(s => s.UnionTerritory === 'FALSE').length;
+                const utCount = matchingStates.filter(s => s.UnionTerritory === 'TRUE').length;
+                
+                stateInfoSection.innerHTML = `
+                    <div class="state-name">${groupName} Category</div>
+                    <div class="state-stats">
+                        <span>Total: ${matchingStates.length}</span>
+                        <span>Seats: ${totalSeats}</span>
+                        <span>States: ${stateCount}</span>
+                        <span>UTs: ${utCount}</span>
+                    </div>
+                `;
             }
         }
         
-        // Reset map highlighting
+        // Determine if a state should be highlighted for a group based on states_data.json flags
+        function shouldHighlightState(state, groupName) {
+            switch(groupName.toLowerCase()) {
+                case 'all':
+                    return true;
+                case 'union territory':
+                    return state.UnionTerritory === 'TRUE';
+                case 'coastal india':
+                    return state.CoastalIndia === 'TRUE';
+                case 'northeast india':
+                    return state.NortheastIndia === 'TRUE';
+                case 'south india':
+                    return state.SouthIndia === 'TRUE';
+                case 'hindi heartland':
+                    return state.HindiHeartland === 'TRUE';
+                case 'agricultural region':
+                    return state.AgriculturalRegion === 'TRUE';
+                case 'border lands':
+                    return state.BorderLands === 'TRUE';
+                case 'pilgrimage':
+                    return state.Pilgrimage === 'TRUE';
+                case 'industrial corridor':
+                    return state.IndustrialCorridor === 'TRUE';
+                case 'manufacturing':
+                    return state.Manufacturing === 'TRUE';
+                case 'education':
+                    return state.Education === 'TRUE';
+                case 'tribal lands':
+                    return state.TribalLands === 'TRUE';
+                case 'travel and tourism':
+                    return state.TravelAndTourism === 'TRUE';
+                case 'natural resources':
+                    return state.NaturalResources === 'TRUE';
+                case 'minority areas':
+                    return state.MinorityAreas === 'TRUE';
+                default:
+                    return false;
+            }
+        }
+        
+        // Reset map highlighting and UT buttons
         function resetMapHighlighting() {
             const svgElement = document.querySelector('#map-container svg');
             if (!svgElement) return;
             
             const paths = svgElement.querySelectorAll('path[id], g[id]');
+            const utButtons = document.querySelectorAll('.ut-button');
+            
+            // Reset map paths
             paths.forEach(path => {
                 path.style.opacity = '';
                 path.style.filter = '';
@@ -1215,9 +1351,13 @@
                 path.style.strokeWidth = '';
             });
             
-            // Clear UT selections
-            const utButtons = document.querySelectorAll('.ut-button');
-            utButtons.forEach(btn => btn.classList.remove('selected'));
+            // Reset UT buttons (but preserve individual selections)
+            utButtons.forEach(button => {
+                button.classList.remove('group-highlighted');
+                button.style.opacity = '';
+                button.style.transform = '';
+                // Keep the 'selected' class if it was individually selected
+            });
         }
         
         // Campaigns functionality - removed since campaigns banner is removed
@@ -1278,6 +1418,20 @@
                 // Show Uttar Pradesh by default (INUP)
                 updateStateInfo('INUP');
             }, 1000);
+            
+            // Add resize listener to ensure proper layout on viewport changes
+            window.addEventListener('resize', () => {
+                // Force a re-render of the state info if it exists
+                const currentStateName = document.querySelector('.state-name');
+                if (currentStateName && currentStateName.textContent !== 'Select a state to view details...') {
+                    const currentState = statesData.find(state => 
+                        currentStateName.textContent === state.State
+                    );
+                    if (currentState) {
+                        updateStateInfo(currentState.SvgId);
+                    }
+                }
+            });
         });
     </script>
 </body>

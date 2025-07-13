@@ -51,36 +51,86 @@ The game uses a streamlined 4-banner layout with a floating timer overlay to pro
 - Player avatars: 24px circular indicators
 - Funds display: Currency format with "M" suffix (e.g., "₹1600M")
 
-#### Banner 3: States Info & Menu
+#### Banner 3: States Info & Menu (Enhanced Two-Row Layout)
 - **Purpose**: Display selected state information and provide access to game options
-- **Height**: 32px
+- **Height**: 32px (38px on screens ≤320px for better two-row accommodation)
 - **Background**: Secondary dark (`#262a45`)
 - **Positioning**: Fixed, top: 77px (35px + 42px)
 - **Z-index**: 8
 
-**Content:**
-- **Left Section**: State name and statistics (Seats, P1%, P2%, Others%)
-- **Right Section**: Menu button (☰) for game options
-- Text overflow handling with ellipsis
-- Updates dynamically based on user interaction
+**Enhanced Layout Features:**
+- **Two-Row Structure**: State name on top row, statistics on bottom row for optimal space utilization
+- **Flexible Design**: Adapts to narrow viewports without truncating information
+- **No Text Truncation**: All state information remains visible across all screen sizes
+- **Responsive Typography**: Font sizes scale appropriately for different viewports
 
-#### Banner 4: State Groups (Bottom) - 4×4 Grid Layout
-- **Purpose**: Quick access to 16 regional state groupings and filters
+**Content:**
+- **Top Row**: State name with ellipsis handling for extremely long names
+- **Bottom Row**: Statistics (Seats, P1%, P2%, Others%) with flexible wrapping
+- **Right Section**: Menu button (☰) for game options
+- **Smart Spacing**: 1px gap between rows for clean separation
+
+**Responsive Behavior:**
+- **≤320px**: Height increases to 38px, font sizes reduce to 12px/11px
+- **≥768px**: Font sizes increase to 15px/14px for better readability
+- **≥1024px**: Font sizes scale to 18px/16px for desktop viewing
+- **≥1440px**: Maximum font sizes of 20px/18px for large displays
+
+**Technical Implementation:**
+- **CSS Grid**: 1fr auto layout for state info and menu sections
+- **Flexbox**: Column direction for two-row state information layout
+- **Text Overflow**: Ellipsis for state names that exceed container width
+- **Flex Wrap**: Statistics wrap naturally on very narrow screens
+- **Non-Blocking**: Menu button always remains accessible
+
+#### Banner 4: State Groups (Bottom) - 4×4 Grid Layout with Data-Driven Filtering
+- **Purpose**: Quick access to 16 data-driven state groupings and filters based on `states_data.json`
 - **Height**: 80px
 - **Background**: Darker panel (`#2a3048`)
 - **Positioning**: Fixed, bottom: 0
 - **Z-index**: 8
 
-**Content:**
+**Enhanced Content:**
 - **Grid Layout**: 4×4 grid (16 buttons total) for optimal mobile usage
-- **State Groups**:
-  - Row 1: All, North, South, East
-  - Row 2: West, Central, Northeast, Hills
-  - Row 3: Coastal, Urban, Rural, Industrial
-  - Row 4: Agricultural, Tribal, Metro, Border
+- **Data-Driven Categories**: Based on exact boolean flags from `states_data.json`:
+  - **Row 1**: All, Union territory, Coastal india, Northeast india
+  - **Row 2**: South india, Hindi heartland, Agricultural region, Border lands
+  - **Row 3**: Pilgrimage, Industrial corridor, Manufacturing, Education
+  - **Row 4**: Tribal lands, Travel and tourism, Natural resources, Minority areas
 - **No Horizontal Scrolling**: All options always visible
 - **Touch-Friendly**: Larger buttons suitable for mobile interaction
-- Interactive selection with active states and hover effects
+
+**Advanced Filtering Features:**
+- **Map Highlighting**: Selected category highlights matching states/UTs with green glow and borders
+- **UT Button Integration**: Union Territory buttons light up when their category is selected
+- **Smart Dimming**: Non-matching states become semi-transparent (opacity: 0.3)
+- **Group Statistics**: State info banner shows category statistics (total count, seats, states vs UTs)
+- **Console Logging**: Detailed logging of matching states for debugging
+
+**Exact Category Mapping (JSON Field → Button Label):**
+- `UnionTerritory` → "Union territory"
+- `CoastalIndia` → "Coastal india"
+- `NortheastIndia` → "Northeast india"
+- `SouthIndia` → "South india"
+- `HindiHeartland` → "Hindi heartland"
+- `AgriculturalRegion` → "Agricultural region"
+- `BorderLands` → "Border lands"
+- `Pilgrimage` → "Pilgrimage"
+- `IndustrialCorridor` → "Industrial corridor"
+- `Manufacturing` → "Manufacturing"
+- `Education` → "Education"
+- `TribalLands` → "Tribal lands"
+- `TravelAndTourism` → "Travel and tourism"
+- `NaturalResources` → "Natural resources"
+- `MinorityAreas` → "Minority areas"
+- **Special**: "All" (resets filters, shows complete statistics)
+
+**Interactive Selection**: 
+- Click to select different category groupings with active state highlighting
+- Visual feedback with accent color, hover effects, and real-time filtering
+- Responsive button text scaling for different screen sizes
+- Integration with Union Territory quick access system
+- Direct boolean field matching ensures accurate data-driven filtering
 
 #### Floating Timer Overlay with Union Territories
 - **Purpose**: Display game phase, countdown timer, and Union Territory quick access
@@ -339,30 +389,29 @@ The design implements a mobile-first approach with progressive enhancement for l
 
 ## Major UI Changes in This Version
 
-### Union Territories Integration (NEW)
+### State Groups Enhancement (NEW)
+- **Data-Driven Filtering**: State groups now use exact boolean flags from `states_data.json`
+- **Exact Field Mapping**: All 15 JSON boolean fields mapped to sentence-case button labels
+- **Enhanced UT Integration**: Union Territory buttons highlight when matching category filters
+- **Group Statistics**: State info banner shows real-time category statistics
+- **Console Debugging**: Detailed logging of matching states for each category filter
+
+### State Info Banner Two-Row Layout (NEW)
+- **Enhanced Readability**: State name and statistics now display in separate rows
+- **Responsive Design**: Adapts to narrow viewports without truncating information
+- **No Information Loss**: All state details remain visible across all screen sizes
+- **Smart Typography**: Font scaling maintains readability on different devices
+
+### Union Territories Integration (ENHANCED)
 - **Added**: Integrated UT container with floating timer in 4×2 grid layout
 - **Features**: Direct access to all 6 Union Territories with map highlighting
+- **Category Integration**: UT buttons light up when category filters match
 - **Benefits**: Quick UT selection, no need to search on map, organized layout
 - **Design**: Merged with timer for space efficiency and cohesive appearance
 
-### State Groups Banner Redesign
-- **Before**: Horizontal scrolling layout with 16 chips
-- **After**: 4×4 grid layout with all options always visible
-- **Benefits**: No scrolling required, better mobile usability, cleaner layout
-
-### Campaigns Banner Removal
-- **Before**: Dedicated 100px tall campaigns banner at bottom
-- **After**: Campaigns accessed via enhanced action button
-- **Benefits**: More map space, cleaner interface, consolidated actions
-
-### Projected Seats Progress Bar (NEW)
-- **Added**: Real-time seat projection display in top banner
+### Projected Seats Progress Bar (EXISTING)
+- **Real-time Display**: Seat projection display in top banner
 - **Features**: Color-coded progress bar showing P1/Others/P2 distribution
 - **Algorithm**: Winner-takes-all system based on state popularity percentages
 - **Design**: Adaptive labels with smart text sizing based on segment width
 - **Benefits**: Immediate visual feedback on election projections, strategic insight
-
-### Floating Timer Enhancement
-- **Before**: Timer only in floating overlay
-- **After**: Timer + Union Territories in merged 4×2 grid container
-- **Benefits**: Space efficient, organized UT access, maintains timer visibility
