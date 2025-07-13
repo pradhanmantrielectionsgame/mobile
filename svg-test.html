@@ -27,15 +27,74 @@
             color: var(--text);
         }
         
-        /* Banner 1: Camera notch area - stays empty */
+        /* Banner 1: Camera notch area - Projected Seats Progress Bar */
         .camera-notch-banner {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             height: var(--banner-height);
-            background: transparent;
+            background: #1a1f36;
             z-index: 10;
+            display: flex;
+            align-items: center;
+            padding: 0 8px;
+            border-bottom: 1px solid #333;
+        }
+        
+        .projected-seats-container {
+            width: 100%;
+            height: 20px;
+            position: relative;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #2a2f48;
+            border: 1px solid #3a4060;
+        }
+        
+        .seats-progress-bar {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            position: relative;
+        }
+        
+        .seats-segment {
+            height: 100%;
+            transition: width 0.3s ease;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 9px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+            min-width: 0;
+        }
+        
+        .seats-segment.p1 {
+            background: linear-gradient(90deg, #4eb85a 0%, #5ac461 100%);
+        }
+        
+        .seats-segment.others {
+            background: linear-gradient(90deg, #6b7280 0%, #8b9bb5 100%);
+        }
+        
+        .seats-segment.p2 {
+            background: linear-gradient(90deg, #e65c5c 0%, #f56565 100%);
+        }
+        
+        /* Remove the separate labels layer - we'll use segment text only */
+        .seats-labels {
+            display: none;
+        }
+        
+        /* Hide segment text on very small screens */
+        @media (max-width: 320px) {
+            .seats-segment {
+                font-size: 7px;
+            }
         }
         
         /* Banner 2: Player info and game stats */
@@ -619,8 +678,16 @@
     </style>
 </head>
 <body>
-    <!-- Banner 1: Camera notch area (stays empty) -->
-    <div class="camera-notch-banner"></div>
+    <!-- Banner 1: Projected Seats Progress Bar -->
+    <div class="camera-notch-banner">
+        <div class="projected-seats-container">
+            <div class="seats-progress-bar" id="seats-progress-bar">
+                <div class="seats-segment p1" id="p1-segment"></div>
+                <div class="seats-segment others" id="others-segment"></div>
+                <div class="seats-segment p2" id="p2-segment"></div>
+            </div>
+        </div>
+    </div>
     
     <!-- Banner 2: Player info and game stats -->
     <div class="player-stats-banner">
@@ -737,6 +804,11 @@
                 console.log('States data loaded:', statesData.length, 'states');
                 console.log('Sample popularity data:', statePopularity);
                 
+                // Update projected seats after data is loaded
+                setTimeout(() => {
+                    updateProjectedSeatsBar();
+                }, 100);
+                
             } catch (error) {
                 console.error('Error loading states data:', error);
                 // Fallback data
@@ -746,6 +818,82 @@
                     { State: "Tamil Nadu", LokSabhaSeats: "39", SvgId: "INTN" }
                 ];
             }
+        }
+        
+        // Calculate and update projected seats
+        function calculateProjectedSeats() {
+            let p1Seats = 0;
+            let p2Seats = 0;
+            let otherSeats = 0;
+            let totalSeats = 0;
+            
+            statesData.forEach(state => {
+                const popularity = statePopularity[state.SvgId];
+                const seats = parseInt(state.LokSabhaSeats) || 0;
+                totalSeats += seats;
+                
+                if (popularity) {
+                    // Determine winner based on highest percentage
+                    if (popularity.player1 > popularity.player2 && popularity.player1 > popularity.others) {
+                        p1Seats += seats;
+                    } else if (popularity.player2 > popularity.player1 && popularity.player2 > popularity.others) {
+                        p2Seats += seats;
+                    } else {
+                        otherSeats += seats;
+                    }
+                }
+            });
+            
+            return { p1Seats, p2Seats, otherSeats, totalSeats };
+        }
+        
+        // Update the projected seats progress bar
+        function updateProjectedSeatsBar() {
+            const { p1Seats, p2Seats, otherSeats, totalSeats } = calculateProjectedSeats();
+            
+            if (totalSeats === 0) return; // Prevent division by zero
+            
+            // Calculate percentages
+            const p1Percentage = (p1Seats / totalSeats) * 100;
+            const p2Percentage = (p2Seats / totalSeats) * 100;
+            const othersPercentage = (otherSeats / totalSeats) * 100;
+            
+            // Update segment widths
+            const p1Segment = document.getElementById('p1-segment');
+            const othersSegment = document.getElementById('others-segment');
+            const p2Segment = document.getElementById('p2-segment');
+            
+            p1Segment.style.width = `${p1Percentage}%`;
+            othersSegment.style.width = `${othersPercentage}%`;
+            p2Segment.style.width = `${p2Percentage}%`;
+            
+            // Add seat counts to segments with better formatting
+            // Show format: "P1: 123" if segment is wide enough, otherwise just "123"
+            if (p1Percentage > 20) {
+                p1Segment.textContent = `P1: ${p1Seats}`;
+            } else if (p1Percentage > 8) {
+                p1Segment.textContent = p1Seats;
+            } else {
+                p1Segment.textContent = '';
+            }
+            
+            if (othersPercentage > 20) {
+                othersSegment.textContent = `Others: ${otherSeats}`;
+            } else if (othersPercentage > 8) {
+                othersSegment.textContent = otherSeats;
+            } else {
+                othersSegment.textContent = '';
+            }
+            
+            if (p2Percentage > 20) {
+                p2Segment.textContent = `P2: ${p2Seats}`;
+            } else if (p2Percentage > 8) {
+                p2Segment.textContent = p2Seats;
+            } else {
+                p2Segment.textContent = '';
+            }
+            
+            console.log(`Projected Seats - P1: ${p1Seats}, Others: ${otherSeats}, P2: ${p2Seats}, Total: ${totalSeats}`);
         }
         
         // Find state by SVG ID
@@ -911,6 +1059,9 @@
                 });
                 
                 console.log('Popularity updated for', randomStates.length, 'states');
+                
+                // Update projected seats after popularity changes
+                updateProjectedSeatsBar();
             }, 15000); // Update every 15 seconds
         }
         

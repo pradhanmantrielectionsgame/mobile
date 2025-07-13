@@ -8,13 +8,32 @@ This document describes the mobile-first design elements and layout for the Prad
 ### 4-Banner System with Floating Elements
 The game uses a streamlined 4-banner layout with a floating timer overlay to provide essential game information and controls while keeping the camera notch area clear on modern smartphones and maximizing map space.
 
-#### Banner 1: Camera Notch Area
-- **Purpose**: Reserved space for smartphone camera notch and status bar
+#### Banner 1: Projected Seats Progress Bar
+- **Purpose**: Display real-time projected seat distribution across P1, Others, and P2
 - **Height**: 35px
-- **Background**: Transparent
-- **Content**: Intentionally empty
-- **Z-index**: 10 (highest priority)
+- **Background**: Dark panel (`#1a1f36`)
 - **Positioning**: Fixed, top: 0
+- **Z-index**: 10 (highest priority)
+
+**Content:**
+- **Progress Bar**: Full-width color-coded seat projection using flexbox layout
+  - **P1 Segment**: Green gradient (`#4eb85a` to `#5ac461`)
+  - **Others Segment**: Gray gradient (`#6b7280` to `#8b9bb5`)
+  - **P2 Segment**: Red gradient (`#e65c5c` to `#f56565`)
+- **Smart Labels**: Adaptive text display within segments
+  - **>20% width**: Shows "P1: 123" format
+  - **8-20% width**: Shows just number "123"
+  - **<8% width**: No text (too small to read)
+- **Real-time Updates**: Automatically recalculates based on state popularity changes
+- **Responsive**: Font size scales down on small screens (≤320px)
+
+**Features:**
+- Smooth 0.3s transitions when seat projections change
+- Single label system (no duplicate text)
+- Enhanced text shadow for better readability on gradients
+- Winner-takes-all calculation: highest percentage in each state wins all seats
+- Updates every 15 seconds with popularity simulation
+- Clean flexbox implementation prevents layout issues
 
 #### Banner 2: Player Info & Stats
 - **Purpose**: Display player fund comparison
@@ -312,11 +331,11 @@ The design implements a mobile-first approach with progressive enhancement for l
 
 ---
 
-**Version**: Mobile UI Overhaul - 4-Banner System with Floating Timer + Union Territories  
+**Version**: Mobile UI Overhaul - 4-Banner System with Projected Seats Display  
 **Last Updated**: July 12, 2025  
 **File**: svg-test.html  
 **Repository**: pradhanmantrielectionsgame.github.io  
-**Recent Changes**: Added Union Territories quick access container integrated with floating timer, redesigned state groups as 4×4 grid, removed campaigns banner, enhanced action button for campaign access
+**Recent Changes**: Repurposed camera notch banner as projected seats progress bar with real-time election projections, added Union Territories quick access container integrated with floating timer, redesigned state groups as 4×4 grid, removed campaigns banner, enhanced action button for campaign access
 
 ## Major UI Changes in This Version
 
@@ -335,6 +354,13 @@ The design implements a mobile-first approach with progressive enhancement for l
 - **Before**: Dedicated 100px tall campaigns banner at bottom
 - **After**: Campaigns accessed via enhanced action button
 - **Benefits**: More map space, cleaner interface, consolidated actions
+
+### Projected Seats Progress Bar (NEW)
+- **Added**: Real-time seat projection display in top banner
+- **Features**: Color-coded progress bar showing P1/Others/P2 distribution
+- **Algorithm**: Winner-takes-all system based on state popularity percentages
+- **Design**: Adaptive labels with smart text sizing based on segment width
+- **Benefits**: Immediate visual feedback on election projections, strategic insight
 
 ### Floating Timer Enhancement
 - **Before**: Timer only in floating overlay
