@@ -44,7 +44,10 @@ A strategic political simulation game optimized for mobile devices with an immer
 - **Player Competition**: Dual-player investment system with Shift+Click support
 
 ### Interactive Map
-- **State Selection**: Click states for detailed information
+- **Select & Invest**: Click states to view info AND make direct investment (combined action)
+- **Rally Actions**: Alt + Click for simple rally (uses rally tokens)
+- **Info Only**: Ctrl/Cmd + Click for state information without investment
+- **Player 2 Actions**: Shift + [any click combination] for Player 2
 - **Regional Filtering**: 16 data-driven state groups
 - **Union Territory Access**: Direct UT selection buttons
 - **Visual Feedback**: Highlighting and hover effects
@@ -85,11 +88,12 @@ A strategic political simulation game optimized for mobile devices with an immer
 
 ## Game Instructions
 
-1. **Select States**: Click on map or use Union Territory buttons
-2. **View Information**: State details appear in the info banner
-3. **Filter Regions**: Use the 4×4 grid to focus on specific areas
-4. **Run Campaigns**: Click the lightning button (⚡) to invest in policies
-5. **Track Progress**: Monitor projected seats in the top progress bar
+1. **Select & Invest**: Click on map states to view info and make direct investment
+2. **Rally Actions**: Alt + Click on states to use rally tokens  
+3. **Info Only**: Ctrl/Cmd + Click states for information without investment
+4. **Filter Regions**: Use the 4×4 grid to focus on specific areas
+5. **Run Campaigns**: Click the lightning button (⚡) to invest in policies
+6. **Track Progress**: Monitor projected seats in the top progress bar
 
 ### Campaign Investment
 - **Normal Click**: Player 1 investment

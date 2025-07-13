@@ -351,9 +351,9 @@ function updateStateInfo(svgId) {
             <div class="state-name">${state.State}</div>
             <div class="state-stats">
                 <span>Seats: ${state.LokSabhaSeats}</span>
-                <span>P1: ${popularity.player1}%</span>
-                <span>P2: ${popularity.player2}%</span>
-                <span>Others: ${popularity.others}%</span>
+                <span>P1: ${Math.round(popularity.player1)}%</span>
+                <span>P2: ${Math.round(popularity.player2)}%</span>
+                <span>Others: ${Math.round(popularity.others)}%</span>
             </div>
         `;
         console.log(`Updated info for ${state.State} (${svgId})`);
@@ -382,7 +382,7 @@ function simulatePopularityChanges() {
             const player = Math.random() < 0.5 ? 'player1' : 'player2';
             
             // Small random changes (±2 to ±5 points)
-            const change = (Math.random() - 0.5) * 8; // -4 to +4
+            const change = Math.round((Math.random() - 0.5) * 8); // -4 to +4, rounded to whole numbers
             
             // Apply the change using the new system
             updateStatePopularity(svgId, player, change, 'natural fluctuation');
@@ -619,21 +619,26 @@ function updateStatePopularity(svgId, player, popularityChange, reason = '') {
             const p2Ratio = oldValues.player2 / totalOtherPlayers;
             const othersRatio = oldValues.others / totalOtherPlayers;
             state.player2 = Math.round(remainingPercentage * p2Ratio);
-            state.others = remainingPercentage - state.player2;
+            state.others = Math.round(remainingPercentage - state.player2);
         } else {
             const p1Ratio = oldValues.player1 / totalOtherPlayers;
             const othersRatio = oldValues.others / totalOtherPlayers;
             state.player1 = Math.round(remainingPercentage * p1Ratio);
-            state.others = remainingPercentage - state.player1;
+            state.others = Math.round(remainingPercentage - state.player1);
         }
     }
     
-    // Ensure values sum to 100
+    // Ensure values sum to 100 and are all whole numbers
     const total = state.player1 + state.player2 + state.others;
     if (total !== 100) {
         const adjustment = 100 - total;
-        state.others += adjustment;
+        state.others = Math.round(state.others + adjustment);
     }
+    
+    // Final check to ensure all values are whole numbers
+    state.player1 = Math.round(state.player1);
+    state.player2 = Math.round(state.player2);
+    state.others = Math.round(state.others);
     
     console.log(`Updated ${svgId} ${player} popularity: ${oldValues[player.replace('player', 'player')]} → ${state[player.replace('player', 'player')]} ${reason ? `(${reason})` : ''}`);
     
@@ -953,7 +958,7 @@ function testPopularitySystem() {
         const popularity = statePopularity[svgId];
         const leader = getStateLeader(svgId);
         if (state && popularity) {
-            console.log(`${state.State}: P1=${popularity.player1}% P2=${popularity.player2}% Others=${popularity.others}% | Leader: ${leader.player} (${leader.percentage}%)`);
+            console.log(`${state.State}: P1=${Math.round(popularity.player1)}% P2=${Math.round(popularity.player2)}% Others=${Math.round(popularity.others)}% | Leader: ${leader.player} (${Math.round(leader.percentage)}%)`);
         }
     });
     
@@ -988,7 +993,6 @@ function handleDirectInvestment(stateId, playerId) {
     
     // Check if player has sufficient funds
     if (playerData.funds < baseCost) {
-        showInvestmentMessage(`${playerData.name} has insufficient funds! Need ₹${baseCost}M, have ₹${playerData.funds}M`, 'error');
         showInsufficientFundsAnimation(playerId);
         return false;
     }
@@ -1023,10 +1027,6 @@ function handleDirectInvestment(stateId, playerId) {
     const success = updateStatePopularity(stateId, playerId, popularityBoost, `direct investment #${playerData.investments[stateId]}`);
     
     if (success) {
-        showInvestmentMessage(
-            `${playerData.name} invested ₹${baseCost}M in ${state.State}. +${popularityBoost}% popularity boost!`, 
-            'success'
-        );
         return true;
     }
     
@@ -1057,10 +1057,6 @@ function useSimpleRallyToken(stateId, playerId) {
     const success = updateStatePopularity(stateId, playerId, popularityBoost, `simple rally in ${state.State}`);
     
     if (success) {
-        showRallyMessage(
-            `${playerData.name} used a simple rally token in ${state.State}. +${popularityBoost}% popularity boost!`, 
-            'success'
-        );
         updateRallyTokenDisplay();
         return true;
     }
@@ -1094,10 +1090,6 @@ function useSpecialRallyToken(playerId) {
         if (success) affectedStates++;
     });
     
-    showRallyMessage(
-        `${playerData.name} used a special rally token! +${popularityBoost}% popularity boost in all ${affectedStates} states/UTs!`, 
-        'success'
-    );
     updateRallyTokenDisplay();
     return true;
 }
@@ -1137,13 +1129,13 @@ function showInvestmentMessage(message, type = 'info') {
         transform: translateX(-50%);
         background: ${type === 'success' ? '#4CAF50' : type === 'error' ? '#f44336' : type === 'warning' ? '#ff9800' : '#2196F3'};
         color: white;
-        padding: 10px 20px;
-        border-radius: 6px;
+        padding: 6px 12px;
+        border-radius: 4px;
         z-index: 1000;
-        font-size: 14px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        font-size: 11px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
         animation: slideDown 0.3s ease;
-        max-width: 80%;
+        max-width: 70%;
         text-align: center;
     `;
     messageDiv.textContent = message;
@@ -1152,7 +1144,7 @@ function showInvestmentMessage(message, type = 'info') {
     
     setTimeout(() => {
         messageDiv.remove();
-    }, 4000);
+    }, 1500);
 }
 
 // Show rally messages

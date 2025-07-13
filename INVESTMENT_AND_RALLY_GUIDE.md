@@ -6,8 +6,9 @@ Two new interactive features have been added to enhance gameplay: Direct Investm
 ## Direct Investment System
 
 ### How to Use
-- **Player 1**: `Ctrl/Cmd + Click` on any state
-- **Player 2**: `Shift + Ctrl/Cmd + Click` on any state
+- **Player 1**: `Click` on any state (shows info + invests)
+- **Player 2**: `Shift + Click` on any state (shows info + invests)
+- **Info Only**: `Ctrl/Cmd + Click` to view state info without investing
 
 ### Mechanics
 - **Cost**: Number of Lok Sabha seats × ₹10M per investment
@@ -52,8 +53,9 @@ Rally tokens reset at the beginning of each new phase.
 
 ### State Click Colors
 - **Normal Click** (state info): Orange border
-- **Investment** (Ctrl+Click): Green border  
+- **Select & Invest** (Click): Green border  
 - **Simple Rally** (Alt+Click): Purple border
+- **Info Only** (Ctrl/Cmd+Click): Red border
 
 ### Messages
 - **Investment messages**: Green background, positioned at top

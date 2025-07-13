@@ -72,7 +72,7 @@ The system ensures:
 - `updateStatePopularity(stateId, player, change, reason)`: Update single state
 
 ### New Interactive Features
-- `handleDirectInvestment(stateId, playerId)`: Direct investment system (Ctrl+Click)
+- `handleDirectInvestment(stateId, playerId)`: Direct investment system (Normal Click + state selection)
 - `useSimpleRallyToken(stateId, playerId)`: Simple rally system (Alt+Click)  
 - `useSpecialRallyToken(playerId)`: Special nationwide rally
 - `resetRallyTokensForPhase()`: Reset rally tokens for new phase

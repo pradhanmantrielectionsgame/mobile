@@ -16,23 +16,25 @@ function handleStateClick(event) {
     }
     
     if (svgId && findStateById(svgId)) {
-        // Check for special key combinations for direct investment and rallies
-        if (event.ctrlKey || event.metaKey) {
-            // Ctrl/Cmd + Click = Direct Investment
-            const playerId = event.shiftKey ? 'player2' : 'player1';
-            handleDirectInvestment(svgId, playerId);
-        } else if (event.altKey) {
+        // Check for special key combinations for rallies
+        if (event.altKey) {
             // Alt + Click = Simple Rally
             const playerId = event.shiftKey ? 'player2' : 'player1';
             useSimpleRallyToken(svgId, playerId);
         } else {
-            // Normal click = Show state info
-            updateStateInfo(svgId);
+            // Normal click = Select state AND Direct Investment (combined action)
+            updateStateInfo(svgId); // Show state information
+            
+            // Only do investment if not using Ctrl/Cmd (allows info-only viewing)
+            if (!event.ctrlKey && !event.metaKey) {
+                const playerId = event.shiftKey ? 'player2' : 'player1';
+                handleDirectInvestment(svgId, playerId);
+            }
         }
         
         // Add visual feedback
-        const feedbackColor = event.ctrlKey || event.metaKey ? '#4CAF50' : 
-                             event.altKey ? '#9C27B0' : '#ff6b6b';
+        const feedbackColor = event.altKey ? '#9C27B0' : 
+                             (event.ctrlKey || event.metaKey) ? '#ff6b6b' : '#4CAF50';
         target.style.stroke = feedbackColor;
         target.style.strokeWidth = '2';
         setTimeout(() => {

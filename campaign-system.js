@@ -71,8 +71,9 @@ function generateCampaignGrid() {
     instructions.className = 'campaign-instructions';
     instructions.innerHTML = `
         <div style="background: rgba(59, 64, 189, 0.2); padding: 10px; border-radius: 6px; margin-bottom: 15px; font-size: 12px; border: 1px solid #3b40bd;">
-            <strong>Instructions:</strong> Click to invest in campaigns (10 clicks to complete). 
-            Hold <strong>Shift + Click</strong> for Player 2. Each tier has different costs and impacts.
+            <strong>Campaign Instructions:</strong> Click to invest in campaigns (10 clicks to complete). 
+            Hold <strong>Shift + Click</strong> for Player 2. Each tier has different costs and impacts.<br>
+            <strong>Map Instructions:</strong> Click states to select & invest. Alt+Click for rallies. Ctrl/Cmd+Click for info only.
         </div>
     `;
     grid.appendChild(instructions);
@@ -181,7 +182,6 @@ function handleCampaignClick(e, policyName, policyData, progress, totalClicks, c
     }
     
     if (playerData.funds < cost) {
-        showCampaignMessage(`${playerData.name} has insufficient funds! Need ₹${cost}M, have ₹${playerData.funds}M`, 'error');
         showInsufficientFundsAnimation(playerId);
         return;
     }
@@ -421,11 +421,12 @@ function showRallyInstructions() {
                 <h2 style="margin-bottom: 20px; color: #9C27B0;">Rally & Investment System</h2>
                 
                 <div style="margin-bottom: 20px;">
-                    <h3 style="color: #4CAF50; margin-bottom: 10px;">📍 Direct Investment</h3>
-                    <p><strong>How:</strong> Ctrl/Cmd + Click on any state</p>
+                    <h3 style="color: #4CAF50; margin-bottom: 10px;">📍 Select & Invest</h3>
+                    <p><strong>How:</strong> Click on any state</p>
+                    <p><strong>Effect:</strong> Shows state info AND makes direct investment</p>
                     <p><strong>Cost:</strong> Number of seats × ₹10M (e.g., UP = 80 seats = ₹800M)</p>
-                    <p><strong>Effect:</strong> +5% popularity with diminishing returns on repeat investments</p>
-                    <p><strong>Player 2:</strong> Shift + Ctrl/Cmd + Click</p>
+                    <p><strong>Investment Effect:</strong> +5% popularity with diminishing returns</p>
+                    <p><strong>Player 2:</strong> Shift + Click</p>
                 </div>
                 
                 <div style="margin-bottom: 20px;">
@@ -434,6 +435,12 @@ function showRallyInstructions() {
                     <p><strong>Tokens:</strong> 2 per phase per player</p>
                     <p><strong>Effect:</strong> +4% popularity in that state</p>
                     <p><strong>Player 2:</strong> Shift + Alt + Click</p>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <h3 style="color: #ff6b6b; margin-bottom: 10px;">ℹ️ State Info Only</h3>
+                    <p><strong>How:</strong> Ctrl/Cmd + Click on any state</p>
+                    <p><strong>Effect:</strong> Shows state information without investment</p>
                 </div>
                 
                 <div style="margin-bottom: 20px;">
