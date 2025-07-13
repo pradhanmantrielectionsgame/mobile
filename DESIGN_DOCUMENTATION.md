@@ -166,17 +166,90 @@ The game uses a streamlined 4-banner layout with a floating timer overlay to pro
 - **Border**: 3px solid dark border
 - **Content**: SVG map of India with interactive elements
 
-#### Action Button (Enhanced)
-- **Type**: Floating Action Button (FAB)
-- **Size**: 56px × 56px
-- **Position**: Fixed, positioned above state groups banner (88px from bottom)
-- **Background**: Accent color (`--accent: #3b40bd`)
-- **Icon**: Lightning bolt (⚡)
-- **Purpose**: Campaigns & Actions (replaces removed campaigns banner)
-- **Enhanced Features**: 
-  - Hover effects with scale and glow
-  - Primary access point for campaign selection
-  - Updated tooltip: "Campaigns & Actions"
+#### Action Buttons (Enhanced Campaign & Rally System)
+- **Left Button (Campaign)**: Floating Action Button (FAB)
+  - **Size**: 56px × 56px (48px on mobile ≤480px)
+  - **Position**: Fixed, left: 20px, positioned above state groups banner (88px from bottom)
+  - **Background**: Accent color (`--accent: #3b40bd`)
+  - **Icon**: Lightning bolt (⚡)
+  - **Purpose**: Opens comprehensive campaign modal with all policy investments
+  - **Enhanced Features**: 
+    - Hover effects with scale (1.05x) and enhanced glow
+    - Primary access point for policy campaign investments
+    - Updated tooltip: "Campaigns"
+
+- **Right Button (Rally)**: Floating Action Button (FAB)
+  - **Size**: 56px × 56px (48px on mobile ≤480px)
+  - **Position**: Fixed, right: 20px, positioned above state groups banner (88px from bottom)
+  - **Background**: Red color (`#e65c5c`)
+  - **Icon**: Megaphone (📢)
+  - **Purpose**: Rally system (placeholder for future implementation)
+  - **Features**: 
+    - Distinct red styling to differentiate from campaign button
+    - Hover effects with scale and glow
+    - Tooltip: "Rallies"
+
+#### Campaign Modal System (NEW)
+- **Purpose**: Comprehensive policy investment interface with tier-based organization
+- **Trigger**: Left action button (⚡) click
+- **Layout**: Full-screen modal with responsive design
+- **Background**: Semi-transparent dark overlay (rgba(0, 0, 0, 0.8))
+- **Z-index**: 100 (highest priority)
+
+**Campaign Organization:**
+- **Data-Driven**: Loads policy data from `policy-tags.json`
+- **Tier-Based Sorting**: Policies organized by importance (Tier 1 → 3)
+- **Visual Hierarchy**: Gold/Silver/Bronze styling for different tiers
+
+**Tier System:**
+- **🥇 Tier 1 (Gold)**: Mega Policies with highest impact and cost
+  - **Visual**: Gold borders (`#ffd700`) and gradients
+  - **Typical Cost**: 60M per click (baseMagnitude: 12 × 5M)
+  - **Examples**: Education, Healthcare, Economic Liberalization, Hindutva, Secularism
+  
+- **🥈 Tier 2 (Silver)**: Major Policies with moderate impact and cost
+  - **Visual**: Silver borders (`#c0c0c0`) and gradients
+  - **Typical Cost**: 40M per click (baseMagnitude: 8 × 5M)
+  - **Examples**: Rural Development, Land Reforms, Anti-Corruption
+  
+- **🥉 Tier 3 (Bronze)**: Standard Policies with lower impact and cost
+  - **Visual**: Bronze borders (`#cd7f32`) and gradients
+  - **Typical Cost**: 20M per click (baseMagnitude: 4 × 5M)
+  - **Examples**: Infrastructure, Privatization, Digital Transformation
+
+**Campaign Card Layout (Simplified):**
+- **Header**: Policy name (left) + Cost in green (right, e.g., "₹60M")
+- **Progress Bar**: Visual-only progress indicator with player color coding
+- **No Labels**: Clean design without tier labels or click counters
+- **Compact Design**: Reduced vertical space for less scrolling
+
+**Interactive Features:**
+- **Click Investment**: Normal click = Player 1 investment
+- **Shift+Click Investment**: Shift+Click = Player 2 investment
+- **Progress Tracking**: 10 clicks required to complete each campaign (10% per click)
+- **Real-time Updates**: Funds deduction with visual feedback
+- **Completion System**: Campaign completion when reaching 100% progress
+- **Error Handling**: Insufficient funds warnings and validation
+
+**Progress System:**
+- **10-Click Completion**: Each campaign requires exactly 10 clicks to complete
+- **Incremental Progress**: Each click contributes 10% to campaign completion
+- **Player Competition**: Both players can contribute to same campaign
+- **Winner Determination**: Player with more contributions wins completed campaign
+- **Visual Feedback**: Progress bars show dominant player color (green/red)
+
+**Responsive Design:**
+- **Mobile Optimization**: Smaller padding and fonts on mobile devices
+- **Touch-Friendly**: Adequate touch targets for mobile interaction
+- **Modal Sizing**: Adapts to viewport with proper margins and max-height
+- **Grid Layout**: Single-column campaign list for easy scrolling
+
+**User Experience:**
+- **Instructions**: Clear instructions displayed at top of modal
+- **Feedback Messages**: Toast notifications for actions and errors
+- **Visual Effects**: Animated progress bars and hover effects
+- **Backdrop Dismiss**: Click outside modal to close
+- **Close Button**: Traditional X button in top-right corner
 
 ## Color Scheme
 
@@ -288,11 +361,21 @@ The design implements a mobile-first approach with progressive enhancement for l
 - **Funds**: Static display (ready for game logic integration)
 - **UT Selection**: Real-time map highlighting and info banner updates
 
-### Action Button (Enhanced Campaign Access)
-- **Hover/Focus**: Scale animation (1.05x) and enhanced glow effect
-- **Click**: Shows campaign menu options (placeholder alert for now)
-- **Position**: Floating above state groups for easy thumb access
-- **Purpose**: Primary access point for all campaign actions
+### Action Buttons (Campaign & Rally)
+- **Left Button (Campaign)**: Scale animation (1.05x) and enhanced glow effect on hover
+- **Right Button (Rally)**: Red styling with hover effects (placeholder functionality)
+- **Click**: Campaign button opens comprehensive policy investment modal
+- **Position**: Both floating above state groups for easy thumb access
+- **Purpose**: Campaign button provides access to all policy investments; Rally button reserved for future rally system
+
+### Campaign Modal System
+- **Modal Opening**: Smooth fade-in animation with backdrop blur
+- **Campaign Cards**: Hover effects with subtle elevation and border glow
+- **Progress Bars**: Smooth width transitions (0.6s ease) when investments are made
+- **Tier Styling**: Dynamic border colors and gradients based on policy importance
+- **Touch Feedback**: Visual feedback for investments with funds animation
+- **Completion Effects**: Glow pulse animation for completed campaigns
+- **Responsive**: Card sizing and spacing adapts to screen size
 
 ## Technical Specifications
 
@@ -303,21 +386,25 @@ The design implements a mobile-first approach with progressive enhancement for l
 - Large Desktop: 1440px+
 
 ### Z-Index Hierarchy
-1. Options modal: z-index 50 (highest)
-2. Action button: z-index 15
-3. Floating timer with UTs: z-index 12
-4. Camera notch banner: z-index 10
-5. Player stats banner: z-index 9
-6. States info banner: z-index 8
-7. State groups banner: z-index 8
+1. Campaign modal: z-index 100 (highest - new campaign system)
+2. Options modal: z-index 50
+3. Action buttons: z-index 15 (both campaign and rally buttons)
+4. Floating timer with UTs: z-index 12
+5. Camera notch banner: z-index 10
+6. Player stats banner: z-index 9
+7. States info banner: z-index 8
+8. State groups banner: z-index 8
 
 ### Layout Calculations
 - Total top banners height: 109px (35px + 42px + 32px)
 - Bottom banner height: 80px (state groups only)
 - Map container constraints: top: 109px, bottom: 80px
-- Action button position: 88px from bottom (above state groups)
+- Action buttons position: 88px from bottom (above state groups)
+  - Campaign button: left: 20px
+  - Rally button: right: 20px
 - Floating timer with UTs: 12px from top of map area, 20px from right
 - UT container: 4×2 grid (timer + 3 rows of 2 UTs)
+- Campaign modal: Full viewport with 20px padding
 - Viewport utilization: Maximized map space with essential UI elements
 
 ## Performance Considerations
@@ -331,10 +418,13 @@ The design implements a mobile-first approach with progressive enhancement for l
 - Async SVG loading with error handling
 - Event delegation for efficient interaction handling
 - Minimal DOM queries with cached references
-- Modal management system for game options
+- Modal management system for game options and campaigns
 - State group selection handlers (4×4 grid)
 - Union Territory selection and map highlighting system
-- Campaign functionality consolidated into action button
+- Campaign system with policy-tags.json integration
+- Real-time campaign progress tracking and validation
+- Player investment system with funds management
+- Toast notification system for user feedback
 - Floating timer overlay with integrated UT container management
 
 ## Accessibility Features
@@ -345,15 +435,18 @@ The design implements a mobile-first approach with progressive enhancement for l
 - Logical tab order for keyboard navigation
 
 ### Mobile Usability
-- Touch-friendly button sizes (state groups 4×4 grid, menu buttons, UT buttons)
+- Touch-friendly button sizes (state groups 4×4 grid, menu buttons, UT buttons, campaign cards)
 - Readable font sizes across all viewport sizes
 - Safe area consideration for modern smartphones
 - State groups positioning avoids gesture areas
 - Modal accessibility with backdrop and close button interactions
 - No horizontal scrolling required for essential functions
 - Floating timer with UTs doesn't interfere with map interaction
-- Action button positioned for comfortable thumb access
+- Action buttons positioned for comfortable thumb access (left and right sides)
 - Union Territory buttons sized for touch interaction on all devices
+- Campaign modal optimized for mobile scrolling and interaction
+- Large touch targets for campaign investments
+- Responsive campaign card sizing
 
 ## Future Enhancements
 
@@ -361,33 +454,71 @@ The design implements a mobile-first approach with progressive enhancement for l
 1. **Animation System**: Smooth transitions between states and banner updates
 2. **Theme Variations**: Light mode support with updated color scheme
 3. **Advanced Interactions**: Multi-touch gestures for map navigation
-4. **Enhanced Campaign System**: Modal/drawer interface for campaign selection
+4. **Rally System**: Complete implementation of rally functionality for right action button
 5. **State Group Filtering**: Dynamic map filtering based on selected groups
 6. **Advanced Timer Features**: Pause, speed controls, phase transitions
 7. **Union Territory Enhancements**: UT-specific campaign strategies and stats
 8. **Accessibility**: Screen reader support and high contrast mode
 9. **Performance**: SVG optimization and lazy loading for better mobile performance
+10. **Campaign Enhancements**: Policy effects implementation and strategic bonuses
 
 ### Integration Points
 - Real-time game state management with banner synchronization
 - Multiplayer synchronization across all UI components
 - Audio/visual feedback system for user interactions
 - Save/load game functionality with persistent UI state
-- Campaign strategy integration via action button interface
+- Campaign system integration with policy effects and state popularity
+- Rally system integration via right action button interface
 - State group filtering integration with game logic
 - Union Territory data integration with states_data.json
 - Timer synchronization with game phases and events
 - UT-specific gameplay mechanics and campaign targeting
+- Policy-tags.json integration for dynamic campaign costs and effects
+- Player funds management and validation system
 
 ---
 
-**Version**: Mobile UI Overhaul - 4-Banner System with Projected Seats Display  
+**Version**: Mobile UI Overhaul - Campaign System Implementation  
 **Last Updated**: July 12, 2025  
 **File**: svg-test.html  
 **Repository**: pradhanmantrielectionsgame.github.io  
-**Recent Changes**: Repurposed camera notch banner as projected seats progress bar with real-time election projections, added Union Territories quick access container integrated with floating timer, redesigned state groups as 4×4 grid, removed campaigns banner, enhanced action button for campaign access
+**Recent Changes**: Implemented comprehensive campaign system with tier-based policy investments, moved action button to left side, added rally button on right side, created 10-click campaign completion system with real-time progress tracking
 
 ## Major UI Changes in This Version
+
+### Campaign System Implementation (NEW)
+- **Dual Action Buttons**: Split functionality into dedicated Campaign (left) and Rally (right) buttons
+- **Policy Investment Modal**: Comprehensive campaign interface with all 22 policies from policy-tags.json
+- **Tier-Based Organization**: Policies sorted by importance with gold/silver/bronze visual styling
+- **10-Click Completion**: Each campaign requires exactly 10 clicks (100% progress) to complete
+- **Real-time Progress**: Visual progress bars with player color coding and completion animations
+- **Dynamic Pricing**: Campaign costs calculated from policy baseMagnitude (4-12 × 5M per click)
+- **Player Competition**: Both players can invest in same campaigns with winner determination
+- **Simplified UI**: Clean card design with cost in top-right, no unnecessary labels
+- **Mobile Optimized**: Touch-friendly interface with responsive design and proper spacing
+
+### Action Button System Enhancement (UPDATED)
+- **Button Repositioning**: Moved from right side to left side for campaign access
+- **Rally Button Addition**: New red rally button on right side (placeholder for future implementation)
+- **Improved Spacing**: Both buttons positioned for comfortable thumb access
+- **Visual Distinction**: Different colors and icons to clearly separate functionality
+
+### Campaign Modal Features (NEW)
+- **Data-Driven**: Loads all policy data from policy-tags.json automatically
+- **Tier Visualization**: Gold borders for Tier 1, Silver for Tier 2, Bronze for Tier 3
+- **Interactive Investment**: Click for Player 1, Shift+Click for Player 2 contributions
+- **Progress Tracking**: Real-time progress bars showing individual and combined contributions
+- **Funds Management**: Real-time funds deduction with visual feedback and validation
+- **Error Handling**: Insufficient funds warnings and completion notifications
+- **Responsive Design**: Adapts to all screen sizes with appropriate touch targets
+
+### User Experience Improvements (ENHANCED)
+- **Simplified Cards**: Removed tier labels and click counters for cleaner design
+- **Visual Hierarchy**: Cost prominently displayed in top-right of each campaign card
+- **Reduced Scrolling**: Compact card design minimizes vertical space usage
+- **Clear Instructions**: Built-in instructions explain click mechanics and player controls
+- **Toast Notifications**: Contextual feedback for all user actions and errors
+- **Smooth Animations**: Progress bar transitions and button hover effects
 
 ### State Groups Enhancement (NEW)
 - **Data-Driven Filtering**: State groups now use exact boolean flags from `states_data.json`

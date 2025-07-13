@@ -1,3 +1,46 @@
+<!--
+    CAMPAIGN SYSTEM IMPLEMENTATION:
+    
+    1. MOVED ACTION BUTTON TO LEFT SIDE
+       - Original action button (⚡) moved from right to left side
+       - Now opens campaign modal instead of placeholder alert
+    
+    2. ADDED RALLY BUTTON ON RIGHT SIDE
+       - New rally button (📢) on right side for future rally implementation
+       - Currently shows placeholder message
+    
+    3. IMPLEMENTED 3-TIER CAMPAIGN SYSTEM
+       - Tier 1 (Gold): Mega Policies - highest impact, highest cost
+       - Tier 2 (Silver): Major Policies - moderate impact and cost  
+       - Tier 3 (Bronze): Standard Policies - lower impact and cost
+       - Tier styling with gold/silver/bronze borders and gradients
+    
+    4. PROGRESS BAR SYSTEM (10 CLICKS TO COMPLETE)
+       - Each campaign requires exactly 10 clicks to complete
+       - Each click contributes 10% progress
+       - Visual progress bars show completion status
+       - Player 1 (green) vs Player 2 (red) color coding
+    
+    5. CAMPAIGN COSTS BASED ON POLICY-TAGS.JSON
+       - Cost = baseMagnitude × 5M
+       - Tier 1 policies cost more (typically 60M per click)
+       - Tier 2 policies cost medium (typically 40M per click)  
+       - Tier 3 policies cost less (typically 20M per click)
+    
+    6. INTERACTIVE FEATURES
+       - Click = Player 1 investment
+       - Shift+Click = Player 2 investment
+       - Real-time funds deduction
+       - Progress tracking per player
+       - Completion notifications
+       - Visual feedback and animations
+    
+    7. RESPONSIVE DESIGN
+       - Mobile-optimized campaign modal
+       - Smaller buttons on mobile devices
+       - Adaptive text sizes and spacing
+-->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -686,11 +729,10 @@
             }
         }
         
-        /* Action button - positioned above state groups banner */
+        /* Action buttons - positioned above state groups banner */
         .action-button {
             position: fixed;
             bottom: calc(var(--state-groups-banner-height) + 8px);
-            right: 20px;
             width: 56px;
             height: 56px;
             border-radius: 50%;
@@ -704,10 +746,244 @@
             transition: all 0.2s ease;
         }
         
+        .action-button.left {
+            left: 20px;
+        }
+        
+        .action-button.right {
+            right: 20px;
+        }
+        
         .action-button:hover {
             background: #5a60dd;
             transform: scale(1.05);
             box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+        }
+        
+        /* Rally button specific styling */
+        .rally-button {
+            background: #e65c5c;
+        }
+        
+        .rally-button:hover {
+            background: #f56565;
+        }
+        
+        /* Campaign Modal */
+        .campaign-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .campaign-modal.open {
+            display: flex;
+        }
+        
+        .campaign-content {
+            background: var(--panel);
+            width: 100%;
+            max-width: 500px;
+            max-height: 80vh;
+            border-radius: 12px;
+            padding: 20px;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+        
+        .campaign-content h2 {
+            margin: 0 0 20px 0;
+            color: var(--text);
+            font-size: 24px;
+            text-align: center;
+        }
+        
+        .campaign-grid {
+            display: grid;
+            gap: 12px;
+        }
+        
+        .campaign-item {
+            background: rgba(30, 30, 60, 0.8);
+            border-radius: 8px;
+            padding: 12px;
+            border: 2px solid rgba(100, 100, 255, 0.2);
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        
+        .campaign-item:hover {
+            background: rgba(30, 30, 60, 0.9);
+            transform: translateY(-2px);
+        }
+        
+        /* Tier-based styling */
+        .campaign-item.tier-1 {
+            border-color: #ffd700;
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.1) 0%, rgba(30, 30, 60, 0.8) 100%);
+            box-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
+        }
+        
+        .campaign-item.tier-1:hover {
+            border-color: #ffed4e;
+            box-shadow: 0 0 15px rgba(255, 237, 78, 0.6);
+        }
+        
+        .campaign-item.tier-2 {
+            border-color: #c0c0c0;
+            background: linear-gradient(135deg, rgba(192, 192, 192, 0.1) 0%, rgba(30, 30, 60, 0.8) 100%);
+            box-shadow: 0 0 8px rgba(192, 192, 192, 0.3);
+        }
+        
+        .campaign-item.tier-2:hover {
+            border-color: #d4d4d4;
+            box-shadow: 0 0 15px rgba(212, 212, 212, 0.6);
+        }
+        
+        .campaign-item.tier-3 {
+            border-color: #cd7f32;
+            background: linear-gradient(135deg, rgba(205, 127, 50, 0.1) 0%, rgba(30, 30, 60, 0.8) 100%);
+            box-shadow: 0 0 8px rgba(205, 127, 50, 0.3);
+        }
+        
+        .campaign-item.tier-3:hover {
+            border-color: #daa251;
+            box-shadow: 0 0 15px rgba(218, 162, 81, 0.6);
+        }
+        
+        .campaign-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+        
+        .campaign-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #e0e0ff;
+            flex: 1;
+            margin-right: 8px;
+        }
+        
+        .campaign-cost {
+            font-size: 12px;
+            color: #4CAF50;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+        
+        .campaign-progress {
+            margin-bottom: 8px;
+        }
+        
+        .campaign-progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(40, 40, 80, 0.3);
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .campaign-progress-fill {
+            height: 100%;
+            width: 0%;
+            transition: width 0.6s ease;
+            position: relative;
+        }
+        
+        .campaign-progress-fill.player1 {
+            background: linear-gradient(90deg, #4eb85a 0%, #5ac461 100%);
+        }
+        
+        .campaign-progress-fill.player2 {
+            background: linear-gradient(90deg, #e65c5c 0%, #f56565 100%);
+        }
+        
+        .campaign-progress-fill.complete {
+            animation: glow-pulse 2s infinite;
+        }
+        
+        @keyframes glow-pulse {
+            0% {
+                box-shadow: 0 0 5px rgba(100, 100, 255, 0.3);
+            }
+            50% {
+                box-shadow: 0 0 15px rgba(100, 100, 255, 0.8);
+            }
+            100% {
+                box-shadow: 0 0 5px rgba(100, 100, 255, 0.3);
+            }
+        }
+        
+        /* Responsive adjustments for campaign modal */
+        @media (max-width: 768px) {
+            .campaign-content {
+                margin: 10px;
+                max-height: 90vh;
+                width: calc(100% - 20px);
+            }
+            
+            .campaign-content h2 {
+                font-size: 20px;
+            }
+            
+            .campaign-title {
+                font-size: 14px;
+            }
+            
+            .campaign-cost {
+                font-size: 11px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .campaign-content {
+                padding: 15px;
+                border-radius: 8px;
+            }
+            
+            .campaign-content h2 {
+                font-size: 18px;
+                margin-bottom: 15px;
+            }
+            
+            .campaign-grid {
+                gap: 8px;
+            }
+            
+            .campaign-item {
+                padding: 8px;
+            }
+            
+            .campaign-title {
+                font-size: 13px;
+            }
+            
+            .campaign-cost {
+                font-size: 10px;
+            }
+            
+            .action-button {
+                width: 48px;
+                height: 48px;
+                font-size: 20px;
+            }
+            
+            .action-button.left {
+                left: 15px;
+            }
+            
+            .action-button.right {
+                right: 15px;
+            }
         }
     </style>
 </head>
@@ -792,8 +1068,20 @@
         </div>
     </div>
     
-    <!-- Action button -->
-    <button class="action-button" id="action-btn" title="Campaigns & Actions">⚡</button>
+    <!-- Action buttons -->
+    <button class="action-button left" id="campaign-btn" title="Campaigns">⚡</button>
+    <button class="action-button right rally-button" id="rally-btn" title="Rallies">📢</button>
+    
+    <!-- Campaign Modal -->
+    <div id="campaign-modal" class="campaign-modal">
+        <div class="campaign-content">
+            <button class="close-btn">&times;</button>
+            <h2>Campaign Policies</h2>
+            <div class="campaign-grid" id="campaign-grid">
+                <!-- Campaign items will be generated dynamically -->
+            </div>
+        </div>
+    </div>
     
     <!-- Options Modal -->
     <div id="options-modal" class="modal-backdrop">
@@ -1099,10 +1387,230 @@
             }, 15000); // Update every 15 seconds
         }
         
-        // Action button functionality
-        document.getElementById('action-btn').addEventListener('click', () => {
-            alert('Campaigns menu will open here! This will show Rally, TV Ads, Social Media, Door-to-Door, Print Media, and Radio Ads options.');
-        });
+        // Campaign system variables
+        let policyTags = null;
+        let campaignProgress = {};
+        let campaignClicks = {};
+        
+        // Load policy tags data
+        async function loadPolicyTags() {
+            try {
+                const response = await fetch('data/policy-tags.json');
+                const data = await response.json();
+                policyTags = data.policyTags;
+                
+                // Initialize campaign progress
+                Object.keys(policyTags).forEach(policyName => {
+                    campaignProgress[policyName] = {
+                        player1: 0,
+                        player2: 0,
+                        completed: false
+                    };
+                    campaignClicks[policyName] = {
+                        player1: 0,
+                        player2: 0
+                    };
+                });
+                
+                console.log('Policy tags loaded:', Object.keys(policyTags).length, 'policies');
+                return true;
+            } catch (error) {
+                console.error('Error loading policy tags:', error);
+                return false;
+            }
+        }
+        
+        // Generate campaign grid
+        function generateCampaignGrid() {
+            const grid = document.getElementById('campaign-grid');
+            if (!policyTags) return;
+            
+            grid.innerHTML = '';
+            
+            // Add instructions
+            const instructions = document.createElement('div');
+            instructions.className = 'campaign-instructions';
+            instructions.innerHTML = `
+                <div style="background: rgba(59, 64, 189, 0.2); padding: 10px; border-radius: 6px; margin-bottom: 15px; font-size: 12px; border: 1px solid #3b40bd;">
+                    <strong>Instructions:</strong> Click to invest in campaigns (10 clicks to complete). 
+                    Hold <strong>Shift + Click</strong> for Player 2. Each tier has different costs and impacts.
+                </div>
+            `;
+            grid.appendChild(instructions);
+            
+            // Sort policies by tier (1 = highest priority)
+            const sortedPolicies = Object.entries(policyTags).sort((a, b) => {
+                return a[1].tier - b[1].tier;
+            });
+            
+            sortedPolicies.forEach(([policyName, policyData]) => {
+                const item = document.createElement('div');
+                item.className = `campaign-item tier-${policyData.tier}`;
+                item.dataset.policy = policyName;
+                
+                const progress = campaignProgress[policyName];
+                const totalProgress = Math.min(100, progress.player1 + progress.player2);
+                const clicks = campaignClicks[policyName];
+                const totalClicks = clicks.player1 + clicks.player2;
+                
+                // Determine cost based on tier
+                const baseCost = policyData.baseMagnitude || 4;
+                const cost = baseCost * 5; // 5M per magnitude point
+                
+                // Determine dominant player color
+                let progressClass = 'player1';
+                if (progress.player2 > progress.player1) {
+                    progressClass = 'player2';
+                } else if (progress.player1 === progress.player2 && progress.player1 > 0) {
+                    progressClass = 'player1'; // Default to player1 in ties
+                }
+                
+                item.innerHTML = `
+                    <div class="campaign-header">
+                        <div class="campaign-title">${policyName}</div>
+                        <div class="campaign-cost">₹${cost}M</div>
+                    </div>
+                    <div class="campaign-progress">
+                        <div class="campaign-progress-bar">
+                            <div class="campaign-progress-fill ${progressClass} ${progress.completed ? 'complete' : ''}" 
+                                 style="width: ${totalProgress}%"></div>
+                        </div>
+                    </div>
+                `;
+                
+                // Add click handler
+                item.addEventListener('click', (e) => {
+                    if (progress.completed) {
+                        showCampaignMessage(`${policyName} campaign is already completed!`, 'info');
+                        return;
+                    }
+                    
+                    if (totalClicks >= 10) {
+                        showCampaignMessage(`${policyName} campaign has reached maximum clicks!`, 'warning');
+                        return;
+                    }
+                    
+                    // Determine player (shift = player 2, otherwise player 1)
+                    const playerId = e.shiftKey ? 2 : 1;
+                    const fundsElement = document.getElementById(`p${playerId}-funds`);
+                    const playerFunds = parseInt(fundsElement.textContent.replace('₹', '').replace('M', ''));
+                    
+                    if (playerFunds < cost) {
+                        showCampaignMessage(`Player ${playerId} has insufficient funds! Need ${cost}M, have ${playerFunds}M`, 'error');
+                        return;
+                    }
+                    
+                    // Update campaign progress
+                    campaignClicks[policyName][`player${playerId}`]++;
+                    campaignProgress[policyName][`player${playerId}`] += 10; // 10% per click
+                    
+                    // Update player funds with animation
+                    const newFunds = playerFunds - cost;
+                    fundsElement.textContent = `₹${newFunds}M`;
+                    fundsElement.style.transform = 'scale(1.1)';
+                    fundsElement.style.color = '#ff6b6b';
+                    setTimeout(() => {
+                        fundsElement.style.transform = 'scale(1)';
+                        fundsElement.style.color = '#4CAF50';
+                    }, 200);
+                    
+                    // Check if completed
+                    const newTotal = campaignProgress[policyName].player1 + campaignProgress[policyName].player2;
+                    if (newTotal >= 100) {
+                        campaignProgress[policyName].completed = true;
+                        const winner = campaignProgress[policyName].player1 > campaignProgress[policyName].player2 ? 1 : 2;
+                        showCampaignMessage(`🎉 ${policyName} campaign completed by Player ${winner}!`, 'success');
+                    } else {
+                        showCampaignMessage(`Player ${playerId} invested ${cost}M in ${policyName}`, 'success');
+                    }
+                    
+                    // Regenerate grid to show updates
+                    generateCampaignGrid();
+                    
+                    console.log(`Player ${playerId} invested in ${policyName}. Total progress: ${newTotal}%`);
+                });
+                
+                grid.appendChild(item);
+            });
+        }
+        
+        // Show campaign messages
+        function showCampaignMessage(message, type = 'info') {
+            const messageDiv = document.createElement('div');
+            messageDiv.style.cssText = `
+                position: fixed;
+                top: 50px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: ${type === 'success' ? '#4CAF50' : type === 'error' ? '#f44336' : type === 'warning' ? '#ff9800' : '#2196F3'};
+                color: white;
+                padding: 10px 20px;
+                border-radius: 6px;
+                z-index: 1000;
+                font-size: 14px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                animation: slideDown 0.3s ease;
+            `;
+            messageDiv.textContent = message;
+            
+            // Add animation
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes slideDown {
+                    from { transform: translateX(-50%) translateY(-20px); opacity: 0; }
+                    to { transform: translateX(-50%) translateY(0); opacity: 1; }
+                }
+            `;
+            document.head.appendChild(style);
+            
+            document.body.appendChild(messageDiv);
+            
+            setTimeout(() => {
+                messageDiv.remove();
+                style.remove();
+            }, 3000);
+        }
+        
+        // Campaign modal functionality
+        function initCampaignModal() {
+            const campaignModal = document.getElementById('campaign-modal');
+            const campaignBtn = document.getElementById('campaign-btn');
+            const closeBtn = campaignModal.querySelector('.close-btn');
+            
+            // Open modal
+            campaignBtn.addEventListener('click', async () => {
+                if (!policyTags) {
+                    await loadPolicyTags();
+                }
+                generateCampaignGrid();
+                campaignModal.classList.add('open');
+            });
+            
+            // Close modal via close button
+            closeBtn.addEventListener('click', () => {
+                campaignModal.classList.remove('open');
+            });
+            
+            // Close modal via backdrop click
+            campaignModal.addEventListener('click', (e) => {
+                if (e.target === campaignModal) {
+                    campaignModal.classList.remove('open');
+                }
+            });
+        }
+        
+        // Rally button functionality (placeholder)
+        function initRallyButton() {
+            const rallyBtn = document.getElementById('rally-btn');
+            rallyBtn.addEventListener('click', () => {
+                alert('Rally system coming soon! This will allow you to boost popularity in selected states.');
+            });
+        }
+        
+        // Action button functionality (old - now replaced with campaign modal)
+        // document.getElementById('action-btn').addEventListener('click', () => {
+        //     alert('Campaigns menu will open here! This will show Rally, TV Ads, Social Media, Door-to-Door, Print Media, and Radio Ads options.');
+        // });
         
         // State groups functionality
         function initStateGroups() {
@@ -1401,6 +1909,9 @@
             // Load states data first
             await loadStatesData();
             
+            // Load policy tags for campaigns
+            await loadPolicyTags();
+            
             // Then load the map and other components
             loadMap();
             updateGameStats();
@@ -1409,6 +1920,10 @@
             
             // Modal functionality
             initOptionsModal();
+            
+            // Initialize new campaign and rally systems
+            initCampaignModal();
+            initRallyButton();
             
             // Start popularity simulation
             simulatePopularityChanges();
