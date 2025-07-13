@@ -76,14 +76,66 @@
             top: calc(var(--banner-height) + var(--player-banner-height) + var(--states-banner-height) + 12px);
             right: 20px;
             background: rgba(38, 42, 69, 0.9);
-            padding: 6px 12px;
             border-radius: 16px;
-            font-size: 14px;
-            font-weight: bold;
             border: 1px solid #3a4060;
             backdrop-filter: blur(10px);
             z-index: 12;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: auto repeat(3, 1fr);
+            gap: 6px;
+            padding: 8px;
+            width: auto;
+            height: auto;
+        }
+        
+        .timer-display {
+            grid-column: 1 / -1;
+            padding: 6px 12px;
+            font-size: 14px;
+            font-weight: bold;
+            text-align: center;
+            background: rgba(59, 64, 189, 0.3);
+            border-radius: 8px;
+            border: 1px solid #4a5080;
+        }
+        
+        /* Union Territories Container - Now merged with timer pill */
+        .union-territories-container {
+            display: contents; /* This makes the container transparent to the grid */
+        }
+        
+        .ut-button {
+            background: rgba(59, 64, 189, 0.8);
+            border: 1px solid #4a5080;
+            border-radius: 8px;
+            color: white;
+            font-size: 10px;
+            font-weight: bold;
+            padding: 6px 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+            min-height: 28px;
+            min-width: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1.1;
+        }
+        
+        .ut-button:hover {
+            background: rgba(90, 96, 221, 0.9);
+            border-color: #5a60a0;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .ut-button.selected {
+            background: var(--accent);
+            border-color: #5a60dd;
+            box-shadow: 0 0 8px rgba(59, 64, 189, 0.5);
         }
         
         .funds-display {
@@ -340,6 +392,28 @@
             .state-group {
                 font-size: 8px;
             }
+            
+            .union-territories-container {
+                gap: 4px;
+                padding: 6px;
+            }
+            
+            .timer-pill {
+                gap: 4px;
+                padding: 6px;
+            }
+            
+            .timer-display {
+                font-size: 12px;
+                padding: 4px 8px;
+            }
+            
+            .ut-button {
+                font-size: 8px;
+                padding: 4px 6px;
+                min-height: 24px;
+                min-width: 70px;
+            }
         }
         
         /* Extra small viewport adjustments */
@@ -352,6 +426,28 @@
                 font-size: 7px;
                 padding: 1px;
             }
+            
+            .union-territories-container {
+                gap: 3px;
+                padding: 4px;
+            }
+            
+            .timer-pill {
+                gap: 3px;
+                padding: 4px;
+            }
+            
+            .timer-display {
+                font-size: 10px;
+                padding: 3px 6px;
+            }
+            
+            .ut-button {
+                font-size: 7px;
+                padding: 3px 4px;
+                min-height: 20px;
+                min-width: 60px;
+            }
         }
         
         /* Large viewport font scaling */
@@ -361,6 +457,11 @@
             }
             
             .timer-pill {
+                gap: 8px;
+                padding: 10px;
+            }
+            
+            .timer-display {
                 font-size: 18px;
                 padding: 8px 16px;
             }
@@ -380,6 +481,18 @@
             .state-group {
                 font-size: 11px;
             }
+            
+            .union-territories-container {
+                gap: 8px;
+                padding: 10px;
+            }
+            
+            .ut-button {
+                font-size: 12px;
+                padding: 8px 10px;
+                min-height: 32px;
+                min-width: 90px;
+            }
         }
         
         @media (min-width: 1024px) {
@@ -388,6 +501,11 @@
             }
             
             .timer-pill {
+                gap: 10px;
+                padding: 12px;
+            }
+            
+            .timer-display {
                 font-size: 28px;
                 padding: 12px 24px;
             }
@@ -412,6 +530,18 @@
             .state-group {
                 font-size: 14px;
             }
+            
+            .union-territories-container {
+                gap: 10px;
+                padding: 12px;
+            }
+            
+            .ut-button {
+                font-size: 14px;
+                padding: 10px 12px;
+                min-height: 36px;
+                min-width: 100px;
+            }
         }
         
         @media (min-width: 1440px) {
@@ -420,6 +550,11 @@
             }
             
             .timer-pill {
+                gap: 12px;
+                padding: 16px;
+            }
+            
+            .timer-display {
                 font-size: 34px;
                 padding: 16px 32px;
             }
@@ -443,6 +578,18 @@
             
             .state-group {
                 font-size: 16px;
+            }
+            
+            .union-territories-container {
+                gap: 12px;
+                padding: 16px;
+            }
+            
+            .ut-button {
+                font-size: 16px;
+                padding: 12px 16px;
+                min-height: 40px;
+                min-width: 110px;
             }
         }
         
@@ -507,9 +654,19 @@
     <!-- Map container -->
     <div id="map-container"></div>
     
-    <!-- Timer pill overlay -->
-    <div class="timer-pill" id="timer-display">
-        Phase 1/8 | 2:45
+    <!-- Timer pill overlay with Union Territories -->
+    <div class="timer-pill" id="timer-pill">
+        <div class="timer-display" id="timer-display">
+            Phase 1/8 | 2:45
+        </div>
+        <div class="union-territories-container" id="ut-container">
+            <button class="ut-button" data-svg-id="INDL">New Delhi</button>
+            <button class="ut-button" data-svg-id="INCH">Chandigarh</button>
+            <button class="ut-button" data-svg-id="INDH">DNH</button>
+            <button class="ut-button" data-svg-id="INPY">Puducherry</button>
+            <button class="ut-button" data-svg-id="INLD">Lakshadweep</button>
+            <button class="ut-button" data-svg-id="INAN">A&N Islands</button>
+        </div>
     </div>
     
     <!-- Banner 4: State Groups (Bottom) - 4x4 Grid -->
@@ -785,6 +942,64 @@
             });
         }
         
+        // Union Territories functionality
+        function initUnionTerritories() {
+            const utButtons = document.querySelectorAll('.ut-button');
+            utButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    // Remove selected class from all UT buttons
+                    utButtons.forEach(btn => btn.classList.remove('selected'));
+                    // Add selected class to clicked button
+                    button.classList.add('selected');
+                    
+                    const svgId = button.getAttribute('data-svg-id');
+                    const utName = button.textContent.trim();
+                    console.log('Selected Union Territory:', utName, 'SVG ID:', svgId);
+                    
+                    // Update state info for the selected UT
+                    updateStateInfo(svgId);
+                    
+                    // Highlight the UT on the map
+                    highlightUnionTerritory(svgId);
+                    
+                    // Reset state groups to "All"
+                    const stateGroups = document.querySelectorAll('.state-group');
+                    stateGroups.forEach(g => g.classList.remove('active'));
+                    stateGroups[0].classList.add('active'); // "All" is first
+                });
+            });
+        }
+        
+        // Highlight specific Union Territory on the map
+        function highlightUnionTerritory(svgId) {
+            const svgElement = document.querySelector('#map-container svg');
+            if (!svgElement) return;
+            
+            const paths = svgElement.querySelectorAll('path[id], g[id]');
+            
+            // Reset all paths to normal
+            paths.forEach(path => {
+                path.style.opacity = '0.4';
+                path.style.filter = '';
+                path.style.stroke = '';
+                path.style.strokeWidth = '';
+            });
+            
+            // Highlight the selected UT
+            const utPath = svgElement.querySelector(`#${svgId}`);
+            if (utPath) {
+                utPath.style.opacity = '1';
+                utPath.style.filter = 'brightness(1.3) drop-shadow(0 0 5px #4CAF50)';
+                utPath.style.stroke = '#4CAF50';
+                utPath.style.strokeWidth = '2';
+                
+                // Scroll the UT into view if needed (for small devices)
+                utPath.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            
+            console.log('Highlighted Union Territory:', svgId);
+        }
+        
         // Handle state group filtering
         function filterStatesByGroup(groupName) {
             const svgElement = document.querySelector('#map-container svg');
@@ -845,7 +1060,13 @@
             paths.forEach(path => {
                 path.style.opacity = '';
                 path.style.filter = '';
+                path.style.stroke = '';
+                path.style.strokeWidth = '';
             });
+            
+            // Clear UT selections
+            const utButtons = document.querySelectorAll('.ut-button');
+            utButtons.forEach(btn => btn.classList.remove('selected'));
         }
         
         // Campaigns functionality - removed since campaigns banner is removed
@@ -893,6 +1114,7 @@
             loadMap();
             updateGameStats();
             initStateGroups();
+            initUnionTerritories();
             
             // Modal functionality
             initOptionsModal();

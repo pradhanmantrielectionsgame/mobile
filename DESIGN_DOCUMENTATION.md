@@ -63,17 +63,27 @@ The game uses a streamlined 4-banner layout with a floating timer overlay to pro
 - **Touch-Friendly**: Larger buttons suitable for mobile interaction
 - Interactive selection with active states and hover effects
 
-#### Floating Timer Overlay
-- **Purpose**: Display game phase and countdown timer
+#### Floating Timer Overlay with Union Territories
+- **Purpose**: Display game phase, countdown timer, and Union Territory quick access
 - **Position**: Floating overlay in top-right of map area
 - **Background**: Semi-transparent glass effect with backdrop blur
 - **Z-index**: 12 (above map content)
+- **Layout**: 4×2 CSS Grid structure
+
+**Structure:**
+- **Top Row**: Timer display spanning full width (grid-column: 1 / -1)
+- **Bottom 3 Rows**: Union Territories in 2×3 grid layout
+  - Row 1: New Delhi | Chandigarh
+  - Row 2: DNH | Puducherry  
+  - Row 3: Lakshadweep | A&N Islands
 
 **Features:**
 - **Modern Design**: Glass morphism effect with backdrop-filter
 - **Non-Intrusive**: Floats above map without blocking interaction
 - **Responsive**: Scales with viewport size
-- **Format**: "Phase X/8 | MM:SS"
+- **Timer Format**: "Phase X/8 | MM:SS"
+- **UT Selection**: Click any UT button to highlight on map and show details
+- **Visual Feedback**: Selected UT gets accent styling and map highlighting
 - **Box Shadow**: Subtle elevation for depth
 
 ### Main Content Area
@@ -156,9 +166,24 @@ The design implements a mobile-first approach with progressive enhancement for l
 ## Interactive Elements
 
 ### Map Interaction
-- **Click/Tap**: Cycles through demo states
+- **Click/Tap**: Cycles through demo states or select specific states via UT buttons
 - **Visual Feedback**: State information updates in Banner 3
 - **States Included**: Uttar Pradesh, Maharashtra, Tamil Nadu, West Bengal, Bihar, Karnataka, Gujarat, Rajasthan
+- **Union Territory Access**: Direct selection via floating UT buttons for all 6 UTs
+
+### Union Territories Quick Access
+- **Purpose**: Direct access to India's 6 Union Territories without map navigation
+- **Layout**: Integrated into floating timer container as 3×2 grid
+- **UTs Included**: 
+  - New Delhi (INDL)
+  - Chandigarh (INCH)
+  - DNH - Dadra Nagar Haveli and Daman and Diu (INDH)
+  - Puducherry (INPY)
+  - Lakshadweep (INLD)
+  - A&N Islands - Andaman & Nicobar Islands (INAN)
+- **Interaction**: Click to highlight UT on map and display details
+- **Visual Feedback**: Selected button styling with accent color
+- **Map Integration**: Highlights selected UT with green glow and border
 
 ### State Groups Navigation (4×4 Grid)
 - **Purpose**: Quick filtering and regional focus without scrolling
@@ -189,9 +214,10 @@ The design implements a mobile-first approach with progressive enhancement for l
 - **Styling**: Centered modal with close button
 
 ### Dynamic Updates
-- **Timer**: Updates every 10 seconds with random phase/time
-- **State Info**: Updates immediately on map interaction
+- **Timer**: Updates every 10 seconds with random phase/time in floating container
+- **State Info**: Updates immediately on map interaction or UT selection
 - **Funds**: Static display (ready for game logic integration)
+- **UT Selection**: Real-time map highlighting and info banner updates
 
 ### Action Button (Enhanced Campaign Access)
 - **Hover/Focus**: Scale animation (1.05x) and enhanced glow effect
@@ -210,7 +236,7 @@ The design implements a mobile-first approach with progressive enhancement for l
 ### Z-Index Hierarchy
 1. Options modal: z-index 50 (highest)
 2. Action button: z-index 15
-3. Floating timer: z-index 12
+3. Floating timer with UTs: z-index 12
 4. Camera notch banner: z-index 10
 5. Player stats banner: z-index 9
 6. States info banner: z-index 8
@@ -221,7 +247,8 @@ The design implements a mobile-first approach with progressive enhancement for l
 - Bottom banner height: 80px (state groups only)
 - Map container constraints: top: 109px, bottom: 80px
 - Action button position: 88px from bottom (above state groups)
-- Timer position: 12px from top of map area, 20px from right
+- Floating timer with UTs: 12px from top of map area, 20px from right
+- UT container: 4×2 grid (timer + 3 rows of 2 UTs)
 - Viewport utilization: Maximized map space with essential UI elements
 
 ## Performance Considerations
@@ -237,8 +264,9 @@ The design implements a mobile-first approach with progressive enhancement for l
 - Minimal DOM queries with cached references
 - Modal management system for game options
 - State group selection handlers (4×4 grid)
+- Union Territory selection and map highlighting system
 - Campaign functionality consolidated into action button
-- Floating timer overlay management
+- Floating timer overlay with integrated UT container management
 
 ## Accessibility Features
 
@@ -248,14 +276,15 @@ The design implements a mobile-first approach with progressive enhancement for l
 - Logical tab order for keyboard navigation
 
 ### Mobile Usability
-- Touch-friendly button sizes (state groups 4×4 grid, menu buttons)
+- Touch-friendly button sizes (state groups 4×4 grid, menu buttons, UT buttons)
 - Readable font sizes across all viewport sizes
 - Safe area consideration for modern smartphones
 - State groups positioning avoids gesture areas
 - Modal accessibility with backdrop and close button interactions
 - No horizontal scrolling required for essential functions
-- Floating timer doesn't interfere with map interaction
+- Floating timer with UTs doesn't interfere with map interaction
 - Action button positioned for comfortable thumb access
+- Union Territory buttons sized for touch interaction on all devices
 
 ## Future Enhancements
 
@@ -266,8 +295,9 @@ The design implements a mobile-first approach with progressive enhancement for l
 4. **Enhanced Campaign System**: Modal/drawer interface for campaign selection
 5. **State Group Filtering**: Dynamic map filtering based on selected groups
 6. **Advanced Timer Features**: Pause, speed controls, phase transitions
-7. **Accessibility**: Screen reader support and high contrast mode
-8. **Performance**: SVG optimization and lazy loading for better mobile performance
+7. **Union Territory Enhancements**: UT-specific campaign strategies and stats
+8. **Accessibility**: Screen reader support and high contrast mode
+9. **Performance**: SVG optimization and lazy loading for better mobile performance
 
 ### Integration Points
 - Real-time game state management with banner synchronization
@@ -276,17 +306,25 @@ The design implements a mobile-first approach with progressive enhancement for l
 - Save/load game functionality with persistent UI state
 - Campaign strategy integration via action button interface
 - State group filtering integration with game logic
+- Union Territory data integration with states_data.json
 - Timer synchronization with game phases and events
+- UT-specific gameplay mechanics and campaign targeting
 
 ---
 
-**Version**: Mobile UI Overhaul - 4-Banner System with Floating Timer  
+**Version**: Mobile UI Overhaul - 4-Banner System with Floating Timer + Union Territories  
 **Last Updated**: July 12, 2025  
 **File**: svg-test.html  
 **Repository**: pradhanmantrielectionsgame.github.io  
-**Recent Changes**: Redesigned state groups as 4×4 grid, removed campaigns banner, added floating timer overlay, enhanced action button for campaign access
+**Recent Changes**: Added Union Territories quick access container integrated with floating timer, redesigned state groups as 4×4 grid, removed campaigns banner, enhanced action button for campaign access
 
 ## Major UI Changes in This Version
+
+### Union Territories Integration (NEW)
+- **Added**: Integrated UT container with floating timer in 4×2 grid layout
+- **Features**: Direct access to all 6 Union Territories with map highlighting
+- **Benefits**: Quick UT selection, no need to search on map, organized layout
+- **Design**: Merged with timer for space efficiency and cohesive appearance
 
 ### State Groups Banner Redesign
 - **Before**: Horizontal scrolling layout with 16 chips
@@ -298,12 +336,7 @@ The design implements a mobile-first approach with progressive enhancement for l
 - **After**: Campaigns accessed via enhanced action button
 - **Benefits**: More map space, cleaner interface, consolidated actions
 
-### Floating Timer Implementation
-- **Before**: Timer in center of player stats banner
-- **After**: Floating overlay in top-right of map area
-- **Benefits**: Cleaner player stats section, non-intrusive timer placement, modern glass effect
-
-### Enhanced Action Button
-- **Before**: Basic action button with simple functionality
-- **After**: Primary campaigns access point with hover effects
-- **Benefits**: Consolidated campaign access, better visual feedback, improved positioning
+### Floating Timer Enhancement
+- **Before**: Timer only in floating overlay
+- **After**: Timer + Union Territories in merged 4×2 grid container
+- **Benefits**: Space efficient, organized UT access, maintains timer visibility
