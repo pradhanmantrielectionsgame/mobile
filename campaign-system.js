@@ -147,43 +147,43 @@ function handleCampaignClick(e, policyName, policyData, progress, totalClicks, c
     }
     
     // Determine player (shift = player 2, otherwise player 1)
-    const playerId = e.shiftKey ? 2 : 1;
-    const fundsElement = document.getElementById(`p${playerId}-funds`);
-    const playerFunds = parseInt(fundsElement.textContent.replace('₹', '').replace('M', ''));
+    const playerId = e.shiftKey ? 'player2' : 'player1';
+    const playerData = getPlayerData(playerId);
     
-    if (playerFunds < cost) {
-        showCampaignMessage(`Player ${playerId} has insufficient funds! Need ${cost}M, have ${playerFunds}M`, 'error');
+    if (!playerData) {
+        showCampaignMessage(`Player data not found!`, 'error');
+        return;
+    }
+    
+    if (playerData.funds < cost) {
+        showCampaignMessage(`${playerData.name} has insufficient funds! Need ₹${cost}M, have ₹${playerData.funds}M`, 'error');
+        showInsufficientFundsAnimation(playerId);
         return;
     }
     
     // Update campaign progress
-    campaignClicks[policyName][`player${playerId}`]++;
-    campaignProgress[policyName][`player${playerId}`] += 10; // 10% per click
+    const playerNum = playerId === 'player1' ? 1 : 2;
+    campaignClicks[policyName][`player${playerNum}`]++;
+    campaignProgress[policyName][`player${playerNum}`] += 10; // 10% per click
     
-    // Update player funds with animation
-    const newFunds = playerFunds - cost;
-    fundsElement.textContent = `₹${newFunds}M`;
-    fundsElement.style.transform = 'scale(1.1)';
-    fundsElement.style.color = '#ff6b6b';
-    setTimeout(() => {
-        fundsElement.style.transform = 'scale(1)';
-        fundsElement.style.color = '#4CAF50';
-    }, 200);
+    // Update player funds using the new system
+    updatePlayerFunds(playerId, -cost);
     
     // Check if completed
     const newTotal = campaignProgress[policyName].player1 + campaignProgress[policyName].player2;
     if (newTotal >= 100) {
         campaignProgress[policyName].completed = true;
         const winner = campaignProgress[policyName].player1 > campaignProgress[policyName].player2 ? 1 : 2;
-        showCampaignMessage(`🎉 ${policyName} campaign completed by Player ${winner}!`, 'success');
+        const winnerData = getPlayerData(`player${winner}`);
+        showCampaignMessage(`🎉 ${policyName} campaign completed by ${winnerData ? winnerData.name : `Player ${winner}`}!`, 'success');
     } else {
-        showCampaignMessage(`Player ${playerId} invested ${cost}M in ${policyName}`, 'success');
+        showCampaignMessage(`${playerData.name} invested ₹${cost}M in ${policyName}`, 'success');
     }
     
     // Regenerate grid to show updates
     generateCampaignGrid();
     
-    console.log(`Player ${playerId} invested in ${policyName}. Total progress: ${newTotal}%`);
+    console.log(`${playerId} invested in ${policyName}. Total progress: ${newTotal}%`);
 }
 
 // Show campaign messages

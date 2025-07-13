@@ -3,6 +3,28 @@
 
 let statesData = [];
 let statePopularity = {};
+let politiciansData = [];
+
+// Player management system
+let gameState = {
+    player1: {
+        id: 'player1',
+        name: 'Player 1',
+        politician: null, // Will store selected politician data
+        funds: 1600, // In millions
+        totalSpent: 0
+    },
+    player2: {
+        id: 'player2', 
+        name: 'Player 2',
+        politician: null, // Will store selected politician data
+        funds: 850, // In millions
+        totalSpent: 0
+    },
+    currentPhase: 1,
+    maxPhases: 8,
+    gameStarted: false
+};
 
 // Load states data from JSON file
 async function loadStatesData() {
@@ -39,6 +61,145 @@ async function loadStatesData() {
             { State: "Maharashtra", LokSabhaSeats: "48", SvgId: "INMH" },
             { State: "Tamil Nadu", LokSabhaSeats: "39", SvgId: "INTN" }
         ];
+    }
+}
+
+// Load politicians data from JSON file
+async function loadPoliticiansData() {
+    try {
+        const response = await fetch('data/politicians-data.json');
+        const data = await response.json();
+        politiciansData = data.politicians;
+        
+        console.log('Politicians data loaded:', politiciansData.length, 'politicians');
+        
+        // Auto-assign default politicians for demo (can be removed later)
+        if (politiciansData.length >= 2) {
+            assignPoliticianToPlayer('player1', politiciansData[0].id); // Narendra Modi
+            assignPoliticianToPlayer('player2', politiciansData[2].id); // Rahul Gandhi
+        }
+        
+        // Update player info display after politicians are assigned
+        updatePlayerInfoDisplay();
+        
+    } catch (error) {
+        console.error('Error loading politicians data:', error);
+        // Fallback - create basic politician data
+        politiciansData = [
+            {
+                id: "default-p1",
+                name: "Player 1 Leader",
+                party: "Party 1",
+                image: "assets/images/default.png",
+                partyLogo: "assets/icons/default.svg",
+                primaryColor: "#5ac461"
+            },
+            {
+                id: "default-p2", 
+                name: "Player 2 Leader",
+                party: "Party 2",
+                image: "assets/images/default.png",
+                partyLogo: "assets/icons/default.svg",
+                primaryColor: "#e65c5c"
+            }
+        ];
+    }
+}
+
+// Assign a politician to a player
+function assignPoliticianToPlayer(playerId, politicianId) {
+    const politician = politiciansData.find(p => p.id === politicianId);
+    if (politician && gameState[playerId]) {
+        gameState[playerId].politician = politician;
+        gameState[playerId].name = `${politician.name}`;
+        console.log(`Assigned ${politician.name} to ${playerId}`);
+        updatePlayerInfoDisplay();
+        return true;
+    }
+    console.error(`Failed to assign politician ${politicianId} to ${playerId}`);
+    return false;
+}
+
+// Update player funds (positive amount adds, negative amount subtracts)
+function updatePlayerFunds(playerId, amount) {
+    if (gameState[playerId]) {
+        const oldFunds = gameState[playerId].funds;
+        gameState[playerId].funds = Math.max(0, gameState[playerId].funds + amount);
+        
+        if (amount < 0) {
+            gameState[playerId].totalSpent += Math.abs(amount);
+        }
+        
+        console.log(`${playerId} funds: ₹${oldFunds}M → ₹${gameState[playerId].funds}M`);
+        
+        // Update display with animation
+        const fundsElement = document.getElementById(`${playerId === 'player1' ? 'p1' : 'p2'}-funds`);
+        if (fundsElement) {
+            fundsElement.textContent = `₹${gameState[playerId].funds}M`;
+            
+            // Add animation class
+            if (amount < 0) {
+                fundsElement.classList.add('updating');
+                setTimeout(() => {
+                    fundsElement.classList.remove('updating');
+                }, 300);
+            }
+        }
+        
+        updatePlayerInfoDisplay();
+        return true;
+    }
+    return false;
+}
+
+// Show insufficient funds animation
+function showInsufficientFundsAnimation(playerId) {
+    const fundsElement = document.getElementById(`${playerId === 'player1' ? 'p1' : 'p2'}-funds`);
+    if (fundsElement) {
+        fundsElement.classList.add('insufficient');
+        setTimeout(() => {
+            fundsElement.classList.remove('insufficient');
+        }, 500);
+    }
+}
+
+// Get player data
+function getPlayerData(playerId) {
+    return gameState[playerId] || null;
+}
+
+// Update player info display in the UI
+function updatePlayerInfoDisplay() {
+    // Update Player 1
+    const p1Data = gameState.player1;
+    const p1InfoContainer = document.querySelector('.player-info.p1');
+    if (p1InfoContainer && p1Data.politician) {
+        p1InfoContainer.innerHTML = `
+            <div class="player-avatar-section">
+                <img src="${p1Data.politician.image}" alt="${p1Data.politician.name}" class="candidate-icon" onerror="this.style.display='none'">
+                <img src="${p1Data.politician.partyLogo}" alt="${p1Data.politician.party}" class="party-icon" onerror="this.style.display='none'">
+            </div>
+            <div class="player-details">
+                <div class="player-name">${p1Data.name}</div>
+                <div class="funds-display" id="p1-funds">₹${p1Data.funds}M</div>
+            </div>
+        `;
+    }
+    
+    // Update Player 2  
+    const p2Data = gameState.player2;
+    const p2InfoContainer = document.querySelector('.player-info.p2');
+    if (p2InfoContainer && p2Data.politician) {
+        p2InfoContainer.innerHTML = `
+            <div class="player-details">
+                <div class="player-name">${p2Data.name}</div>
+                <div class="funds-display" id="p2-funds">₹${p2Data.funds}M</div>
+            </div>
+            <div class="player-avatar-section">
+                <img src="${p2Data.politician.image}" alt="${p2Data.politician.name}" class="candidate-icon" onerror="this.style.display='none'">
+                <img src="${p2Data.politician.partyLogo}" alt="${p2Data.politician.party}" class="party-icon" onerror="this.style.display='none'">
+            </div>
+        `;
     }
 }
 

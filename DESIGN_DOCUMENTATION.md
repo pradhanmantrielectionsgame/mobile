@@ -35,21 +35,28 @@ The game uses a streamlined 4-banner layout with a floating timer overlay to pro
 - Updates every 15 seconds with popularity simulation
 - Clean flexbox implementation prevents layout issues
 
-#### Banner 2: Player Info & Stats
-- **Purpose**: Display player fund comparison
+#### Banner 2: Player Info & Stats (Updated)
+- **Purpose**: Display player candidate, party, name, and funds for both players
 - **Height**: 42px
 - **Background**: Dark panel (`--panel: #1e2238`)
 - **Positioning**: Fixed, top: 35px
 - **Z-index**: 9
 
 **Content Layout:**
-- **Left Section**: Player 1 avatar (green) + funds display
-- **Right Section**: Player 2 funds + avatar (red)
+- **Player 1 (Left)**: Candidate icon (portrait), party icon, player name, and funds
+- **Player 2 (Right)**: Player name, funds, party icon, candidate icon (mirrored layout)
 - **Clean Focus**: Timer moved to separate floating element for better space utilization
 
 **Elements:**
-- Player avatars: 24px circular indicators
-- Funds display: Currency format with "M" suffix (e.g., "₹1600M")
+- Candidate icon: Circular portrait image (24-48px, responsive)
+- Party icon: SVG party logo (16-36px, responsive)
+- Player name: Politician's name (e.g., "Narendra Modi")
+- Funds display: Currency format with "M" suffix (e.g., "₹1600M"), dynamically updated
+
+**Features:**
+- Dynamic updates: Funds decrease in real time when campaigns are run
+- Visual feedback: Animation on funds change and error animation for insufficient funds
+- Fully responsive: Layout and icon sizes adapt to all screen sizes
 
 #### Banner 3: States Info & Menu (Enhanced Two-Row Layout)
 - **Purpose**: Display selected state information and provide access to game options
@@ -581,8 +588,8 @@ The codebase has been refactored from a single monolithic file into a clean, mai
 
 ---
 
-**Version**: Mobile UI Overhaul - Modular Architecture Implementation  
-**Last Updated**: July 12, 2025  
+**Version**: Player Info UI Overhaul (candidate/party icons, name, dynamic funds)  
+**Last Updated**: July 13, 2025  
 **Main File**: index.html  
 **Repository**: pradhanmantrielectionsgame.github.io  
 **Recent Changes**: Refactored monolithic svg-test.html into 5 modular files for better maintainability, implemented comprehensive campaign system with tier-based policy investments, moved action button to left side, added rally button on right side, created 10-click campaign completion system with real-time progress tracking

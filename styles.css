@@ -101,10 +101,110 @@ body {
 .player-info {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 12px;
     font-size: 14px;
+    max-width: 45%;
 }
 
+.player-info.p1 {
+    flex-direction: row;
+}
+
+.player-info.p2 {
+    flex-direction: row-reverse;
+}
+
+.player-avatar-section {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.candidate-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.party-icon {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+    filter: brightness(1.1);
+}
+
+.player-details {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0; /* Allow text truncation */
+}
+
+.player-info.p2 .player-details {
+    text-align: right;
+}
+
+.player-name {
+    font-size: 12px;
+    color: #fff;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 120px;
+}
+
+.funds-display {
+    font-size: 14px;
+    color: #4CAF50;
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+/* Fund update animations */
+.funds-display.updating {
+    animation: fund-update 0.3s ease-in-out;
+}
+
+@keyframes fund-update {
+    0% { 
+        transform: scale(1); 
+        color: #4CAF50; 
+    }
+    50% { 
+        transform: scale(1.15); 
+        color: #ff6b6b; 
+        filter: brightness(1.2);
+    }
+    100% { 
+        transform: scale(1); 
+        color: #4CAF50; 
+    }
+}
+
+/* Error state for insufficient funds */
+.funds-display.insufficient {
+    animation: insufficient-funds 0.5s ease-in-out;
+}
+
+@keyframes insufficient-funds {
+    0%, 100% { 
+        transform: translateX(0); 
+        color: #4CAF50; 
+    }
+    25% { 
+        transform: translateX(-3px); 
+        color: #ff6b6b; 
+    }
+    75% { 
+        transform: translateX(3px); 
+        color: #ff6b6b; 
+    }
+}
+
+/* Legacy avatar styles for backward compatibility */
 .avatar {
     width: 24px;
     height: 24px;
@@ -114,12 +214,6 @@ body {
 
 .avatar.p1 { background: #5ac461; }
 .avatar.p2 { background: #e65c5c; }
-
-.funds-display {
-    font-size: 14px;
-    color: #4CAF50;
-    font-weight: bold;
-}
 
 /* Timer pill and Union Territories */
 .timer-pill {
@@ -641,6 +735,13 @@ svg[width][height] {
     .timer-pill { gap: 3px; padding: 4px; }
     .timer-display { font-size: 10px; padding: 3px 6px; }
     .ut-button { font-size: 7px; padding: 3px 4px; min-height: 20px; min-width: 60px; }
+    
+    /* Player info responsive */
+    .candidate-icon { width: 20px; height: 20px; }
+    .party-icon { width: 16px; height: 16px; }
+    .player-name { font-size: 10px; max-width: 80px; }
+    .funds-display { font-size: 11px; }
+    .player-info { gap: 6px; }
 }
 
 @media (max-width: 400px) {
@@ -648,6 +749,12 @@ svg[width][height] {
     .timer-pill { gap: 4px; padding: 6px; }
     .timer-display { font-size: 12px; padding: 4px 8px; }
     .ut-button { font-size: 8px; padding: 4px 6px; min-height: 24px; min-width: 70px; }
+    
+    /* Player info responsive */
+    .candidate-icon { width: 24px; height: 24px; }
+    .party-icon { width: 18px; height: 18px; }
+    .player-name { font-size: 11px; max-width: 90px; }
+    .funds-display { font-size: 12px; }
 }
 
 @media (max-width: 480px) {
@@ -660,6 +767,12 @@ svg[width][height] {
     .action-button { width: 48px; height: 48px; font-size: 20px; }
     .action-button.left { left: 15px; }
     .action-button.right { right: 15px; }
+    
+    /* Player info responsive */
+    .candidate-icon { width: 28px; height: 28px; }
+    .party-icon { width: 20px; height: 20px; }
+    .player-name { font-size: 11px; max-width: 100px; }
+    .funds-display { font-size: 13px; }
 }
 
 @media (max-width: 768px) {
@@ -680,30 +793,48 @@ svg[width][height] {
     .funds-display { font-size: 18px; }
     .state-group { font-size: 11px; }
     .ut-button { font-size: 12px; padding: 8px 10px; min-height: 32px; min-width: 90px; }
+    
+    /* Player info responsive */
+    .candidate-icon { width: 36px; height: 36px; }
+    .party-icon { width: 28px; height: 28px; }
+    .player-name { font-size: 14px; max-width: 140px; }
+    .player-info { gap: 14px; }
 }
 
 @media (min-width: 1024px) {
     .player-info { font-size: 28px; }
     .timer-pill { gap: 10px; padding: 12px; }
     .timer-display { font-size: 28px; padding: 12px 24px; }
-    .funds-display { font-size: 28px; }
+    .funds-display { font-size: 24px; }
     .avatar { width: 36px; height: 36px; }
     .state-group { font-size: 14px; }
     .state-name { font-size: 18px; }
     .state-stats { font-size: 16px; }
     .ut-button { font-size: 14px; padding: 10px 12px; min-height: 36px; min-width: 100px; }
+    
+    /* Player info responsive */
+    .candidate-icon { width: 44px; height: 44px; }
+    .party-icon { width: 32px; height: 32px; }
+    .player-name { font-size: 16px; max-width: 160px; }
+    .player-info { gap: 16px; }
 }
 
 @media (min-width: 1440px) {
     .player-info { font-size: 34px; }
     .timer-pill { gap: 12px; padding: 16px; }
     .timer-display { font-size: 34px; padding: 16px 32px; }
-    .funds-display { font-size: 34px; }
+    .funds-display { font-size: 28px; }
     .avatar { width: 44px; height: 44px; }
     .state-group { font-size: 16px; }
     .state-name { font-size: 20px; }
     .state-stats { font-size: 18px; }
     .ut-button { font-size: 16px; padding: 12px 16px; min-height: 40px; min-width: 110px; }
+    
+    /* Player info responsive */
+    .candidate-icon { width: 48px; height: 48px; }
+    .party-icon { width: 36px; height: 36px; }
+    .player-name { font-size: 18px; max-width: 180px; }
+    .player-info { gap: 18px; }
 }
 
 @media (orientation: portrait) {

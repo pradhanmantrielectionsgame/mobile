@@ -29,7 +29,8 @@ A strategic political simulation game optimized for mobile devices with an immer
 ## Features
 
 ### Mobile-Optimized UI
-- **4-Banner Layout**: Projected seats, player stats, state info, and regional groups
+- **4-Banner Layout**: Projected seats, enhanced player info (with candidate & party icons, player name, dynamic funds), state info, and regional groups
+- **Player Info Section**: Shows candidate icon, party icon, player name, and dynamically updated funds for each player
 - **Floating Timer**: Phase tracking with Union Territory quick access
 - **Touch-Friendly**: Large buttons and responsive design
 - **No Horizontal Scrolling**: All content fits within viewport
@@ -51,7 +52,8 @@ A strategic political simulation game optimized for mobile devices with an immer
 ### Game Mechanics
 - **Projected Seats**: Real-time seat calculations
 - **Popularity Simulation**: Dynamic state popularity changes
-- **Fund Management**: Player budget tracking
+- **Player Info**: Candidate and party icons, player name, and funds are always visible and update in real time
+- **Fund Management**: Player budget tracking with visual feedback and error animation for insufficient funds
 - **Strategic Depth**: Multi-layered policy investments
 
 ## Technical Details
@@ -111,6 +113,6 @@ This project is part of the Pradhan Mantri Elections Game educational simulation
 
 ---
 
-**Latest Version**: Modular Architecture  
-**Last Updated**: July 12, 2025  
+**Latest Version**: Player Info UI Overhaul (candidate/party icons, name, dynamic funds)  
+**Last Updated**: July 13, 2025  
 **Repository**: pradhanmantrielectionsgame.github.io

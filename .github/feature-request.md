@@ -6,7 +6,7 @@
 >
 > Whenever you are unsure about implementation, style, or project conventions, consult `.github/copilot-instructions.md`.
 
-
+> Go through each step in this workflow and update the checklist as eash task is completed
 ---
 
 ## Feature Request Summary

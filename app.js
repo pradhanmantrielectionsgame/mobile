@@ -325,6 +325,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Load states data first
     await loadStatesData();
     
+    // Load politicians data
+    await loadPoliticiansData();
+    
     // Load policy tags for campaigns
     await loadPolicyTags();
     
