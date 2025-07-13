@@ -36,6 +36,10 @@ This is a modular, browser-based political simulation game focused on Indian ele
 - **Debugging:** Use browser dev tools; all logic is client-side and modularized for easy inspection.
 - **Testing:** Manual testing on mobile devices is recommended after changes.
 - **Adding Features:** Place new logic in a separate JS file if it exceeds 500 lines; update documentation as needed.
+- **Documentation:** Update `README.md` with any significant changes to features, mechanics, or data structures.
+- **Version Control:** Use clear, descriptive commit messages that reflect the changes made, following the checklist in `../Feature Request.md`.
+- **Code Reviews:** Ensure all changes are reviewed against the checklist in `../Feature Request.md` before merging.
+- **Environment:** No external dependencies or build tools; all assets are local and referenced directly in HTML/JS. I'm running powershell on Windows, so use powershell commands for any file operations.
 
 ## Integration & External Dependencies
 
