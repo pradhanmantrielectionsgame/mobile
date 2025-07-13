@@ -385,10 +385,88 @@ function initCampaignModal() {
     });
 }
 
-// Rally button functionality (placeholder)
+// Rally button functionality
 function initRallyButton() {
     const rallyBtn = document.getElementById('rally-btn');
     rallyBtn.addEventListener('click', () => {
-        alert('Rally system coming soon! This will allow you to boost popularity in selected states.');
+        showRallyInstructions();
     });
+}
+
+// Show rally instructions modal
+function showRallyInstructions() {
+    const modalHTML = `
+        <div id="rally-instructions-modal" style="
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        ">
+            <div style="
+                background: white;
+                padding: 30px;
+                border-radius: 10px;
+                max-width: 500px;
+                text-align: left;
+                color: #333;
+                max-height: 80vh;
+                overflow-y: auto;
+            ">
+                <h2 style="margin-bottom: 20px; color: #9C27B0;">Rally & Investment System</h2>
+                
+                <div style="margin-bottom: 20px;">
+                    <h3 style="color: #4CAF50; margin-bottom: 10px;">📍 Direct Investment</h3>
+                    <p><strong>How:</strong> Ctrl/Cmd + Click on any state</p>
+                    <p><strong>Cost:</strong> Number of seats × ₹10M (e.g., UP = 80 seats = ₹800M)</p>
+                    <p><strong>Effect:</strong> +5% popularity with diminishing returns on repeat investments</p>
+                    <p><strong>Player 2:</strong> Shift + Ctrl/Cmd + Click</p>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <h3 style="color: #9C27B0; margin-bottom: 10px;">🏟️ Simple Rally</h3>
+                    <p><strong>How:</strong> Alt + Click on any state</p>
+                    <p><strong>Tokens:</strong> 2 per phase per player</p>
+                    <p><strong>Effect:</strong> +4% popularity in that state</p>
+                    <p><strong>Player 2:</strong> Shift + Alt + Click</p>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <h3 style="color: #FF9800; margin-bottom: 10px;">🌟 Special Rally</h3>
+                    <p><strong>How:</strong> Click the "Special Rally" button below</p>
+                    <p><strong>Tokens:</strong> 2 per phase per player</p>
+                    <p><strong>Effect:</strong> +10% popularity in ALL states</p>
+                </div>
+                
+                <div style="margin-bottom: 20px; padding: 15px; background: #f5f5f5; border-radius: 5px;">
+                    <h4>Current Rally Tokens:</h4>
+                    <p>Player 1: <span id="modal-p1-simple">${gameState.player1.rallyTokens.simple}</span> Simple, <span id="modal-p1-special">${gameState.player1.rallyTokens.special}</span> Special</p>
+                    <p>Player 2: <span id="modal-p2-simple">${gameState.player2.rallyTokens.simple}</span> Simple, <span id="modal-p2-special">${gameState.player2.rallyTokens.special}</span> Special</p>
+                </div>
+                
+                <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                    <button onclick="useSpecialRallyToken('player1')" 
+                            style="flex: 1; padding: 10px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                        P1 Special Rally
+                    </button>
+                    <button onclick="useSpecialRallyToken('player2')" 
+                            style="flex: 1; padding: 10px; background: #e65c5c; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                        P2 Special Rally
+                    </button>
+                </div>
+                
+                <button onclick="document.getElementById('rally-instructions-modal').remove()" 
+                        style="width: 100%; padding: 10px 20px; background: #666; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                    Close
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
 }

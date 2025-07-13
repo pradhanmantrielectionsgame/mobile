@@ -12,14 +12,28 @@ let gameState = {
         name: 'Player 1',
         politician: null, // Will store selected politician data
         funds: 1600, // In millions
-        totalSpent: 0
+        totalSpent: 0,
+        // Investment tracking for diminishing returns
+        investments: {}, // stateId: number of investments
+        // Rally tokens
+        rallyTokens: {
+            simple: 2, // Simple rally tokens (per phase)
+            special: 2  // Special rally tokens (per phase)
+        }
     },
     player2: {
         id: 'player2', 
         name: 'Player 2',
         politician: null, // Will store selected politician data
         funds: 850, // In millions
-        totalSpent: 0
+        totalSpent: 0,
+        // Investment tracking for diminishing returns
+        investments: {}, // stateId: number of investments
+        // Rally tokens
+        rallyTokens: {
+            simple: 2, // Simple rally tokens (per phase)
+            special: 2  // Special rally tokens (per phase)
+        }
     },
     currentPhase: 1,
     maxPhases: 8,
@@ -200,7 +214,13 @@ function updatePlayerInfoDisplay() {
             </div>
             <div class="player-details">
                 <div class="player-name">${p1Data.name}</div>
-                <div class="funds-display" id="p1-funds">₹${p1Data.funds}M</div>
+                <div style="display: flex; align-items: center;">
+                    <div class="funds-display" id="p1-funds">₹${p1Data.funds}M</div>
+                    <div class="rally-tokens">
+                        <span class="token-display">🏟️<span id="p1-simple-tokens">${p1Data.rallyTokens.simple}</span></span>
+                        <span class="token-display">🌟<span id="p1-special-tokens">${p1Data.rallyTokens.special}</span></span>
+                    </div>
+                </div>
             </div>
         `;
     }
@@ -212,7 +232,13 @@ function updatePlayerInfoDisplay() {
         p2InfoContainer.innerHTML = `
             <div class="player-details">
                 <div class="player-name">${p2Data.name}</div>
-                <div class="funds-display" id="p2-funds">₹${p2Data.funds}M</div>
+                <div style="display: flex; align-items: center; justify-content: flex-end;">
+                    <div class="rally-tokens">
+                        <span class="token-display">🏟️<span id="p2-simple-tokens">${p2Data.rallyTokens.simple}</span></span>
+                        <span class="token-display">🌟<span id="p2-special-tokens">${p2Data.rallyTokens.special}</span></span>
+                    </div>
+                    <div class="funds-display" id="p2-funds">₹${p2Data.funds}M</div>
+                </div>
             </div>
             <div class="player-avatar-section">
                 <img src="${p2Data.politician.image}" alt="${p2Data.politician.name}" class="candidate-icon" onerror="this.style.display='none'">
@@ -320,24 +346,17 @@ function updateStateInfo(svgId) {
     const banner = document.getElementById('states-banner');
     
     if (state && popularity) {
-        const leader = getStateLeader(svgId);
-        const leaderText = leader.player === 'player1' ? 'P1 Leading' :
-                          leader.player === 'player2' ? 'P2 Leading' : 'Others Leading';
-        const leaderColor = leader.player === 'player1' ? '#5ac461' :
-                           leader.player === 'player2' ? '#e65c5c' : '#999';
-        
         const stateInfoSection = banner.querySelector('.state-info-section');
         stateInfoSection.innerHTML = `
             <div class="state-name">${state.State}</div>
             <div class="state-stats">
                 <span>Seats: ${state.LokSabhaSeats}</span>
-                <span style="color: ${leaderColor}; font-weight: bold;">${leaderText} (${leader.percentage}%)</span>
                 <span>P1: ${popularity.player1}%</span>
                 <span>P2: ${popularity.player2}%</span>
                 <span>Others: ${popularity.others}%</span>
             </div>
         `;
-        console.log(`Updated info for ${state.State} (${svgId}) - Leader: ${leaderText}`);
+        console.log(`Updated info for ${state.State} (${svgId})`);
     } else {
         console.log(`No data found for SVG ID: ${svgId}`);
     }
@@ -952,3 +971,250 @@ window.targetCompetitiveStates = targetCompetitiveStates;
 
 // Add a way to trigger the test from the browser console
 window.testPopularitySystem = testPopularitySystem;
+
+// Direct Investment System
+function handleDirectInvestment(stateId, playerId) {
+    const state = findStateById(stateId);
+    const playerData = getPlayerData(playerId);
+    
+    if (!state || !playerData) {
+        console.error('Invalid state or player for direct investment');
+        return false;
+    }
+    
+    // Calculate investment cost: seats × 10M
+    const seats = parseInt(state.LokSabhaSeats);
+    const baseCost = seats * 10; // 10M per seat
+    
+    // Check if player has sufficient funds
+    if (playerData.funds < baseCost) {
+        showInvestmentMessage(`${playerData.name} has insufficient funds! Need ₹${baseCost}M, have ₹${playerData.funds}M`, 'error');
+        showInsufficientFundsAnimation(playerId);
+        return false;
+    }
+    
+    // Initialize investment tracking for this state if needed
+    if (!playerData.investments[stateId]) {
+        playerData.investments[stateId] = 0;
+    }
+    
+    // Calculate diminishing returns
+    const investmentCount = playerData.investments[stateId];
+    let popularityBoost = 5; // Base 5% boost
+    
+    // Apply diminishing returns: each subsequent investment gives 20% less effect
+    for (let i = 0; i < investmentCount; i++) {
+        popularityBoost *= 0.8; // 20% reduction per previous investment
+    }
+    
+    // Round to 1 decimal place
+    popularityBoost = Math.round(popularityBoost * 10) / 10;
+    
+    // Minimum boost of 0.5%
+    popularityBoost = Math.max(0.5, popularityBoost);
+    
+    // Update player funds
+    updatePlayerFunds(playerId, -baseCost);
+    
+    // Track the investment
+    playerData.investments[stateId]++;
+    
+    // Apply popularity boost
+    const success = updateStatePopularity(stateId, playerId, popularityBoost, `direct investment #${playerData.investments[stateId]}`);
+    
+    if (success) {
+        showInvestmentMessage(
+            `${playerData.name} invested ₹${baseCost}M in ${state.State}. +${popularityBoost}% popularity boost!`, 
+            'success'
+        );
+        return true;
+    }
+    
+    return false;
+}
+
+// Rally System Functions
+function useSimpleRallyToken(stateId, playerId) {
+    const state = findStateById(stateId);
+    const playerData = getPlayerData(playerId);
+    
+    if (!state || !playerData) {
+        console.error('Invalid state or player for rally');
+        return false;
+    }
+    
+    // Check if player has simple rally tokens
+    if (playerData.rallyTokens.simple <= 0) {
+        showRallyMessage(`${playerData.name} has no simple rally tokens left!`, 'error');
+        return false;
+    }
+    
+    // Use the rally token
+    playerData.rallyTokens.simple--;
+    
+    // Apply 4% popularity boost
+    const popularityBoost = 4;
+    const success = updateStatePopularity(stateId, playerId, popularityBoost, `simple rally in ${state.State}`);
+    
+    if (success) {
+        showRallyMessage(
+            `${playerData.name} used a simple rally token in ${state.State}. +${popularityBoost}% popularity boost!`, 
+            'success'
+        );
+        updateRallyTokenDisplay();
+        return true;
+    }
+    
+    return false;
+}
+
+function useSpecialRallyToken(playerId) {
+    const playerData = getPlayerData(playerId);
+    
+    if (!playerData) {
+        console.error('Invalid player for special rally');
+        return false;
+    }
+    
+    // Check if player has special rally tokens
+    if (playerData.rallyTokens.special <= 0) {
+        showRallyMessage(`${playerData.name} has no special rally tokens left!`, 'error');
+        return false;
+    }
+    
+    // Use the special rally token
+    playerData.rallyTokens.special--;
+    
+    // Apply 10% popularity boost nationwide
+    const popularityBoost = 10;
+    let affectedStates = 0;
+    
+    statesData.forEach(state => {
+        const success = updateStatePopularity(state.SvgId, playerId, popularityBoost, 'nationwide special rally');
+        if (success) affectedStates++;
+    });
+    
+    showRallyMessage(
+        `${playerData.name} used a special rally token! +${popularityBoost}% popularity boost in all ${affectedStates} states/UTs!`, 
+        'success'
+    );
+    updateRallyTokenDisplay();
+    return true;
+}
+
+// Reset rally tokens at the start of each phase
+function resetRallyTokensForPhase() {
+    gameState.player1.rallyTokens.simple = 2;
+    gameState.player1.rallyTokens.special = 2;
+    gameState.player2.rallyTokens.simple = 2;
+    gameState.player2.rallyTokens.special = 2;
+    
+    console.log('Rally tokens reset for new phase');
+    updateRallyTokenDisplay();
+}
+
+// Update rally token display in UI
+function updateRallyTokenDisplay() {
+    // Update rally token counts in the UI
+    const p1SimpleTokens = document.getElementById('p1-simple-tokens');
+    const p1SpecialTokens = document.getElementById('p1-special-tokens');
+    const p2SimpleTokens = document.getElementById('p2-simple-tokens');
+    const p2SpecialTokens = document.getElementById('p2-special-tokens');
+    
+    if (p1SimpleTokens) p1SimpleTokens.textContent = gameState.player1.rallyTokens.simple;
+    if (p1SpecialTokens) p1SpecialTokens.textContent = gameState.player1.rallyTokens.special;
+    if (p2SimpleTokens) p2SimpleTokens.textContent = gameState.player2.rallyTokens.simple;
+    if (p2SpecialTokens) p2SpecialTokens.textContent = gameState.player2.rallyTokens.special;
+}
+
+// Show investment messages
+function showInvestmentMessage(message, type = 'info') {
+    const messageDiv = document.createElement('div');
+    messageDiv.style.cssText = `
+        position: fixed;
+        top: 80px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: ${type === 'success' ? '#4CAF50' : type === 'error' ? '#f44336' : type === 'warning' ? '#ff9800' : '#2196F3'};
+        color: white;
+        padding: 10px 20px;
+        border-radius: 6px;
+        z-index: 1000;
+        font-size: 14px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        animation: slideDown 0.3s ease;
+        max-width: 80%;
+        text-align: center;
+    `;
+    messageDiv.textContent = message;
+    
+    document.body.appendChild(messageDiv);
+    
+    setTimeout(() => {
+        messageDiv.remove();
+    }, 4000);
+}
+
+// Show rally messages
+function showRallyMessage(message, type = 'info') {
+    const messageDiv = document.createElement('div');
+    messageDiv.style.cssText = `
+        position: fixed;
+        top: 110px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: ${type === 'success' ? '#9C27B0' : type === 'error' ? '#f44336' : type === 'warning' ? '#ff9800' : '#2196F3'};
+        color: white;
+        padding: 10px 20px;
+        border-radius: 6px;
+        z-index: 1000;
+        font-size: 14px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        animation: slideDown 0.3s ease;
+        max-width: 80%;
+        text-align: center;
+    `;
+    messageDiv.textContent = message;
+    
+    document.body.appendChild(messageDiv);
+    
+    setTimeout(() => {
+        messageDiv.remove();
+    }, 4000);
+}
+
+// Get investment stats for a player
+function getInvestmentStats(playerId) {
+    const playerData = getPlayerData(playerId);
+    if (!playerData) return null;
+    
+    const stats = {
+        totalInvestments: 0,
+        statesInvested: 0,
+        totalSpentOnInvestments: 0
+    };
+    
+    Object.keys(playerData.investments).forEach(stateId => {
+        const investmentCount = playerData.investments[stateId];
+        if (investmentCount > 0) {
+            stats.totalInvestments += investmentCount;
+            stats.statesInvested++;
+            
+            // Calculate total spent on this state
+            const state = findStateById(stateId);
+            if (state) {
+                const baseCost = parseInt(state.LokSabhaSeats) * 10;
+                stats.totalSpentOnInvestments += baseCost * investmentCount;
+            }
+        }
+    });
+    
+    return stats;
+}
+
+// Make new functions available globally
+window.handleDirectInvestment = handleDirectInvestment;
+window.useSimpleRallyToken = useSimpleRallyToken;
+window.useSpecialRallyToken = useSpecialRallyToken;
+window.resetRallyTokensForPhase = resetRallyTokensForPhase;
+window.getInvestmentStats = getInvestmentStats;

@@ -138,8 +138,9 @@ body {
 .player-details {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 1px;
     min-width: 0; /* Allow text truncation */
+    justify-content: center;
 }
 
 .player-info.p2 .player-details {
@@ -147,20 +148,22 @@ body {
 }
 
 .player-name {
-    font-size: 12px;
+    font-size: 11px;
     color: #fff;
     font-weight: 600;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 120px;
+    line-height: 1.2;
 }
 
 .funds-display {
-    font-size: 14px;
+    font-size: 12px;
     color: #4CAF50;
     font-weight: bold;
     white-space: nowrap;
+    line-height: 1.2;
 }
 
 /* Fund update animations */
@@ -202,6 +205,43 @@ body {
         transform: translateX(3px); 
         color: #ff6b6b; 
     }
+}
+
+/* Rally tokens display */
+.rally-tokens {
+    display: inline-flex;
+    gap: 3px;
+    margin-left: 8px;
+    font-size: 9px;
+    align-items: center;
+}
+
+.player-info.p2 .rally-tokens {
+    margin-left: 0;
+    margin-right: 8px;
+}
+
+.token-display {
+    display: flex;
+    align-items: center;
+    gap: 1px;
+    padding: 1px 3px;
+    background: rgba(59, 64, 189, 0.25);
+    border-radius: 4px;
+    border: 1px solid rgba(59, 64, 189, 0.5);
+    color: #fff;
+    font-weight: bold;
+    font-size: 8px;
+    min-width: 0;
+    height: 14px;
+}
+
+.token-display span {
+    color: #9C27B0;
+    font-size: 9px;
+    min-width: 6px;
+    text-align: center;
+    line-height: 1;
 }
 
 /* Legacy avatar styles for backward compatibility */
@@ -742,6 +782,10 @@ svg[width][height] {
     .player-name { font-size: 10px; max-width: 80px; }
     .funds-display { font-size: 11px; }
     .player-info { gap: 6px; }
+    .rally-tokens { gap: 2px; margin-left: 4px; }
+    .token-display { padding: 1px 2px; font-size: 7px; height: 12px; }
+    .token-display span { font-size: 8px; }
+    .player-info.p2 .rally-tokens { margin-left: 0; margin-right: 4px; }
 }
 
 @media (max-width: 400px) {
@@ -755,6 +799,10 @@ svg[width][height] {
     .party-icon { width: 18px; height: 18px; }
     .player-name { font-size: 11px; max-width: 90px; }
     .funds-display { font-size: 12px; }
+    .rally-tokens { gap: 3px; margin-left: 6px; }
+    .token-display { padding: 1px 3px; font-size: 8px; height: 13px; }
+    .token-display span { font-size: 9px; }
+    .player-info.p2 .rally-tokens { margin-left: 0; margin-right: 6px; }
 }
 
 @media (max-width: 480px) {
@@ -799,6 +847,10 @@ svg[width][height] {
     .party-icon { width: 28px; height: 28px; }
     .player-name { font-size: 14px; max-width: 140px; }
     .player-info { gap: 14px; }
+    .rally-tokens { gap: 5px; margin-left: 8px; }
+    .token-display { padding: 2px 4px; font-size: 10px; height: 15px; }
+    .token-display span { font-size: 11px; }
+    .player-info.p2 .rally-tokens { margin-left: 0; margin-right: 8px; }
 }
 
 @media (min-width: 1024px) {
@@ -817,6 +869,10 @@ svg[width][height] {
     .party-icon { width: 32px; height: 32px; }
     .player-name { font-size: 16px; max-width: 160px; }
     .player-info { gap: 16px; }
+    .rally-tokens { gap: 6px; margin-left: 10px; }
+    .token-display { padding: 3px 5px; font-size: 11px; height: 16px; }
+    .token-display span { font-size: 12px; }
+    .player-info.p2 .rally-tokens { margin-left: 0; margin-right: 10px; }
 }
 
 @media (min-width: 1440px) {

@@ -16,10 +16,24 @@ function handleStateClick(event) {
     }
     
     if (svgId && findStateById(svgId)) {
-        updateStateInfo(svgId);
+        // Check for special key combinations for direct investment and rallies
+        if (event.ctrlKey || event.metaKey) {
+            // Ctrl/Cmd + Click = Direct Investment
+            const playerId = event.shiftKey ? 'player2' : 'player1';
+            handleDirectInvestment(svgId, playerId);
+        } else if (event.altKey) {
+            // Alt + Click = Simple Rally
+            const playerId = event.shiftKey ? 'player2' : 'player1';
+            useSimpleRallyToken(svgId, playerId);
+        } else {
+            // Normal click = Show state info
+            updateStateInfo(svgId);
+        }
         
         // Add visual feedback
-        target.style.stroke = '#ff6b6b';
+        const feedbackColor = event.ctrlKey || event.metaKey ? '#4CAF50' : 
+                             event.altKey ? '#9C27B0' : '#ff6b6b';
+        target.style.stroke = feedbackColor;
         target.style.strokeWidth = '2';
         setTimeout(() => {
             target.style.stroke = '';
@@ -355,6 +369,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Initialize campaign and rally systems
     initCampaignModal();
     initRallyButton();
+    
+    // Initialize rally token display
+    updateRallyTokenDisplay();
     
     // Start popularity simulation
     simulatePopularityChanges();

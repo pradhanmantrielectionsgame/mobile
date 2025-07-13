@@ -71,6 +71,13 @@ The system ensures:
 ### Individual State Updates
 - `updateStatePopularity(stateId, player, change, reason)`: Update single state
 
+### New Interactive Features
+- `handleDirectInvestment(stateId, playerId)`: Direct investment system (Ctrl+Click)
+- `useSimpleRallyToken(stateId, playerId)`: Simple rally system (Alt+Click)  
+- `useSpecialRallyToken(playerId)`: Special nationwide rally
+- `resetRallyTokensForPhase()`: Reset rally tokens for new phase
+- `getInvestmentStats(playerId)`: Get investment statistics
+
 ### Regional Campaigns  
 - `targetStatesByCategory(category, player, boost)`: Target states by characteristics
 - `strengthenStrongholds(player, boost)`: Boost where player is already strong
