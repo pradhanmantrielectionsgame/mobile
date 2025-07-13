@@ -79,10 +79,40 @@ function generateCampaignGrid() {
             progressClass = 'player1'; // Default to player1 in ties
         }
         
+        // Helper function to convert camelCase/PascalCase to readable labels
+        function toLabel(str) {
+            return str
+                .replace(/([A-Z])/g, ' $1')
+                .replace(/^./, s => s.toUpperCase())
+                .replace(/\bAnd\b/g, '&')
+                .trim();
+        }
+        
+        // Generate support and oppose labels
+        let supportLabels = '';
+        let opposeLabels = '';
+        
+        // Check if both arrays are empty - show nationwide effect
+        if ((!policyData.supportTags || policyData.supportTags.length === 0) && 
+            (!policyData.opposeTags || policyData.opposeTags.length === 0)) {
+            supportLabels = `<span class="support-label">+${policyData.baseMagnitude || 4}% Nationwide</span>`;
+        } else {
+            // Generate specific region labels
+            supportLabels = (policyData.supportTags || [])
+                .map(tag => `<span class="support-label">+${policyData.baseMagnitude || 4}% ${toLabel(tag)}</span>`)
+                .join(' ');
+            opposeLabels = (policyData.opposeTags || [])
+                .map(tag => `<span class="oppose-label">-${policyData.baseMagnitude || 4}% ${toLabel(tag)}</span>`)
+                .join(' ');
+        }
+        
         item.innerHTML = `
             <div class="campaign-header">
                 <div class="campaign-title">${policyName}</div>
                 <div class="campaign-cost">₹${cost}M</div>
+            </div>
+            <div class="campaign-labels">
+                ${supportLabels} ${opposeLabels}
             </div>
             <div class="campaign-progress">
                 <div class="campaign-progress-bar">
@@ -94,6 +124,9 @@ function generateCampaignGrid() {
         
         // Add click handler
         item.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Campaign item clicked:', policyName);
             handleCampaignClick(e, policyName, policyData, progress, totalClicks, cost);
         });
         

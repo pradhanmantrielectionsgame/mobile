@@ -35,10 +35,12 @@ A strategic political simulation game optimized for mobile devices with an immer
 - **No Horizontal Scrolling**: All content fits within viewport
 
 ### Campaign System
-- **3-Tier Policies**: Gold/Silver/Bronze tier organization
-- **Investment Mechanics**: 10-click completion system
+- **3-Tier Policies**: Gold/Silver/Bronze tier organization with visual hierarchy
+- **Regional Impact Labels**: Shows which areas benefit (+X%) or suffer (-X%) from policies
+- **Nationwide Policies**: Universal effects when no specific regions are targeted
+- **Investment Mechanics**: 10-click completion system with cost scaling
 - **Real-time Progress**: Visual progress bars and fund tracking
-- **Player Competition**: Dual-player investment system
+- **Player Competition**: Dual-player investment system with Shift+Click support
 
 ### Interactive Map
 - **State Selection**: Click states for detailed information
@@ -89,9 +91,11 @@ A strategic political simulation game optimized for mobile devices with an immer
 
 ### Campaign Investment
 - **Normal Click**: Player 1 investment
-- **Shift + Click**: Player 2 investment
+- **Shift + Click**: Player 2 investment  
 - **Progress**: 10 clicks complete each campaign
-- **Cost**: Based on policy tier (20M-60M per click)
+- **Cost**: Based on policy tier and magnitude (20M-60M per click)
+- **Regional Effects**: Green labels show support areas (+X%), red labels show oppose areas (-X%)
+- **Nationwide Policies**: Some policies affect all regions equally when no specific tags are set
 
 ## Contributing
 

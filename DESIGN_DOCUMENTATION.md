@@ -251,6 +251,47 @@ The game uses a streamlined 4-banner layout with a floating timer overlay to pro
 - **Backdrop Dismiss**: Click outside modal to close
 - **Close Button**: Traditional X button in top-right corner
 
+## Campaign System Design
+
+### Campaign Cards Layout
+The campaign system features a tiered policy structure with visual feedback and strategic depth:
+
+#### Visual Hierarchy
+- **Tier 1 (Mega Policy)**: Gold borders and glow effects (`#ffd700`)
+  - 12 base magnitude impact
+  - Major transformative policies (Healthcare, Education, Hindutva, etc.)
+- **Tier 2 (Major Policy)**: Silver borders and glow effects (`#c0c0c0`) 
+  - 8 base magnitude impact
+  - Significant regional policies (Rural Development, Indigenous Rights, etc.)
+- **Tier 3 (Standard Policy)**: Bronze borders and glow effects (`#cd7f32`)
+  - 4 base magnitude impact
+  - Targeted sector policies (Infrastructure, Digital Transformation, etc.)
+
+#### Policy Impact Labels
+Each campaign card displays impact information through color-coded labels:
+
+- **Support Labels (Green)**: Show positive regional effects
+  - Format: "+8% Agricultural Region", "+12% Northeast India"
+  - Uses `baseMagnitude` value from policy data
+- **Oppose Labels (Red)**: Show negative regional effects  
+  - Format: "-8% Industrial Corridor", "-4% Manufacturing"
+  - Uses `baseMagnitude` value from policy data
+- **Nationwide Effects**: When both support and oppose tags are empty
+  - Format: "+12% Nationwide" for universal policies
+  - Applied to policies like Healthcare, Women's Empowerment, Anti-Corruption
+
+#### Interactive Features
+- **Investment Mechanics**: 10-click completion system per policy
+- **Dual Player Support**: Normal click (Player 1) vs Shift+Click (Player 2)
+- **Cost Structure**: Based on tier and magnitude (baseMagnitude × 5M per click)
+- **Progress Tracking**: Visual progress bars with player-specific colors
+- **Fund Management**: Real-time deduction from player budgets
+
+#### Responsive Design
+- **Mobile Optimized**: 9px font size for labels, compact spacing
+- **Touch Friendly**: Large click targets with hover effects
+- **Visual Feedback**: Animated fund changes and completion messages
+
 ## Color Scheme
 
 ### CSS Custom Properties
