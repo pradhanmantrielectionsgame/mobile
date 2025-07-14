@@ -4,150 +4,89 @@ A strategic political simulation game optimized for mobile devices with an immer
 
 ## Quick Start
 
-1. **Main Game**: Open `index.html` in your browser
-2. **Legacy Version**: `svg-test.html` (deprecated, use for reference only)
+Open `index.html` in any modern browser. No installation or setup required!
 
-## File Structure
+## Game Overview
 
-### Core Application Files
-- **`index.html`** - Main game file with clean HTML structure
-- **`styles.css`** - Complete styling and responsive design
-- **`app.js`** - Main application logic and UI interactions
+Experience India's democratic process as you compete to become the next Pradhan Mantri. Invest in policies, run campaigns, and manage your popularity across all 28 states and 8 union territories.
 
-### Modular Game Systems (NEW)
-- **`config-manager.js`** - Configuration management and JSON loading
-- **`state-manager.js`** - State data loading and basic operations
-- **`popularity-manager.js`** - State popularity calculations and seat projections
-- **`player-manager.js`** - Player data, funds, and politician management
-- **`investment-system.js`** - Direct investment mechanics
-- **`rally-system.js`** - Rally token mechanics
-- **`ui-manager.js`** - UI updates, map coloring, seat projections
-- **`data-loader.js`** - Coordinates initialization of all data systems
-- **`game-data.js`** - Main coordinator and backwards compatibility
-- **`campaign-system.js`** - Campaign functionality and modals
-- **`phase-system.js`** - Game phase management
+### Key Features
+- **Real-time Strategy**: Compete with another player in timed phases
+- **Policy Campaigns**: 22 different policies across 3 tiers (Gold/Silver/Bronze)
+- **Regional Politics**: Each policy affects different regions differently
+- **Direct Investment**: Click states to invest funds and boost popularity
+- **Rally System**: Use rally tokens for strategic popularity boosts
+- **Interactive Map**: Full map of India with touch-friendly controls
 
-### Data Files
-- **`data/states_data.json`** - Indian states and union territories data
-- **`data/policy-tags.json`** - Campaign policies and pricing
-- **`data/politicians-data.json`** - Political leader information
+## How to Play
 
-### Assets
-- **`assets/icons/`** - SVG map and party logos
-- **`assets/images/`** - Leader portraits and backgrounds
-- **`sounds/`** - Game audio files
+### Basic Controls
+- **State Selection**: Click any state to view info and invest funds
+- **Rally Actions**: Alt + Click to use rally tokens for popularity boost
+- **Info Only**: Ctrl/Cmd + Click to view state details without investing
+- **Player 2**: Add Shift to any action (e.g., Shift+Click to invest as Player 2)
 
-## Features
-
-### Mobile-Optimized UI
-- **4-Banner Layout**: Projected seats, enhanced player info (with candidate & party icons, player name, dynamic funds), state info, and regional groups
-- **Player Info Section**: Shows candidate icon, party icon, player name, and dynamically updated funds for each player
-- **Floating Timer**: Phase tracking with Union Territory quick access
-- **Touch-Friendly**: Large buttons and responsive design
-- **No Horizontal Scrolling**: All content fits within viewport
+### Game Interface
+- **Top Bar**: Shows real-time projected seats for both players
+- **Player Info**: Displays candidate photos, party logos, and current funds
+- **State Info**: Shows details about the currently selected state
+- **Regional Filters**: 4×4 grid to focus on specific types of states
+- **Timer**: Floating countdown showing current phase and time remaining
 
 ### Campaign System
-- **3-Tier Policies**: Gold/Silver/Bronze tier organization with visual hierarchy
-- **Regional Impact Labels**: Shows which areas benefit (+X%) or suffer (-X%) from policies
-- **Nationwide Policies**: Universal effects when no specific regions are targeted
-- **Investment Mechanics**: 10-click completion system with cost scaling
-- **Real-time Progress**: Visual progress bars and fund tracking
-- **Player Competition**: Dual-player investment system with Shift+Click support
+1. **Open Campaigns**: Click the lightning bolt (⚡) button
+2. **Choose Policy**: Select from 22 different policies organized by importance
+3. **Make Investment**: Click to invest funds (each policy needs 10 clicks to complete)
+4. **Regional Effects**: Green labels show regions that benefit, red labels show regions that suffer
+5. **Strategic Timing**: Complete campaigns to gain popularity in target regions
 
-### Interactive Map
-- **Select & Invest**: Click states to view info AND make direct investment (combined action)
-- **Rally Actions**: Alt + Click for simple rally (uses rally tokens)
-- **Info Only**: Ctrl/Cmd + Click for state information without investment
-- **Player 2 Actions**: Shift + [any click combination] for Player 2
-- **Regional Filtering**: 16 data-driven state groups
-- **Union Territory Access**: Direct UT selection buttons
-- **Visual Feedback**: Highlighting and hover effects
+### Investment Strategy
+- **Direct Investment**: Expensive but gives immediate popularity boost in specific states
+- **Policy Campaigns**: Cheaper per click but affects multiple regions
+- **Rally Tokens**: Limited but powerful boosts for strategic moments
+- **Regional Focus**: Use the 4×4 grid to identify key battleground areas
 
-### Game Mechanics
-- **Projected Seats**: Real-time seat calculations
-- **Popularity Simulation**: Dynamic state popularity changes
-- **Player Info**: Candidate and party icons, player name, and funds are always visible and update in real time
-- **Fund Management**: Player budget tracking with visual feedback and error animation for insufficient funds
-- **Strategic Depth**: Multi-layered policy investments
+### Winning
+- **Goal**: Have the most projected seats when all phases complete
+- **Seat Calculation**: Based on popularity percentage in each state
+- **Strategic Depth**: Balance immediate gains vs long-term campaign effects
 
-## Technical Details
+## Mobile Features
 
-### Responsive Design
-- **Mobile First**: Optimized for 320px+ screens
-- **Progressive Enhancement**: Scales up to 1440px+ displays
-- **Touch Optimized**: Minimum 44px touch targets
-- **Performance**: Separate file caching and optimization
+- **Touch-Optimized**: All buttons sized for comfortable thumb access
+- **No Horizontal Scrolling**: Everything fits within your screen
+- **Responsive Design**: Adapts from phone (320px) to desktop (1440px+)
+- **Visual Feedback**: Clear animations and color coding for all actions
+- **Floating Controls**: Timer and action buttons positioned for easy access
 
-### Browser Compatibility
-- Modern browsers with ES6+ support
-- CSS Grid and Flexbox support required
-- Fetch API for data loading
+## Browser Compatibility
 
-### Development
+Works on any modern browser (Chrome, Firefox, Safari, Edge) with:
+- JavaScript ES6+ support
+- CSS Grid and Flexbox
+- Touch event handling
 
-### Architecture Benefits
-- **Modular**: Refactored from monolithic 850+ line file into 9 focused modules of ~50-300 lines each
-- **Configuration-Driven**: Single source of truth in JSON config eliminates hardcoded values
-- **Scalable**: Easy to add new features without making files too large
-- **Debuggable**: Issues isolated to specific files and functions
-- **Collaborative**: Multiple developers can work simultaneously on different modules
+## Development
 
-### Code Quality
-- All files under 500 lines for maintainability
-- Consistent naming conventions
-- Comprehensive documentation
-- Mobile-first responsive design
-- Eliminated code duplication and hardcoded values
+For technical documentation, architecture details, and development setup, see [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md).
 
-## Game Instructions
-
-1. **Select & Invest**: Click on map states to view info and make direct investment
-2. **Rally Actions**: Alt + Click on states to use rally tokens  
-3. **Info Only**: Ctrl/Cmd + Click states for information without investment
-4. **Filter Regions**: Use the 4×4 grid to focus on specific areas
-5. **Run Campaigns**: Click the lightning button (⚡) to invest in policies
-6. **Track Progress**: Monitor projected seats in the top progress bar
-
-### Campaign Investment
-- **Normal Click**: Player 1 investment
-- **Shift + Click**: Player 2 investment  
-- **Progress**: 10 clicks complete each campaign
-- **Cost**: Based on policy tier and magnitude (20M-60M per click)
-- **Regional Effects**: Green labels show support areas (+X%), red labels show oppose areas (-X%)
-- **Nationwide Policies**: Some policies affect all regions equally when no specific tags are set
+### Quick Development Setup
+1. Clone the repository
+2. Open `index.html` in your browser
+3. No build tools or dependencies required
+4. All assets are local and self-contained
 
 ## Contributing
 
 When modifying the code:
-1. Keep files under 500 lines
-2. Update corresponding documentation
+1. Keep files under 500 lines for maintainability
+2. Update documentation for any feature changes
 3. Test on mobile devices
 4. Maintain responsive design principles
-
-## License
-
-This project is part of the Pradhan Mantri Elections Game educational simulation.
+5. Follow the modular architecture in DEVELOPER_GUIDE.md
 
 ---
 
-**Latest Version**: Modular Refactoring & Configuration System  
+**Latest Version**: Modular Architecture  
 **Last Updated**: July 14, 2025  
 **Repository**: pradhanmantrielectionsgame.github.io
-
-## Recent Major Changes
-
-### Modular Architecture Refactoring (July 14, 2025)
-- **Eliminated Duplication**: Removed hardcoded values duplicated between JS and JSON config
-- **Improved Maintainability**: Split 850+ line monolithic file into 9 focused modules
-- **Configuration System**: Centralized game balance in `game-config.json`
-- **File Structure**: All modules kept under 500 lines for readability
-- **Backwards Compatibility**: All existing function calls continue to work
-
-### File Load Order
-Core system modules → Game coordination → UI systems:
-```
-config-manager.js → state-manager.js → popularity-manager.js → 
-player-manager.js → investment-system.js → rally-system.js → 
-ui-manager.js → data-loader.js → game-data.js → 
-campaign-system.js → phase-system.js → app.js
-```
