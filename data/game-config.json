@@ -2,11 +2,10 @@
   "gameSettings": {
     "totalPhases": 10,
     "phaseDurationSeconds": 30,
-    "refreshFundsPerPhase": 500
+    "refreshFundsPerPhase": 1000
   },
   "playerSettings": {
-    "startingFunds": 2000,
-    "maxFunds": 10000
+    "startingFunds": 2000
   },
   "rallySystem": {
     "maxRalliesPerState": 2,
@@ -15,11 +14,7 @@
     "simpleRallyTokens": 2,
     "specialRallyTokens": 2
   },
-  "campaign": {
-    "maxCampaignsPerState": 3,
-    "basePopularityGain": 5,
-    "costMultiplier": 1.5
-  },
+  "campaign": {},
   "bonuses": {
     "campaignCompletion": 300,
     "regionalDominance": {

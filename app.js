@@ -117,14 +117,15 @@ async function loadMap() {
 }
 
 // Initialize game systems (phase system integration)
-async function initializeGame() {
+async function initializeGameApp() {
     try {
-        // Load game configuration first
-        await loadGameConfig();
+        // Initialize all game data systems using the new modular approach
+        const success = await initializeGame();
         
-        // Initialize data systems
-        await loadStatesData();
-        await loadPoliticiansData();
+        if (!success) {
+            console.error('Failed to initialize game data');
+            return;
+        }
         
         // Initialize phase system and auto-start
         await initializePhaseSystem();
@@ -372,8 +373,8 @@ function initOptionsModal() {
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('Initializing Pradhan Mantri Elections Game...');
     
-    // Initialize all game systems
-    await initializeGame();
+    // Initialize all game systems using the new modular approach
+    await initializeGameApp();
     
     // Load policy tags for campaigns
     await loadPolicyTags();

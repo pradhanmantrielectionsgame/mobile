@@ -13,8 +13,19 @@ A strategic political simulation game optimized for mobile devices with an immer
 - **`index.html`** - Main game file with clean HTML structure
 - **`styles.css`** - Complete styling and responsive design
 - **`app.js`** - Main application logic and UI interactions
-- **`game-data.js`** - Data management and state calculations
+
+### Modular Game Systems (NEW)
+- **`config-manager.js`** - Configuration management and JSON loading
+- **`state-manager.js`** - State data loading and basic operations
+- **`popularity-manager.js`** - State popularity calculations and seat projections
+- **`player-manager.js`** - Player data, funds, and politician management
+- **`investment-system.js`** - Direct investment mechanics
+- **`rally-system.js`** - Rally token mechanics
+- **`ui-manager.js`** - UI updates, map coloring, seat projections
+- **`data-loader.js`** - Coordinates initialization of all data systems
+- **`game-data.js`** - Main coordinator and backwards compatibility
 - **`campaign-system.js`** - Campaign functionality and modals
+- **`phase-system.js`** - Game phase management
 
 ### Data Files
 - **`data/states_data.json`** - Indian states and union territories data
@@ -72,19 +83,21 @@ A strategic political simulation game optimized for mobile devices with an immer
 - CSS Grid and Flexbox support required
 - Fetch API for data loading
 
-## Development
+### Development
 
 ### Architecture Benefits
-- **Modular**: Separated concerns for better maintainability
-- **Scalable**: Easy to add new features
-- **Debuggable**: Issues isolated to specific files
-- **Collaborative**: Multiple developers can work simultaneously
+- **Modular**: Refactored from monolithic 850+ line file into 9 focused modules of ~50-300 lines each
+- **Configuration-Driven**: Single source of truth in JSON config eliminates hardcoded values
+- **Scalable**: Easy to add new features without making files too large
+- **Debuggable**: Issues isolated to specific files and functions
+- **Collaborative**: Multiple developers can work simultaneously on different modules
 
 ### Code Quality
-- All files under 500 lines
+- All files under 500 lines for maintainability
 - Consistent naming conventions
 - Comprehensive documentation
 - Mobile-first responsive design
+- Eliminated code duplication and hardcoded values
 
 ## Game Instructions
 
@@ -117,6 +130,24 @@ This project is part of the Pradhan Mantri Elections Game educational simulation
 
 ---
 
-**Latest Version**: Player Info UI Overhaul (candidate/party icons, name, dynamic funds)  
-**Last Updated**: July 13, 2025  
+**Latest Version**: Modular Refactoring & Configuration System  
+**Last Updated**: July 14, 2025  
 **Repository**: pradhanmantrielectionsgame.github.io
+
+## Recent Major Changes
+
+### Modular Architecture Refactoring (July 14, 2025)
+- **Eliminated Duplication**: Removed hardcoded values duplicated between JS and JSON config
+- **Improved Maintainability**: Split 850+ line monolithic file into 9 focused modules
+- **Configuration System**: Centralized game balance in `game-config.json`
+- **File Structure**: All modules kept under 500 lines for readability
+- **Backwards Compatibility**: All existing function calls continue to work
+
+### File Load Order
+Core system modules → Game coordination → UI systems:
+```
+config-manager.js → state-manager.js → popularity-manager.js → 
+player-manager.js → investment-system.js → rally-system.js → 
+ui-manager.js → data-loader.js → game-data.js → 
+campaign-system.js → phase-system.js → app.js
+```
