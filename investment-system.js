@@ -53,10 +53,8 @@ async function handleDirectInvestment(stateId, playerId) {
     const success = updateStatePopularity(stateId, playerId, popularityBoost, `direct investment #${playerData.investments[stateId]}`);
     
     if (success) {
-        showInvestmentMessage(
-            `${playerData.name} invested ₹${baseCost}M in ${state.State} (+${popularityBoost}% popularity)`,
-            'success'
-        );
+        // Show compact investment notification instead of full message
+        showCompactInvestmentNotification(playerId, baseCost);
         return true;
     }
     
@@ -92,8 +90,69 @@ function getInvestmentStats(playerId) {
     return stats;
 }
 
-// Show investment messages
+// Show compact investment notification in player info area
+function showCompactInvestmentNotification(playerId, amount) {
+    const playerInfoSelector = playerId === 'player1' ? '.player-info.p1' : '.player-info.p2';
+    const playerInfo = document.querySelector(playerInfoSelector);
+    
+    if (!playerInfo) return;
+    
+    // Create compact notification
+    const notification = document.createElement('div');
+    notification.className = 'compact-investment-notification';
+    notification.textContent = `-₹${amount}M`;
+    
+    // Position it within the player info area
+    playerInfo.style.position = 'relative';
+    notification.style.cssText = `
+        position: absolute;
+        top: 50%;
+        ${playerId === 'player1' ? 'right: 10px;' : 'left: 10px;'}
+        transform: translateY(-50%);
+        background: #e74c3c;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 10px;
+        font-weight: bold;
+        z-index: 10;
+        animation: slideInOut 1.5s ease;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        pointer-events: none;
+    `;
+    
+    playerInfo.appendChild(notification);
+    
+    // Remove after animation
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+        }
+    }, 1500);
+}
+
+// Show investment messages (kept for backward compatibility, but now uses compact notification)
 function showInvestmentMessage(message, type = 'info') {
+    // Extract player and amount from message for compact notification
+    const playerMatch = message.match(/^(.*?) invested ₹(\d+)M/);
+    if (playerMatch) {
+        const playerName = playerMatch[1];
+        const amount = parseInt(playerMatch[2]);
+        
+        // Determine player ID based on name
+        const player1Data = getPlayerData('player1');
+        const player2Data = getPlayerData('player2');
+        
+        let playerId = 'player1';
+        if (player2Data && player2Data.name === playerName) {
+            playerId = 'player2';
+        }
+        
+        showCompactInvestmentNotification(playerId, amount);
+        return;
+    }
+    
+    // Fallback to original message display for non-investment messages
     const messageDiv = document.createElement('div');
     messageDiv.style.cssText = `
         position: fixed;
@@ -156,5 +215,6 @@ async function calculateNextInvestmentBoost(stateId, playerId) {
 window.handleDirectInvestment = handleDirectInvestment;
 window.getInvestmentStats = getInvestmentStats;
 window.showInvestmentMessage = showInvestmentMessage;
+window.showCompactInvestmentNotification = showCompactInvestmentNotification;
 window.calculateInvestmentCost = calculateInvestmentCost;
 window.calculateNextInvestmentBoost = calculateNextInvestmentBoost;

@@ -185,7 +185,7 @@ function initStateGroups() {
 function initUnionTerritories() {
     const utButtons = document.querySelectorAll('.ut-button');
     utButtons.forEach(button => {
-        button.addEventListener('click', () => {
+        button.addEventListener('click', (event) => {
             // Remove selected class from all UT buttons
             utButtons.forEach(btn => btn.classList.remove('selected'));
             // Add selected class to clicked button
@@ -195,8 +195,21 @@ function initUnionTerritories() {
             const utName = button.textContent.trim();
             console.log('Selected Union Territory:', utName, 'SVG ID:', svgId);
             
-            // Update state info for the selected UT
-            updateStateInfo(svgId);
+            // Check for special key combinations for rallies
+            if (event.altKey) {
+                // Alt + Click = Simple Rally
+                const playerId = event.shiftKey ? 'player2' : 'player1';
+                useSimpleRallyToken(svgId, playerId);
+            } else {
+                // Update state info for the selected UT
+                updateStateInfo(svgId);
+                
+                // Only do investment if not using Ctrl/Cmd (allows info-only viewing)
+                if (!event.ctrlKey && !event.metaKey) {
+                    const playerId = event.shiftKey ? 'player2' : 'player1';
+                    handleDirectInvestment(svgId, playerId);
+                }
+            }
             
             // Highlight the UT on the map
             highlightUnionTerritory(svgId);
@@ -209,6 +222,16 @@ function initUnionTerritories() {
             // Reset map highlighting but preserve this UT selection
             resetMapHighlighting();
             highlightUnionTerritory(svgId);
+            
+            // Add visual feedback
+            const feedbackColor = event.altKey ? '#9C27B0' : 
+                                 (event.ctrlKey || event.metaKey) ? '#ff6b6b' : '#4CAF50';
+            button.style.backgroundColor = feedbackColor;
+            button.style.color = 'white';
+            setTimeout(() => {
+                button.style.backgroundColor = '';
+                button.style.color = '';
+            }, 500);
         });
     });
 }

@@ -234,6 +234,30 @@ body {
     }
 }
 
+/* Compact investment notification animation */
+@keyframes slideInOut {
+    0% { 
+        opacity: 0; 
+        transform: translateY(-50%) scale(0.8); 
+    }
+    15% { 
+        opacity: 1; 
+        transform: translateY(-50%) scale(1); 
+    }
+    85% { 
+        opacity: 1; 
+        transform: translateY(-50%) scale(1); 
+    }
+    100% { 
+        opacity: 0; 
+        transform: translateY(-50%) scale(0.8); 
+    }
+}
+
+.compact-investment-notification {
+    animation: slideInOut 1.5s ease;
+}
+
 .rally-tokens {
     display: inline-flex;
     gap: var(--spacing-xs);
