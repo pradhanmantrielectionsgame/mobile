@@ -137,7 +137,7 @@ function generateCampaignGrid() {
         item.innerHTML = `
             <div class="campaign-header">
                 <div class="campaign-title">${policyName}</div>
-                <div class="campaign-cost">₹${cost}M</div>
+                <div class="campaign-cost">₹${cost}Cr</div>
             </div>
             <div class="campaign-labels">
                 ${supportLabels} ${opposeLabels}
@@ -204,7 +204,7 @@ function handleCampaignClick(e, policyName, policyData, progress, totalClicks, c
         const winnerData = getPlayerData(`player${winner}`);
         showCampaignMessage(`🎉 ${policyName} campaign completed by ${winnerData ? winnerData.name : `Player ${winner}`}!`, 'success');
     } else {
-        showCampaignMessage(`${playerData.name} invested ₹${cost}M in ${policyName}`, 'success');
+        showCampaignMessage(`${playerData.name} invested ₹${cost}Cr in ${policyName}`, 'success');
     }
     
     // Check and award bonuses
@@ -230,10 +230,10 @@ function checkAndAwardBonuses() {
             
             if (p1Contribution > p2Contribution) {
                 updatePlayerFunds('player1', config.bonuses.campaignCompletion);
-                showCampaignMessage(`Policy completion bonus: ₹${config.bonuses.campaignCompletion / 1000000}M awarded to Player 1!`, 'success');
+                showCampaignMessage(`Policy completion bonus: ₹${config.bonuses.campaignCompletion / 1000000}Cr awarded to Player 1!`, 'success');
             } else if (p2Contribution > p1Contribution) {
                 updatePlayerFunds('player2', config.bonuses.campaignCompletion);
-                showCampaignMessage(`Policy completion bonus: ₹${config.bonuses.campaignCompletion / 1000000}M awarded to Player 2!`, 'success');
+                showCampaignMessage(`Policy completion bonus: ₹${config.bonuses.campaignCompletion / 1000000}Cr awarded to Player 2!`, 'success');
             }
             
             progress.bonusAwarded = true;
@@ -266,7 +266,7 @@ function checkRegionalDominanceBonuses() {
                     // First time achieving dominance - award initial bonus
                     updatePlayerFunds(playerId, config.bonuses.regionalDominance.baseBonus);
                     gameState.bonusesAwarded[bonusKey] = true;
-                    showCampaignMessage(`Regional dominance achieved in ${regionField.replace(/([A-Z])/g, ' $1').trim()}! ₹${config.bonuses.regionalDominance.baseBonus / 1000000}M bonus!`, 'success');
+                    showCampaignMessage(`Regional dominance achieved in ${regionField.replace(/([A-Z])/g, ' $1').trim()}! ₹${config.bonuses.regionalDominance.baseBonus / 1000000}Cr bonus!`, 'success');
                 }
                 
                 // Award carry-forward bonus every phase
@@ -426,7 +426,7 @@ function showRallyInstructions() {
                     <h3 style="color: #4CAF50; margin-bottom: 10px;">📍 Select & Invest</h3>
                     <p><strong>How:</strong> Click on any state</p>
                     <p><strong>Effect:</strong> Shows state info AND makes direct investment</p>
-                    <p><strong>Cost:</strong> Number of seats × ₹10M (e.g., UP = 80 seats = ₹800M)</p>
+                    <p><strong>Cost:</strong> Number of seats × ₹10Cr (e.g., UP = 80 seats = ₹800Cr)</p>
                     <p><strong>Investment Effect:</strong> +5% popularity with diminishing returns</p>
                     <p><strong>Player 2:</strong> Shift + Click</p>
                 </div>

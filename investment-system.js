@@ -28,20 +28,22 @@ async function handleDirectInvestment(stateId, playerId) {
         playerData.investments[stateId] = 0;
     }
     
-    // Calculate diminishing returns
+    // Calculate diminishing returns using glide path
     const investmentCount = playerData.investments[stateId];
-    let popularityBoost = investmentConfig.basePopularityBoost;
+    let popularityBoost;
     
-    // Apply diminishing returns: each subsequent investment gives reduced effect
-    for (let i = 0; i < investmentCount; i++) {
-        popularityBoost *= investmentConfig.diminishingReturnsRate;
+    if (investmentCount < investmentConfig.glidePathInvestments) {
+        // Linear glide path from base to final boost over glidePathInvestments
+        const progressRatio = investmentCount / investmentConfig.glidePathInvestments;
+        popularityBoost = investmentConfig.basePopularityBoost - 
+            (investmentConfig.basePopularityBoost - investmentConfig.finalPopularityBoost) * progressRatio;
+    } else {
+        // After glide path, use minimum boost
+        popularityBoost = investmentConfig.minimumBoost;
     }
     
     // Round to 1 decimal place
     popularityBoost = Math.round(popularityBoost * 10) / 10;
-    
-    // Minimum boost
-    popularityBoost = Math.max(investmentConfig.minimumBoost, popularityBoost);
     
     // Update player funds
     updatePlayerFunds(playerId, -baseCost);
@@ -81,7 +83,7 @@ function getInvestmentStats(playerId) {
             // Calculate total spent on this state
             const state = findStateById(stateId);
             if (state) {
-                const baseCost = parseInt(state.LokSabhaSeats) * 10; // Assuming 10M per seat base cost
+                const baseCost = parseInt(state.LokSabhaSeats) * 10; // 10 crores per seat base cost
                 stats.totalSpentOnInvestments += baseCost * investmentCount;
             }
         }
@@ -100,7 +102,7 @@ function showCompactInvestmentNotification(playerId, amount) {
     // Create compact notification
     const notification = document.createElement('div');
     notification.className = 'compact-investment-notification';
-    notification.textContent = `-₹${amount}M`;
+    notification.textContent = `-₹${amount}Cr`;
     
     // Position it within the player info area
     playerInfo.style.position = 'relative';
@@ -134,7 +136,7 @@ function showCompactInvestmentNotification(playerId, amount) {
 // Show investment messages (kept for backward compatibility, but now uses compact notification)
 function showInvestmentMessage(message, type = 'info') {
     // Extract player and amount from message for compact notification
-    const playerMatch = message.match(/^(.*?) invested ₹(\d+)M/);
+    const playerMatch = message.match(/^(.*?) invested ₹(\d+)Cr/);
     if (playerMatch) {
         const playerName = playerMatch[1];
         const amount = parseInt(playerMatch[2]);
@@ -197,18 +199,22 @@ async function calculateNextInvestmentBoost(stateId, playerId) {
     const investmentConfig = await getInvestmentConfig();
     const investmentCount = playerData.investments[stateId] || 0;
     
-    let popularityBoost = investmentConfig.basePopularityBoost;
+    let popularityBoost;
     
-    // Apply diminishing returns for current investment count
-    for (let i = 0; i < investmentCount; i++) {
-        popularityBoost *= investmentConfig.diminishingReturnsRate;
+    if (investmentCount < investmentConfig.glidePathInvestments) {
+        // Linear glide path from base to final boost over glidePathInvestments
+        const progressRatio = investmentCount / investmentConfig.glidePathInvestments;
+        popularityBoost = investmentConfig.basePopularityBoost - 
+            (investmentConfig.basePopularityBoost - investmentConfig.finalPopularityBoost) * progressRatio;
+    } else {
+        // After glide path, use minimum boost
+        popularityBoost = investmentConfig.minimumBoost;
     }
     
     // Round to 1 decimal place
     popularityBoost = Math.round(popularityBoost * 10) / 10;
     
-    // Apply minimum boost
-    return Math.max(investmentConfig.minimumBoost, popularityBoost);
+    return popularityBoost;
 }
 
 // Export functions for global access

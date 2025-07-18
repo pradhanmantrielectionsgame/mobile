@@ -139,7 +139,7 @@ function startPhase(phaseNumber) {
     playSound('phase_reset');
     
     // Show phase start message
-    showPhaseMessage(`🎮 Game Started! Phase ${phaseNumber} begins now. You received ₹${phaseGameConfig.gameSettings.refreshFundsPerPhase}M refresh funds.`);
+    showPhaseMessage(`🎮 Game Started! Phase ${phaseNumber} begins now. You received ₹${phaseGameConfig.gameSettings.refreshFundsPerPhase}Cr refresh funds.`);
     
     console.log(`Phase ${phaseNumber} started - ${phaseGameConfig.gameSettings.phaseDurationSeconds} seconds`);
 }
@@ -435,7 +435,7 @@ function getGameStatus() {
     console.log(`Time Remaining: ${phaseInfo.timeRemaining} seconds`);
     console.log(`Game Running: ${phaseInfo.isRunning}`);
     console.log(`Game Paused: ${phaseInfo.isPaused}`);
-    console.log(`Refresh Funds: ₹${config?.gameSettings?.refreshFundsPerPhase || 'N/A'}M per phase`);
+    console.log(`Refresh Funds: ₹${config?.gameSettings?.refreshFundsPerPhase || 'N/A'}Cr per phase`);
     console.log('==================');
     
     return phaseInfo;
@@ -448,7 +448,7 @@ function testRefreshFunds() {
         const amount = config?.gameSettings?.refreshFundsPerPhase || 500;
         updatePlayerFunds('player1', amount);
         updatePlayerFunds('player2', amount);
-        console.log(`Manually awarded ₹${amount}M to both players`);
+        console.log(`Manually awarded ₹${amount}Cr to both players`);
     } else {
         console.error('updatePlayerFunds function not available');
     }

@@ -5,7 +5,14 @@
     "refreshFundsPerPhase": 1000
   },
   "playerSettings": {
-    "startingFunds": 2000
+    "startingFunds": 2500
+  },
+  "investmentSystem": {
+    "baseCostPerSeat": 10,
+    "basePopularityBoost": 5,
+    "finalPopularityBoost": 2,
+    "glidePathInvestments": 20,
+    "minimumBoost": 2
   },
   "rallySystem": {
     "maxRalliesPerState": 2,

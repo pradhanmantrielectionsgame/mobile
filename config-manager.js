@@ -84,10 +84,11 @@ async function getPlayerStartingConfig() {
 async function getInvestmentConfig() {
     const config = await getGameConfig();
     return {
-        baseCostPerSeat: 10, // 10M per seat - this could be configurable later
-        diminishingReturnsRate: 0.8, // 20% reduction per investment
-        basePopularityBoost: 5,
-        minimumBoost: 0.5
+        baseCostPerSeat: config.investmentSystem?.baseCostPerSeat || 10, // 10 crores per seat
+        basePopularityBoost: config.investmentSystem?.basePopularityBoost || 5, // Starting at 5%
+        finalPopularityBoost: config.investmentSystem?.finalPopularityBoost || 2, // Ending at 2%
+        glidePathInvestments: config.investmentSystem?.glidePathInvestments || 20, // 20 investments to reach final boost
+        minimumBoost: config.investmentSystem?.minimumBoost || 2 // Minimum boost after glide path
     };
 }
 

@@ -7,7 +7,7 @@ let gameState = {
         id: 'player1',
         name: 'Player 1',
         politician: null, // Will store selected politician data
-        funds: 2000, // Will be updated from config
+        funds: 2500, // Will be updated from config
         totalSpent: 0,
         // Investment tracking for diminishing returns
         investments: {}, // stateId: number of investments
@@ -21,7 +21,7 @@ let gameState = {
         id: 'player2', 
         name: 'Player 2',
         politician: null, // Will store selected politician data
-        funds: 2000, // Will be updated from config
+        funds: 2500, // Will be updated from config
         totalSpent: 0,
         // Investment tracking for diminishing returns
         investments: {}, // stateId: number of investments
@@ -60,12 +60,12 @@ function updatePlayerFunds(playerId, amount) {
             gameState[playerId].totalSpent += Math.abs(amount);
         }
         
-        console.log(`${playerId} funds: ₹${oldFunds}M → ₹${gameState[playerId].funds}M`);
+        console.log(`${playerId} funds: ₹${oldFunds}Cr → ₹${gameState[playerId].funds}Cr`);
         
         // Update display with animation
         const fundsElement = document.getElementById(`${playerId === 'player1' ? 'p1' : 'p2'}-funds`);
         if (fundsElement) {
-            fundsElement.textContent = `₹${gameState[playerId].funds}M`;
+            fundsElement.textContent = `₹${gameState[playerId].funds}Cr`;
             
             // Add animation class
             if (amount < 0) {
@@ -117,7 +117,7 @@ function updatePlayerInfoDisplay() {
             <div class="player-details">
                 <div class="player-name">${p1Data.name}</div>
                 <div style="display: flex; align-items: center;">
-                    <div class="funds-display" id="p1-funds">₹${p1Data.funds}M</div>
+                    <div class="funds-display" id="p1-funds">₹${p1Data.funds}Cr</div>
                     <div class="rally-tokens">
                         <span class="token-display">🏟️<span id="p1-simple-tokens">${p1Data.rallyTokens.simple}</span></span>
                         <span class="token-display">🌟<span id="p1-special-tokens">${p1Data.rallyTokens.special}</span></span>
@@ -139,7 +139,7 @@ function updatePlayerInfoDisplay() {
                         <span class="token-display">🏟️<span id="p2-simple-tokens">${p2Data.rallyTokens.simple}</span></span>
                         <span class="token-display">🌟<span id="p2-special-tokens">${p2Data.rallyTokens.special}</span></span>
                     </div>
-                    <div class="funds-display" id="p2-funds">₹${p2Data.funds}M</div>
+                    <div class="funds-display" id="p2-funds">₹${p2Data.funds}Cr</div>
                 </div>
             </div>
             <div class="player-avatar-section">

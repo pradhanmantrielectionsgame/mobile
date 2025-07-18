@@ -31,17 +31,24 @@ All game balance is now centralized in `data/game-config.json`:
 ```json
 {
   "playerSettings": {
-    "startingFunds": 2000
+    "startingFunds": 2500
+  },
+  "investmentSystem": {
+    "baseCostPerSeat": 10,
+    "basePopularityBoost": 5,
+    "finalPopularityBoost": 2,
+    "glidePathInvestments": 20,
+    "minimumBoost": 2
   },
   "rallySystem": {
     "simpleRallyTokens": 2,
     "specialRallyTokens": 2,
     "popularityBoost": 8
   },
-  "investment": {
-    "baseBoost": 5,
-    "diminishingFactor": 0.8,
-    "costPerSeat": 10
+  "gameSettings": {
+    "totalPhases": 10,
+    "phaseDurationSeconds": 30,
+    "refreshFundsPerPhase": 1000
   }
 }
 ```
@@ -65,8 +72,8 @@ All game balance is now centralized in `data/game-config.json`:
 
 ### Investment System
 **Direct Investment (Map Click):**
-- Cost: `seats × costPerSeat × 1M` (configurable)
-- Effect: Base boost with diminishing returns
+- Cost: `seats × 10 crores` per investment
+- Effect: Glide path system - starts at 5% boost, decreases linearly to 2% over 20 investments, then stays at 2%
 - Player 1: Normal click | Player 2: Shift+click
 - Info only: Ctrl/Cmd+click
 
@@ -142,12 +149,19 @@ All game balance is now centralized in `data/game-config.json`:
 ```json
 {
   "playerSettings": {
-    "startingFunds": 2000,
-    "fundsRefreshAmount": 500
+    "startingFunds": 2500
+  },
+  "investmentSystem": {
+    "baseCostPerSeat": 10,
+    "basePopularityBoost": 5,
+    "finalPopularityBoost": 2,
+    "glidePathInvestments": 20,
+    "minimumBoost": 2
   },
   "gameSettings": {
     "totalPhases": 10,
-    "phaseTimeSeconds": 30
+    "phaseDurationSeconds": 30,
+    "refreshFundsPerPhase": 1000
   }
 }
 ```

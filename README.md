@@ -44,11 +44,19 @@ Experience India's democratic process as you compete to become the next Pradhan 
 
 ### Investment Strategy
 - **Direct Investment**: Expensive but gives immediate popularity boost in specific states
+  - **Cost Formula**: Number of seats × ₹10Cr (e.g., UP = 80 seats = ₹800Cr)
+  - **Glide Path System**: Popularity boost starts at +5% and gradually decreases to +2% over first 20 investments per state, then stays at +2%
   - Works on both map states and Union Territory buttons
-  - Compact red notifications show investment amount (e.g., "-25M")
+  - Compact red notifications show investment amount in crores
 - **Policy Campaigns**: Cheaper per click but affects multiple regions
 - **Rally Tokens**: Limited but powerful boosts for strategic moments
 - **Regional Focus**: Use the 4×4 grid to identify key battleground areas
+
+### Economic System
+- **Starting Funds**: ₹2500 crores per player
+- **Phase Refresh**: ₹1000 crores per phase for both players
+- **Investment Scaling**: Costs scale with state importance (seat count)
+- **Diminishing Returns**: Smart glide path system prevents exploitation while maintaining viability
 
 ### Winning
 - **Goal**: Have the most projected seats when all phases complete
@@ -91,6 +99,6 @@ When modifying the code:
 
 ---
 
-**Latest Version**: Modular Architecture with UT Investment Support  
+**Latest Version**: Enhanced Pricing System with Glide Path Investment  
 **Last Updated**: July 18, 2025  
 **Repository**: pradhanmantrielectionsgame.github.io
