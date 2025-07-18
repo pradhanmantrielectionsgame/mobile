@@ -22,9 +22,11 @@ Experience India's democratic process as you compete to become the next Pradhan 
 
 ### Basic Controls
 - **State Selection**: Click any state to view info and invest funds
-- **Rally Actions**: Alt + Click to use rally tokens for popularity boost
+- **Union Territory Investment**: Click UT buttons to invest in union territories
+- **Rally Actions**: Alt + Click to use rally tokens for popularity boost (works on both map states and UT buttons)
 - **Info Only**: Ctrl/Cmd + Click to view state details without investing
 - **Player 2**: Add Shift to any action (e.g., Shift+Click to invest as Player 2)
+- **Visual Feedback**: Investment notifications appear as compact red banners in player info area
 
 ### Game Interface
 - **Top Bar**: Shows real-time projected seats for both players
@@ -42,6 +44,8 @@ Experience India's democratic process as you compete to become the next Pradhan 
 
 ### Investment Strategy
 - **Direct Investment**: Expensive but gives immediate popularity boost in specific states
+  - Works on both map states and Union Territory buttons
+  - Compact red notifications show investment amount (e.g., "-25M")
 - **Policy Campaigns**: Cheaper per click but affects multiple regions
 - **Rally Tokens**: Limited but powerful boosts for strategic moments
 - **Regional Focus**: Use the 4×4 grid to identify key battleground areas
@@ -87,6 +91,6 @@ When modifying the code:
 
 ---
 
-**Latest Version**: Modular Architecture  
-**Last Updated**: July 14, 2025  
+**Latest Version**: Modular Architecture with UT Investment Support  
+**Last Updated**: July 18, 2025  
 **Repository**: pradhanmantrielectionsgame.github.io
