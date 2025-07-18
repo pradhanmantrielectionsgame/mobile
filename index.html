@@ -7,8 +7,10 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <!-- Banner 1: Projected Seats Progress Bar -->
-    <div class="camera-notch-banner">
+    <!-- Main Grid Layout Container -->
+    <div class="main-grid-container">
+        <!-- Banner 1: Projected Seats Progress Bar -->
+        <div class="camera-notch-banner">
         <div class="projected-seats-container">
             <div class="seats-progress-bar" id="seats-progress-bar">
                 <div class="seats-segment p1" id="p1-segment"></div>
@@ -74,21 +76,6 @@
     <!-- Map container -->
     <div id="map-container"></div>
     
-    <!-- Timer pill overlay with Union Territories -->
-    <div class="timer-pill" id="timer-pill">
-        <div class="timer-display" id="timer-display">
-            Phase 1/8 | 2:45
-        </div>
-        <div class="union-territories-container" id="ut-container">
-            <button class="ut-button" data-svg-id="INDL">New Delhi</button>
-            <button class="ut-button" data-svg-id="INCH">Chandigarh</button>
-            <button class="ut-button" data-svg-id="INDH">DNH</button>
-            <button class="ut-button" data-svg-id="INPY">Puducherry</button>
-            <button class="ut-button" data-svg-id="INLD">Lakshadweep</button>
-            <button class="ut-button" data-svg-id="INAN">A&N Islands</button>
-        </div>
-    </div>
-    
     <!-- Banner 4: State Groups (Bottom) - 4x4 Grid -->
     <div class="state-groups-banner" id="state-groups-banner">
         <div class="state-groups-grid">
@@ -108,6 +95,25 @@
             <div class="state-group">Travel and tourism</div>
             <div class="state-group">Natural resources</div>
             <div class="state-group">Minority areas</div>
+        </div>
+    </div>
+    
+    <!-- End of Main Grid Container -->
+    </div>
+    
+    <!-- Overlay Elements (Outside Grid) -->
+    <!-- Timer pill overlay with Union Territories -->
+    <div class="timer-pill" id="timer-pill">
+        <div class="timer-display" id="timer-display">
+            Phase 1/8 | 2:45
+        </div>
+        <div class="union-territories-container" id="ut-container">
+            <button class="ut-button" data-svg-id="INDL">New Delhi</button>
+            <button class="ut-button" data-svg-id="INCH">Chandigarh</button>
+            <button class="ut-button" data-svg-id="INDH">DNH</button>
+            <button class="ut-button" data-svg-id="INPY">Puducherry</button>
+            <button class="ut-button" data-svg-id="INLD">Lakshadweep</button>
+            <button class="ut-button" data-svg-id="INAN">A&N Islands</button>
         </div>
     </div>
     

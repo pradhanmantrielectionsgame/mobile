@@ -1,65 +1,159 @@
+# Copilot Agent Unified Workflow Instructions
 
-# Copilot Instructions for Pradhan Mantri Elections Game (Mobile Version)
+## Overview
+## Project-Specific Guidelines
 
-## Workflow Compliance
+### Architecture Constraints
+- **File Size Limit**: Keep all JS files under 500 lines
+- **Module Load Order**: Maintain critical script loading sequence
+- **Mobile-First**: All UI elements must be touch-friendly (min 44px targets)
+- **Configuration-Driven**: Use `game-config.json` for all configurable values
 
-**For all feature requests and updates, the agent must strictly follow the workflow steps outlined in `../Feature Request.md` in addition to the standards and conventions in this file.**
+### Key Patterns
+- **Global Function Exports**: Use `window.functionName = functionName` pattern
+- **Dual-Player Input**: Support normal click (Player 1) and Shift+Click (Player 2)
+- **Data Flow**: All data flows through `config-manager.js` → individual modules
+- **State Management**: Use centralized state management through designated managers
 
+### Critical Integration Points
+- **Phase System**: Timed phase system with automatic progression
+- **Map-Data Sync**: SVG map IDs must match `states_data.json` `SvgId` fields
+- **Audio System**: Centrally managed through `config-manager.js`
 
-## Project Overview
+## Communication Protocol
 
-This is a modular, browser-based political simulation game focused on Indian elections, optimized for mobile devices. The codebase is organized for maintainability, scalability, and mobile-first responsive design.
+### During Each Step
+- **Clear Communication**: Explain what you're doing and why
+- **Progress Updates**: Keep user informed of progress
+- **Ask Questions**: Don't assume - ask for clarification when needed
+- **Present Options**: Offer alternatives when multiple approaches exist
 
-## Architecture & Major Components
+### Error Handling
+- **Transparent Reporting**: Clearly report any issues encountered
+- **Solution Proposals**: Always propose solutions, not just problems
+- **Fallback Plans**: Have backup approaches ready
 
-- **Entry Point:** `index.html` loads the game UI and scripts.
-- **Core Logic:**
-  - `app.js`: Main application logic, UI interactions, and event handling.
-  - `game-data.js`: Manages game state, calculations, and data loading.
-  - `campaign-system.js`: Handles campaign mechanics, modals, and investment logic.
-- **Data Files:** All game data is in `data/` as JSON (`states_data.json`, `policy-tags.json`, `politicians-data.json`).
-- **Assets:** SVGs and images in `assets/`, audio in `sounds/`.
-- **Styling:** `styles.css` implements a mobile-first, touch-friendly UI using CSS Grid and Flexbox.
+### User Interaction Points
+- **Step 1**: Confirm requirements and scope
+- **Step 2**: Get approval for technical plan
+- **Step 4**: User validation and feedback
+- **Step 5**: User review before commit
+- **Step 6**: User review of documentation updates
 
-## Key Patterns & Conventions
+## VS Code + GitHub Copilot Integration
 
-- **File Size:** All JS files are kept under 500 lines for readability and modularity.
-- **Naming:** Use descriptive, consistent names for functions, variables, and files (e.g., `campaign-system.js` for campaign logic).
-- **Data Flow:** Data is loaded via Fetch API from JSON files; state is managed in-memory in JS modules.
-- **UI Updates:** DOM manipulation is handled directly in JS, with clear separation between data and presentation logic.
-- **Mobile Responsiveness:** All UI elements are designed for touch (min 44px targets), no horizontal scrolling, and adaptive layouts.
-- **Player Actions:** Support for dual-player input (normal click = Player 1, Shift+Click = Player 2) is implemented in campaign logic.
+### Workflow Implementation
+This workflow is designed to work seamlessly with VS Code and GitHub Copilot:
 
-## Developer Workflows
+1. **Interactive Chat**: Use Copilot Chat for steps 1-2 (ideation and planning)
+2. **Code Generation**: Use Copilot inline suggestions during step 3 (execution)
+3. **Testing Tools**: Use VS Code's integrated terminal and debugging for step 4
+4. **Git Integration**: Use VS Code's built-in Git tools for step 5 (commit)
+5. **Documentation**: Use Copilot to assist with documentation in step 6
 
-- **Quick Start:** Open `index.html` in a browser—no build step required.
-- **Debugging:** Use browser dev tools; all logic is client-side and modularized for easy inspection.
-- **Testing:** Manual testing on mobile devices is recommended after changes.
-- **Adding Features:** Place new logic in a separate JS file if it exceeds 500 lines; update documentation as needed.
-- **Documentation:** Update `README.md` with any significant changes to features, mechanics, or data structures.
-- **Version Control:** Use clear, descriptive commit messages that reflect the changes made, following the checklist in `../Feature Request.md`.
-- **Code Reviews:** Ensure all changes are reviewed against the checklist in `../Feature Request.md` before merging.
-- **Environment:** No external dependencies or build tools; all assets are local and referenced directly in HTML/JS. I'm running powershell on Windows, so use powershell commands for any file operations.
+### Best Practices
+- **Checkpoint Conversations**: Save conversation state at each step
+- **Incremental Commits**: Make small, logical commits during execution
+- **Branch Management**: Use feature branches for all development
+- **Code Review**: Use GitHub's PR review process before merging
 
-## Integration & External Dependencies
+## Debug Commands Available
+```javascript
+// Phase system testing
+quickStartGame()           // Restart game
+testSkipPhase(5)          // Skip to phase 5
+getGameStatus()           // Current game state
+debugPhaseSystem()        // Phase system debug info
 
-- **No external build tools or frameworks**—all dependencies are local assets and standard browser APIs.
-- **SVG and image assets** are referenced directly in HTML/JS for map and party visuals.
-
-## Examples
-
-- To add a new policy: Update `data/policy-tags.json` and ensure UI logic in `campaign-system.js` reflects the new entry.
-- To modify state data: Edit `data/states_data.json` and verify changes in the map and info banners.
-
-
-## Reference Files
-
-- `README.md`: Full project and gameplay documentation.
-- `app.js`, `game-data.js`, `campaign-system.js`: Core logic modules.
-- `data/`: All game data.
-- `assets/`, `sounds/`: Visual and audio assets.
-- `../Feature Request.md`: **Stepwise workflow for all feature requests and updates (must be strictly followed).**
+// Data inspection
+getStatesData()           // All state data
+getGameConfig()           // Current configuration
+getPlayerData('player1')  // Player state
+```
 
 ---
 
-**Keep code modular, mobile-first, and under 500 lines per file. Update documentation with any significant changes.**
+**This workflow must be followed for every feature request. The Agent should not skip steps or deviate from this process without explicit user approval.**his document establishes a standardized 6-step workflow for all feature development in the Pradhan Mantri Elections Game. **The Agent must follow this workflow strictly for every feature request.**
+
+## Workflow Steps
+
+### 1. IDEATE / COLLECT FEEDBACK
+**Agent Role**: Gather requirements and understand user needs
+- Ask clarifying questions about the feature
+- Write clear user stories: "As a [user type], I want [goal] so that [benefit]"
+- Define specific, measurable success criteria
+- Identify feature boundaries and constraints
+- Ensure mobile-first thinking from the start
+
+### 2. PLAN THE CODING STEPS
+**Agent Role**: Create detailed technical implementation plan
+- Identify affected modules (stay under 500 lines per file)
+- Plan JSON file updates in `data/` directory
+- Map how feature integrates with existing systems
+- Identify potential impacts on existing functionality
+- Define step-by-step coding order
+
+### 3. EXECUTE THE CODING STEPS
+**Agent Role**: Implement the planned feature following project conventions
+- Follow modular architecture (< 500 lines per file)
+- Use descriptive, consistent naming
+- Ensure touch-friendly UI (min 44px targets)
+- Use `game-config.json` for configurable values
+- Update relevant JSON files in `data/` directory
+- Implement proper error handling and user feedback
+
+### 4. TEST AND DEBUG
+**Agent Role**: Validate implementation and fix issues
+- Verify all new functionality works
+- Test module interactions
+- Validate touch interactions and responsiveness
+- Ensure existing features aren't broken
+- Test error scenarios and edge cases
+- **PAUSE HERE** - User steps in for manual validation
+
+### 4.1. ITERATE (REPEAT 2-4 UNTIL USER SATISFIED)
+**Agent Role**: Refine implementation based on user feedback
+- Understand user concerns and requests
+- Modify implementation plan as needed
+- Make necessary changes
+- Re-test after each iteration
+
+### 5. COMMIT THE CODE
+**Agent Role**: Finalize and commit changes with proper documentation
+- Final review of all changes
+- Use clear, descriptive commit messages
+- Ensure all files are properly organized
+- Confirm all assets are included and paths correct
+
+### 6. UPDATE THE DOCUMENTATION
+**Agent Role**: Update all relevant documentation
+- Update README.md with new features and mechanics
+- Add/update inline documentation
+- Update configuration documentation for new options
+- Update gameplay documentation if needed
+
+
+Live Checklist
+
+1  Ideate & Collect Feedback
+
+
+
+2  Plan Implementation
+
+
+
+3  Execute Code Changes
+
+
+
+4  Test, Debug & Iterate
+
+
+
+5  Commit & PR
+
+
+
+6  Update Documentation
+
