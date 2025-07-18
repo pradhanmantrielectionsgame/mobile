@@ -88,6 +88,14 @@ For technical documentation, architecture details, and development setup, see [D
 3. No build tools or dependencies required
 4. All assets are local and self-contained
 
+### Project Structure
+- `js/` - All JavaScript modules (12 files)
+- `styles/` - CSS files  
+- `docs/` - Documentation files
+- `data/` - Game configuration and data files
+- `assets/` - Images, icons, and SVG files
+- `sounds/` - Audio files
+
 ## Contributing
 
 When modifying the code:

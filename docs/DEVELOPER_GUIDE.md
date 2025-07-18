@@ -11,20 +11,20 @@
 The game has been refactored from a monolithic 850+ line file into 9 focused modules:
 
 **Core Modules:**
-- `config-manager.js` (~80 lines) - Configuration loading from JSON
-- `state-manager.js` (~150 lines) - State data and lookup operations  
-- `popularity-manager.js` (~300 lines) - Popularity calculations and seat projections
-- `player-manager.js` (~200 lines) - Player data and politician management
-- `investment-system.js` (~120 lines) - Direct investment mechanics
-- `rally-system.js` (~150 lines) - Rally token system
-- `ui-manager.js` (~200 lines) - UI updates and map coloring
-- `data-loader.js` (~60 lines) - Initialization coordinator
-- `game-data.js` (~50 lines) - Main coordinator and compatibility layer
+- `js/config-manager.js` (~80 lines) - Configuration loading from JSON
+- `js/state-manager.js` (~150 lines) - State data and lookup operations  
+- `js/popularity-manager.js` (~300 lines) - Popularity calculations and seat projections
+- `js/player-manager.js` (~200 lines) - Player data and politician management
+- `js/investment-system.js` (~120 lines) - Direct investment mechanics
+- `js/rally-system.js` (~150 lines) - Rally token system
+- `js/ui-manager.js` (~200 lines) - UI updates and map coloring
+- `js/data-loader.js` (~60 lines) - Initialization coordinator
+- `js/game-data.js` (~50 lines) - Main coordinator and compatibility layer
 
 **UI & Game Logic:**
-- `app.js` (~220 lines) - Main application and UI interactions
-- `campaign-system.js` (~160 lines) - Campaign modal and policy investments
-- `phase-system.js` - Game phase management and timers
+- `js/app.js` (~220 lines) - Main application and UI interactions
+- `js/campaign-system.js` (~160 lines) - Campaign modal and policy investments
+- `js/phase-system.js` - Game phase management and timers
 
 ### Configuration System
 All game balance is now centralized in `data/game-config.json`:
@@ -171,20 +171,53 @@ All game balance is now centralized in `data/game-config.json`:
 ### Script Load Order (index.html)
 ```html
 <!-- Core system modules -->
-<script src="config-manager.js"></script>
-<script src="state-manager.js"></script>
-<script src="popularity-manager.js"></script>
-<script src="player-manager.js"></script>
-<script src="investment-system.js"></script>
-<script src="rally-system.js"></script>
-<script src="ui-manager.js"></script>
-<script src="data-loader.js"></script>
+<script src="js/config-manager.js"></script>
+<script src="js/state-manager.js"></script>
+<script src="js/popularity-manager.js"></script>
+<script src="js/player-manager.js"></script>
+<script src="js/investment-system.js"></script>
+<script src="js/rally-system.js"></script>
+<script src="js/ui-manager.js"></script>
+<script src="js/data-loader.js"></script>
 
 <!-- Game coordination -->
-<script src="game-data.js"></script>
-<script src="campaign-system.js"></script>
-<script src="phase-system.js"></script>
-<script src="app.js"></script>
+<script src="js/game-data.js"></script>
+<script src="js/campaign-system.js"></script>
+<script src="js/phase-system.js"></script>
+<script src="js/app.js"></script>
+```
+
+### Project Structure
+```
+index.html                 # Main entry point
+js/                       # All JavaScript files
+├── config-manager.js     # Configuration management
+├── state-manager.js      # State data operations
+├── popularity-manager.js # Popularity and seat calculations
+├── player-manager.js     # Player data management
+├── investment-system.js  # Direct investment mechanics
+├── rally-system.js       # Rally token system
+├── ui-manager.js         # UI updates and map coloring
+├── data-loader.js        # Data loading coordinator
+├── game-data.js          # Main coordinator
+├── campaign-system.js    # Campaign modal system
+├── phase-system.js       # Game phase management
+└── app.js               # Main application logic
+styles/                   # CSS files
+└── styles.css           # Main stylesheet
+docs/                     # Documentation
+├── README.md            # User guide and game overview
+└── DEVELOPER_GUIDE.md   # Technical documentation
+data/                     # Game configuration and data
+├── game-config.json     # Game balance and settings
+├── states_data.json     # State information
+├── politicians-data.json # Politician profiles
+└── policy-tags.json     # Policy definitions
+assets/                   # Static assets
+├── icons/               # SVG icons and logos
+└── images/              # PNG images
+sounds/                   # Audio files
+└── *.mp3               # Game sound effects
 ```
 
 ### CSS Architecture
@@ -216,7 +249,7 @@ All game balance is now centralized in `data/game-config.json`:
 
 **Adding New State Groups:**
 1. Add boolean field to `data/states_data.json`
-2. Update state groups grid in `app.js`
+2. Update state groups grid in `js/app.js`
 3. Test filtering functionality
 
 ### Debugging
