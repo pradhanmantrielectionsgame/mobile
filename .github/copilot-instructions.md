@@ -79,7 +79,7 @@ getPlayerData('player1')  // Player state
 
 ### 1. IDEATE / COLLECT FEEDBACK
 **Agent Role**: Gather requirements and understand user needs
-- Ask clarifying questions about the feature
+- Ask clarifying questions about the feature and then wait for user responses
 - Write clear user stories: "As a [user type], I want [goal] so that [benefit]"
 - Define specific, measurable success criteria
 - Identify feature boundaries and constraints
