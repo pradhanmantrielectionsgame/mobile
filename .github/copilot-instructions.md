@@ -133,7 +133,7 @@ getPlayerData('player1')  // Player state
 - Update gameplay documentation if needed
 
 
-Live Checklist
+Live Checklist (Update this document dynamically as you proceed through each step. This section should serve as a scracthpad to take notes)
 
 1  Ideate & Collect Feedback
 

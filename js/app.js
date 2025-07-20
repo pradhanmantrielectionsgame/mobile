@@ -28,7 +28,17 @@ function handleStateClick(event) {
             // Only do investment if not using Ctrl/Cmd (allows info-only viewing)
             if (!event.ctrlKey && !event.metaKey) {
                 const playerId = event.shiftKey ? 'player2' : 'player1';
-                handleDirectInvestment(svgId, playerId);
+                
+                // Attempt the investment first (async)
+                handleDirectInvestment(svgId, playerId).then(investmentSuccess => {
+                    // Only add ripple effect and sound if investment was successful
+                    if (investmentSuccess && window.createInvestmentRipple) {
+                        window.createInvestmentRipple.forState(event, playerId);
+                    } else if (!investmentSuccess && playerId === 'player1' && window.playAudio) {
+                        // Play invalid action sound only for Player 1
+                        window.playAudio('invalid_action');
+                    }
+                });
             }
         }
         
@@ -207,7 +217,17 @@ function initUnionTerritories() {
                 // Only do investment if not using Ctrl/Cmd (allows info-only viewing)
                 if (!event.ctrlKey && !event.metaKey) {
                     const playerId = event.shiftKey ? 'player2' : 'player1';
-                    handleDirectInvestment(svgId, playerId);
+                    
+                    // Attempt the investment first (async)
+                    handleDirectInvestment(svgId, playerId).then(investmentSuccess => {
+                        // Only add ripple effect and sound if investment was successful
+                        if (investmentSuccess && window.createInvestmentRipple) {
+                            window.createInvestmentRipple.forUT(svgId, playerId);
+                        } else if (!investmentSuccess && playerId === 'player1' && window.playAudio) {
+                            // Play invalid action sound only for Player 1
+                            window.playAudio('invalid_action');
+                        }
+                    });
                 }
             }
             

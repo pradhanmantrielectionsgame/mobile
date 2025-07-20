@@ -892,3 +892,62 @@ svg[width][height] {
         /* Height is now handled by CSS Grid automatically */
     }
 }
+
+/* Ripple Effect System */
+.ripple-container {
+    position: relative;
+    overflow: hidden;
+}
+
+.ripple-effect {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    transform: scale(0);
+    opacity: 0.6;
+    z-index: 1000;
+    animation: ripple-animation 0.8s ease-out forwards;
+}
+
+.ripple-effect.player1 {
+    background: radial-gradient(circle, rgba(78, 184, 90, 0.4) 0%, rgba(90, 196, 97, 0.2) 70%, transparent 100%);
+    box-shadow: 0 0 20px rgba(78, 184, 90, 0.3);
+}
+
+.ripple-effect.player2 {
+    background: radial-gradient(circle, rgba(230, 92, 92, 0.4) 0%, rgba(245, 101, 101, 0.2) 70%, transparent 100%);
+    box-shadow: 0 0 20px rgba(230, 92, 92, 0.3);
+}
+
+@keyframes ripple-animation {
+    0% {
+        transform: scale(0);
+        opacity: 0.6;
+    }
+    50% {
+        opacity: 0.4;
+    }
+    100% {
+        transform: scale(4);
+        opacity: 0;
+    }
+}
+
+/* Ensure map container can contain ripples */
+#map-container {
+    position: relative;
+}
+
+/* Mobile optimization for ripples */
+@media (max-width: 768px) {
+    .ripple-effect {
+        animation-duration: 0.6s;
+    }
+    
+    @keyframes ripple-animation {
+        100% {
+            transform: scale(3);
+            opacity: 0;
+        }
+    }
+}
