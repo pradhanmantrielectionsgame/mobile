@@ -20,9 +20,10 @@ The game has been refactored from a monolithic 850+ line file into 9 focused mod
 - `js/ui-manager.js` (~200 lines) - UI updates and map coloring
 - `js/data-loader.js` (~60 lines) - Initialization coordinator
 - `js/game-data.js` (~50 lines) - Main coordinator and compatibility layer
+- `js/ripple-effects.js` (~200 lines) - Visual feedback and sound system
 
 **UI & Game Logic:**
-- `js/app.js` (~220 lines) - Main application and UI interactions
+- `js/app.js` (~230 lines) - Main application and UI interactions
 - `js/campaign-system.js` (~160 lines) - Campaign modal and policy investments
 - `js/phase-system.js` - Game phase management and timers
 
@@ -93,6 +94,24 @@ All game balance is now centralized in `data/game-config.json`:
 - 2 tokens per player per phase (configurable)
 - For Union Territories only
 - Enhanced boost for strategic play
+
+### Ripple Effects & Audio System
+**Visual Feedback:**
+- Player-specific ripple effects: Green (Player 1), Red (Player 2)
+- Geographic positioning for UT buttons, click-point positioning for states
+- CSS animations with radial gradients and box-shadows
+- Mobile-optimized sizing (15% of container) with performance limits (4 concurrent)
+
+**Audio Feedback:**
+- Player 1 only: `money_spent.mp3` for successful investments
+- Player 1 only: `invalid_action.mp3` for insufficient funds
+- Player 2: Silent operation to reduce audio clutter
+- HTML5 Audio API with volume control and error handling
+
+**Integration:**
+- Async investment validation prevents effects on failed actions
+- Ripples trigger only after successful `handleDirectInvestment()` completion
+- Error feedback for both visual (no ripple) and audio (error sound) channels
 
 ### Phase Management
 **Phase System:**

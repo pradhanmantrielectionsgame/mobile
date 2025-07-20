@@ -17,6 +17,8 @@ Experience India's democratic process as you compete to become the next Pradhan 
 - **Direct Investment**: Click states to invest funds and boost popularity
 - **Rally System**: Use rally tokens for strategic popularity boosts
 - **Interactive Map**: Full map of India with touch-friendly controls
+- **Visual Feedback**: Ripple effects and sound feedback for all player actions
+- **Mobile-First Design**: Optimized for touch devices with responsive interface
 
 ## How to Play
 
@@ -26,7 +28,14 @@ Experience India's democratic process as you compete to become the next Pradhan 
 - **Rally Actions**: Alt + Click to use rally tokens for popularity boost (works on both map states and UT buttons)
 - **Info Only**: Ctrl/Cmd + Click to view state details without investing
 - **Player 2**: Add Shift to any action (e.g., Shift+Click to invest as Player 2)
-- **Visual Feedback**: Investment notifications appear as compact red banners in player info area
+- **Visual Feedback**: 
+  - Investment notifications appear as compact red banners in player info area
+  - Ripple effects show at click location (states) or geographic center (UTs)
+  - Player-specific colors: Green ripples for Player 1, Red ripples for Player 2
+- **Audio Feedback**: 
+  - Success sound (`money_spent.mp3`) for Player 1 successful investments
+  - Error sound (`invalid_action.mp3`) for Player 1 insufficient funds
+  - Player 2 actions are silent for reduced audio clutter
 
 ### Game Interface
 - **Top Bar**: Shows real-time projected seats for both players
