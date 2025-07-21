@@ -48,23 +48,31 @@ Experience India's democratic process as you compete to become the next Pradhan 
 1. **Open Campaigns**: Click the lightning bolt (⚡) button
 2. **Choose Policy**: Select from 22 different policies organized by importance
 3. **Make Investment**: Click to invest funds (each policy needs 10 clicks to complete)
-4. **Phase Limits**: Each player can contribute maximum 5 times per phase to any single campaign
-5. **Progress Tracking**: Visual progress bars show completion status with player-specific colors
-6. **Regional Effects**: Green labels show regions that benefit, red labels show regions that suffer
-7. **Audio Feedback**: 
+4. **Strategic Cost Structure**: 
+   - **Tier 1 Policies (High Impact)**: ₹180Cr per click (₹1800Cr total) - Major strategic commitments
+   - **Tier 2 Policies (Medium Impact)**: ₹120Cr per click (₹1200Cr total) - Significant investments  
+   - **Tier 3 Policies (Focused Impact)**: ₹90Cr per click (₹900Cr total) - Accessible but meaningful
+5. **Phase Limits**: Each player can contribute maximum 5 times per phase to any single campaign
+6. **Progress Tracking**: Visual progress bars show completion status with player-specific colors (immediate updates)
+7. **Regional Effects**: Green labels show regions that benefit, red labels show regions that suffer
+8. **Audio Feedback**: 
    - Successful investments play money spending sound
    - Blocked actions (insufficient funds, phase limits) play invalid action sound
-8. **Phase Reset**: Contribution limits reset automatically when new phase begins
-5. **Strategic Timing**: Complete campaigns to gain popularity in target regions
+9. **Phase Reset**: Contribution limits reset automatically when new phase begins
+10. **Strategic Timing**: Complete campaigns to gain popularity in target regions
 
 ### Investment Strategy
-- **Direct Investment**: Expensive but gives immediate popularity boost in specific states
+- **Direct Investment**: Quick popularity boost in specific states
   - **Cost Formula**: Number of seats × ₹10Cr (e.g., UP = 80 seats = ₹800Cr)
   - **Glide Path System**: Popularity boost starts at +5% and gradually decreases to +2% over first 20 investments per state, then stays at +2%
   - Works on both map states and Union Territory buttons
   - Compact red notifications show investment amount in crores
-- **Policy Campaigns**: Cheaper per click but affects multiple regions
+- **Policy Campaigns**: Major strategic investments affecting multiple regions
+  - **High Risk/Reward**: Tier 1 campaigns require nearly all starting funds but provide massive regional boosts
+  - **Medium Strategy**: Tier 2 campaigns balance cost with broad impact
+  - **Early Game**: Tier 3 campaigns are more accessible for opening moves
 - **Rally Tokens**: Limited but powerful boosts for strategic moments
+- **Resource Management**: With aggressive campaign costs, careful fund allocation is crucial
 - **Regional Focus**: Use the 4×4 grid to identify key battleground areas
 
 ### Economic System

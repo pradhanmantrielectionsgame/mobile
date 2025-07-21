@@ -24,7 +24,7 @@ The game has been refactored from a monolithic 850+ line file into 9 focused mod
 
 **UI & Game Logic:**
 - `js/app.js` (~230 lines) - Main application and UI interactions
-- `js/campaign-system.js` (~200 lines) - Campaign modal and policy investments with phase limits
+- `js/campaign-system.js` (~523 lines) - Campaign modal and policy investments with phase limits
 - `js/phase-system.js` - Game phase management and timers
 
 ### Configuration System
@@ -83,10 +83,13 @@ All game balance is now centralized in `data/game-config.json`:
 
 **Campaign Investment (Modal):**
 - 22 policies from `policy-tags.json`
-- Tier-based costs: Gold (60M), Silver (40M), Bronze (20M)
+- **New Aggressive Cost Structure**: 
+  - Tier 1 (Gold): ₹180Cr per click (₹1800Cr total completion)
+  - Tier 2 (Silver): ₹120Cr per click (₹1200Cr total completion) 
+  - Tier 3 (Bronze): ₹90Cr per click (₹900Cr total completion)
 - 10-click completion system with phase-based contribution limits
 - Phase Limits: Maximum 5 contributions per player per campaign per phase
-- Progress Tracking: Visual progress bars with player-specific colors
+- **Enhanced Progress Tracking**: Visual progress bars with immediate updates and player-specific colors
 - Audio Feedback: `money_spent` for successful contributions, `invalid_action` for blocked actions
 - Automatic Reset: Contribution limits reset when new phase begins
 - Regional effects based on policy tags

@@ -103,9 +103,10 @@ function generateCampaignGrid() {
         // Debug logging for progress calculation
         console.log(`Generating grid for ${policyName}: P1=${progress.player1}%, P2=${progress.player2}%, Total=${totalProgress}%`);
         
-        // Determine cost based on tier
+        // Determine cost based on tier - aggressive scaling for strategic depth
         const baseCost = policyData.baseMagnitude || 4;
-        const cost = baseCost * 5; // 5M per magnitude point
+        const tierMultiplier = policyData.tier === 1 ? 15 : policyData.tier === 2 ? 15 : 22.5; // 1800-1200-900 scaling
+        const cost = baseCost * tierMultiplier;
         
         // Determine dominant player color
         let progressClass = 'player1';
@@ -232,12 +233,6 @@ function handleCampaignClick(e, policyName, policyData, progress, totalClicks, c
     campaignProgress[policyName][`player${playerNum}`] += 10; // 10% per click
     campaignPhaseContributions[policyName][playerId]++; // Track phase contributions
     
-    // Debug logging for progress
-    console.log(`Progress updated for ${policyName}:`, campaignProgress[policyName]);
-    const debugTotal = campaignProgress[policyName].player1 + campaignProgress[policyName].player2;
-    console.log(`Total progress: ${debugTotal}%`);
-    console.log(`Phase contributions for ${policyName}:`, campaignPhaseContributions[policyName]);
-    
     // Update player funds using the new system
     updatePlayerFunds(playerId, -cost);
     
@@ -257,6 +252,9 @@ function handleCampaignClick(e, policyName, policyData, progress, totalClicks, c
         showCampaignMessage(`${playerData.name} invested ₹${cost}Cr in ${policyName}`, 'success');
     }
     
+    // Update progress bar immediately for instant feedback
+    updateSingleCampaignProgressBar(policyName);
+    
     // Check and award bonuses
     checkAndAwardBonuses();
     
@@ -264,8 +262,6 @@ function handleCampaignClick(e, policyName, policyData, progress, totalClicks, c
     requestAnimationFrame(() => {
         generateCampaignGrid();
     });
-    
-    console.log(`${playerId} invested in ${policyName}. Total progress: ${newTotal}%`);
 }
 
 // Check and award bonuses
@@ -306,8 +302,8 @@ function checkRegionalDominanceBonuses() {
         ['SouthIndia', 'HindiHeartland', 'NortheastIndia', 'CoastalIndia'].forEach(regionField => {
             const regionStates = statesData.filter(state => state[regionField] === 'TRUE');
             const allDominant = regionStates.every(state => {
-                const stateIndex = getStateIndex(state.State);
-                return stateIndex !== -1 && gameState.popularity[stateIndex][playerId] > 50;
+                const stateData = findStateById(state.SvgId);
+                return stateData && stateData.popularity && stateData.popularity[playerId] > 50;
             });
             
             if (allDominant) {
@@ -501,93 +497,8 @@ function initCampaignModal() {
 function initRallyButton() {
     const rallyBtn = document.getElementById('rally-btn');
     rallyBtn.addEventListener('click', () => {
-        showRallyInstructions();
+        showCampaignMessage('Rally instructions: Alt+Click states for simple rallies (2 tokens/phase). Special rallies available in campaign modal.', 'info');
     });
-}
-
-// Show rally instructions modal
-function showRallyInstructions() {
-    const modalHTML = `
-        <div id="rally-instructions-modal" style="
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.8);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        ">
-            <div style="
-                background: white;
-                padding: 30px;
-                border-radius: 10px;
-                max-width: 500px;
-                text-align: left;
-                color: #333;
-                max-height: 80vh;
-                overflow-y: auto;
-            ">
-                <h2 style="margin-bottom: 20px; color: #9C27B0;">Rally & Investment System</h2>
-                
-                <div style="margin-bottom: 20px;">
-                    <h3 style="color: #4CAF50; margin-bottom: 10px;">📍 Select & Invest</h3>
-                    <p><strong>How:</strong> Click on any state</p>
-                    <p><strong>Effect:</strong> Shows state info AND makes direct investment</p>
-                    <p><strong>Cost:</strong> Number of seats × ₹10Cr (e.g., UP = 80 seats = ₹800Cr)</p>
-                    <p><strong>Investment Effect:</strong> +5% popularity with diminishing returns</p>
-                    <p><strong>Player 2:</strong> Shift + Click</p>
-                </div>
-                
-                <div style="margin-bottom: 20px;">
-                    <h3 style="color: #9C27B0; margin-bottom: 10px;">🏟️ Simple Rally</h3>
-                    <p><strong>How:</strong> Alt + Click on any state</p>
-                    <p><strong>Tokens:</strong> 2 per phase per player</p>
-                    <p><strong>Effect:</strong> +4% popularity in that state</p>
-                    <p><strong>Player 2:</strong> Shift + Alt + Click</p>
-                </div>
-                
-                <div style="margin-bottom: 20px;">
-                    <h3 style="color: #ff6b6b; margin-bottom: 10px;">ℹ️ State Info Only</h3>
-                    <p><strong>How:</strong> Ctrl/Cmd + Click on any state</p>
-                    <p><strong>Effect:</strong> Shows state information without investment</p>
-                </div>
-                
-                <div style="margin-bottom: 20px;">
-                    <h3 style="color: #FF9800; margin-bottom: 10px;">🌟 Special Rally</h3>
-                    <p><strong>How:</strong> Click the "Special Rally" button below</p>
-                    <p><strong>Tokens:</strong> 2 per phase per player</p>
-                    <p><strong>Effect:</strong> +10% popularity in ALL states</p>
-                </div>
-                
-                <div style="margin-bottom: 20px; padding: 15px; background: #f5f5f5; border-radius: 5px;">
-                    <h4>Current Rally Tokens:</h4>
-                    <p>Player 1: <span id="modal-p1-simple">${gameState.player1.rallyTokens.simple}</span> Simple, <span id="modal-p1-special">${gameState.player1.rallyTokens.special}</span> Special</p>
-                    <p>Player 2: <span id="modal-p2-simple">${gameState.player2.rallyTokens.simple}</span> Simple, <span id="modal-p2-special">${gameState.player2.rallyTokens.special}</span> Special</p>
-                </div>
-                
-                <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-                    <button onclick="useSpecialRallyToken('player1')" 
-                            style="flex: 1; padding: 10px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;">
-                        P1 Special Rally
-                    </button>
-                    <button onclick="useSpecialRallyToken('player2')" 
-                            style="flex: 1; padding: 10px; background: #e65c5c; color: white; border: none; border-radius: 5px; cursor: pointer;">
-                        P2 Special Rally
-                    </button>
-                </div>
-                
-                <button onclick="document.getElementById('rally-instructions-modal').remove()" 
-                        style="width: 100%; padding: 10px 20px; background: #666; color: white; border: none; border-radius: 5px; cursor: pointer;">
-                    Close
-                </button>
-            </div>
-        </div>
-    `;
-    
-    document.body.insertAdjacentHTML('beforeend', modalHTML);
 }
 
 // Master campaign system initialization function
