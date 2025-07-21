@@ -57,6 +57,11 @@ This workflow is designed to work seamlessly with VS Code and GitHub Copilot:
 - **Branch Management**: Use feature branches for all development
 - **Code Review**: Use GitHub's PR review process before merging
 
+### Environment Details
+- User is running Windows 10, VS Code 1.78.2, Node.js 18.16.0
+- Use PowerShell for terminal commands
+- For testing, use the integrated terminal in VS Code or run a python -m http.server so user can test things locally
+
 ## Debug Commands Available
 ```javascript
 // Phase system testing
@@ -79,10 +84,7 @@ getPlayerData('player1')  // Player state
 
 ### 1. IDEATE / COLLECT FEEDBACK
 **Agent Role**: Gather requirements and understand user needs
-- Ask clarifying questions about the feature and then wait for user responses
-- Write clear user stories: "As a [user type], I want [goal] so that [benefit]"
-- Define specific, measurable success criteria
-- Identify feature boundaries and constraints
+- Ask clarifying questions about the feature one at a time and then wait for user responses. You will thereby collaboratively refine the feature requirements with the user.
 - Ensure mobile-first thinking from the start
 
 ### 2. PLAN THE CODING STEPS
@@ -118,19 +120,19 @@ getPlayerData('player1')  // Player state
 - Make necessary changes
 - Re-test after each iteration
 
-### 5. COMMIT THE CODE
-**Agent Role**: Finalize and commit changes with proper documentation
-- Final review of all changes
-- Use clear, descriptive commit messages
-- Ensure all files are properly organized
-- Confirm all assets are included and paths correct
-
-### 6. UPDATE THE DOCUMENTATION
+### 5. UPDATE THE DOCUMENTATION
 **Agent Role**: Update all relevant documentation
 - Update README.md with new features and mechanics
 - Add/update inline documentation
 - Update configuration documentation for new options
 - Update gameplay documentation if needed
+
+### 6. COMMIT THE CODE
+**Agent Role**: Finalize and commit changes with proper documentation
+- Final review of all changes
+- Use clear, descriptive commit messages
+- Ensure all files are properly organized
+- Confirm all assets are included and paths correct
 
 
 Live Checklist (Update this document dynamically as you proceed through each step. This section should serve as a scracthpad to take notes)

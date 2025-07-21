@@ -48,7 +48,13 @@ Experience India's democratic process as you compete to become the next Pradhan 
 1. **Open Campaigns**: Click the lightning bolt (⚡) button
 2. **Choose Policy**: Select from 22 different policies organized by importance
 3. **Make Investment**: Click to invest funds (each policy needs 10 clicks to complete)
-4. **Regional Effects**: Green labels show regions that benefit, red labels show regions that suffer
+4. **Phase Limits**: Each player can contribute maximum 5 times per phase to any single campaign
+5. **Progress Tracking**: Visual progress bars show completion status with player-specific colors
+6. **Regional Effects**: Green labels show regions that benefit, red labels show regions that suffer
+7. **Audio Feedback**: 
+   - Successful investments play money spending sound
+   - Blocked actions (insufficient funds, phase limits) play invalid action sound
+8. **Phase Reset**: Contribution limits reset automatically when new phase begins
 5. **Strategic Timing**: Complete campaigns to gain popularity in target regions
 
 ### Investment Strategy

@@ -24,7 +24,7 @@ The game has been refactored from a monolithic 850+ line file into 9 focused mod
 
 **UI & Game Logic:**
 - `js/app.js` (~230 lines) - Main application and UI interactions
-- `js/campaign-system.js` (~160 lines) - Campaign modal and policy investments
+- `js/campaign-system.js` (~200 lines) - Campaign modal and policy investments with phase limits
 - `js/phase-system.js` - Game phase management and timers
 
 ### Configuration System
@@ -45,6 +45,9 @@ All game balance is now centralized in `data/game-config.json`:
     "simpleRallyTokens": 2,
     "specialRallyTokens": 2,
     "popularityBoost": 8
+  },
+  "campaign": {
+    "maxContributionsPerPhase": 5
   },
   "gameSettings": {
     "totalPhases": 10,
@@ -81,7 +84,11 @@ All game balance is now centralized in `data/game-config.json`:
 **Campaign Investment (Modal):**
 - 22 policies from `policy-tags.json`
 - Tier-based costs: Gold (60M), Silver (40M), Bronze (20M)
-- 10-click completion system
+- 10-click completion system with phase-based contribution limits
+- Phase Limits: Maximum 5 contributions per player per campaign per phase
+- Progress Tracking: Visual progress bars with player-specific colors
+- Audio Feedback: `money_spent` for successful contributions, `invalid_action` for blocked actions
+- Automatic Reset: Contribution limits reset when new phase begins
 - Regional effects based on policy tags
 
 ### Rally System

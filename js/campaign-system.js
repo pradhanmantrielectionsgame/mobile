@@ -5,6 +5,7 @@
 let policyTags = null;
 let campaignProgress = {};
 let campaignClicks = {};
+let campaignPhaseContributions = {}; // Track contributions per phase per player
 
 // Rally system variables
 let rallyTokens = {
@@ -27,6 +28,10 @@ async function loadPolicyTags() {
                 completed: false
             };
             campaignClicks[policyName] = {
+                player1: 0,
+                player2: 0
+            };
+            campaignPhaseContributions[policyName] = {
                 player1: 0,
                 player2: 0
             };
@@ -94,6 +99,9 @@ function generateCampaignGrid() {
         const totalProgress = Math.min(100, progress.player1 + progress.player2);
         const clicks = campaignClicks[policyName];
         const totalClicks = clicks.player1 + clicks.player2;
+        
+        // Debug logging for progress calculation
+        console.log(`Generating grid for ${policyName}: P1=${progress.player1}%, P2=${progress.player2}%, Total=${totalProgress}%`);
         
         // Determine cost based on tier
         const baseCost = policyData.baseMagnitude || 4;
@@ -166,11 +174,19 @@ function generateCampaignGrid() {
 function handleCampaignClick(e, policyName, policyData, progress, totalClicks, cost) {
     if (progress.completed) {
         showCampaignMessage(`${policyName} campaign is already completed!`, 'info');
+        // Play invalid action sound
+        if (typeof window.playAudio === 'function') {
+            window.playAudio('invalid_action');
+        }
         return;
     }
     
     if (totalClicks >= 10) {
         showCampaignMessage(`${policyName} campaign has reached maximum clicks!`, 'warning');
+        // Play invalid action sound
+        if (typeof window.playAudio === 'function') {
+            window.playAudio('invalid_action');
+        }
         return;
     }
     
@@ -180,11 +196,33 @@ function handleCampaignClick(e, policyName, policyData, progress, totalClicks, c
     
     if (!playerData) {
         showCampaignMessage(`Player data not found!`, 'error');
+        // Play invalid action sound
+        if (typeof window.playAudio === 'function') {
+            window.playAudio('invalid_action');
+        }
         return;
     }
     
     if (playerData.funds < cost) {
         showInsufficientFundsAnimation(playerId);
+        // Play invalid action sound
+        if (typeof window.playAudio === 'function') {
+            window.playAudio('invalid_action');
+        }
+        return;
+    }
+    
+    // Check phase contribution limit
+    const config = getGameConfig();
+    const maxPerPhase = config?.campaign?.maxContributionsPerPhase || 5;
+    const playerContributions = campaignPhaseContributions[policyName]?.[playerId] || 0;
+    
+    if (playerContributions >= maxPerPhase) {
+        showCampaignMessage(`Maximum ${maxPerPhase} contributions per phase reached for ${policyName}!`, 'warning');
+        // Play invalid action sound
+        if (typeof window.playAudio === 'function') {
+            window.playAudio('invalid_action');
+        }
         return;
     }
     
@@ -192,9 +230,21 @@ function handleCampaignClick(e, policyName, policyData, progress, totalClicks, c
     const playerNum = playerId === 'player1' ? 1 : 2;
     campaignClicks[policyName][`player${playerNum}`]++;
     campaignProgress[policyName][`player${playerNum}`] += 10; // 10% per click
+    campaignPhaseContributions[policyName][playerId]++; // Track phase contributions
+    
+    // Debug logging for progress
+    console.log(`Progress updated for ${policyName}:`, campaignProgress[policyName]);
+    const debugTotal = campaignProgress[policyName].player1 + campaignProgress[policyName].player2;
+    console.log(`Total progress: ${debugTotal}%`);
+    console.log(`Phase contributions for ${policyName}:`, campaignPhaseContributions[policyName]);
     
     // Update player funds using the new system
     updatePlayerFunds(playerId, -cost);
+    
+    // Play money spent sound
+    if (typeof window.playAudio === 'function') {
+        window.playAudio('money_spent');
+    }
     
     // Check if completed
     const newTotal = campaignProgress[policyName].player1 + campaignProgress[policyName].player2;
@@ -210,8 +260,10 @@ function handleCampaignClick(e, policyName, policyData, progress, totalClicks, c
     // Check and award bonuses
     checkAndAwardBonuses();
     
-    // Regenerate grid to show updates
-    generateCampaignGrid();
+    // Regenerate the full grid to show updates with proper timing
+    requestAnimationFrame(() => {
+        generateCampaignGrid();
+    });
     
     console.log(`${playerId} invested in ${policyName}. Total progress: ${newTotal}%`);
 }
@@ -320,6 +372,64 @@ function getRallyInfo(playerId) {
         available: rallyTokens[playerId].available,
         used: rallyTokens[playerId].used
     };
+}
+
+/**
+ * Reset campaign phase contributions when a new phase begins
+ * Called automatically by the phase system
+ */
+function resetCampaignPhaseContributions() {
+    if (!policyTags) return;
+    
+    Object.keys(policyTags).forEach(policyName => {
+        campaignPhaseContributions[policyName] = {
+            player1: 0,
+            player2: 0
+        };
+    });
+    
+    console.log('Campaign phase contributions reset for new phase');
+}
+
+/**
+ * Update a single campaign's progress bar without regenerating the entire grid
+ * Used for immediate visual feedback before full grid refresh
+ * @param {string} policyName - The name of the policy to update
+ */
+function updateSingleCampaignProgressBar(policyName) {
+    const campaignItem = document.querySelector(`[data-policy="${policyName}"]`);
+    if (!campaignItem) {
+        console.log(`Campaign item not found for: ${policyName}`);
+        return;
+    }
+    
+    const progress = campaignProgress[policyName];
+    const totalProgress = Math.min(100, progress.player1 + progress.player2);
+    
+    // Determine dominant player color
+    let progressClass = 'player1';
+    if (progress.player2 > progress.player1) {
+        progressClass = 'player2';
+    } else if (progress.player1 === progress.player2 && progress.player1 > 0) {
+        progressClass = 'player1';
+    }
+    
+    const progressFill = campaignItem.querySelector('.campaign-progress-fill');
+    if (progressFill) {
+        // Force a reflow before updating
+        progressFill.offsetHeight;
+        
+        // Update the width and class immediately
+        progressFill.style.width = `${totalProgress}%`;
+        progressFill.className = `campaign-progress-fill ${progressClass} ${progress.completed ? 'complete' : ''}`;
+        
+        // Force another reflow to ensure the change is applied
+        progressFill.offsetHeight;
+        
+        console.log(`Progress bar updated for ${policyName}: ${totalProgress}% with class: ${progressClass}`);
+    } else {
+        console.log(`Progress fill element not found for: ${policyName}`);
+    }
 }
 
 // Show campaign messages
@@ -518,3 +628,4 @@ async function initializeCampaignSystem() {
 
 // Make the function available globally
 window.initializeCampaignSystem = initializeCampaignSystem;
+window.resetCampaignPhaseContributions = resetCampaignPhaseContributions;

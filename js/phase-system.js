@@ -129,6 +129,11 @@ function startPhase(phaseNumber) {
         resetRallyTokensForPhase();
     }
     
+    // Reset campaign phase contributions for the new phase
+    if (typeof resetCampaignPhaseContributions === 'function') {
+        resetCampaignPhaseContributions();
+    }
+    
     // Start countdown timer
     startCountdownTimer();
     

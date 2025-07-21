@@ -21,7 +21,9 @@
     "simpleRallyTokens": 2,
     "specialRallyTokens": 2
   },
-  "campaign": {},
+  "campaign": {
+    "maxContributionsPerPhase": 5
+  },
   "bonuses": {
     "campaignCompletion": 300,
     "regionalDominance": {
