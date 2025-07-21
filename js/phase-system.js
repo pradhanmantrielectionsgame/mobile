@@ -143,8 +143,7 @@ function startPhase(phaseNumber) {
     // Play phase start sound
     playSound('phase_reset');
     
-    // Show phase start message
-    showPhaseMessage(`🎮 Game Started! Phase ${phaseNumber} begins now. You received ₹${phaseGameConfig.gameSettings.refreshFundsPerPhase}Cr refresh funds.`);
+    // Phase start notification removed - rely on visual timer and UI updates
     
     console.log(`Phase ${phaseNumber} started - ${phaseGameConfig.gameSettings.phaseDurationSeconds} seconds`);
 }
@@ -161,10 +160,10 @@ function startCountdownTimer() {
             phaseState.timeRemaining--;
             updatePhaseDisplay();
             
-            // Warning when 10 seconds remain
+            // Warning when 10 seconds remain - notification removed, keep only sound
             if (phaseGameConfig?.ui?.showCountdownWarning && 
                 phaseState.timeRemaining === (phaseGameConfig?.ui?.countdownWarningSeconds || 10)) {
-                showPhaseWarning();
+                playSound('invalid_action'); // Keep warning sound without notification
             }
             
             // End phase when time runs out
@@ -301,12 +300,6 @@ function showPhaseMessage(message) {
 }
 
 // Show warning when phase is about to end
-function showPhaseWarning() {
-    playSound('invalid_action'); // Use warning sound
-    const warningSeconds = phaseGameConfig?.ui?.countdownWarningSeconds || 10;
-    showPhaseMessage(`⚠️ ${warningSeconds} seconds remaining in Phase ${phaseState.currentPhase}!`);
-}
-
 // Pause/Resume phase timer
 function togglePausePhase() {
     if (!phaseState.isRunning) return;
@@ -325,10 +318,10 @@ function togglePausePhase() {
     
     if (phaseState.isPaused) {
         console.log('Phase timer paused');
-        showPhaseMessage('Phase timer paused');
+        // Pause message removed - rely on UI visual indicators
     } else {
         console.log('Phase timer resumed');
-        showPhaseMessage('Phase timer resumed');
+        // Resume message removed - rely on UI visual indicators
     }
 }
 
@@ -355,8 +348,7 @@ function endGame() {
     // Play game end sound
     playSound('game_over');
     
-    // Show game end message
-    showPhaseMessage('🎉 Game Over! Final results will be displayed.');
+    // Game end notification removed - rely on results screen transition
     
     // Trigger final results display
     setTimeout(() => {

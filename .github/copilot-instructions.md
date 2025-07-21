@@ -135,27 +135,5 @@ getPlayerData('player1')  // Player state
 - Confirm all assets are included and paths correct
 
 
-Live Checklist (Update this document dynamically as you proceed through each step. This section should serve as a scracthpad to take notes)
 
-1  Ideate & Collect Feedback
-
-
-
-2  Plan Implementation
-
-
-
-3  Execute Code Changes
-
-
-
-4  Test, Debug & Iterate
-
-
-
-5  Commit & PR
-
-
-
-6  Update Documentation
 

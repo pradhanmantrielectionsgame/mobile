@@ -29,9 +29,10 @@ Experience India's democratic process as you compete to become the next Pradhan 
 - **Info Only**: Ctrl/Cmd + Click to view state details without investing
 - **Player 2**: Add Shift to any action (e.g., Shift+Click to invest as Player 2)
 - **Visual Feedback**: 
-  - Investment notifications appear as compact red banners in player info area
+  - Compact investment notifications appear in player info area (red for spending, green for funds added)
   - Ripple effects show at click location (states) or geographic center (UTs)
   - Player-specific colors: Green ripples for Player 1, Red ripples for Player 2
+  - Streamlined notification system reduces clutter while preserving important feedback
 - **Audio Feedback**: 
   - Success sound (`money_spent.mp3`) for Player 1 successful investments
   - Error sound (`invalid_action.mp3`) for Player 1 insufficient funds
@@ -66,7 +67,7 @@ Experience India's democratic process as you compete to become the next Pradhan 
   - **Cost Formula**: Number of seats × ₹10Cr (e.g., UP = 80 seats = ₹800Cr)
   - **Glide Path System**: Popularity boost starts at +5% and gradually decreases to +2% over first 20 investments per state, then stays at +2%
   - Works on both map states and Union Territory buttons
-  - Compact red notifications show investment amount in crores
+  - Compact animations show investment amounts with minimal distraction
 - **Policy Campaigns**: Major strategic investments affecting multiple regions
   - **High Risk/Reward**: Tier 1 campaigns require nearly all starting funds but provide massive regional boosts
   - **Medium Strategy**: Tier 2 campaigns balance cost with broad impact
@@ -130,6 +131,6 @@ When modifying the code:
 
 ---
 
-**Latest Version**: Enhanced Pricing System with Glide Path Investment  
-**Last Updated**: July 18, 2025  
+**Latest Version**: Optimized Notification System for Enhanced Gameplay Flow  
+**Last Updated**: July 20, 2025  
 **Repository**: pradhanmantrielectionsgame.github.io

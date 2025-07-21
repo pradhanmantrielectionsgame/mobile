@@ -258,6 +258,10 @@ body {
     animation: slideInOut 1.5s ease;
 }
 
+.compact-funds-added-notification {
+    animation: slideInOut 1.5s ease;
+}
+
 .rally-tokens {
     display: inline-flex;
     gap: var(--spacing-xs);

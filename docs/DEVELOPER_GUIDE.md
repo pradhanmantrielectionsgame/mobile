@@ -8,7 +8,29 @@
 ## Architecture Overview
 
 ### Modular System (Post-Refactoring)
-The game has been refactored from a monolithic 850+ line file into 9 focused modules:
+The game has been r### Performance Considerations
+
+### Notification System Optimization (July 2025)
+The game features a streamlined notification system designed to reduce visual clutter:
+
+**Preserved Notifications:**
+- Error/warning messages (insufficient funds, invalid actions)
+- Investment success/failure feedback (compact animations)
+- Campaign completion bonuses and achievements
+
+**Optimized/Removed:**
+- Redundant phase transition messages 
+- Repetitive investment confirmation messages
+- Rally instruction overlays
+- Excessive countdown warnings
+
+**Implementation:**
+- `showCompactInvestmentNotification()` - Red animations for fund spending
+- `showCompactFundsAddedNotification()` - Green animations for fund additions  
+- Positioned in player info areas to maintain context
+- 1.5-2 second animations with smooth CSS transitions
+
+### Optimization Featuresctored from a monolithic 850+ line file into 9 focused modules:
 
 **Core Modules:**
 - `js/config-manager.js` (~80 lines) - Configuration loading from JSON

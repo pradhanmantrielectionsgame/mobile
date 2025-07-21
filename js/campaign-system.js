@@ -183,7 +183,6 @@ function handleCampaignClick(e, policyName, policyData, progress, totalClicks, c
     }
     
     if (totalClicks >= 10) {
-        showCampaignMessage(`${policyName} campaign has reached maximum clicks!`, 'warning');
         // Play invalid action sound
         if (typeof window.playAudio === 'function') {
             window.playAudio('invalid_action');
@@ -248,8 +247,6 @@ function handleCampaignClick(e, policyName, policyData, progress, totalClicks, c
         const winner = campaignProgress[policyName].player1 > campaignProgress[policyName].player2 ? 1 : 2;
         const winnerData = getPlayerData(`player${winner}`);
         showCampaignMessage(`🎉 ${policyName} campaign completed by ${winnerData ? winnerData.name : `Player ${winner}`}!`, 'success');
-    } else {
-        showCampaignMessage(`${playerData.name} invested ₹${cost}Cr in ${policyName}`, 'success');
     }
     
     // Update progress bar immediately for instant feedback
@@ -278,10 +275,8 @@ function checkAndAwardBonuses() {
             
             if (p1Contribution > p2Contribution) {
                 updatePlayerFunds('player1', config.bonuses.campaignCompletion);
-                showCampaignMessage(`Policy completion bonus: ₹${config.bonuses.campaignCompletion / 1000000}Cr awarded to Player 1!`, 'success');
             } else if (p2Contribution > p1Contribution) {
                 updatePlayerFunds('player2', config.bonuses.campaignCompletion);
-                showCampaignMessage(`Policy completion bonus: ₹${config.bonuses.campaignCompletion / 1000000}Cr awarded to Player 2!`, 'success');
             }
             
             progress.bonusAwarded = true;
@@ -314,7 +309,6 @@ function checkRegionalDominanceBonuses() {
                     // First time achieving dominance - award initial bonus
                     updatePlayerFunds(playerId, config.bonuses.regionalDominance.baseBonus);
                     gameState.bonusesAwarded[bonusKey] = true;
-                    showCampaignMessage(`Regional dominance achieved in ${regionField.replace(/([A-Z])/g, ' $1').trim()}! ₹${config.bonuses.regionalDominance.baseBonus / 1000000}Cr bonus!`, 'success');
                 }
                 
                 // Award carry-forward bonus every phase
@@ -497,7 +491,7 @@ function initCampaignModal() {
 function initRallyButton() {
     const rallyBtn = document.getElementById('rally-btn');
     rallyBtn.addEventListener('click', () => {
-        showCampaignMessage('Rally instructions: Alt+Click states for simple rallies (2 tokens/phase). Special rallies available in campaign modal.', 'info');
+        // Instructions removed - rely on visual cues and help documentation instead
     });
 }
 

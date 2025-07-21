@@ -67,12 +67,29 @@ function updatePlayerFunds(playerId, amount) {
         if (fundsElement) {
             fundsElement.textContent = `₹${gameState[playerId].funds}Cr`;
             
-            // Add animation class
+            // Add animation class and show notifications
             if (amount < 0) {
                 fundsElement.classList.add('updating');
                 setTimeout(() => {
                     fundsElement.classList.remove('updating');
                 }, 300);
+            } else if (amount > 0) {
+                fundsElement.classList.add('updating');
+                setTimeout(() => {
+                    fundsElement.classList.remove('updating');
+                }, 300);
+                
+                // Show green notification for funds added
+                if (typeof window.showCompactFundsAddedNotification === 'function') {
+                    window.showCompactFundsAddedNotification(playerId, amount);
+                } else {
+                    // Minimal fallback delay if function not available yet
+                    setTimeout(() => {
+                        if (typeof window.showCompactFundsAddedNotification === 'function') {
+                            window.showCompactFundsAddedNotification(playerId, amount);
+                        }
+                    }, 50);
+                }
             }
         }
         
@@ -254,6 +271,12 @@ function checkGameEnd() {
     return false;
 }
 
+// Debug function to test green funds animation
+function testGreenAnimation(playerId = 'player1', amount = 100) {
+    console.log(`Testing green funds animation for ${playerId} with amount ${amount}`);
+    updatePlayerFunds(playerId, amount);
+}
+
 // Make functions available globally
 window.assignPoliticianToPlayer = assignPoliticianToPlayer;
 window.updatePlayerFunds = updatePlayerFunds;
@@ -266,3 +289,4 @@ window.updateRallyTokenDisplay = updateRallyTokenDisplay;
 window.resetRallyTokensForPhase = resetRallyTokensForPhase;
 window.getInvestmentStats = getInvestmentStats;
 window.checkGameEnd = checkGameEnd;
+window.testGreenAnimation = testGreenAnimation;

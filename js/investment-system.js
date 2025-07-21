@@ -133,6 +133,54 @@ function showCompactInvestmentNotification(playerId, amount) {
     }, 1500);
 }
 
+// Show compact funds added notification in player info area (green)
+function showCompactFundsAddedNotification(playerId, amount) {
+    const playerInfoSelector = playerId === 'player1' ? '.player-info.p1' : '.player-info.p2';
+    const playerInfo = document.querySelector(playerInfoSelector);
+    
+    if (!playerInfo) {
+        console.error(`Player info element not found for ${playerId}`);
+        return;
+    }
+    
+    // Create compact notification
+    const notification = document.createElement('div');
+    notification.className = 'compact-funds-added-notification';
+    
+    // Convert amount to crores if needed (amounts might be in raw units)
+    const amountInCrores = amount >= 1000000 ? Math.round(amount / 1000000) : amount;
+    notification.textContent = `+₹${amountInCrores}Cr`;
+    
+    // Position it within the player info area
+    playerInfo.style.position = 'relative';
+    notification.style.cssText = `
+        position: absolute;
+        top: 20px;
+        ${playerId === 'player1' ? 'right: 5px;' : 'left: 5px;'}
+        background: #27ae60;
+        color: white;
+        padding: 8px 12px;
+        border-radius: 16px;
+        font-size: 12px;
+        font-weight: bold;
+        z-index: 1000;
+        animation: slideInOut 2s ease;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        pointer-events: none;
+        border: 2px solid #ffffff;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    `;
+    
+    playerInfo.appendChild(notification);
+    
+    // Remove after animation
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+        }
+    }, 2000); // Updated to match animation duration
+}
+
 // Show investment messages (kept for backward compatibility, but now uses compact notification)
 function showInvestmentMessage(message, type = 'info') {
     // Extract player and amount from message for compact notification
@@ -222,5 +270,6 @@ window.handleDirectInvestment = handleDirectInvestment;
 window.getInvestmentStats = getInvestmentStats;
 window.showInvestmentMessage = showInvestmentMessage;
 window.showCompactInvestmentNotification = showCompactInvestmentNotification;
+window.showCompactFundsAddedNotification = showCompactFundsAddedNotification;
 window.calculateInvestmentCost = calculateInvestmentCost;
 window.calculateNextInvestmentBoost = calculateNextInvestmentBoost;
