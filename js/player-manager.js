@@ -133,13 +133,7 @@ function updatePlayerInfoDisplay() {
             </div>
             <div class="player-details">
                 <div class="player-name">${p1Data.name}</div>
-                <div style="display: flex; align-items: center;">
-                    <div class="funds-display" id="p1-funds">₹${p1Data.funds}Cr</div>
-                    <div class="rally-tokens">
-                        <span class="token-display">🏟️<span id="p1-simple-tokens">${p1Data.rallyTokens.simple}</span></span>
-                        <span class="token-display">🌟<span id="p1-special-tokens">${p1Data.rallyTokens.special}</span></span>
-                    </div>
-                </div>
+                <div class="funds-display" id="p1-funds">₹${p1Data.funds}Cr</div>
             </div>
         `;
     }
@@ -151,13 +145,7 @@ function updatePlayerInfoDisplay() {
         p2InfoContainer.innerHTML = `
             <div class="player-details">
                 <div class="player-name">${p2Data.name}</div>
-                <div style="display: flex; align-items: center; justify-content: flex-end;">
-                    <div class="rally-tokens">
-                        <span class="token-display">🏟️<span id="p2-simple-tokens">${p2Data.rallyTokens.simple}</span></span>
-                        <span class="token-display">🌟<span id="p2-special-tokens">${p2Data.rallyTokens.special}</span></span>
-                    </div>
-                    <div class="funds-display" id="p2-funds">₹${p2Data.funds}Cr</div>
-                </div>
+                <div class="funds-display" id="p2-funds">₹${p2Data.funds}Cr</div>
             </div>
             <div class="player-avatar-section">
                 <img src="${p2Data.politician.image}" alt="${p2Data.politician.name}" class="candidate-icon" onerror="this.style.display='none'">
@@ -205,16 +193,8 @@ async function initializePlayers() {
 
 // Update rally token display in UI
 function updateRallyTokenDisplay() {
-    // Update rally token counts in the UI
-    const p1SimpleTokens = document.getElementById('p1-simple-tokens');
-    const p1SpecialTokens = document.getElementById('p1-special-tokens');
-    const p2SimpleTokens = document.getElementById('p2-simple-tokens');
-    const p2SpecialTokens = document.getElementById('p2-special-tokens');
-    
-    if (p1SimpleTokens) p1SimpleTokens.textContent = gameState.player1.rallyTokens.simple;
-    if (p1SpecialTokens) p1SpecialTokens.textContent = gameState.player1.rallyTokens.special;
-    if (p2SimpleTokens) p2SimpleTokens.textContent = gameState.player2.rallyTokens.simple;
-    if (p2SpecialTokens) p2SpecialTokens.textContent = gameState.player2.rallyTokens.special;
+    // Rally tokens are tracked internally but no longer displayed in player info panels
+    // This function preserved for backwards compatibility with rally system
 }
 
 // Reset rally tokens at the start of each phase

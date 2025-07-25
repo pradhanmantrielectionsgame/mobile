@@ -6,6 +6,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [2.0.2] - 2025-07-25 - Mobile UI Collision Fixes & Rally Token Cleanup
+### 🎯 Major UI Collision Resolution
+- **FIXED**: Player info panel bleeding where Player 1 elements overlapped with Player 2 elements
+- **ENHANCED**: State info banner height increased from `clamp(32px, 4vh, 55px)` to `clamp(40px, 5vh, 65px)`
+- **REMOVED**: Rally token display icons from player info panels for cleaner, more spacious layout
+- **IMPROVED**: Progressive responsive scaling with better space utilization across all viewports
+
+### 🧹 Rally Token System Cleanup
+- **STREAMLINED**: Rally tokens now tracked internally without UI display clutter
+- **REMOVED**: Token display elements (`🏟️` and `🌟` icons) from player banners
+- **MAINTAINED**: Full rally system functionality preserved for Alt+Click actions
+- **SIMPLIFIED**: Cleaner player info panels with focus on essential information (name and funds)
+
+### 📱 Enhanced Mobile Responsiveness
+- **OPTIMIZED**: Player panel max-width scaling: 48% → 47% (768px) → 45% (480px) → 43% (320px)
+- **IMPROVED**: Text scaling with better font-size progression for smaller screens
+- **ENHANCED**: State info banner with better multi-line content handling
+- **REFINED**: Gap spacing optimization for collision prevention
+
+### 🔧 Technical Improvements
+- **UPDATED**: JavaScript rally token display functions for backwards compatibility
+- **CLEANED**: Removed unused rally token CSS while preserving core functionality
+- **ENHANCED**: Better overflow protection with `text-overflow: ellipsis`
+- **OPTIMIZED**: Icon scaling for very small screens (320px breakpoint)
+
 ## [2.0.1] - 2025-07-25 - Mobile UI Optimization & Animation Refinements
 ### 🎯 Union Territory Panel Optimization
 - **ENHANCED**: Timer pill repositioned from `top: 130px` to `top: 160px` to prevent menu overlap

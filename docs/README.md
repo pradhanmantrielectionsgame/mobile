@@ -44,13 +44,14 @@ Experience India's democratic process as you compete to become the next Pradhan 
   - Player 2 actions are silent for reduced audio clutter
 
 ### Game Interface
-- **Seats Progress Bar**: Election broadcast-style ticker with animated tricolor sweep and live data feed aesthetics
-- **Player HUD**: Tactical gaming interface with scan lines, strategic indicators, and premium candidate/party displays
-- **State Information Panel**: News ticker-style interface with animated data streams and information indicators
+- **Seats Progress Bar**: Election broadcast-style ticker with live data feed aesthetics
+- **Player HUD**: Clean tactical gaming interface with premium candidate/party displays and streamlined fund information
+- **State Information Panel**: Enhanced news ticker-style interface with improved height for better content display
 - **Interactive Map**: Strategic command center with tactical grid overlay, pulsing patterns, and sophisticated depth
 - **Regional Control Panel**: Enhanced state groups with Indian flag tribute and purpose-driven regional identity
 - **Command Interface**: Floating timer pill with strategic outpost styling and Union Territory command buttons
 - **Premium Styling**: Gold gradient themes, sophisticated shadows, and gaming-quality visual effects throughout
+- **Mobile Optimized**: Collision-free interface with responsive scaling across all viewport sizes
 
 ### Campaign System
 1. **Open Campaigns**: Click the lightning bolt (⚡) button
@@ -79,8 +80,10 @@ Experience India's democratic process as you compete to become the next Pradhan 
   - **High Risk/Reward**: Tier 1 campaigns require nearly all starting funds but provide massive regional boosts
   - **Medium Strategy**: Tier 2 campaigns balance cost with broad impact
   - **Early Game**: Tier 3 campaigns are more accessible for opening moves
-- **Rally Tokens**: Limited but powerful boosts for strategic moments
-- **Resource Management**: With aggressive campaign costs, careful fund allocation is crucial
+- **Rally Tokens**: Limited but powerful boosts for strategic moments (Alt + Click)
+  - **Streamlined Interface**: Rally tokens tracked internally without UI clutter
+  - **Clean Display**: Player panels focus on essential information (name and funds)
+  - **Full Functionality**: Alt + Click still activates rally boosts on states and UTs
 - **Regional Focus**: Use the 4×4 grid to identify key battleground areas
 
 ### Economic System

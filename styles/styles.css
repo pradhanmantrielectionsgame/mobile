@@ -64,7 +64,7 @@
     --base-font-size: clamp(12px, 1.5vw, 18px);
     --banner-height: clamp(35px, 4vh, 60px);
     --player-banner-height: clamp(42px, 5vh, 75px);
-    --states-banner-height: clamp(32px, 4vh, 55px);
+    --states-banner-height: clamp(40px, 5vh, 65px);
     --state-groups-banner-height: clamp(80px, 12vh, 140px);
     
     /* Responsive spacing */
@@ -311,6 +311,7 @@ body::before {
     max-width: 48%;
     position: relative;
     z-index: 1;
+    overflow: hidden;
 }
 
 .player-info.p1 {
@@ -366,7 +367,9 @@ body::before {
     flex-direction: column;
     gap: 2px;
     min-width: 0;
+    flex: 1;
     justify-content: center;
+    overflow: hidden;
 }
 
 .player-info.p2 .player-details {
@@ -380,7 +383,7 @@ body::before {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: clamp(100px, 15vw, 200px);
+    max-width: 100%;
     line-height: 1.2;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
     letter-spacing: 0.5px;
@@ -397,6 +400,8 @@ body::before {
     background: rgba(244, 196, 48, 0.1);
     border-radius: 6px;
     border: 1px solid rgba(244, 196, 48, 0.3);
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* Fund update animations - Enhanced */
@@ -492,41 +497,8 @@ body::before {
     padding: 8px 12px;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
-.rally-tokens {
-    display: inline-flex;
-    gap: var(--spacing-xs);
-    margin-left: var(--spacing-sm);
-    font-size: clamp(9px, 1.3vw, 15px);
-    align-items: center;
-}
-
-.player-info.p2 .rally-tokens {
-    margin-left: 0;
-    margin-right: var(--spacing-sm);
-}
-
-.token-display {
-    display: flex;
-    align-items: center;
-    gap: 2px;
-    padding: 3px var(--spacing-sm);
-    background: var(--panel-accent);
-    border-radius: 8px;
-    border: 1px solid rgba(244, 196, 48, 0.4);
-    color: var(--text-primary);
-    font-weight: bold;
-    font-size: clamp(8px, 1.1vw, 13px);
-    min-width: 0;
-    height: clamp(16px, 2.5vw, 22px);
-    box-shadow: var(--shadow-sm);
-    transition: all var(--transition-fast);
-}
-
-.token-display:hover {
-    transform: scale(1.05);
-    box-shadow: var(--shadow-md);
-    border-color: rgba(244, 196, 48, 0.6);
-}
+/* Rally token styles removed - tokens now tracked internally only */
+/* This space reserved for future player info enhancements */
 
 .token-display span {
     color: var(--gold-primary);
@@ -766,9 +738,10 @@ body::before {
     flex: 1;
     overflow: hidden;
     min-height: 100%;
-    gap: 2px;
+    gap: 3px;
     position: relative;
     z-index: 1;
+    padding: 2px 0;
 }
 
 .menu-section {
@@ -1549,6 +1522,33 @@ svg[width][height] {
 @media (max-width: 320px) {
     :root {
         --state-groups-banner-height: clamp(70px, 10vh, 120px);
+        --states-banner-height: clamp(55px, 8vh, 80px);
+    }
+    
+    /* Maximum collision prevention for player info */
+    .player-info {
+        max-width: 43%;
+        gap: 3px;
+    }
+    
+    .player-name {
+        font-size: clamp(8px, 1.2vw, 13px);
+        letter-spacing: 0.1px;
+    }
+    
+    .funds-display {
+        font-size: clamp(9px, 1.4vw, 15px);
+        padding: 1px 3px;
+    }
+    
+    .candidate-icon {
+        width: clamp(24px, 3vw, 32px);
+        height: clamp(24px, 3vw, 32px);
+    }
+    
+    .party-icon {
+        width: clamp(18px, 2.5vw, 24px);
+        height: clamp(18px, 2.5vw, 24px);
     }
     
     .timer-pill {
@@ -1656,6 +1656,27 @@ svg[width][height] {
         }
     }
     
+    /* Player info collision prevention */
+    .player-info {
+        max-width: 47%;
+        gap: var(--spacing-sm);
+    }
+    
+    .player-name {
+        font-size: clamp(10px, 1.4vw, 17px);
+        letter-spacing: 0.3px;
+    }
+    
+    .funds-display {
+        font-size: clamp(11px, 1.6vw, 19px);
+        padding: 2px 5px;
+    }
+    
+    /* State info banner improvements */
+    :root {
+        --states-banner-height: clamp(45px, 6vh, 70px);
+    }
+    
     /* Timer pill mobile optimization */
     .timer-pill {
         top: 150px;
@@ -1673,6 +1694,27 @@ svg[width][height] {
 
 /* Additional breakpoint for small mobile screens */
 @media (max-width: 480px) {
+    /* More aggressive player info collision prevention */
+    .player-info {
+        max-width: 45%;
+        gap: var(--spacing-xs);
+    }
+    
+    .player-name {
+        font-size: clamp(9px, 1.3vw, 15px);
+        letter-spacing: 0.2px;
+    }
+    
+    .funds-display {
+        font-size: clamp(10px, 1.5vw, 17px);
+        padding: 2px 4px;
+    }
+    
+    /* Enhanced state info banner */
+    :root {
+        --states-banner-height: clamp(50px, 7vh, 75px);
+    }
+    
     .timer-pill {
         top: 145px;
         right: 9px;

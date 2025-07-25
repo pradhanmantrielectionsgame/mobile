@@ -102,16 +102,8 @@ function updateRallyTokenDisplay() {
     const player1Data = getPlayerData('player1');
     const player2Data = getPlayerData('player2');
     
-    // Update rally token counts in the UI
-    const p1SimpleTokens = document.getElementById('p1-simple-tokens');
-    const p1SpecialTokens = document.getElementById('p1-special-tokens');
-    const p2SimpleTokens = document.getElementById('p2-simple-tokens');
-    const p2SpecialTokens = document.getElementById('p2-special-tokens');
-    
-    if (p1SimpleTokens && player1Data) p1SimpleTokens.textContent = player1Data.rallyTokens.simple;
-    if (p1SpecialTokens && player1Data) p1SpecialTokens.textContent = player1Data.rallyTokens.special;
-    if (p2SimpleTokens && player2Data) p2SimpleTokens.textContent = player2Data.rallyTokens.simple;
-    if (p2SpecialTokens && player2Data) p2SpecialTokens.textContent = player2Data.rallyTokens.special;
+    // Rally tokens are tracked internally but no longer displayed in player info panels
+    // Token counts are managed by the rally system but UI display has been removed for space optimization
 }
 
 // Show rally messages
