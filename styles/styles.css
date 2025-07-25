@@ -187,12 +187,6 @@ body::before {
             #ffffff 75%, 
             #ff9933 100%);
     opacity: 0.9;
-    animation: broadcast-sweep 3s linear infinite;
-}
-
-@keyframes broadcast-sweep {
-    0% { transform: translateX(-100%); }
-    100% { transform: translateX(100%); }
 }
 
 .projected-seats-container {
@@ -558,12 +552,12 @@ body::before {
 /* Timer pill and Union Territories - Command Interface */
 .timer-pill {
     position: fixed;
-    top: 130px;
-    right: 24px;
+    top: 160px;
+    right: 12px;
     background: 
         linear-gradient(145deg, #1e2238 0%, #2a3048 50%, #1a1f36 100%),
         radial-gradient(circle at 70% 30%, rgba(244, 196, 48, 0.08) 0%, transparent 60%);
-    border-radius: 20px;
+    border-radius: 16px;
     border: 2px solid rgba(244, 196, 48, 0.5);
     backdrop-filter: blur(20px);
     box-shadow: 
@@ -572,10 +566,10 @@ body::before {
         inset 0 1px 0 rgba(255, 255, 255, 0.1);
     z-index: 12;
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: auto repeat(3, 1fr);
-    gap: 8px;
-    padding: 12px;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: auto repeat(2, 1fr);
+    gap: 4px;
+    padding: 6px;
     width: auto;
     height: auto;
     transition: all var(--transition-normal);
@@ -598,7 +592,7 @@ body::before {
         rgba(244, 196, 48, 0.02) 6px
     );
     pointer-events: none;
-    border-radius: 18px;
+    border-radius: 14px;
     z-index: -1;
 }
 
@@ -611,12 +605,12 @@ body::before {
 
 .timer-display {
     grid-column: 1 / -1;
-    padding: var(--spacing-sm) var(--spacing-md);
-    font-size: clamp(13px, 1.9vw, 21px);
+    padding: 3px 6px;
+    font-size: clamp(9px, 1.4vw, 16px);
     font-weight: 900;
     text-align: center;
     background: var(--gold-gradient);
-    border-radius: 12px;
+    border-radius: 8px;
     border: 2px solid rgba(255, 255, 255, 0.2);
     color: #1a1f36;
     text-shadow: 0 1px 2px rgba(255, 255, 255, 0.3);
@@ -635,16 +629,16 @@ body::before {
 .ut-button {
     background: var(--panel-accent);
     border: 2px solid rgba(244, 196, 48, 0.3);
-    border-radius: 12px;
+    border-radius: 6px;
     color: var(--text-primary);
-    font-size: clamp(9px, 1.3vw, 15px);
+    font-size: clamp(7px, 1vw, 11px);
     font-weight: bold;
-    padding: var(--spacing-sm) var(--spacing-md);
+    padding: 2px 4px;
     cursor: pointer;
     transition: all var(--transition-normal);
     text-align: center;
-    min-height: clamp(24px, 4vw, 40px);
-    min-width: clamp(70px, 9vw, 130px);
+    min-height: clamp(16px, 2.5vw, 28px);
+    min-width: clamp(40px, 6vw, 75px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1556,6 +1550,28 @@ svg[width][height] {
     :root {
         --state-groups-banner-height: clamp(70px, 10vh, 120px);
     }
+    
+    .timer-pill {
+        top: 140px;
+        right: 8px;
+        padding: 4px;
+        gap: 3px;
+        border-radius: 10px;
+    }
+    
+    .ut-button {
+        min-width: clamp(36px, 5vw, 60px);
+        min-height: clamp(14px, 2vw, 24px);
+        font-size: clamp(6px, 0.9vw, 9px);
+        padding: 1px 3px;
+        border-radius: 4px;
+    }
+    
+    .timer-display {
+        font-size: clamp(8px, 1.2vw, 12px);
+        padding: 2px 4px;
+        border-radius: 6px;
+    }
 }
 
 /* Fine-tuning for very large screens */
@@ -1638,6 +1654,33 @@ svg[width][height] {
             transform: scale(4);
             opacity: 0;
         }
+    }
+    
+    /* Timer pill mobile optimization */
+    .timer-pill {
+        top: 150px;
+        right: 10px;
+        padding: 5px;
+        gap: 3px;
+    }
+    
+    .ut-button {
+        min-width: clamp(38px, 5.5vw, 70px);
+        min-height: clamp(15px, 2.3vw, 26px);
+        font-size: clamp(6.5px, 0.95vw, 10px);
+    }
+}
+
+/* Additional breakpoint for small mobile screens */
+@media (max-width: 480px) {
+    .timer-pill {
+        top: 145px;
+        right: 9px;
+    }
+    
+    .ut-button {
+        min-width: clamp(37px, 5.2vw, 65px);
+        min-height: clamp(14px, 2.1vw, 25px);
     }
 }
 

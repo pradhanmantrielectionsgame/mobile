@@ -13,7 +13,9 @@ Experience India's democratic process as you compete to become the next Pradhan 
 ### Key Features
 - **Real-time Strategy**: Compete with another player in timed phases
 - **Premium Gaming UI**: Strategic command center interface with Indian cultural elements
-- **Enhanced Visual Design**: Gold gradient themes, tactical display elements, and sophisticated animations
+- **Enhanced Visual Design**: Gold gradient themes, tactical display elements, and refined animations
+- **Optimized Union Territory Panel**: Compact, repositioned UT buttons for better mobile experience
+- **Static Cultural Elements**: Respectful Indian flag tribute without distracting animations
 - **Policy Campaigns**: 22 different policies across 3 tiers (Gold/Silver/Bronze)
 - **Regional Politics**: Each policy affects different regions differently
 - **Direct Investment**: Click states to invest funds and boost popularity

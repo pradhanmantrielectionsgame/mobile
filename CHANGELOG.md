@@ -6,6 +6,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [2.0.1] - 2025-07-25 - Mobile UI Optimization & Animation Refinements
+### 🎯 Union Territory Panel Optimization
+- **ENHANCED**: Timer pill repositioned from `top: 130px` to `top: 160px` to prevent menu overlap
+- **OPTIMIZED**: UT buttons significantly reduced in size for better mobile experience
+  - Button sizes: `min-width: clamp(40px, 6vw, 75px)` and `min-height: clamp(16px, 2.5vw, 28px)`
+  - Font sizes: `clamp(7px, 1vw, 11px)` for better readability on small screens
+  - Compact padding and spacing throughout
+- **IMPROVED**: Grid layout changed to 3x2 for horizontal space efficiency
+- **RESPONSIVE**: Added specific breakpoints for 320px, 480px, and 768px viewports
+
+### 🎨 Animation & Visual Refinements
+- **REMOVED**: Distracting `broadcast-sweep` animation from tricolor stripe
+- **STATIC**: Tricolor elements now serve as respectful cultural tribute without movement
+- **CLEANED**: Removed unused `@keyframes broadcast-sweep` definition
+- **IMPROVED**: More focused, less distracting visual experience
+
+### 📱 Mobile Experience Enhancement
+- **OPTIMIZED**: Timer pill sizing scales properly on all mobile devices (320px+)
+- **TOUCH-FRIENDLY**: Maintained minimum 44px touch targets while optimizing space
+- **RESPONSIVE**: Comprehensive mobile breakpoint system for consistent experience
+
+### 📚 Documentation Updates
+- **UPDATED**: README.md with mobile optimization features
+- **DOCUMENTED**: UT panel improvements and animation changes
+
 ## [2.0.0] - 2025-07-25 - Premium Gaming UI Overhaul
 ### ✨ Major Visual Transformation
 - **BREAKING CHANGE**: Complete UI redesign from functional demo to premium gaming experience
