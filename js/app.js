@@ -288,29 +288,27 @@ function filterStatesByGroup(groupName) {
     const paths = svgElement.querySelectorAll('path[id], g[id]');
     const utButtons = document.querySelectorAll('.ut-button');
     
-    // Reset all map paths
+    // Reset all map paths (without dimming)
     paths.forEach(path => {
-        path.style.opacity = '0.3';
         path.style.filter = '';
         path.style.stroke = '';
         path.style.strokeWidth = '';
     });
-    
-    // Reset all UT buttons
+
+    // Reset all UT buttons (without dimming)
     utButtons.forEach(button => {
         button.classList.remove('group-highlighted');
-        button.style.opacity = '0.4';
         button.style.transform = '';
-    });
-    
-    // If "All" is selected, reset everything to normal
+    });    // If "All" is selected, reset everything to normal
     if (groupName.toLowerCase() === 'all') {
         paths.forEach(path => {
-            path.style.opacity = '';
             path.style.filter = '';
+            path.style.stroke = '';
+            path.style.strokeWidth = '';
         });
         utButtons.forEach(button => {
-            button.style.opacity = '';
+            button.classList.remove('group-highlighted');
+            button.style.transform = '';
         });
         return;
     }
@@ -333,7 +331,6 @@ function filterStatesByGroup(groupName) {
                 const utButton = document.querySelector(`[data-svg-id="${state.SvgId}"]`);
                 if (utButton) {
                     utButton.classList.add('group-highlighted');
-                    utButton.style.opacity = '1';
                     utButton.style.transform = 'scale(1.05)';
                 }
             }

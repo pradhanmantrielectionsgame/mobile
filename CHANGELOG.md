@@ -68,6 +68,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - **UPDATED**: Feature documentation to reflect new visual capabilities
 
 ### 🐛 Bug Fixes
+- Fixed state group map focus issue - clicking state groups other than "All" no longer dims the map (2025-07-25)
 - Fixed UT button visual focus issue - clicking UT buttons no longer dims the main map (2025-07-25)
 - Fixed timer pill disappearing due to CSS positioning conflicts
 - Fixed pseudo-element layering preventing content interaction
