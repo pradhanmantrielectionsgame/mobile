@@ -231,17 +231,11 @@ function initUnionTerritories() {
                 }
             }
             
-            // Highlight the UT on the map
-            highlightUnionTerritory(svgId);
-            
-            // Reset state groups to "All"
+            // Reset state groups to "All" but don't affect map highlighting
+            // This preserves normal map visibility instead of dimming other states
             const stateGroups = document.querySelectorAll('.state-group');
             stateGroups.forEach(g => g.classList.remove('active'));
             stateGroups[0].classList.add('active'); // "All" is first
-            
-            // Reset map highlighting but preserve this UT selection
-            resetMapHighlighting();
-            highlightUnionTerritory(svgId);
             
             // Add visual feedback
             const feedbackColor = event.altKey ? '#9C27B0' : 
