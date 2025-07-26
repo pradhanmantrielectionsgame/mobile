@@ -1,6 +1,9 @@
 // Main Application Logic
 // This file handles map loading, UI interactions, state groups, and modal functionality
 
+// Global variable to track currently selected state for rally tokens
+let currentlySelectedStateId = null;
+
 // Handle SVG path clicks
 function handleStateClick(event) {
     const target = event.target;
@@ -16,35 +19,53 @@ function handleStateClick(event) {
     }
     
     if (svgId && findStateById(svgId)) {
-        // Check for special key combinations for rallies
-        if (event.altKey) {
-            // Alt + Click = Simple Rally
-            const playerId = event.shiftKey ? 'player2' : 'player1';
-            useSimpleRallyToken(svgId, playerId);
-        } else {
-            // Normal click = Select state AND Direct Investment (combined action)
-            updateStateInfo(svgId); // Show state information
-            
-            // Only do investment if not using Ctrl/Cmd (allows info-only viewing)
-            if (!event.ctrlKey && !event.metaKey) {
-                const playerId = event.shiftKey ? 'player2' : 'player1';
-                
-                // Attempt the investment first (async)
-                handleDirectInvestment(svgId, playerId).then(investmentSuccess => {
-                    // Only add ripple effect and sound if investment was successful
-                    if (investmentSuccess && window.createInvestmentRipple) {
-                        window.createInvestmentRipple.forState(event, playerId);
-                    } else if (!investmentSuccess && playerId === 'player1' && window.playAudio) {
-                        // Play invalid action sound only for Player 1
-                        window.playAudio('invalid_action');
-                    }
-                });
+        // Check if we have a picked up rally token
+        if (typeof hasPickedUpToken === 'function' && hasPickedUpToken()) {
+            // Handle token drop
+            if (typeof handleTokenDrop === 'function') {
+                const dropSuccess = handleTokenDrop(svgId);
+                if (dropSuccess) {
+                    // Add visual feedback for successful drop
+                    target.style.stroke = '#9C27B0';
+                    target.style.strokeWidth = '3';
+                    setTimeout(() => {
+                        target.style.stroke = '';
+                        target.style.strokeWidth = '';
+                    }, 1000);
+                }
             }
+            return; // Don't do normal state interaction when dropping tokens
+        }
+        
+        // Update currently selected state for rally token system
+        currentlySelectedStateId = svgId;
+        
+        // Update rally token tooltips with new state
+        if (typeof updateRallyTokenDisplay === 'function') {
+            updateRallyTokenDisplay();
+        }
+        
+        // Normal click = Select state AND Direct Investment (combined action)
+        updateStateInfo(svgId); // Show state information
+        
+        // Only do investment if not using Ctrl/Cmd (allows info-only viewing)
+        if (!event.ctrlKey && !event.metaKey) {
+            const playerId = event.shiftKey ? 'player2' : 'player1';
+            
+            // Attempt the investment first (async)
+            handleDirectInvestment(svgId, playerId).then(investmentSuccess => {
+                // Only add ripple effect and sound if investment was successful
+                if (investmentSuccess && window.createInvestmentRipple) {
+                    window.createInvestmentRipple.forState(event, playerId);
+                } else if (!investmentSuccess && playerId === 'player1' && window.playAudio) {
+                    // Play invalid action sound only for Player 1
+                    window.playAudio('invalid_action');
+                }
+            });
         }
         
         // Add visual feedback
-        const feedbackColor = event.altKey ? '#9C27B0' : 
-                             (event.ctrlKey || event.metaKey) ? '#ff6b6b' : '#4CAF50';
+        const feedbackColor = (event.ctrlKey || event.metaKey) ? '#ff6b6b' : '#4CAF50';
         target.style.stroke = feedbackColor;
         target.style.strokeWidth = '2';
         setTimeout(() => {
@@ -54,6 +75,11 @@ function handleStateClick(event) {
     } else if (svgId) {
         console.log(`Clicked SVG element with ID: ${svgId}, but no matching state found`);
     }
+}
+
+// Helper function to get currently selected state (for rally token system)
+function getCurrentlySelectedState() {
+    return currentlySelectedStateId;
 }
 
 // Add hover effects to SVG paths
@@ -452,3 +478,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     console.log('Game initialization complete!');
 });
+
+// Export global functions
+window.getCurrentlySelectedState = getCurrentlySelectedState;

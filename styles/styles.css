@@ -1094,6 +1094,168 @@ svg[width][height] {
     box-shadow: var(--shadow-xl), var(--glow-player2);
 }
 
+/* Rally Token Tray - Premium Gaming */
+.rally-token-tray {
+    position: fixed;
+    bottom: 140px;
+    right: 20px;
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    z-index: 1000;
+}
+
+.rally-token-slot {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #9C27B0, #673AB7);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 4px 12px rgba(156, 39, 176, 0.3);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    position: relative;
+    overflow: hidden;
+}
+
+.rally-token-slot:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 8px 20px rgba(156, 39, 176, 0.4);
+}
+
+.rally-token-slot:active {
+    transform: translateY(0) scale(1.02);
+    box-shadow: 0 6px 16px rgba(156, 39, 176, 0.5);
+}
+
+.rally-token-slot.disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.rally-token-slot.disabled:hover {
+    transform: none;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.rally-token-slot.disabled:active {
+    transform: none;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.rally-token-slot.picked-up {
+    transform: translateY(-4px) scale(1.1);
+    box-shadow: 0 12px 24px rgba(156, 39, 176, 0.6);
+    border: 3px solid rgba(255, 255, 255, 0.8);
+    cursor: grabbing;
+    z-index: 1001;
+}
+
+.rally-token-slot.special-token.picked-up {
+    box-shadow: 0 12px 24px rgba(255, 107, 53, 0.6);
+}
+
+/* Cursor states for drag and drop */
+.rally-token-slot.can-pickup {
+    cursor: grab;
+}
+
+.rally-token-slot.picked-up {
+    cursor: grabbing;
+}
+
+/* Drop zone highlighting */
+.drop-zone-active {
+    cursor: crosshair !important;
+}
+
+.drop-zone-valid {
+    stroke: #4CAF50 !important;
+    stroke-width: 3px !important;
+    filter: drop-shadow(0 0 8px rgba(76, 175, 80, 0.6)) !important;
+    animation: pulse-green 1s infinite alternate;
+}
+
+.drop-zone-invalid {
+    stroke: #f44336 !important;
+    stroke-width: 2px !important;
+    filter: drop-shadow(0 0 4px rgba(244, 67, 54, 0.4)) !important;
+}
+
+@keyframes pulse-green {
+    from { filter: drop-shadow(0 0 4px rgba(76, 175, 80, 0.4)); }
+    to { filter: drop-shadow(0 0 12px rgba(76, 175, 80, 0.8)); }
+}
+
+.rally-token-slot .token-icon {
+    font-size: 20px;
+    margin-bottom: 2px;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+}
+
+.rally-token-slot .token-count {
+    font-size: 12px;
+    font-weight: bold;
+    color: white;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    bottom: 4px;
+    right: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    transition: all 0.2s ease;
+}
+
+.rally-token-slot.special-token {
+    background: linear-gradient(135deg, #FF6B35, #F7931E);
+    box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+}
+
+.rally-token-slot.special-token:hover {
+    box-shadow: 0 8px 20px rgba(255, 107, 53, 0.4);
+}
+
+.rally-token-slot.special-token:active {
+    box-shadow: 0 6px 16px rgba(255, 107, 53, 0.5);
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+    .rally-token-tray {
+        bottom: 120px;
+        right: 15px;
+        gap: 6px;
+    }
+    
+    .rally-token-slot {
+        width: 50px;
+        height: 50px;
+    }
+    
+    .rally-token-slot .token-icon {
+        font-size: 18px;
+    }
+    
+    .rally-token-slot .token-count {
+        width: 16px;
+        height: 16px;
+        font-size: 11px;
+        bottom: 3px;
+        right: 3px;
+    }
+}
+
 /* Modal styles - Premium Gaming */
 .modal-backdrop, .campaign-modal {
     position: fixed;

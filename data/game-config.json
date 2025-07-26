@@ -17,9 +17,9 @@
   "rallySystem": {
     "maxRalliesPerState": 2,
     "popularityBoost": 8,
-    "tokensPerPhase": 2,
-    "simpleRallyTokens": 2,
-    "specialRallyTokens": 2
+    "tokensPerPhase": 1,
+    "simpleRallyTokens": 1,
+    "specialRallyTokens": 1
   },
   "campaign": {
     "maxContributionsPerPhase": 5

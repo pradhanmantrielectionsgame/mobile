@@ -487,12 +487,14 @@ function initCampaignModal() {
     });
 }
 
-// Rally button functionality
-function initRallyButton() {
-    const rallyBtn = document.getElementById('rally-btn');
-    rallyBtn.addEventListener('click', () => {
-        // Instructions removed - rely on visual cues and help documentation instead
-    });
+// Rally token tray initialization (replaces old rally button)
+function initRallyTokenTray() {
+    // Initialize the rally token tray UI and interactions
+    if (typeof initializeRallyTokenTray === 'function') {
+        initializeRallyTokenTray();
+    } else {
+        console.warn('Rally token tray initialization function not found');
+    }
 }
 
 // Master campaign system initialization function
@@ -516,11 +518,11 @@ async function initializeCampaignSystem() {
             console.warn('initCampaignModal function not found');
         }
         
-        // Initialize rally button (doesn't depend on states data)
-        if (typeof initRallyButton === 'function') {
-            initRallyButton();
+        // Initialize rally token tray (doesn't depend on states data)
+        if (typeof initRallyTokenTray === 'function') {
+            initRallyTokenTray();
         } else {
-            console.warn('initRallyButton function not found');
+            console.warn('initRallyTokenTray function not found');
         }
         
         console.log('Campaign system initialized successfully');

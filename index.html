@@ -107,7 +107,18 @@
     
     <!-- Action buttons -->
     <button class="action-button left" id="campaign-btn" title="Campaigns">⚡</button>
-    <button class="action-button right rally-button" id="rally-btn" title="Rallies">📢</button>
+    
+    <!-- Rally Token Tray -->
+    <div class="rally-token-tray" id="rally-token-tray">
+        <div class="rally-token-slot simple-token" id="simple-token-slot" title="Simple Rally Token - Click to pick up, then click a state">
+            <span class="token-icon">📢</span>
+            <span class="token-count" id="simple-token-count">1</span>
+        </div>
+        <div class="rally-token-slot special-token" id="special-token-slot" title="Special Rally Token - Click to pick up for nationwide boost">
+            <span class="token-icon">🎤</span>
+            <span class="token-count" id="special-token-count">1</span>
+        </div>
+    </div>
     
     <!-- Campaign Modal -->
     <div id="campaign-modal" class="campaign-modal">
