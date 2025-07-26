@@ -8,14 +8,14 @@ The Rally Tokens System provides players with strategic, limited-use popularity 
 
 ### Regular Tokens
 - **Effect Scope**: Single state or Union Territory
-- **Popularity Boost**: +5 (configurable in `game-config.json`)
+- **Popularity Boost**: +4% (configurable in `game-config.json`)
 - **Spawn Rate**: 95% (common)
 - **Placement Limit**: Maximum 2 per state across entire game (both players combined)
 - **Strategic Use**: Targeted regional influence
 
 ### Special Tokens
 - **Effect Scope**: Nationwide (all states and UTs)
-- **Popularity Boost**: +4 (configurable in `game-config.json`)
+- **Popularity Boost**: +4% (configurable in `game-config.json`)
 - **Spawn Rate**: 5% (rare)
 - **Placement Limit**: None (naturally limited by rarity)
 - **Strategic Use**: Game-changing moments
@@ -37,7 +37,7 @@ All distribution parameters are configurable in `game-config.json`:
   "rallyTokens": {
     "tokensPerPhase": 2,
     "specialTokenChance": 0.05,
-    "regularTokenBoost": 5,
+    "regularTokenBoost": 4,
     "specialTokenBoost": 4,
     "maxRegularTokensPerState": 2
   }
@@ -156,6 +156,6 @@ All distribution parameters are configurable in `game-config.json`:
 
 ---
 
-**Documentation Version**: 1.0  
-**Last Updated**: July 25, 2025  
+**Documentation Version**: 1.1  
+**Last Updated**: July 26, 2025  
 **Related Files**: `rally-system.js`, `game-config.json`, `player-manager.js`

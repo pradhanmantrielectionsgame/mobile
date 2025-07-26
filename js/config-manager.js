@@ -7,52 +7,16 @@ let gameConfig = null;
 async function loadGameConfig() {
     try {
         const response = await fetch('data/game-config.json');
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
         gameConfig = await response.json();
         
         console.log('Game configuration loaded:', gameConfig);
         return gameConfig;
     } catch (error) {
         console.error('Failed to load game configuration:', error);
-        // Return minimal fallback config
-        gameConfig = {
-            gameSettings: {
-                totalPhases: 10,
-                phaseDurationSeconds: 30,
-                refreshFundsPerPhase: 1000
-            },
-            playerSettings: {
-                startingFunds: 2000
-            },
-            rallySystem: {
-                maxRalliesPerState: 2,
-                popularityBoost: 8,
-                tokensPerPhase: 2,
-                simpleRallyTokens: 2,
-                specialRallyTokens: 2
-            },
-            bonuses: {
-                campaignCompletion: 300,
-                regionalDominance: {
-                    baseBonus: 200,
-                    carryForwardBonus: 50
-                }
-            },
-            gameBalance: {
-                dominantTerritoryMinPopularity: 35,
-                dominantTerritoryMaxPopularity: 60,
-                competitiveMaxPopularity: 34
-            },
-            audio: {
-                enableSounds: true,
-                volume: 0.5
-            },
-            ui: {
-                showCountdownWarning: true,
-                countdownWarningSeconds: 10,
-                autoAdvancePhases: true
-            }
-        };
-        return gameConfig;
+        throw new Error('Game configuration is required to run the game. Please ensure data/game-config.json exists and is valid.');
     }
 }
 
@@ -74,9 +38,9 @@ async function getConfig(section) {
 async function getPlayerStartingConfig() {
     const config = await getGameConfig();
     return {
-        funds: config.playerSettings?.startingFunds || 2000,
-        simpleRallyTokens: config.rallySystem?.simpleRallyTokens || 2,
-        specialRallyTokens: config.rallySystem?.specialRallyTokens || 2
+        funds: config.playerSettings.startingFunds,
+        simpleRallyTokens: config.rallySystem.simpleRallyTokens,
+        specialRallyTokens: config.rallySystem.specialRallyTokens
     };
 }
 
@@ -84,11 +48,11 @@ async function getPlayerStartingConfig() {
 async function getInvestmentConfig() {
     const config = await getGameConfig();
     return {
-        baseCostPerSeat: config.investmentSystem?.baseCostPerSeat || 10, // 10 crores per seat
-        basePopularityBoost: config.investmentSystem?.basePopularityBoost || 5, // Starting at 5%
-        finalPopularityBoost: config.investmentSystem?.finalPopularityBoost || 2, // Ending at 2%
-        glidePathInvestments: config.investmentSystem?.glidePathInvestments || 20, // 20 investments to reach final boost
-        minimumBoost: config.investmentSystem?.minimumBoost || 2 // Minimum boost after glide path
+        baseCostPerSeat: config.investmentSystem.baseCostPerSeat,
+        basePopularityBoost: config.investmentSystem.basePopularityBoost,
+        finalPopularityBoost: config.investmentSystem.finalPopularityBoost,
+        glidePathInvestments: config.investmentSystem.glidePathInvestments,
+        minimumBoost: config.investmentSystem.minimumBoost
     };
 }
 
@@ -96,10 +60,10 @@ async function getInvestmentConfig() {
 async function getRallyConfig() {
     const config = await getGameConfig();
     return {
-        simpleRallyBoost: config.rallySystem?.popularityBoost || 4,
-        specialRallyBoost: 10, // Nationwide boost - could be configurable
-        maxRalliesPerState: config.rallySystem?.maxRalliesPerState || 2,
-        tokensPerPhase: config.rallySystem?.tokensPerPhase || 2
+        simpleRallyBoost: config.rallySystem.regularTokenBoost,
+        specialRallyBoost: config.rallySystem.specialTokenBoost,
+        maxRalliesPerState: config.rallySystem.maxRalliesPerState,
+        tokensPerPhase: config.rallySystem.tokensPerPhase
     };
 }
 
@@ -107,20 +71,16 @@ async function getRallyConfig() {
 async function getPhaseConfig() {
     const config = await getGameConfig();
     return {
-        totalPhases: config.gameSettings?.totalPhases || 10,
-        phaseDurationSeconds: config.gameSettings?.phaseDurationSeconds || 30,
-        refreshFundsPerPhase: config.gameSettings?.refreshFundsPerPhase || 1000
+        totalPhases: config.gameSettings.totalPhases,
+        phaseDurationSeconds: config.gameSettings.phaseDurationSeconds,
+        refreshFundsPerPhase: config.gameSettings.refreshFundsPerPhase
     };
 }
 
 // Get game balance configuration
 async function getGameBalanceConfig() {
     const config = await getGameConfig();
-    return config.gameBalance || {
-        dominantTerritoryMinPopularity: 35,
-        dominantTerritoryMaxPopularity: 60,
-        competitiveMaxPopularity: 34
-    };
+    return config.gameBalance;
 }
 
 // Export functions for global access

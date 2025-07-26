@@ -6,6 +6,33 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [2.0.3] - 2025-07-26 - Rally Token Configuration & System Cleanup
+### 🎯 Rally Token Configuration Enhancement
+- **UPDATED**: Rally token boost values to 4% for both regular and special tokens
+  - Regular tokens: 4% statewide boost (previously 8%)
+  - Special tokens: 4% nationwide boost (previously 10%)
+- **ENHANCED**: Rally token configuration now fully driven by `game-config.json`
+- **ADDED**: New configuration properties `regularTokenBoost` and `specialTokenBoost`
+
+### 🧹 Configuration System Cleanup
+- **REMOVED**: Hardcoded fallback configuration from `config-manager.js`
+- **IMPROVED**: Configuration system now enforces single source of truth from JSON
+- **ENHANCED**: Better error handling - game fails fast with clear message if config missing
+- **CLEANED**: Removed all `|| defaultValue` fallback patterns from configuration getters
+- **SIMPLIFIED**: Configuration functions now directly access loaded properties
+
+### 🔧 Technical Improvements
+- **FIXED**: Missing `initRallyButton` function error replaced with correct `initializeRallyTokenTray`
+- **IMPROVED**: Rally system initialization properly integrated with app startup
+- **ENHANCED**: Configuration maintenance burden eliminated through single-source approach
+- **STREAMLINED**: No more dual maintenance of values in code and JSON
+
+### 📚 Code Quality
+- **MAINTAINED**: All existing rally system functionality preserved
+- **IMPROVED**: Code clarity through removal of redundant fallback logic
+- **ENHANCED**: Configuration consistency across entire application
+- **SIMPLIFIED**: Easier debugging with guaranteed config source
+
 ## [2.0.2] - 2025-07-25 - Mobile UI Collision Fixes & Rally Token Cleanup
 ### 🎯 Major UI Collision Resolution
 - **FIXED**: Player info panel bleeding where Player 1 elements overlapped with Player 2 elements

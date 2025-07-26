@@ -448,7 +448,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Initialize campaign and rally systems
     initCampaignModal();
-    initRallyButton();
+    initializeRallyTokenTray();
     
     // Initialize rally token display
     updateRallyTokenDisplay();

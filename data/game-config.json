@@ -19,7 +19,9 @@
     "popularityBoost": 8,
     "tokensPerPhase": 1,
     "simpleRallyTokens": 1,
-    "specialRallyTokens": 1
+    "specialRallyTokens": 1,
+    "regularTokenBoost": 4,
+    "specialTokenBoost": 4
   },
   "campaign": {
     "maxContributionsPerPhase": 5
