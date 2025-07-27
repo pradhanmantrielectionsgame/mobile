@@ -1157,10 +1157,6 @@ svg[width][height] {
     z-index: 1001;
 }
 
-.rally-token-slot.special-token.picked-up {
-    box-shadow: 0 12px 24px rgba(255, 107, 53, 0.6);
-}
-
 /* Cursor states for drag and drop */
 .rally-token-slot.can-pickup {
     cursor: grab;
@@ -1218,16 +1214,41 @@ svg[width][height] {
 }
 
 .rally-token-slot.special-token {
-    background: linear-gradient(135deg, #FF6B35, #F7931E);
-    box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+    background: linear-gradient(135deg, #FFD700, #FFA500);
+    box-shadow: 0 4px 12px rgba(255, 215, 0, 0.4);
+    border-radius: 0;
+    position: relative;
+    clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+    border: 2px solid #FFA500;
 }
 
 .rally-token-slot.special-token:hover {
-    box-shadow: 0 8px 20px rgba(255, 107, 53, 0.4);
+    background: linear-gradient(135deg, #FFED4A, #FFD700);
+    box-shadow: 0 8px 20px rgba(255, 215, 0, 0.6);
+    transform: scale(1.05);
 }
 
 .rally-token-slot.special-token:active {
-    box-shadow: 0 6px 16px rgba(255, 107, 53, 0.5);
+    background: linear-gradient(135deg, #FFA500, #FF8C00);
+    box-shadow: 0 6px 16px rgba(255, 215, 0, 0.7);
+    transform: scale(0.98);
+}
+
+.rally-token-slot.special-token.picked-up {
+    background: linear-gradient(135deg, #FFED4A, #FFD700);
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+    animation: starPulse 1s ease-in-out infinite alternate;
+}
+
+@keyframes starPulse {
+    0% {
+        box-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+        transform: scale(1.05);
+    }
+    100% {
+        box-shadow: 0 0 30px rgba(255, 215, 0, 1);
+        transform: scale(1.1);
+    }
 }
 
 /* Responsive adjustments */
@@ -1253,6 +1274,31 @@ svg[width][height] {
         font-size: 11px;
         bottom: 3px;
         right: 3px;
+    }
+    
+    /* Maintain star shape on mobile */
+    .rally-token-slot.special-token {
+        clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+    }
+}
+
+/* Rally State Indicators */
+.rally-indicator {
+    pointer-events: none;
+    filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+@keyframes rallyIndicatorAppear {
+    0% {
+        opacity: 0;
+        transform: scale(0);
+    }
+    50% {
+        transform: scale(1.2);
+    }
+    100% {
+        opacity: 0.9;
+        transform: scale(1);
     }
 }
 

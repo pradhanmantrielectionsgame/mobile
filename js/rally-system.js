@@ -32,6 +32,18 @@ async function useSimpleRallyToken(stateId, playerId) {
             'success'
         );
         updateRallyTokenDisplay();
+        
+        // Track rally for visual indicator (only for simple rallies)
+        if (!playerData.ralliesHeld.includes(stateId)) {
+            playerData.ralliesHeld.push(stateId);
+            addRallyIndicatorToState(stateId);
+        }
+        
+        // Play rally sound effect
+        if (typeof window.playAudio === 'function') {
+            window.playAudio('rally_sound');
+        }
+        
         return true;
     }
     
@@ -74,6 +86,12 @@ async function useSpecialRallyToken(playerId) {
     );
     
     updateRallyTokenDisplay();
+    
+    // Play rally sound effect
+    if (typeof window.playAudio === 'function') {
+        window.playAudio('rally_sound');
+    }
+    
     return true;
 }
 
@@ -83,17 +101,36 @@ async function resetRallyTokensForPhase() {
     const player1Data = getPlayerData('player1');
     const player2Data = getPlayerData('player2');
     
+    // Determine special token allocation based on probability
+    const specialTokenProbability = rallyConfig.specialTokenProbability || 0.05;
+    const receiveSpecialToken = Math.random() < specialTokenProbability;
+    
     if (player1Data) {
         player1Data.rallyTokens.simple = rallyConfig.simpleRallyTokens || 1;
-        player1Data.rallyTokens.special = rallyConfig.specialRallyTokens || 1;
+        player1Data.rallyTokens.special = receiveSpecialToken ? 1 : 0;
     }
     
     if (player2Data) {
         player2Data.rallyTokens.simple = rallyConfig.simpleRallyTokens || 1;
-        player2Data.rallyTokens.special = rallyConfig.specialRallyTokens || 1;
+        player2Data.rallyTokens.special = receiveSpecialToken ? 1 : 0;
     }
     
-    console.log(`Rally tokens reset for new phase: ${rallyConfig.simpleRallyTokens || 1} simple, ${rallyConfig.specialRallyTokens || 1} special`);
+    const specialTokenMessage = receiveSpecialToken ? 
+        'Lucky! You received a special rally token this phase!' : 
+        'Regular rally tokens only this phase.';
+    
+    // Clear rally indicators from previous phase
+    clearAllRallyIndicators();
+    
+    // Reset rally tracking
+    if (player1Data) {
+        player1Data.ralliesHeld = [];
+    }
+    if (player2Data) {
+        player2Data.ralliesHeld = [];
+    }
+    
+    console.log(`Rally tokens reset for new phase: ${rallyConfig.simpleRallyTokens || 1} simple, ${receiveSpecialToken ? 1 : 0} special. ${specialTokenMessage}`);
     updateRallyTokenDisplay();
 }
 
@@ -384,6 +421,54 @@ function canUseRallyToken(playerId, tokenType = 'simple') {
     return false;
 }
 
+// Rally State Indicator Functions
+function addRallyIndicatorToState(stateId) {
+    const stateElement = document.getElementById(stateId);
+    if (!stateElement) return;
+    
+    // Check if indicator already exists
+    const existingIndicator = stateElement.querySelector('.rally-indicator');
+    if (existingIndicator) return;
+    
+    // Create rally indicator
+    const indicator = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    indicator.setAttribute('class', 'rally-indicator');
+    indicator.setAttribute('r', '8');
+    indicator.setAttribute('fill', '#FFD700'); // Gold color
+    indicator.setAttribute('stroke', '#FF6B00'); // Orange border
+    indicator.setAttribute('stroke-width', '2');
+    indicator.setAttribute('opacity', '0.9');
+    
+    // Get state bounding box to position the indicator
+    const bbox = stateElement.getBBox();
+    const centerX = bbox.x + bbox.width / 2;
+    const centerY = bbox.y + bbox.height / 2;
+    
+    indicator.setAttribute('cx', centerX);
+    indicator.setAttribute('cy', centerY);
+    
+    // Add to the same parent as the state element
+    const parent = stateElement.parentNode;
+    parent.appendChild(indicator);
+    
+    // Add animation
+    indicator.style.animation = 'rallyIndicatorAppear 0.5s ease-out';
+}
+
+function clearAllRallyIndicators() {
+    const indicators = document.querySelectorAll('.rally-indicator');
+    indicators.forEach(indicator => {
+        indicator.remove();
+    });
+}
+
+function hasRallyIndicator(stateId) {
+    const stateElement = document.getElementById(stateId);
+    if (!stateElement) return false;
+    
+    return stateElement.querySelector('.rally-indicator') !== null;
+}
+
 // Export functions for global access
 window.useSimpleRallyToken = useSimpleRallyToken;
 window.useSpecialRallyToken = useSpecialRallyToken;
@@ -398,3 +483,6 @@ window.handleTokenDrop = handleTokenDrop;
 window.hasPickedUpToken = hasPickedUpToken;
 window.getPickedUpTokenType = getPickedUpTokenType;
 window.cancelTokenPickup = cancelTokenPickup;
+window.addRallyIndicatorToState = addRallyIndicatorToState;
+window.clearAllRallyIndicators = clearAllRallyIndicators;
+window.hasRallyIndicator = hasRallyIndicator;

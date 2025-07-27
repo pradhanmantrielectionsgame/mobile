@@ -15,7 +15,9 @@ let gameState = {
         rallyTokens: {
             simple: 2, // Will be updated from config
             special: 2  // Will be updated from config
-        }
+        },
+        // Rally tracking - states where regular rallies have been held
+        ralliesHeld: [] // stateIds where rallies have been conducted
     },
     player2: {
         id: 'player2', 
@@ -29,7 +31,9 @@ let gameState = {
         rallyTokens: {
             simple: 2, // Will be updated from config
             special: 2  // Will be updated from config
-        }
+        },
+        // Rally tracking - states where regular rallies have been held
+        ralliesHeld: [] // stateIds where rallies have been conducted
     },
     currentPhase: 1,
     maxPhases: 10, // Will be updated from config
@@ -165,10 +169,12 @@ async function initializePlayers() {
     gameState.player1.funds = playerConfig.funds;
     gameState.player1.rallyTokens.simple = playerConfig.simpleRallyTokens;
     gameState.player1.rallyTokens.special = playerConfig.specialRallyTokens;
+    gameState.player1.ralliesHeld = []; // Initialize rally tracking
     
     gameState.player2.funds = playerConfig.funds;
     gameState.player2.rallyTokens.simple = playerConfig.simpleRallyTokens;
     gameState.player2.rallyTokens.special = playerConfig.specialRallyTokens;
+    gameState.player2.ralliesHeld = []; // Initialize rally tracking
     
     // Update game state max phases from config
     gameState.maxPhases = phaseConfig.totalPhases;

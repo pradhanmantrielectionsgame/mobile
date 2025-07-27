@@ -63,7 +63,8 @@ async function getRallyConfig() {
         simpleRallyBoost: config.rallySystem.regularTokenBoost,
         specialRallyBoost: config.rallySystem.specialTokenBoost,
         maxRalliesPerState: config.rallySystem.maxRalliesPerState,
-        tokensPerPhase: config.rallySystem.tokensPerPhase
+        tokensPerPhase: config.rallySystem.tokensPerPhase,
+        specialTokenProbability: config.rallySystem.specialTokenProbability
     };
 }
 

@@ -21,7 +21,8 @@
     "simpleRallyTokens": 1,
     "specialRallyTokens": 1,
     "regularTokenBoost": 4,
-    "specialTokenBoost": 4
+    "specialTokenBoost": 4,
+    "specialTokenProbability": 0.05
   },
   "campaign": {
     "maxContributionsPerPhase": 5

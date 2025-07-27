@@ -6,6 +6,33 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [2.0.4] - 2025-07-26 - Rally System Visual & Audio Enhancements
+### 🎵 Audio System Enhancement
+- **ADDED**: Rally sound effect (`rally_sound.mp3`) plays when rally tokens are successfully used
+- **INTEGRATED**: Sound respects existing audio configuration settings
+
+### ⭐ Special Rally Token Visual Upgrade
+- **REDESIGNED**: Special rally tokens now display as complete star shape using CSS clip-path
+- **ENHANCED**: Golden gradient background with orange accents
+- **ADDED**: Advanced hover, active, and picked-up state animations
+- **IMPROVED**: Pulsing glow effect when token is picked up
+
+### 🎲 Special Token Rarity System
+- **IMPLEMENTED**: Special tokens now have 5% probability per phase (instead of guaranteed)
+- **ADDED**: `specialTokenProbability` configuration option in `game-config.json`
+- **ENHANCED**: Probability-based distribution system in `resetRallyTokensForPhase()`
+
+### 🏛️ Rally State Visual Indicators  
+- **ADDED**: Golden circle indicators appear on states after regular rallies
+- **IMPLEMENTED**: Visual tracking system with `ralliesHeld` array per player
+- **CREATED**: Smooth indicator animations and auto-cleanup each phase
+- **INTEGRATED**: State indicator functions with existing rally system
+
+### 🎨 UI/UX Improvements
+- **RESPONSIVE**: All new features work properly on mobile devices
+- **ANIMATIONS**: Smooth transitions and visual feedback throughout
+- **ACCESSIBILITY**: Clear visual distinction between regular and special tokens
+
 ## [2.0.3] - 2025-07-26 - Rally Token Configuration & System Cleanup
 ### 🎯 Rally Token Configuration Enhancement
 - **UPDATED**: Rally token boost values to 4% for both regular and special tokens
