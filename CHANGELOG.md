@@ -6,6 +6,33 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [2.0.5] - 2026-07-19 - Planning & Architecture Session: Mobile Parity Audit
+
+### 📋 Planning & Analysis
+- **CONDUCTED**: Feature-parity audit against desktop codebase; identified missing modules (random events, home-state bonus, action log, AI controller)
+- **IDENTIFIED**: Replayability root cause (static regional dominance payoffs across games) and recommended fixes
+- **ANALYZED**: Small UT click pattern validation — confirmed existing button-cluster approach is production-ready and should be reused
+
+### 🏗️ Architecture Decisions
+- **DECISION**: Player 2 strategy — prefer live matchmaking (human opponent) with AI fallback after timeout (ADR-0001), solving the "always have a match" requirement without choosing between AI-only or multiplayer-only
+- **DECISION**: Backend stack for matchmaking — Firebase Realtime Database with anonymous auth (or Supabase alternative) for zero-ops, free-tier-friendly infrastructure (ADR-0002)
+- **DECISION**: Native app distribution — Capacitor wrap (not React Native/Flutter rewrite) for iOS/Android app stores, preserving DOM/CSS/SVG fidelity without rewrite risk (ADR-0003)
+
+### 🔍 Technical Findings
+- Discovered SVG map asset carries bounding-box waste (~27% unused area) — tightened viewBox would render map at 27% larger with zero crop risk (findings.md)
+- Confirmed mobile has no AI opponent (only same-device hotseat), no session start/end screens, no functional options menu (findings.md)
+- Validated Claude Artifacts cannot host true installable PWAs (iOS standalone mode via meta tags only; service worker registration not available)
+
+### 📄 Documentation
+- **ADDED**: ADR-0001 (Player 2 matchmaking + AI fallback design)
+- **ADDED**: ADR-0002 (Firebase/Supabase backend recommendation)
+- **ADDED**: ADR-0003 (Capacitor for native distribution, not rewrite)
+- **ADDED**: Project-level CLAUDE.md with UI conventions (small UT click pattern) and architecture constraint (Capacitor, not native rewrite)
+- **ADDED**: findings.md with 7 entries covering parity audit, replayability root cause, SVG map inefficiency, and Claude Artifact PWA limitations
+
+### ℹ️ Note
+No source files changed this session — purely analysis, audit, and design planning. Phase 0 (backend + matchmaking infrastructure) is the next execution step; phased rebuild plan with effort estimates delivered as external Claude Artifacts.
+
 ## [2.0.4] - 2025-07-26 - Rally System Visual & Audio Enhancements
 ### 🎵 Audio System Enhancement
 - **ADDED**: Rally sound effect (`rally_sound.mp3`) plays when rally tokens are successfully used
