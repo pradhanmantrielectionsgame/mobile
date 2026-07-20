@@ -3,6 +3,11 @@
 ## UI conventions
 
 - Small UTs (Delhi, Chandigarh, Dadra & Nagar Haveli and Daman & Diu, Puducherry, Lakshadweep, Andaman & Nicobar Islands) are never directly tappable on the map — they're too small to hit reliably. Always route their interaction through the existing button-cluster pattern (`union-territories-container` in `index.html`, paired with the timer-pill), not direct map taps. J&K and Ladakh are large enough to tap directly and don't need this treatment.
+- **Booth Ink (`design/prototypes/pme-mobile-sheet.html`) is the committed mobile UI direction** — not `index.html`/`styles.css`, which is the old desktop-ported skin. Reference Booth Ink for any UI/interface work; check which file is actually open/current before assuming the legacy file applies.
+
+## Game design principles
+
+- Avoid click-fest mechanics — cap player actions per phase (a fixed number of moves/commitments) rather than allowing unlimited repeated clicking with diminishing returns. Every action should have real opportunity cost against the others available that phase.
 
 ## Architecture constraints
 

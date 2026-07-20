@@ -156,7 +156,7 @@ footer ul{ margin:0 0 16px; padding-left:18px; }
   <div class="meta-row">
     <span>Desktop: <b>~15,000</b> lines, 30 modules</span>
     <span>Mobile: <b>~3,900</b> lines, 13 modules</span>
-    <span>Reviewed <b>2026-07-18</b></span>
+    <span>Reviewed <b>2026-07-20</b></span>
   </div>
   <div class="legend">
     <span class="label">Status key</span>
@@ -206,8 +206,8 @@ footer ul{ margin:0 0 16px; padding-left:18px; }
       <tr><td class="feat">Game-over / results screen</td><td class="file">game-over-screen.js (419)</td><td><span class="pill missing">missing</span></td><td class="desc">No victory, defeat, or hung-parliament screen — the game has no defined ending.</td></tr>
       <tr><td class="feat">AI opponent (Player 2)</td><td class="file">ai-player-controller.js (956)</td><td><span class="pill missing">missing</span></td><td class="desc">Mobile "Player 2" = Shift+Click by the same person. Confirmed priority: port + improve.</td></tr>
       <tr><td class="feat">Options menu actions</td><td class="file">game-options.js (479)</td><td><span class="pill stub">stub</span></td><td class="desc">initOptionsModal() in app.js: every card click just <code>console.log</code>s and closes. Nothing wired up.</td></tr>
-      <tr><td class="feat">Random events</td><td class="file">random-events.js (250)</td><td><span class="pill missing">missing</span></td><td class="desc">Referenced by an options-menu button, but no underlying system exists.</td></tr>
-      <tr><td class="feat">Home-state bonus</td><td class="file">home-state-bonus.js (337)</td><td><span class="pill missing">missing</span></td><td class="desc">Not ported.</td></tr>
+      <tr><td class="feat">Random events</td><td class="file">random-events.js (250)</td><td><span class="pill skip">superseded</span></td><td class="desc">Not being ported as-is — replaced by the agenda / special-power / token system in the Replayability section below. Desktop's version only ever affected Player 1 (a real bug) and was flavor-text-over-fixed-math; the new design fixes both problems structurally instead of porting the old system.</td></tr>
+      <tr><td class="feat">Home-state bonus</td><td class="file">home-state-bonus.js (337)</td><td><span class="pill skip">superseded</span></td><td class="desc">Folded into the new politician roster (each entry already carries a home state) rather than ported as a standalone module — see Replayability section.</td></tr>
       <tr><td class="feat">Action log</td><td class="file">actions-log.js (51)</td><td><span class="pill missing">missing</span></td><td class="desc">No running feed of game actions on mobile. Small file, but screen space is the real cost — needs a mobile-native pattern (drawer), not a straight port.</td></tr>
       <tr><td class="feat">Help / tutorial</td><td class="file">(part of game-options.js)</td><td><span class="pill stub">stub</span></td><td class="desc">Help card exists, does nothing.</td></tr>
 
@@ -244,8 +244,8 @@ footer ul{ margin:0 0 16px; padding-left:18px; }
   </div>
 
   <div class="gap">
-    <div class="gap-head"><h4>4 · Random events &amp; home-state bonus not ported</h4><span class="pill missing">missing</span></div>
-    <p>Two self-contained systems (250 and 337 lines respectively on desktop) with no mobile equivalent. Lower priority than the above three — the game is playable without them, they just add texture and one more strategic lever.</p>
+    <div class="gap-head"><h4>4 · Agenda / special-power / token system not built</h4><span class="pill missing">missing</span></div>
+    <p>Supersedes the old "port random-events.js + home-state-bonus.js" plan entirely — see the Replayability section below for the full design (20-politician roster, signature agendas, single-use special powers, 3-flavor token economy). Bigger scope than the two desktop modules it replaces, but it's the actual fix for the game converging to the same 2-3 strategies every match, which flavor-text events never would have solved.</p>
   </div>
 
   <div class="gap">
@@ -345,13 +345,15 @@ footer ul{ margin:0 0 16px; padding-left:18px; }
   <div class="phase">
     <div class="phase-num">5</div>
     <div>
-      <h4>Random events + home-state bonus</h4>
-      <p class="goal">Strategic texture — nice-to-have, not blocking.</p>
+      <h4>Agenda / special-power / token system</h4>
+      <p class="goal">Replaces the old "port random-events.js + home-state-bonus.js" plan — full design in the Replayability section below. Bigger than the two modules it replaces: a 20-entry politician roster (data), the agenda sheet UI (new addition to <code>pme-mobile-sheet.html</code>), special-power activation, and a 3-flavor rally-token economy replacing the current 2-flavor one.</p>
       <ul>
-        <li>Port <code>random-events.js</code>, hook to the (now-real) Random Events toggle</li>
-        <li>Port <code>home-state-bonus.js</code></li>
+        <li>Write the 20-politician roster into <code>politicians-data.json</code> (home state + 4 signature agendas + 1 special power each)</li>
+        <li>Redesign <code>rally-controller.js</code> / <code>rally-system.js</code>: 3 token flavors, no more random special-token roll, conversion mechanic (6 → Special Powerup, 12 → Nationwide Rally)</li>
+        <li>Wire agenda commitment to trigger the region-tag popularity math (currently missing even on mobile's existing campaign grid — completion only pays a cash bonus today)</li>
+        <li>Add the agenda sheet + special-power card to the Booth Ink interface (<code>pme-mobile-sheet.html</code>) — a third corner button next to the rally FAB</li>
       </ul>
-      <div class="dod">done when: both systems trigger in a live game</div>
+      <div class="dod">done when: picking a different politician produces a genuinely different game, not just different flavor text</div>
     </div>
   </div>
 
@@ -471,57 +473,78 @@ footer ul{ margin:0 0 16px; padding-left:18px; }
 
 <section id="replay">
   <h2>Replayability</h2>
-  <p class="section-note">Likely root cause first, then what to actually change.</p>
+  <p class="section-note">Root cause, then the fix that's actually been designed for it (superseding the original 4-phase sketch below it in prior revisions of this doc).</p>
 
   <div class="gap">
     <div class="gap-head"><h4>Why it converges to 2–3 strategies</h4><span class="pill missing">diagnosis</span></div>
-    <p>The regional dominance bonus (&gt;50% popularity across a whole state group → a lump sum plus a recurring per-phase payout) is the strongest lever in the game, and it's <b>static</b> — same groups, same payout, every match. Random starting popularity changes <em>where</em> you happen to be leading, but not <em>which lever is worth pulling</em>. Once a player learns "rush South India for the group bonus," that's correct in every game, forever, which is exactly what produces a solved opening.</p>
+    <p>The regional dominance bonus (&gt;50% popularity across a whole state group → a lump sum plus a recurring per-phase payout) is the strongest lever in the game, and it's <b>static</b> — same groups, same payout, every match. Random starting popularity changes <em>where</em> you happen to be leading, but not <em>which lever is worth pulling</em>. Once a player learns "rush South India for the group bonus," that's correct in every game, forever.</p>
+    <p style="margin-top:10px;">The desktop build already tried the obvious fix — random events, random starting popularity, a home-state bonus, randomized rally-token odds — and none of it helped. All four turned out to be <b>magnitude randomization dressed as variety</b>: different numbers on the same fixed template every time (random events were 20 flavor-text strings wrapped around one identical ±5-20% stat roll, and — worse — coded to only ever affect Player 1). Rolling a different number doesn't change what's optimal to do; it only changes how big the optimal move pays off. The fix has to change the <em>shape</em> of the decision, not its inputs.</p>
   </div>
 
-  <h3>Highest leverage — change the payoffs, not just the map</h3>
-  <div class="phase">
-    <div class="phase-num">1</div>
-    <div>
-      <h4>Rotate which bonuses are live</h4>
-      <p class="goal">Directly attacks the root cause above.</p>
-      <ul>
-        <li>Pick 2–3 "contested regions" at random each match that carry the dominance bonus; the rest don't</li>
-        <li>Shown at game start so it's a known constraint to plan around, not a hidden gotcha</li>
-        <li>Config-driven — this is a values change in existing JSON, not new systems</li>
-      </ul>
-      <div class="dod">done when: the optimal opening region changes from game to game</div>
-    </div>
+  <h3>The fix: politician-driven agendas, not generic randomization</h3>
+  <div class="gap">
+    <p>Each politician (20 in the roster below) carries <b>5 personal slots</b>: 4 signature agendas drawn from a shared, region-tagged policy pool (already sitting unused in <code>data/policy-tags.json</code> and <code>data/states_data.json</code>'s regional boolean tags), plus 1 unique special power no other politician has. Picking a different politician changes which policies are even available to you and what your one-time wildcard move does — a structural difference, not a bigger or smaller number on the same list. Two players who pick Modi and Manmohan Singh are playing genuinely different games, not the same game with different multipliers.</p>
+    <p style="margin-top:10px;">Agendas are <b>not</b> contested between players (an earlier draft of this design had both players racing to "win" the same policy — dropped as unneeded complexity). Each player invests in their own 4 independently; the region support/oppose tags create indirect friction on the map without needing a shared-resource race to track.</p>
   </div>
-  <div class="phase">
-    <div class="phase-num">2</div>
-    <div>
-      <h4>Randomize policy costs/impact within a range</h4>
-      <p class="goal">Stops "always max Digital India first" from being universal.</p>
-      <ul>
-        <li>±15–20% variance on policy cost and group-impact magnitude, seeded per match</li>
-        <li>Also config/JSON values — same lazy cost as above</li>
-      </ul>
-      <div class="dod">done when: the best first policy to fund isn't the same one every game</div>
-    </div>
+
+  <h3>The 20-politician roster</h3>
+  <p class="section-note">16 historical/current politicians (former PMs, CMs, and party leaders) + 4 celebrities with real political ties. Signature agendas are the top entries from each politician's existing <code>policies</code> array in <code>politicians-data.json</code> (already present, just needs trimming from 6 to 4 and a special-power field added).</p>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Politician</th><th>Signature 4 agendas</th><th>Special power</th><th>Cost</th></tr></thead>
+    <tbody>
+      <tr class="cat-row"><td colspan="4">Politicians (16)</td></tr>
+      <tr><td class="feat">Narendra Modi</td><td class="desc">Infrastructure, Hindutva, Economic Liberalization, National Defense</td><td class="desc"><b>Demonetization</b> — opponent instantly loses a lump sum of funds</td><td class="desc">−5% popularity nationwide</td></tr>
+      <tr><td class="feat">Manmohan Singh</td><td class="desc">Economic Liberalization, Public Sector, Secularism, Education</td><td class="desc"><b>Economic Reform</b> — large one-time funds boost</td><td class="desc">−8% popularity in Agricultural/Public-Sector states</td></tr>
+      <tr><td class="feat">Rahul Gandhi</td><td class="desc">Rural Development, Land Reforms, Secularism, Caste Reservation</td><td class="desc"><b>Bharat Jodo Yatra</b> — popularity boost in Secularism/Minority states</td><td class="desc">Instant lump-sum funds payment</td></tr>
+      <tr><td class="feat">Atal Bihari Vajpayee</td><td class="desc">Infrastructure, National Defense, Hindi Language, Economic Liberalization</td><td class="desc"><b>Pokhran Test</b> — +10% popularity nationwide</td><td class="desc">Instant heavy funds penalty</td></tr>
+      <tr><td class="feat">Arvind Kejriwal</td><td class="desc">Anti-Corruption, Education, Healthcare, Water &amp; Mineral Rights</td><td class="desc"><b>Anti-Corruption Raid</b> — voids one opponent agenda commitment, refunds their spend</td><td class="desc">Instantly forfeit any rally tokens currently held</td></tr>
+      <tr><td class="feat">Mamata Banerjee</td><td class="desc">Women's Empowerment, State's Rights, Secularism, Agricultural Reforms</td><td class="desc"><b>State Autonomy Stand</b> — home state + State's-Rights states immune to opponent's agendas/rallies for rest of game</td><td class="desc">Funds hit now</td></tr>
+      <tr><td class="feat">Nitish Kumar</td><td class="desc">Caste Reservation, Rural Development, Women's Empowerment, State's Rights</td><td class="desc"><b>Alliance Switch</b> — copies the effect of the opponent's last-used agenda</td><td class="desc">−5% popularity nationwide</td></tr>
+      <tr><td class="feat">Yogi Adityanath</td><td class="desc">Law and Order, Hindutva, Uniform Civil Code, Infrastructure</td><td class="desc"><b>Bulldozer Action</b> — sharply cuts opponent's popularity in one target state</td><td class="desc">−popularity nationwide in Minority states</td></tr>
+      <tr><td class="feat">Indira Gandhi</td><td class="desc">National Defense, Public Sector, Land Reforms, Rural Development</td><td class="desc"><b>National Emergency</b> — instantly seizes a large popularity swing from the opponent across all states</td><td class="desc">Instant −10% popularity nationwide + instant heavy funds loss</td></tr>
+      <tr><td class="feat">Jawaharlal Nehru</td><td class="desc">Education, Secularism, Public Sector, Infrastructure</td><td class="desc"><b>Non-Alignment</b> — blocks the next special power the opponent tries to use (standing shield, no time limit)</td><td class="desc">Instant funds penalty on activation</td></tr>
+      <tr><td class="feat">Sardar Patel</td><td class="desc">Law and Order, National Defense, Infrastructure, Anti-Corruption</td><td class="desc"><b>Iron Unification</b> — instantly flips one small state/UT fully to your majority</td><td class="desc">Heavy instant funds hit</td></tr>
+      <tr><td class="feat">B.R. Ambedkar</td><td class="desc">Caste Reservation, Education, Judicial Activism, Indigenous Rights</td><td class="desc"><b>Constitutional Reform</b> — permanent, non-decaying +popularity floor in Caste-Reservation/Indigenous-Rights states</td><td class="desc">High instant funds hit</td></tr>
+      <tr><td class="feat">Jayalalithaa</td><td class="desc">State's Rights, Women's Empowerment, Public Sector, Healthcare</td><td class="desc"><b>Amma Welfare Scheme</b> — large popularity boost in home state + Public-Sector states</td><td class="desc">Heavy instant funds hit</td></tr>
+      <tr><td class="feat">Lal Bahadur Shastri</td><td class="desc">National Defense, Agricultural Reforms, Anti-Corruption, Public Sector</td><td class="desc"><b>Jai Jawan Jai Kisan</b> — boost in Border-Lands AND Agricultural-Region states at once</td><td class="desc">Instant funds penalty</td></tr>
+      <tr><td class="feat">P.V. Narasimha Rao</td><td class="desc">Economic Liberalization, Judicial Activism, State's Rights, Digital Transformation</td><td class="desc"><b>Minority Government Survival</b> — re-activate one of your own agenda cards a second time</td><td class="desc">Instant heavy funds penalty</td></tr>
+      <tr><td class="feat">Rajiv Gandhi</td><td class="desc">Digital Transformation, Infrastructure, Education, State's Rights</td><td class="desc"><b>Telecom Revolution</b> — permanently discounts Digital-Transformation agenda costs for rest of game</td><td class="desc">Heavy upfront funds hit</td></tr>
+      <tr class="cat-row"><td colspan="4">Celebrities (4)</td></tr>
+      <tr><td class="feat">Amitabh Bachchan</td><td class="desc">Press Freedom, Digital Transformation, Education, Healthcare</td><td class="desc"><b>Celebrity Endorsement</b> — converts undecided ("Others") popularity to you nationwide, not taken from the opponent</td><td class="desc">Funds hit this phase</td></tr>
+      <tr><td class="feat">Sachin Tendulkar</td><td class="desc">Education, Healthcare, Infrastructure, Digital Transformation</td><td class="desc"><b>National Icon</b> — flat popularity boost split across all states</td><td class="desc">Usable only in the game's final phase</td></tr>
+      <tr><td class="feat">Hema Malini</td><td class="desc">Women's Empowerment, Healthcare, Infrastructure, Education</td><td class="desc"><b>Star Power Rally</b> — popularity boost in home state + one adjacent state</td><td class="desc">Only usable while below national-average popularity</td></tr>
+      <tr><td class="feat">Rajinikanth</td><td class="desc">Anti-Corruption, Press Freedom, Digital Transformation, Education</td><td class="desc"><b>Thalaivar Announcement</b> — massive one-time nationwide popularity surge</td><td class="desc">Permanently locks your other 4 agendas for the rest of the game</td></tr>
+    </tbody>
+  </table>
   </div>
-  <div class="phase">
-    <div class="phase-num">3</div>
-    <div>
-      <h4>Random events with real strategic teeth</h4>
-      <p class="goal">Currently unbuilt on mobile (see gap #4 above) — build it to actually reprice levers, not as flavor text.</p>
-      <ul>
-        <li>"Farm Bill Protests" → agriculture-region policies cost +50% for one phase</li>
-        <li>"By-election Buzz" → rally boost doubled in one random state, one phase</li>
-        <li>Unpredictable timing and target — forces re-evaluation mid-game instead of running a memorized script start to finish</li>
-      </ul>
-      <div class="dod">done when: at least one event fires per game and visibly changes the best move that phase</div>
-    </div>
+  <p class="section-note" style="margin-top:10px;">Smriti Irani was considered and cut (not high-profile enough to carry a slot). Rajinikanth's cost is flagged as still needing a balance pass — its severity depends on how much game remains when it's used, which the unlock design below is meant to guarantee, but it's worth a specific playtest check.</p>
+
+  <h3>Special-power design rules</h3>
+  <div class="gap">
+    <p><b>Every effect resolves instantly — nothing is phrased as "for N future phases."</b> An earlier draft had costs/benefits like "opponent can't spend funds for 1 phase" or "reduced funds income for 2 phases." That breaks the moment a power unlocks late in the game with no future phases left for the duration to apply to — which, under any gate tied to in-game achievement, it eventually will. Converting every timed effect to an instant lump-sum equivalent (e.g. "opponent instantly loses a lump sum of funds" instead of "opponent frozen for 1 phase") removes the dependency on borrowed future game-time entirely. The table above already reflects this.</p>
+    <p style="margin-top:10px;">Every power uses a <b>different verb</b> — freeze/attack, unlock, march, pride/sanctions, disrupt, protect, mimic, total-lockout, power-block, instant-annex, permanent-buff, draw-from-neutral, timing-restricted, targeted-steal, self-destructing burst. None are the same power reskinned with a different number, which is the same principle the agenda system above is built on.</p>
   </div>
+
+  <h3>Unlock mechanism: a redesigned 3-flavor rally-token economy</h3>
+  <div class="gap">
+    <p>Earlier candidates for "when does the special power unlock" — maxing all 4 agendas, crossing a popularity threshold, crossing a seat-lead threshold — were all rejected. Agenda-completion gating forces the unlock toward the very end of the game (see the instant-effect rule above — this is exactly the bug that rule exists to guard against). Popularity/seat thresholds solve the timing problem but tie the reward to already being ahead, which risks snowballing a leading player's advantage further (a real trade-off between "reward good play" and "keep the game close" with no clean answer).</p>
+    <p style="margin-top:10px;">The resolved design instead makes rally tokens a real second currency, spent on the unlock directly — sidestepping the reward-vs-comeback dilemma entirely, since token income doesn't depend on who's winning:</p>
+  </div>
+  <div class="pwa-list">
+    <div class="pwa-item"><span class="f">State Rally</span><span class="d">2 per phase, automatic, no longer use-it-or-lose-it — accumulates across the whole game (16 max from base income over 8 phases). Fully committing an agenda grants +2 bonus tokens (up to +8 across all 4 agendas). 24 max total in a game.</span></div>
+    <div class="pwa-item"><span class="f">Special Powerup</span><span class="d">Convert 6 State Rally tokens to craft one. Activates your politician's unique special power. Usable once per game — the cap is on <em>use</em>, not on resources, so banking enough for a second one buys nothing.</span></div>
+    <div class="pwa-item"><span class="f">Nationwide Rally</span><span class="d">Convert 12 State Rally tokens to craft one. Replaces the old ⭐ "special rally token" entirely — no more random 5% spawn chance. This is now purely earned, and should hit meaningfully harder than the old random version did, since it costs 12 tokens of foregone regular rallies to get. Usable once per game, same hard cap as above.</span></div>
+  </div>
+  <p class="section-note" style="margin-top:14px;">Pacing check: pure passive hoarding with zero agenda bonuses still reaches 6 tokens by phase 3 and 12 by phase 6 of an 8-phase game — real runway left even in the worst case. A player who completes agendas early reaches both thresholds faster. This also fully removes randomness from token acquisition — the original complaint that started this whole redesign was that the desktop token-odds system was "dynamic" in name only (a hardcoded, unchanging 10%/5% roll); this design doesn't fix that, it deletes the randomness outright.</p>
+  <p class="section-note">Implementation note: this replaces the independent-roll logic in <code>rally-controller.js</code> (currently <code>Math.random() &lt; specialProbability</code> per token) — every awarded token becomes a flat State Rally token, and a conversion/crafting action needs to be added to the rally tray UI.</p>
+
+  <h3>AI personalities</h3>
   <div class="phase">
-    <div class="phase-num">4</div>
+    <div class="phase-num">·</div>
     <div>
-      <h4>AI personalities</h4>
-      <p class="goal">Folds into Phase 2 of the main build — same engine, 3–4 parameter profiles instead of one.</p>
+      <h4>Still on the list, unrelated to the above</h4>
+      <p class="goal">Folds into Phase 2 of the main build (the AI decision engine) — same engine, 3–4 parameter profiles instead of one.</p>
       <ul>
         <li>Aggressive investor / policy rusher / rally spammer / group-bonus rusher, picked randomly per match</li>
         <li>Removes the "I found the one counter-strategy" ceiling — you're reading and reacting, not executing a memorized script</li>
@@ -530,13 +553,12 @@ footer ul{ margin:0 0 16px; padding-left:18px; }
     </div>
   </div>
 
-  <h3>Supporting changes — smaller leverage, worth doing once 1–4 land</h3>
+  <h3>Supporting changes — smaller leverage, worth doing once the above lands</h3>
   <div class="pwa-list">
-    <div class="pwa-item"><span class="f">Diminishing returns</span><span class="d">Escalating cost for repeated investment in the same state/policy within a phase — pushes diversification over "one big push, done."</span></div>
-    <div class="pwa-item"><span class="f">Draft phase</span><span class="d">Each player bans or picks 1–2 policies/regions at game start — changes the available strategy space every match, adds a real pre-game decision.</span></div>
+    <div class="pwa-item"><span class="f">Diminishing returns</span><span class="d">Escalating cost for repeated investment in the same state within a phase — pushes diversification over "one big push, done." (Already partly true of mobile's investment system via its glide-path boost curve.)</span></div>
     <div class="pwa-item"><span class="f">Secondary goals</span><span class="d">Non-win-condition achievements ("swept a region," "comeback from behind at phase 6") for players who've already solved the primary win condition.</span></div>
   </div>
-  <p class="section-note" style="margin-top:14px;">All of this is balance work, not architecture — the game already stores costs/bonuses/impacts in JSON rather than hardcoded, so 1–2 above are genuinely cheap to try and iterate on. It rides the same tune-playtest-tune curve as AI difficulty, not a one-pass fix.</p>
+  <p class="section-note" style="margin-top:14px;">The old "draft phase" idea (ban/pick policies at game start) is effectively superseded — picking a politician now <em>is</em> that draft, since it fixes which 4 agendas and which power you have for the whole game.</p>
 </section>
 
 <footer>

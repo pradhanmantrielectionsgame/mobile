@@ -1,5 +1,35 @@
 # Findings
 
+## 2026-07-20 — Desktop's random-events.js only ever affects Player 1
+**Finding:** In `random-events.js` (desktop repo), `applyRandomEvent()` hardcodes `isPositive` events to help Player 1 and negative events to hurt Player 1 — Player 2's popularity is never touched by any random event, regardless of type. This is a bug, not a design choice.
+**Context:** Investigated after the user reported that desktop's random events, home-state bonus, and token odds — despite being "randomization" systems — never made replays feel different.
+**Implication:** If random events are ever revisited (currently superseded by the agenda/special-power/token redesign — see `design/plan.md`), this asymmetry must be fixed; don't port the desktop logic as-is.
+
+## 2026-07-20 — Desktop's home-state-bonus.js is deterministic, not random
+**Finding:** `home-state-bonus.js` applies a flat, fixed +20% popularity bonus keyed to whichever politician's `homeState` field matches — identical every game a player picks the same politician. Despite being framed as a randomization/replayability lever, there's no randomness in it at all.
+**Context:** Same investigation as above — reading the actual desktop modules behind the four "randomization" systems the user described.
+**Implication:** Home-state bonus is now folded into the politician roster design (each entry already carries a home state) rather than treated as a standalone randomization system.
+
+## 2026-07-20 — Desktop's rally token "special chance" is a hardcoded asymmetric constant, not dynamic
+**Finding:** `rally-controller.js` rolls special-token odds via `Math.random() < specialProbability` where `specialProbability` is hardcoded to `0.1` for Player 1 and `0.05` for Player 2 — permanently asymmetric, never varies game to game despite being described as "dynamic."
+**Context:** Same investigation — auditing why previously-implemented randomization systems didn't produce felt variety.
+**Implication:** The redesigned 3-flavor token economy (State Rally / Special Powerup / Nationwide Rally, see `design/plan.md` Replayability section) removes randomness from token acquisition entirely rather than trying to fix the odds.
+
+## 2026-07-20 — Mobile's campaign-system.js already has a full agenda UI, but never applies the actual policy effect
+**Finding:** `campaign-system.js` fully implements `loadPolicyTags()`, `generateCampaignGrid()` (23 policies with tiers, costs, support/oppose region labels), and click-to-invest progress bars, wired to a `⚡ Campaigns` button + modal already in `index.html`. But `checkAndAwardBonuses()` only pays a cash bonus on completion — it never calls anything like desktop's `calculatePolicyEffect()` to apply the region-tag-based popularity shift. The UI is more built than assumed; the payoff logic is what's actually missing.
+**Context:** Investigated while diagnosing why "agenda" felt unimplemented on mobile, before realizing the existing system just never wired up its own effect.
+**Implication:** Any agenda-system work should check for and reuse this existing grid/modal machinery rather than assuming a blank slate — though the actual UI target has since shifted to Booth Ink (see next entry), so this specific modal likely won't be the delivery vehicle going forward.
+
+## 2026-07-20 — index.html is not the real UI direction; Booth Ink (pme-mobile-sheet.html) is
+**Finding:** The user has committed to "Booth Ink" (`design/prototypes/pme-mobile-sheet.html`, added in commit f5c48fc) as the actual mobile UI direction, and has been heavily tweaking it since. It's a deliberately sparse 3-fixed-region layout (header / map / info panel, stacked, "nothing overlaps, nothing expands" per its own code comments) plus two corner buttons (UT cluster, rally FAB) — no campaign/agenda modal exists in it at all. `index.html`/`styles.css` is the old desktop-ported skin and is no longer the target.
+**Context:** Several turns of UI analysis were done against `index.html` before the user corrected this; confirmed by reading the file and cross-referencing the commit that introduced it.
+**Implication:** Any future UI/interface work on this project must reference `pme-mobile-sheet.html`, not `index.html`/`styles.css` — check which file is open/referenced before assuming the legacy file is current.
+
+## 2026-07-20 — Seats are allocated proportionally per state, not winner-take-all
+**Finding:** `seat-projection.js` computes `p1Seats = Math.round(seats * (popularity.player1 / 100))` per state — seat counts move smoothly in proportion to popularity, confirmed in code after the user corrected an assumption that seat totals could "flip" suddenly like a winner-take-all system.
+**Context:** Came up while evaluating "projected seats crossing a threshold" as a candidate special-power unlock trigger (later superseded by the token-economy unlock design).
+**Implication:** Seat-based thresholds or triggers in this game behave smoothly, not in sudden jumps — don't assume FPTP-style volatility when reasoning about seat-count mechanics here.
+
 ## 2026-07-19 — CSS Grid `1fr` tracks silently override declared pixel sizes when the grid container's width is undefined
 **Finding:** `.groups-box` used `grid-template-columns:repeat(8,1fr)` with no explicit `width`, relying on CSS shrink-to-fit. The `.gchip{width:63px}` declared on each grid item was silently overridden — actual rendered icon size came from an accidental shrink-to-fit computation against the viewport, not the CSS value. It happened to look reasonable on the device it was screenshotted on, but nothing guaranteed that on a narrower or wider phone.
 **Context:** Investigated after the user asked "what's the solution" for a floating icon bar being "problematic for some screen sizes."
@@ -33,7 +63,7 @@
 ## 2026-07-19 — Mobile's likely replayability root cause: static regional-dominance payoffs
 **Finding:** The regional dominance bonus (>50% popularity across a whole state group → lump sum + recurring per-phase payout) has fixed group membership and fixed payout every match. Random starting popularity changes *where* a player happens to be leading but not *which lever is worth pulling* — so a learned opening ("rush South India") stays optimal in every game, forever.
 **Context:** Reasoned from the actual bonus logic in `campaign-system.js` (`checkRegionalDominanceBonuses()`) plus `ROADMAP.md`'s group-bonus description, in response to the user's complaint that the game converges to 2–3 strategies after a few plays.
-**Implication:** Highest-leverage replayability fix is randomizing which groups/values are "live" per match and giving random events real strategic teeth — not adding more static content.
+**Implication:** Highest-leverage replayability fix is randomizing which groups/values are "live" per match and giving random events real strategic teeth — not adding more static content. (Superseded by the agenda/special-power/token redesign — see `design/plan.md`.)
 
 ## 2026-07-19 — Mobile has no AI opponent; "Player 2" is same-device hotseat
 **Finding:** `app.js:53` — `const playerId = event.shiftKey ? 'player2' : 'player1'`. Player 2 has no decision-making logic at all; it's a second local input path via Shift+Click on the same device. Desktop's `ai-player-controller.js` (956 lines, the largest module in either codebase) was never ported to mobile.
@@ -48,4 +78,4 @@
 ## 2026-07-19 — Regional dominance bonus is ported; random events, home bonus, action log are not
 **Finding:** `checkRegionalDominanceBonuses()` in `campaign-system.js` correctly replicates desktop's group-bonus system. However, desktop's `random-events.js`, `home-state-bonus.js`, and `actions-log.js` have no mobile equivalent at all.
 **Context:** Cross-referenced every desktop JS module against mobile's module list during the feature-parity audit.
-**Implication:** Random events and home-state bonus work is purely additive (not blocked on anything else) and doubles as the main replayability lever — see the entry above.
+**Implication:** Random events and home-state bonus work is purely additive (not blocked on anything else) and doubles as the main replayability lever — see the entry above. (Superseded — see `design/plan.md` Replayability section for the actual replacement design.)

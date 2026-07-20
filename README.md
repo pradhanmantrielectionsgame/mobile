@@ -88,7 +88,7 @@ The game uses `game-config.json` for all tunable parameters (rally token boosts,
 
 - **No AI opponent yet** — Player 2 is same-device hotseat (Shift+Click) only; `ai-player-controller.js` from desktop is not ported
 - **No session boundaries** — no welcome screen, game-over screen, or options menu (all currently stubs logging to console)
-- **Static replayability** — regional dominance bonuses have fixed group membership and payoff every game; random events not implemented
+- **Replayability redesign pending implementation** — design complete (see design/plan.md); includes 20-politician roster with personal signature agendas, special powers with instant cost/benefit tradeoffs, and 3-flavor rally-token economy; now awaiting code implementation
 - **Small UTs not directly tappable** — Delhi, Chandigarh, Puducherry, etc. route through button-cluster pattern (confirmed as production-ready, see findings.md)
 - **SVG map undersized** — current `assets/icons/INDIA_V3_smaller_viewbox.svg` wastes ~27% of viewBox area; tightened viewBox would render 27% larger with zero crop risk
 
@@ -104,7 +104,7 @@ The game uses `game-config.json` for all tunable parameters (rally token boosts,
 - **Phase 1** — Port + tune AI opponent from desktop codebase; integrate with Player 2 fallback logic
 - **Phase 2** — Session start/end screens (welcome, game-over, player names)
 - **Phase 3** — Error handling + edge cases (both players accept match, network disconnect mid-game)
-- **Phase 4** — Random events + home-state bonus (main replayability levers)
+- **Phase 4** — Implement replayability redesign: 20-politician roster, personal signature agendas (4 per politician), special powers with instant cost/benefit tradeoffs, 3-flavor rally-token economy (see design/plan.md for specification)
 
 ## Troubleshooting
 

@@ -6,6 +6,35 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### 🎮 Game Design — Replayability Overhaul
+
+#### Design Decisions & Architecture
+- **DECISION D1**: Replace magnitude-randomization (random events, home-state bonus, token odds) with structural, politician-driven variety — desktop code analysis revealed all four systems were either non-functional (random events only affect Player 1) or noise dressed as variety (deterministic home-state bonus, hardcoded asymmetric token odds).
+- **DECISION D2**: Redesign agenda system as personal (non-contested) per-politician signature policies committed via one lump sum per phase — removes the click-fest from existing 10-click investment bars while simplifying the booking without shared policy races.
+- **DECISION D3**: Cap each politician to 5 agenda slots (4 generic + 1 unique special power) — solves screen-space constraints in Booth Ink UI and creates structural variety without requiring a 23-item scrolling list.
+- **DECISION D4**: Every special power must have matched cost/benefit tradeoff and qualitatively distinct "verb" — prevents free-win mechanics and keeps a 20-entry roster from feeling repetitive.
+- **DECISION D5**: Special-power cost/benefit must resolve instantly, never duration-based — prevents duration-based effects from having zero remaining phases to apply once the power unlocks at game end (ADR-0004).
+- **DECISION D6**: Special-power/mega-token unlock gated by redesigned rally-token economy, not popularity/seat threshold — sidesteps the reward-the-leader snowball risk that threshold-based gates create (ADR-0005).
+- **DECISION D7**: Redesigned rally-token system into 3 flavors: State Rally (2/phase, accumulates, +2 bonus per agenda, 24 max), Special Powerup (6 tokens crafted, one use per game), Nationwide Rally (12 tokens crafted, one use per game) — removes randomness from acquisition entirely and creates opportunity-cost tension.
+- **DECISION D8**: Finalized 20-politician roster (16 politicians + 4 celebrities); Smriti Irani removed as not high-profile enough; Jayalalithaa categorized as politician.
+- **DECISION D9**: Anti-click-fest principle: cap player actions per phase to a fixed number — forces prioritization over grinding; applied to whole game design.
+
+#### Documentation Updates
+- **UPDATED**: `design/plan.md` Replayability section — complete redesign with 20-politician roster table, special-power design rules and examples, 3-flavor token economy mechanics
+- **UPDATED**: `design/plan.md` audit table — marked "Random events" and "Home-state bonus" as superseded by new system
+- **UPDATED**: `design/plan.md` roadmap Phase 5 description — now covers agenda/special-power/token implementation instead of porting desktop's random-events.js + home-state-bonus.js
+- **UPDATED**: `design/plan.md` header "Reviewed" date to 2026-07-20
+- **ADDED**: `CLAUDE.md` game design principles section — documented anti-click-fest rule
+- **ADDED**: `CLAUDE.md` UI conventions clarification — Booth Ink (pme-mobile-sheet.html) is committed mobile UI direction, not legacy index.html/styles.css
+- **ADDED**: Six findings entries (2026-07-20) documenting desktop code bugs (random-events asymmetry, deterministic home-bonus, hardcoded token odds) and implications for mobile redesign
+
+#### Architecture Decision Records
+- **CREATED**: ADR-0004 (Instant-Effect-Only Special Powers) — resolves the duration-based-effect lateness bug by converting all power effects to instant lump-sum equivalents
+- **CREATED**: ADR-0005 (Token Economy as Unlock Gate) — resolves the snowball risk of popularity/seat thresholds by using symmetric token income as the unlock currency
+
+#### Context
+Long design-ideation session diagnosing why desktop's four "randomization" systems didn't produce felt replayability. Actual code analysis showed all four were non-functional or noise. Designed replacement system (politician-driven agendas + special powers + token-economy gate) that creates structural variety instead of tweaking probabilities. No source code changes — purely design, documentation, and findings.
+
 ### 🎨 Mobile-First Visual Prototypes
 - **CREATED**: Two structurally distinct HTML + CSS prototype systems — "Booth Ink" (ballot-form aesthetic, light colors) and "Live Count" (broadcast-scoreboard aesthetic, dark colors)
 - **CREATED**: `generate_mobile_first_mockups.py` — generator script injecting real `states_data.json` + India map SVG into both templates for interactive testing
