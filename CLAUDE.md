@@ -7,3 +7,9 @@
 ## Architecture constraints
 
 - Do not rewrite this game in React Native or Flutter for iOS/Android app store distribution. The UI is DOM/CSS/SVG-heavy (interactive map, CSS animations) and the game itself is turn/phase-based with no native-performance requirement, so a native-framework rewrite buys nothing. Wrap the existing vanilla HTML/CSS/JS with Capacitor instead — it carries the current UI over almost unchanged.
+
+## Frontend technical rules
+
+- Never rely on CSS Grid shrink-to-fit with `1fr` tracks when a declared pixel/icon size needs to actually hold — the grid container's width goes undefined and the browser silently overrides the item's declared size to fit an accidental viewport computation. Give the grid container an explicit, screen-relative width (e.g. `min(calc(100% - Npx), cap)`) instead. This already caused a real, hard-to-spot sizing bug in a mobile prototype's icon grid.
+- Every standalone HTML file (prototype or real game) must declare `<meta charset="UTF-8">` as the very first tag. Claude's Artifact hosting sets the correct charset header automatically, but any other host (a local dev server, GitHub Pages, etc.) may not — without the explicit tag, every emoji, the ₹ symbol, and em dashes render as mojibake.
+- When sizing mobile UI chrome (buttons, text, icons) in a prototype meant to represent real device proportions, calibrate against the actual iPhone 14 viewport (390×844, this project's default target) — not against how it looks inside the Claude Artifact viewer. The Artifact viewer wraps pages in its own ~150–200px title-bar chrome, which makes a `flex:1` map region look shorter than it will on a real device, and everything sized to "look right" against that preview reads as too small once viewed full-screen.

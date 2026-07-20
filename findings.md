@@ -1,5 +1,20 @@
 # Findings
 
+## 2026-07-19 — CSS Grid `1fr` tracks silently override declared pixel sizes when the grid container's width is undefined
+**Finding:** `.groups-box` used `grid-template-columns:repeat(8,1fr)` with no explicit `width`, relying on CSS shrink-to-fit. The `.gchip{width:63px}` declared on each grid item was silently overridden — actual rendered icon size came from an accidental shrink-to-fit computation against the viewport, not the CSS value. It happened to look reasonable on the device it was screenshotted on, but nothing guaranteed that on a narrower or wider phone.
+**Context:** Investigated after the user asked "what's the solution" for a floating icon bar being "problematic for some screen sizes."
+**Implication:** Any future CSS Grid layout with `1fr` tracks in this project must give the grid container an explicit, screen-relative width (e.g. `min(calc(100% - Npx), cap)`) or use `aspect-ratio` on items — never leave sizing to shrink-to-fit when a declared pixel size needs to actually hold.
+
+## 2026-07-19 — Standalone HTML prototypes need an explicit `<meta charset="UTF-8">`
+**Finding:** The mobile-first prototype files rendered correctly via Claude's Artifact hosting (which sets a proper `Content-Type: text/html; charset=utf-8` header) but produced full mojibake — every emoji, the ₹ symbol, and em dashes — when served via Python's built-in `http.server`, which sends no charset header at all. The file had no `<meta charset>` tag, so the browser had to guess and guessed wrong.
+**Context:** User hit this testing the prototype on their phone via a local LAN server (`python -m http.server`) set up so they could preview it at true device proportions outside the Artifact viewer's chrome.
+**Implication:** Every standalone HTML file in this project (prototypes or the real game) should declare `<meta charset="UTF-8">` as the first tag, regardless of intended hosting — don't rely on the host to set the header correctly.
+
+## 2026-07-19 — Claude Artifact viewer chrome makes on-device proportions look wrong in screenshots
+**Finding:** Claude's Artifact viewer wraps published pages in its own title-bar UI (~150–200px: page title, "Artifact by you", share/flag icons) sitting above the actual page content. Since the mobile prototype's map region uses `flex:1` to fill all remaining vertical space, a screenshot taken inside the Artifact viewer under-represents how much taller the map (and therefore how much smaller the chrome looks by comparison) will be in a true fullscreen context — several rounds of "make the UI bigger" feedback traced back to this rather than any single wrong pixel value.
+**Context:** User compared the same prototype rendered inside the Artifact viewer vs. added to the iPhone home screen from a local server, and the proportions looked very different.
+**Implication:** When sizing chrome for a mobile-first prototype meant to be judged against real device proportions, size against actual iPhone 14 viewport assumptions (390×844, this project's stated default target) rather than against how it looks inside the Artifact preview panel — the preview systematically under-represents available map height.
+
 ## 2026-07-19 — Claude Artifacts cannot be true installable PWAs
 **Finding:** The Claude Artifact runtime only exposes two capabilities (`downloads`, `mcp` — confirmed via the artifact-capabilities skill, contract 0.1.12). There is no way to host a separate `manifest.json` or register a service worker for a published artifact, so real installability (Android install banner, offline caching) is not achievable there. iOS Safari's legacy meta-tag-only standalone mode (`apple-mobile-web-app-capable`, `apple-touch-icon`, no manifest/service worker required) is the only way to get a full-screen home-screen launch from an artifact.
 **Context:** User asked whether a published artifact could be made into a PWA for full-screen mobile testing of visual/interaction prototypes.

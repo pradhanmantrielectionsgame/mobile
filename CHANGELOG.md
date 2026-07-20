@@ -6,6 +6,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### 🎨 Mobile-First Visual Prototypes
+- **CREATED**: Two structurally distinct HTML + CSS prototype systems — "Booth Ink" (ballot-form aesthetic, light colors) and "Live Count" (broadcast-scoreboard aesthetic, dark colors)
+- **CREATED**: `generate_mobile_first_mockups.py` — generator script injecting real `states_data.json` + India map SVG into both templates for interactive testing
+- **ADDED**: Booth Ink prototype (`pme-mobile-sheet.html`) with fixed state-detail info panel, full-width groups filter bar, and consolidated header (player funds, seats)
+- **ADDED**: Live Count prototype (`pme-mobile-tabs.html`) with tab-based navigation and broadcast-style scoreboard UI
+
+### 🔧 Booth Ink UI Refinements
+- **REMOVED**: Lakshadweep + Andaman & Nicobar islands from direct map interaction (replaced with batch "ALL UTS" button at bottom-left for indirect investment)
+- **CHANGED**: State-detail sheet from draggable 3-snap-point container to fixed, non-expanding info panel (addresses "too much information" feedback)
+- **CHANGED**: Groups filter UI from floating top-right box to full-width bar pinned directly under header in normal document flow (immune to CSS Grid shrink-to-fit sizing bug, stops map overlap in NE region)
+- **REMOVED**: Button background boxes from groups bar; now displaying bare icons only (active icon gets background highlight) to minimize whitespace
+- **IMPROVED**: Text and icon sizing for true iPhone 14 device proportions (previous sizing was calibrated against Claude Artifact viewer's ~150–200px chrome, which distorts perceived scale)
+- **ADDED**: Explicit `<meta charset="UTF-8">` declaration (first tag in both prototype templates) — fixes mojibake when served via non-Claude hosts (`python -m http.server`, GitHub Pages, etc.)
+
+### 📋 Technical Documentation
+- **UPDATED**: Project `CLAUDE.md` — added "Frontend technical rules" section documenting three recurring pitfalls:
+  - CSS Grid `1fr` tracks with undefined container width silently override declared item sizes
+  - Charset declaration required on every standalone HTML file (Artifact hosting sets header; other hosts do not)
+  - Artifact viewer chrome distorts proportion perception — size against real device viewport, not preview
+- **DOCUMENTED**: Three technical findings in `findings.md`:
+  - CSS Grid shrink-to-fit sizing caused real responsive-width bug in a prototype's icon grid
+  - Charset mojibake on local dev servers (Python `http.server` sends no charset header)
+  - Artifact viewer ~150–200px chrome makes `flex:1` regions appear shorter than on real device
+
 ## [2.0.5] - 2026-07-19 - Planning & Architecture Session: Mobile Parity Audit
 
 ### 📋 Planning & Analysis
