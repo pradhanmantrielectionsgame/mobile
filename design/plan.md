@@ -539,6 +539,66 @@ footer ul{ margin:0 0 16px; padding-left:18px; }
   <p class="section-note" style="margin-top:14px;">Pacing check: pure passive hoarding with zero agenda bonuses still reaches 6 tokens by phase 3 and 12 by phase 6 of an 8-phase game — real runway left even in the worst case. A player who completes agendas early reaches both thresholds faster. This also fully removes randomness from token acquisition — the original complaint that started this whole redesign was that the desktop token-odds system was "dynamic" in name only (a hardcoded, unchanging 10%/5% roll); this design doesn't fix that, it deletes the randomness outright.</p>
   <p class="section-note">Implementation note: this replaces the independent-roll logic in <code>rally-controller.js</code> (currently <code>Math.random() &lt; specialProbability</code> per token) — every awarded token becomes a flat State Rally token, and a conversion/crafting action needs to be added to the rally tray UI.</p>
 
+  <h3>State-groups rebalance: from static bonus target to tiered choice</h3>
+  <div class="gap">
+    <div class="gap-head"><h4>Same root cause as the token redesign above</h4><span class="pill missing">diagnosis</span></div>
+    <p>The regional-dominance bonus (&gt;50% popularity across a whole state group) is only as good as the groups it's scored against, and the original list — ported straight from desktop's <code>data/states_data.json</code> — had the exact "one obviously-correct target" problem called out at the top of this section: seat totals ranged from 25 (Northeast India) to 355 (Agricultural Region) with zero structure, so "rush the biggest group" was correct in every game, forever. Two more problems stacked on top: a "Union Territory" group tile duplicated the dedicated UT button cluster that exists specifically because UTs are too small to tap on the map (see <code>union-territories-container</code> in <code>index.html</code>), and Travel &amp; Tourism spanned 16 states from Ladakh to Tamil Nadu — too disparate a sweep to be worth the same payout as a tighter group.</p>
+    <p style="margin-top:10px;">Fix: re-tier every group into Large / Mid / Small bands by actual seat count (5 groups per tier), retire the UT tile plus the two weakest groups (Northeast India, Border Lands), and add one new group (National Parks &amp; Wildlife) so Small tier gets a genuine fifth option built from states that had almost no presence anywhere else in the system. Full reasoning trail, including the eight alternative themes considered and rejected along the way, is in the design conversation this plan was built from — the outcome below is what matters going forward.</p>
+  </div>
+
+  <h4>Final design: 15 groups, 5 per tier</h4>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Tier</th><th>Group</th><th>Seats</th><th>States</th><th>Change from original data</th></tr></thead>
+    <tbody>
+      <tr><td class="feat">Large</td><td class="desc">Coastal India</td><td class="desc">256</td><td class="desc">13</td><td class="desc">none</td></tr>
+      <tr><td class="feat">Large</td><td class="desc">Pilgrimage</td><td class="desc">254</td><td class="desc">9</td><td class="desc">−West Bengal, −Assam, −Rajasthan</td></tr>
+      <tr><td class="feat">Large</td><td class="desc">Agricultural Region</td><td class="desc">273</td><td class="desc">8</td><td class="desc">−West Bengal, −Assam, −Gujarat</td></tr>
+      <tr><td class="feat">Large</td><td class="desc">Industrial Corridor</td><td class="desc">239</td><td class="desc">8</td><td class="desc">+Jharkhand</td></tr>
+      <tr><td class="feat">Large</td><td class="desc">Hindi Heartland</td><td class="desc">226</td><td class="desc">11</td><td class="desc">none</td></tr>
+      <tr><td class="feat">Mid</td><td class="desc">Natural Resources</td><td class="desc">219</td><td class="desc">10</td><td class="desc">none</td></tr>
+      <tr><td class="feat">Mid</td><td class="desc">Manufacturing</td><td class="desc">210</td><td class="desc">7</td><td class="desc">none</td></tr>
+      <tr><td class="feat">Mid</td><td class="desc">Education</td><td class="desc">202</td><td class="desc">8</td><td class="desc">none</td></tr>
+      <tr><td class="feat">Mid</td><td class="desc">Travel &amp; Tourism</td><td class="desc">194</td><td class="desc">15</td><td class="desc">−Karnataka</td></tr>
+      <tr><td class="feat">Mid</td><td class="desc">Eastern Border</td><td class="desc">192</td><td class="desc">12</td><td class="desc">new — replaces Northeast India + half of Border Lands</td></tr>
+      <tr><td class="feat">Small</td><td class="desc">South India</td><td class="desc">130</td><td class="desc">6</td><td class="desc">none</td></tr>
+      <tr><td class="feat">Small</td><td class="desc">National Parks &amp; Wildlife</td><td class="desc">122</td><td class="desc">6</td><td class="desc">new</td></tr>
+      <tr><td class="feat">Small</td><td class="desc">Minority Areas</td><td class="desc">107</td><td class="desc">14</td><td class="desc">none</td></tr>
+      <tr><td class="feat">Small</td><td class="desc">Tribal Lands</td><td class="desc">86</td><td class="desc">11</td><td class="desc">none</td></tr>
+      <tr><td class="feat">Small</td><td class="desc">Western Border</td><td class="desc">74</td><td class="desc">6</td><td class="desc">new — other half of Border Lands</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="section-note" style="margin-top:10px;"><b>Retired entirely:</b> the Union Territory group tile (the underlying <code>UnionTerritory</code> data field stays — only the selectable group filter goes), Northeast India (folded into Eastern Border), Border Lands (split into Eastern/Western Border).</p>
+
+  <h4>Full member lists (changed and new groups only)</h4>
+  <div class="pwa-list">
+    <div class="pwa-item"><span class="f">Agricultural Region (273)</span><span class="d">Andhra Pradesh, Bihar, Haryana, Karnataka, Madhya Pradesh, Punjab, Uttar Pradesh, Maharashtra</span></div>
+    <div class="pwa-item"><span class="f">Pilgrimage (254)</span><span class="d">Andhra Pradesh, Bihar, Gujarat, Jammu &amp; Kashmir, Odisha, Punjab, Tamil Nadu, Uttar Pradesh, Uttarakhand</span></div>
+    <div class="pwa-item"><span class="f">Industrial Corridor (239)</span><span class="d">Delhi, Gujarat, Haryana, Madhya Pradesh, Maharashtra, Rajasthan, Uttar Pradesh, Jharkhand</span></div>
+    <div class="pwa-item"><span class="f">Travel &amp; Tourism (194)</span><span class="d">Andaman &amp; Nicobar, Dadra &amp; Nagar Haveli and Daman &amp; Diu, Delhi, Goa, Himachal Pradesh, Jammu &amp; Kashmir, Kerala, Ladakh, Lakshadweep, Puducherry, Rajasthan, Sikkim, Tamil Nadu, Uttar Pradesh, Uttarakhand</span></div>
+    <div class="pwa-item"><span class="f">Eastern Border (192)</span><span class="d">Uttarakhand, Uttar Pradesh, Bihar, West Bengal, Sikkim, Arunachal Pradesh, Assam, Meghalaya, Tripura, Mizoram, Manipur, Nagaland — the Nepal/Bhutan/Bangladesh/Myanmar/eastern-China frontier</span></div>
+    <div class="pwa-item"><span class="f">National Parks &amp; Wildlife (122)</span><span class="d">Madhya Pradesh (Kanha, Bandhavgarh — most tiger reserves of any state), Assam (Kaziranga), Rajasthan (Ranthambore), Uttarakhand (Jim Corbett — India's first national park), Odisha (Similipal, Bhitarkanika), Karnataka (Nagarhole, Bandipur)</span></div>
+    <div class="pwa-item"><span class="f">Western Border (74)</span><span class="d">Gujarat, Rajasthan, Punjab, Jammu &amp; Kashmir, Ladakh, Himachal Pradesh — the Pakistan/western-China frontier</span></div>
+  </div>
+  <p class="section-note">Coastal India, Hindi Heartland, Natural Resources, Manufacturing, Education, South India, Minority Areas, and Tribal Lands are unchanged from the original data.</p>
+
+  <h4>Groups considered and rejected — don't re-litigate these</h4>
+  <div class="gap">
+    <p><b>Mega States</b> (UP/Maharashtra/WB/Bihar/Tamil Nadu by population) — rejected as thematically arbitrary ("gamey"), not a real Indian region/identity.</p>
+    <p style="margin-top:8px;"><b>Defense Tech / Science &amp; Research</b> (Karnataka/AP/Kerala/Odisha/Maharashtra/Delhi/Tamil Nadu/Telangana, 205 seats) — real and well-sourced (every state has a specific DRDO/ISRO/BARC anchor), but landed at Mid-tier size, not Small, which was the actual gap being filled. Dropped for solving the wrong problem, not for being wrong.</p>
+    <p style="margin-top:8px;"><b>Frontier Interior</b> (Punjab/Chhattisgarh/Himachal Pradesh/Assam, 42 seats) — genuinely the most under-used states in the whole system, but the seat total is too far below the Small-tier band (74-130) to justify a standalone group.</p>
+    <p style="margin-top:8px;"><b>Freedom Struggle Landmarks</b> (Bihar/Punjab/Odisha/Jharkhand/Assam, 102), <b>Classical Dance Heritage</b> (Odisha/AP/Assam/Manipur/Rajasthan, 87), <b>Royal &amp; Ancient Heritage</b> (Rajasthan/MP/Odisha/Bihar, 115), <b>Red Corridor</b> (Chhattisgarh/Jharkhand/Odisha/Bihar/Telangana, 103) — all solid, real, correctly-sized candidates that lost out to National Parks &amp; Wildlife on theme fit alone. Any of the four is a reasonable substitute if National Parks ever gets cut for an unrelated reason.</p>
+  </div>
+
+  <h4>Implementation diffs</h4>
+  <div class="gap">
+    <p><b><code>data/states_data.json</code></b> — per-state field flips: West Bengal and Assam both lose <code>AgriculturalRegion</code> and <code>Pilgrimage</code>; Gujarat loses <code>AgriculturalRegion</code>; Rajasthan loses <code>Pilgrimage</code>; Jharkhand gains <code>IndustrialCorridor</code>; Karnataka loses <code>TravelAndTourism</code>. Add a new <code>NationalParksWildlife</code> column (true for Madhya Pradesh, Assam, Rajasthan, Uttarakhand, Odisha, Karnataka only). Add new <code>EasternBorder</code>/<code>WesternBorder</code> columns per the member lists above, and delete the old <code>BorderLands</code> and <code>NortheastIndia</code> columns entirely. Do not touch the <code>UnionTerritory</code> field — it's still read by the UT-button logic (<code>SMALL_UTS</code> in Booth Ink, <code>union-territories-container</code> in <code>index.html</code>); only the group filter tile goes.</p>
+    <p style="margin-top:10px;"><b><code>data/policy-tags.json</code></b> — every policy referencing the retired tags needs remapping or its bonus math silently points at a tag no state has anymore: Rural Development, Hindi Language, Hindutva, Indigenous Rights, Uniform Civil Code, and State's Rights all swap <code>NortheastIndia</code> → <code>EasternBorder</code>. Law and Order and National Defense both swap <code>BorderLands</code> → <code>EasternBorder, WesternBorder</code> (mapped to <em>both</em> new tags since neither policy has an obvious reason to favor one frontier — flag this specific call for confirmation before implementing, narrow to one tag if it turns out to be wrong for either policy).</p>
+    <p style="margin-top:10px;"><b>Booth Ink (<code>pme-mobile-sheet.html</code>) and <code>index.html</code></b> — both groups lists need the same three additions (Eastern Border, Western Border, National Parks &amp; Wildlife — suggested icons 🌄 / 🏔️ / 🐅) and three removals (Union Territory, Northeast India, Border Lands). Since neither file has any concept of tiers today, whether the groups bar should visually surface Large/Mid/Small (three rows? a tier label?) is a separate UI pass, not decided by this rebalance.</p>
+    <p style="margin-top:10px;"><b>Recommendation, out of scope for this pass:</b> the group list (name, icon, label, member states) is currently hand-duplicated across three places — the per-state booleans in <code>states_data.json</code>, Booth Ink's <code>GROUPS</code> const, and <code>index.html</code>'s groups-grid divs. This rebalance touches all three by hand. Before doing a second rework like this one, introduce a single canonical <code>data/state-groups.json</code> (group key → tier, seats, icon, label) that both frontends read, so a future rebalance is a one-file diff instead of a three-file one.</p>
+  </div>
+
   <h3>AI personalities</h3>
   <div class="phase">
     <div class="phase-num">·</div>

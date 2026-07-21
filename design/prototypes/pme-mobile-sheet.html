@@ -44,17 +44,31 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
 .pmini.p1{ color:var(--p1); } .pmini.p2{ color:var(--p2); }
 .pmini .sub{ color:var(--ink-faint); font-weight:600; }
 
-/* ---- groups bar: all 16 group filters, pinned full-width under the header.
-   Normal document flow, not a floating overlay — its width is exactly the
-   screen width by construction, so there's no shrink-to-fit ambiguity and
-   nothing can overflow or get squeezed unpredictably on any phone size. ---- */
-.groups-bar{ flex:0 0 auto; display:grid; grid-template-columns:repeat(8,1fr); gap:10px; padding:8px 16px; background:var(--surface); border-bottom:3px solid var(--line); }
-.gchip{ position:relative; aspect-ratio:1; padding:3px; display:flex; align-items:center; justify-content:center; font-size:clamp(21px, 9vw, 36px); line-height:1; border-radius:11px; background:none; }
-.gchip.on{ background:var(--accent); }
-.gchip .badge{ display:none; position:absolute; top:0; right:0; width:14px; height:14px; border-radius:50%; background:var(--stamp); border:2px solid var(--surface); }
+/* ---- groups bar: all 15 group filters as one genuine honeycomb, ordered
+   small-seat to large-seat (see design/plan.md "State-groups rebalance")
+   rather than boxed into 3 separate labeled tiers — the ordering itself
+   communicates size, no dividers needed. Capped at 2 rows: 8 on top / 7 on
+   bottom, both centered independently — since 8 vs 7 differ by exactly one
+   hex+gap pitch, centering each row on the same width alone produces the
+   correct half-pitch horizontal offset for interlocking, no manual
+   left-shift needed. The bottom row is then pulled up to nest into the top
+   row's gaps. Hex size is solved from the actual available width for the
+   *denser* (8-wide) row — not a grid 1fr stretch, which is what caused the
+   sizing bugs earlier in this file's history. ---- */
+.groups-bar{ --hexgap:4px; --hexw:calc((100vw - 12px - 7 * var(--hexgap)) / 8);
+  flex:0 0 auto; display:flex; flex-direction:column; padding:9px 6px 13px; background:var(--surface); border-bottom:3px solid var(--line); }
+.hex-row{ display:flex; justify-content:center; gap:var(--hexgap); }
+.hex-row.row-b{ margin-top:calc(var(--hexw) * -0.26); }
+.gchip{ position:relative; width:var(--hexw); aspect-ratio:1; background:none; }
+.gchip .hex{ width:100%; height:100%; display:flex; align-items:center; justify-content:center;
+  font-size:calc(var(--hexw) * 0.72); line-height:1; background:var(--surface2);
+  clip-path:polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  filter:drop-shadow(2px 2px 0 var(--line)); }
+.gchip.on .hex{ background:var(--accent); color:#fff; }
+.gchip .badge{ display:none; position:absolute; top:-3px; right:2px; width:13px; height:13px; border-radius:50%; background:var(--stamp); border:2px solid var(--surface); z-index:1; }
 .gchip.qualified .badge{ display:block; }
 
-.group-readout{ flex:0 0 auto; background:var(--surface2); padding:10px 16px; border-bottom:3px solid var(--line); font-size:19px; color:var(--ink-soft); line-height:1.5; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.group-readout{ flex:0 0 auto; background:var(--surface2); padding:11px 16px; border-bottom:3px solid var(--line); font-size:25px; color:var(--ink-soft); line-height:1.5; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .group-readout[hidden]{ display:none; }
 .group-readout b{ color:var(--ink); }
 
@@ -67,7 +81,7 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
 .map-wrap{ flex:1 1 auto; position:relative; min-height:0; overflow:hidden; background:
   repeating-linear-gradient(0deg, rgba(20,22,28,.025) 0px, rgba(20,22,28,.025) 1px, transparent 1px, transparent 26px),
   var(--page); }
-.india-map{ position:absolute; inset:0; width:100%; height:100%; }
+.india-map{ position:absolute; inset:0; width:100%; height:100%; transform:scale(1.1); transform-origin:center; }
 .india-map path{ fill:var(--map-base); stroke:var(--map-stroke); stroke-width:1.1; cursor:pointer; transition:opacity .25s ease, fill .2s ease; }
 .india-map path.selected{ stroke:var(--accent); stroke-width:3; stroke-dasharray:5 3; animation:march .7s linear infinite; }
 @keyframes march{ to{ stroke-dashoffset:-8; } }
@@ -78,8 +92,9 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
    map-wrap, so they sit a fixed distance above the map's own bottom edge —
    never dependent on the info panel below, which never changes size. ---- */
 .corner-left, .corner-right{ position:absolute; bottom:27px; z-index:7; }
-.corner-left{ left:27px; }
-.corner-right{ right:27px; display:flex; flex-direction:column; gap:21px; }
+.corner-left{ left:27px; display:flex; flex-direction:column; gap:14px; }
+.corner-right{ right:27px; display:flex; flex-direction:row; align-items:flex-end; gap:14px; }
+.fab-stack{ position:relative; }
 
 .uts-btn{ display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; width:138px; height:123px; border-radius:27px; background:var(--surface); border:3px solid var(--line); box-shadow:6px 6px 0 var(--line); font-size:55px; }
 .uts-btn .lb{ font-size:23px; font-weight:800; letter-spacing:.02em; color:var(--ink-soft); }
@@ -93,6 +108,55 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
 .fab.depleted{ opacity:.4; }
 .fab:active{ transform:translate(6px,6px); box-shadow:none; }
 .fab .badge{ position:absolute; top:-13px; right:-13px; min-width:39px; height:39px; padding:0 8px; border-radius:20px; background:var(--ink); color:var(--page); font-family:var(--font-mono); font-size:24px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+.fab .dot{ position:absolute; top:-4px; left:-4px; width:22px; height:22px; border-radius:50%; background:var(--stamp); border:3px solid var(--page); display:none; }
+.fab .dot.show{ display:block; }
+
+/* ---- token tray: the FAB is the single always-visible entry point; tapping
+   it expands a stack of token rows above it. Anchored to corner-right's
+   bottom edge so the toggle button never moves when the tray opens. ---- */
+.token-tray{ position:absolute; right:0; bottom:calc(100% + 15px); display:flex; flex-direction:column; gap:12px;
+  max-height:0; opacity:0; overflow:hidden; pointer-events:none;
+  transition:max-height .22s ease, opacity .18s ease; }
+.token-tray.open{ max-height:420px; opacity:1; pointer-events:auto; }
+.tray-item{ display:flex; align-items:center; gap:14px; width:294px; padding:14px 20px; border-radius:20px;
+  background:var(--surface); border:3px solid var(--line); box-shadow:5px 5px 0 var(--line);
+  transition:transform .1s ease, box-shadow .1s ease; }
+.tray-item:active{ transform:translate(5px,5px); box-shadow:none; }
+.tray-item .ti-icon{ font-size:36px; width:42px; text-align:center; flex:0 0 auto; }
+.tray-item .ti-label{ flex:1 1 auto; text-align:left; font-family:var(--font-mono); font-size:22px; font-weight:700; letter-spacing:.01em; color:var(--ink); }
+.tray-item .ti-badge{ font-family:var(--font-mono); font-size:20px; font-weight:800; padding:5px 11px; border-radius:12px; background:var(--ink); color:var(--page); min-width:48px; text-align:center; flex:0 0 auto; }
+.tray-item.armed{ background:var(--accent); border-color:var(--accent); }
+.tray-item.armed .ti-label{ color:#fff; }
+.tray-item.depleted, .tray-item.locked{ opacity:.5; }
+.tray-item.locked .ti-badge{ background:var(--ink-faint); }
+.tray-item.craftable{ animation:craft-pulse 1.4s ease-in-out infinite; }
+.tray-item.craftable .ti-badge{ background:var(--stamp); }
+.tray-item.used{ opacity:.35; }
+.tray-item.used .ti-badge{ background:var(--ink-faint); }
+@keyframes craft-pulse{
+  0%,100%{ box-shadow:5px 5px 0 var(--line); }
+  50%{ box-shadow:5px 5px 0 var(--line), 0 0 0 5px rgba(179,49,29,.35); }
+}
+
+/* ---- agenda tray: same tray-item shell, but each row tracks continuous
+   0-100% commitment progress instead of a token count, so it gets a fill
+   bar under the label instead of just a badge number. ---- */
+.tray-item .ti-col{ flex:1 1 auto; display:flex; flex-direction:column; gap:6px; min-width:0; }
+.tray-item .ti-progress-track{ height:8px; border-radius:5px; background:var(--track); overflow:hidden; }
+.tray-item .ti-progress-fill{ height:100%; background:var(--accent); border-radius:5px; transition:width .25s ease; }
+.tray-item.agenda-done .ti-progress-fill{ background:var(--stamp); }
+.tray-item.agenda-done{ opacity:.55; }
+
+/* ---- news ticker: a chyron in normal document flow at the very top of the
+   stage (breaking news, then state groups, then the group info readout),
+   echoing the same events that already fire showToast (rallies, crafts,
+   phase turns) as a scrolling wire-service feed instead of a one-off popup. ---- */
+.news-ticker{ flex:0 0 auto; height:58px; background:var(--ink); display:flex; align-items:stretch; box-shadow:0 3px 0 var(--stamp); }
+.news-ticker .tag{ flex:0 0 auto; display:flex; align-items:center; padding:0 18px; background:var(--stamp); color:#fff; font-family:var(--font-mono); font-size:24px; font-weight:800; letter-spacing:.05em; }
+.news-ticker .feed{ flex:1 1 auto; overflow:hidden; white-space:nowrap; }
+.news-ticker .feed .track{ display:inline-flex; align-items:center; height:58px; gap:48px; padding-left:48px; animation:ticker-scroll 22s linear infinite; }
+.news-ticker .feed .track span{ font-family:var(--font-mono); font-size:26px; font-weight:700; color:var(--page); }
+@keyframes ticker-scroll{ from{ transform:translateX(0); } to{ transform:translateX(-50%); } }
 
 .toast{ position:absolute; left:50%; top:21px; transform:translate(-50%,0); z-index:9; background:var(--ink); color:var(--page); font-size:30px; font-weight:700; padding:18px 33px; border-radius:15px; box-shadow:4px 4px 0 var(--accent); opacity:0; pointer-events:none; transition:opacity .25s ease; }
 .toast.show{ opacity:1; }
@@ -129,6 +193,11 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
       <span class="pmini p1">🪷 <span id="p1Funds">₹2500Cr</span> <span class="sub" id="p1Seats">— seats</span></span>
       <span class="pmini p2">✋ <span id="p2Funds">₹2500Cr</span> <span class="sub" id="p2Seats">— seats</span></span>
     </div>
+  </div>
+
+  <div class="news-ticker">
+    <span class="tag">BREAKING</span>
+    <div class="feed"><div class="track" id="newsTrack"></div></div>
   </div>
 
   <div class="groups-bar" id="groupsBox"></div>
@@ -299,11 +368,49 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
     <div class="toast" id="toast"></div>
 
     <div class="corner-left">
+      <button class="uts-btn" id="goaBtn" title="Invest in Goa — too small to tap reliably on the map">🌴<span class="lb">GOA</span></button>
       <button class="uts-btn" id="utsBtn" title="Invest in all Union Territories at once">🏛️<span class="lb">ALL UTS</span></button>
     </div>
     <div class="corner-right">
-      <button class="fab" id="rallyBtn" title="Rally">📢<span class="badge" id="rallyBadge">1</span></button>
-      <button class="fab" id="specialBtn" title="Special ability">⭐<span class="badge" id="specialBadge">1</span></button>
+     <div class="fab-stack">
+      <div class="token-tray" id="agendaTray">
+        <button class="tray-item" id="agendaInfrastructure" title="Infrastructure">
+          <span class="ti-icon">🏗️</span>
+          <span class="ti-col"><span class="ti-label">Infrastructure</span><div class="ti-progress-track"><div class="ti-progress-fill" id="agendaInfrastructureFill" style="width:0%"></div></div></span>
+          <span class="ti-badge" id="agendaInfrastructureBadge">0%</span>
+        </button>
+        <button class="tray-item" id="agendaHindutva" title="Hindutva">
+          <span class="ti-icon">🕉️</span>
+          <span class="ti-col"><span class="ti-label">Hindutva</span><div class="ti-progress-track"><div class="ti-progress-fill" id="agendaHindutvaFill" style="width:0%"></div></div></span>
+          <span class="ti-badge" id="agendaHindutvaBadge">0%</span>
+        </button>
+        <button class="tray-item" id="agendaEconomicLiberalization" title="Economic Liberalization">
+          <span class="ti-icon">💹</span>
+          <span class="ti-col"><span class="ti-label">Economic Liberalization</span><div class="ti-progress-track"><div class="ti-progress-fill" id="agendaEconomicLiberalizationFill" style="width:0%"></div></div></span>
+          <span class="ti-badge" id="agendaEconomicLiberalizationBadge">0%</span>
+        </button>
+        <button class="tray-item" id="agendaNationalDefense" title="National Defense">
+          <span class="ti-icon">🛡️</span>
+          <span class="ti-col"><span class="ti-label">National Defense</span><div class="ti-progress-track"><div class="ti-progress-fill" id="agendaNationalDefenseFill" style="width:0%"></div></div></span>
+          <span class="ti-badge" id="agendaNationalDefenseBadge">0%</span>
+        </button>
+      </div>
+      <button class="fab" id="agendaToggleBtn" title="Agenda">📜<span class="badge" id="agendaToggleBadge">4</span><span class="dot" id="agendaToggleDot"></span></button>
+     </div>
+     <div class="fab-stack">
+      <div class="token-tray" id="tokenTray">
+        <button class="tray-item" id="rallyBtn" title="State Rally">
+          <span class="ti-icon">📢</span><span class="ti-label">State Rally</span><span class="ti-badge" id="rallyBadge">5</span>
+        </button>
+        <button class="tray-item" id="specialBtn" title="Special Powerup">
+          <span class="ti-icon">⭐</span><span class="ti-label">Special Powerup</span><span class="ti-badge" id="specialBadge">5/6</span>
+        </button>
+        <button class="tray-item" id="nationwideBtn" title="Nationwide Rally">
+          <span class="ti-icon">🇮🇳</span><span class="ti-label">Nationwide Rally</span><span class="ti-badge" id="nationwideBadge">5/12</span>
+        </button>
+      </div>
+      <button class="fab" id="tokenToggleBtn" title="Tokens">🎟️<span class="badge" id="tokenToggleBadge">5</span><span class="dot" id="tokenToggleDot"></span></button>
+     </div>
     </div>
   </div>
 
@@ -321,29 +428,51 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
 </div>
 
 <script>
-const STATES = [{"name":"Andaman And Nicobar Islands","seats":1,"svgId":"INAN","groups":["UnionTerritory","CoastalIndia","TribalLands","TravelAndTourism","MinorityAreas"]},{"name":"Andhra Pradesh","seats":25,"svgId":"INAP","groups":["CoastalIndia","SouthIndia","AgriculturalRegion","Pilgrimage","NaturalResources"]},{"name":"Arunachal Pradesh","seats":2,"svgId":"INAR","groups":["NortheastIndia","BorderLands","TribalLands","MinorityAreas"]},{"name":"Assam","seats":14,"svgId":"INAS","groups":["NortheastIndia","AgriculturalRegion","BorderLands","Pilgrimage","NaturalResources","MinorityAreas"]},{"name":"Bihar","seats":40,"svgId":"INBR","groups":["HindiHeartland","AgriculturalRegion","BorderLands","Pilgrimage"]},{"name":"Chandigarh","seats":1,"svgId":"INCH","groups":["UnionTerritory","HindiHeartland","Education"]},{"name":"Chhattisgarh","seats":11,"svgId":"INCT","groups":["HindiHeartland","TribalLands","NaturalResources"]},{"name":"Dadra And Nagar Haveli And Daman And Diu","seats":2,"svgId":"INDH","groups":["UnionTerritory","CoastalIndia","TravelAndTourism"]},{"name":"Delhi","seats":7,"svgId":"INDL","groups":["UnionTerritory","HindiHeartland","IndustrialCorridor","Education","TravelAndTourism"]},{"name":"Goa","seats":2,"svgId":"INGA","groups":["CoastalIndia","TravelAndTourism","MinorityAreas"]},{"name":"Gujarat","seats":26,"svgId":"INGJ","groups":["CoastalIndia","AgriculturalRegion","BorderLands","Pilgrimage","IndustrialCorridor","Manufacturing","NaturalResources"]},{"name":"Haryana","seats":10,"svgId":"INHR","groups":["HindiHeartland","AgriculturalRegion","IndustrialCorridor","Manufacturing"]},{"name":"Himachal Pradesh","seats":4,"svgId":"INHP","groups":["HindiHeartland","BorderLands","TravelAndTourism"]},{"name":"Jammu And Kashmir","seats":5,"svgId":"INJK","groups":["UnionTerritory","BorderLands","Pilgrimage","TravelAndTourism","MinorityAreas"]},{"name":"Jharkhand","seats":14,"svgId":"INJH","groups":["HindiHeartland","TribalLands","NaturalResources"]},{"name":"Karnataka","seats":28,"svgId":"INKA","groups":["CoastalIndia","SouthIndia","AgriculturalRegion","Manufacturing","Education","TravelAndTourism"]},{"name":"Kerala","seats":20,"svgId":"INKL","groups":["CoastalIndia","SouthIndia","Education","TravelAndTourism","NaturalResources","MinorityAreas"]},{"name":"Ladakh","seats":1,"svgId":"INLA","groups":["UnionTerritory","BorderLands","TravelAndTourism"]},{"name":"Lakshadweep","seats":1,"svgId":"INLD","groups":["UnionTerritory","CoastalIndia","TravelAndTourism","MinorityAreas"]},{"name":"Madhya Pradesh","seats":29,"svgId":"INMP","groups":["HindiHeartland","AgriculturalRegion","IndustrialCorridor","TribalLands","NaturalResources"]},{"name":"Maharashtra","seats":48,"svgId":"INMH","groups":["CoastalIndia","AgriculturalRegion","IndustrialCorridor","Manufacturing","Education"]},{"name":"Manipur","seats":2,"svgId":"INMN","groups":["NortheastIndia","BorderLands","TribalLands","MinorityAreas"]},{"name":"Meghalaya","seats":2,"svgId":"INML","groups":["NortheastIndia","BorderLands","TribalLands","MinorityAreas"]},{"name":"Mizoram","seats":1,"svgId":"INMZ","groups":["NortheastIndia","BorderLands","TribalLands","MinorityAreas"]},{"name":"Nagaland","seats":1,"svgId":"INNL","groups":["NortheastIndia","BorderLands","TribalLands","MinorityAreas"]},{"name":"Odisha","seats":21,"svgId":"INOR","groups":["CoastalIndia","Pilgrimage","TribalLands","NaturalResources"]},{"name":"Puducherry","seats":1,"svgId":"INPY","groups":["UnionTerritory","CoastalIndia","SouthIndia","TravelAndTourism"]},{"name":"Punjab","seats":13,"svgId":"INPB","groups":["AgriculturalRegion","BorderLands","Pilgrimage","MinorityAreas"]},{"name":"Rajasthan","seats":25,"svgId":"INRJ","groups":["HindiHeartland","BorderLands","Pilgrimage","IndustrialCorridor","TravelAndTourism"]},{"name":"Sikkim","seats":1,"svgId":"INSK","groups":["NortheastIndia","BorderLands","TravelAndTourism","MinorityAreas"]},{"name":"Tamil Nadu","seats":39,"svgId":"INTN","groups":["CoastalIndia","SouthIndia","Pilgrimage","Manufacturing","Education","TravelAndTourism"]},{"name":"Telangana","seats":17,"svgId":"INTG","groups":["SouthIndia","Manufacturing","Education","NaturalResources"]},{"name":"Tripura","seats":2,"svgId":"INTR","groups":["NortheastIndia","BorderLands","TribalLands"]},{"name":"Uttar Pradesh","seats":80,"svgId":"INUP","groups":["HindiHeartland","AgriculturalRegion","BorderLands","Pilgrimage","IndustrialCorridor","TravelAndTourism"]},{"name":"Uttarakhand","seats":5,"svgId":"INUT","groups":["HindiHeartland","BorderLands","Pilgrimage","TravelAndTourism"]},{"name":"West Bengal","seats":42,"svgId":"INWB","groups":["CoastalIndia","AgriculturalRegion","BorderLands","Pilgrimage","Manufacturing","Education","NaturalResources","MinorityAreas"]}];
+const STATES = [{"name":"Andaman And Nicobar Islands","seats":1,"svgId":"INAN","groups":["CoastalIndia","TribalLands","TravelAndTourism","MinorityAreas"]},{"name":"Andhra Pradesh","seats":25,"svgId":"INAP","groups":["CoastalIndia","SouthIndia","AgriculturalRegion","Pilgrimage","NaturalResources"]},{"name":"Arunachal Pradesh","seats":2,"svgId":"INAR","groups":["TribalLands","MinorityAreas","EasternBorder"]},{"name":"Assam","seats":14,"svgId":"INAS","groups":["NaturalResources","MinorityAreas","NationalParksWildlife","EasternBorder"]},{"name":"Bihar","seats":40,"svgId":"INBR","groups":["HindiHeartland","AgriculturalRegion","Pilgrimage","EasternBorder"]},{"name":"Chandigarh","seats":1,"svgId":"INCH","groups":["HindiHeartland","Education"]},{"name":"Chhattisgarh","seats":11,"svgId":"INCT","groups":["HindiHeartland","TribalLands","NaturalResources"]},{"name":"Dadra And Nagar Haveli And Daman And Diu","seats":2,"svgId":"INDH","groups":["CoastalIndia","TravelAndTourism"]},{"name":"Delhi","seats":7,"svgId":"INDL","groups":["HindiHeartland","IndustrialCorridor","Education","TravelAndTourism"]},{"name":"Goa","seats":2,"svgId":"INGA","groups":["CoastalIndia","TravelAndTourism","MinorityAreas"]},{"name":"Gujarat","seats":26,"svgId":"INGJ","groups":["CoastalIndia","Pilgrimage","IndustrialCorridor","Manufacturing","NaturalResources","WesternBorder"]},{"name":"Haryana","seats":10,"svgId":"INHR","groups":["HindiHeartland","AgriculturalRegion","IndustrialCorridor","Manufacturing"]},{"name":"Himachal Pradesh","seats":4,"svgId":"INHP","groups":["HindiHeartland","TravelAndTourism","WesternBorder"]},{"name":"Jammu And Kashmir","seats":5,"svgId":"INJK","groups":["Pilgrimage","TravelAndTourism","MinorityAreas","WesternBorder"]},{"name":"Jharkhand","seats":14,"svgId":"INJH","groups":["HindiHeartland","TribalLands","NaturalResources","IndustrialCorridor"]},{"name":"Karnataka","seats":28,"svgId":"INKA","groups":["CoastalIndia","SouthIndia","AgriculturalRegion","Manufacturing","Education","NationalParksWildlife"]},{"name":"Kerala","seats":20,"svgId":"INKL","groups":["CoastalIndia","SouthIndia","Education","TravelAndTourism","NaturalResources","MinorityAreas"]},{"name":"Ladakh","seats":1,"svgId":"INLA","groups":["TravelAndTourism","WesternBorder"]},{"name":"Lakshadweep","seats":1,"svgId":"INLD","groups":["CoastalIndia","TravelAndTourism","MinorityAreas"]},{"name":"Madhya Pradesh","seats":29,"svgId":"INMP","groups":["HindiHeartland","AgriculturalRegion","IndustrialCorridor","TribalLands","NaturalResources","NationalParksWildlife"]},{"name":"Maharashtra","seats":48,"svgId":"INMH","groups":["CoastalIndia","AgriculturalRegion","IndustrialCorridor","Manufacturing","Education"]},{"name":"Manipur","seats":2,"svgId":"INMN","groups":["TribalLands","MinorityAreas","EasternBorder"]},{"name":"Meghalaya","seats":2,"svgId":"INML","groups":["TribalLands","MinorityAreas","EasternBorder"]},{"name":"Mizoram","seats":1,"svgId":"INMZ","groups":["TribalLands","MinorityAreas","EasternBorder"]},{"name":"Nagaland","seats":1,"svgId":"INNL","groups":["TribalLands","MinorityAreas","EasternBorder"]},{"name":"Odisha","seats":21,"svgId":"INOR","groups":["CoastalIndia","Pilgrimage","TribalLands","NaturalResources","NationalParksWildlife"]},{"name":"Puducherry","seats":1,"svgId":"INPY","groups":["CoastalIndia","SouthIndia","TravelAndTourism"]},{"name":"Punjab","seats":13,"svgId":"INPB","groups":["AgriculturalRegion","Pilgrimage","MinorityAreas","WesternBorder"]},{"name":"Rajasthan","seats":25,"svgId":"INRJ","groups":["HindiHeartland","IndustrialCorridor","TravelAndTourism","NationalParksWildlife","WesternBorder"]},{"name":"Sikkim","seats":1,"svgId":"INSK","groups":["TravelAndTourism","MinorityAreas","EasternBorder"]},{"name":"Tamil Nadu","seats":39,"svgId":"INTN","groups":["CoastalIndia","SouthIndia","Pilgrimage","Manufacturing","Education","TravelAndTourism"]},{"name":"Telangana","seats":17,"svgId":"INTG","groups":["SouthIndia","Manufacturing","Education","NaturalResources"]},{"name":"Tripura","seats":2,"svgId":"INTR","groups":["TribalLands","EasternBorder"]},{"name":"Uttar Pradesh","seats":80,"svgId":"INUP","groups":["HindiHeartland","AgriculturalRegion","Pilgrimage","IndustrialCorridor","TravelAndTourism","EasternBorder"]},{"name":"Uttarakhand","seats":5,"svgId":"INUT","groups":["HindiHeartland","Pilgrimage","TravelAndTourism","NationalParksWildlife","EasternBorder"]},{"name":"West Bengal","seats":42,"svgId":"INWB","groups":["CoastalIndia","Manufacturing","Education","NaturalResources","MinorityAreas","EasternBorder"]}];
+// Tiered per design/plan.md's "State-groups rebalance" — 5 groups per tier,
+// ordered by seat count within each tier (see that section for the full
+// seat-total table and the reasoning behind every add/drop/split).
+// Ordered ascending by seat count (smallest group first) rather than boxed
+// by tier — see design/plan.md "State-groups rebalance" for the full table.
 const GROUPS = [
-  {key:'UnionTerritory', icon:'🏛️', label:'Union Territory'},
-  {key:'CoastalIndia', icon:'🌊', label:'Coastal India'},
-  {key:'NortheastIndia', icon:'🌄', label:'Northeast India'},
-  {key:'SouthIndia', icon:'🌴', label:'South India'},
-  {key:'HindiHeartland', icon:'🕉️', label:'Hindi Heartland'},
-  {key:'AgriculturalRegion', icon:'🌾', label:'Agricultural Region'},
-  {key:'BorderLands', icon:'🛡️', label:'Border Lands'},
-  {key:'Pilgrimage', icon:'🙏', label:'Pilgrimage'},
-  {key:'IndustrialCorridor', icon:'🏭', label:'Industrial Corridor'},
-  {key:'Manufacturing', icon:'⚙️', label:'Manufacturing'},
-  {key:'Education', icon:'🎓', label:'Education'},
-  {key:'TribalLands', icon:'🌳', label:'Tribal Lands'},
-  {key:'TravelAndTourism', icon:'✈️', label:'Travel & Tourism'},
-  {key:'NaturalResources', icon:'⛏️', label:'Natural Resources'},
-  {key:'MinorityAreas', icon:'🕌', label:'Minority Areas'},
+  {key:'WesternBorder', icon:'🏔️', label:'Western Border', seats:74},
+  {key:'TribalLands', icon:'🌳', label:'Tribal Lands', seats:86},
+  {key:'MinorityAreas', icon:'🕌', label:'Minority Areas', seats:107},
+  {key:'NationalParksWildlife', icon:'🐅', label:'National Parks & Wildlife', seats:122},
+  {key:'SouthIndia', icon:'🌴', label:'South India', seats:130},
+  {key:'EasternBorder', icon:'🌄', label:'Eastern Border', seats:192},
+  {key:'TravelAndTourism', icon:'✈️', label:'Travel & Tourism', seats:194},
+  {key:'Education', icon:'🎓', label:'Education', seats:202},
+  {key:'Manufacturing', icon:'⚙️', label:'Manufacturing', seats:210},
+  {key:'NaturalResources', icon:'⛏️', label:'Natural Resources', seats:219},
+  {key:'HindiHeartland', icon:'🕉️', label:'Hindi Heartland', seats:226},
+  {key:'IndustrialCorridor', icon:'🏭', label:'Industrial Corridor', seats:239},
+  {key:'Pilgrimage', icon:'🙏', label:'Pilgrimage', seats:254},
+  {key:'CoastalIndia', icon:'🌊', label:'Coastal India', seats:256},
+  {key:'AgriculturalRegion', icon:'🌾', label:'Agricultural Region', seats:273},
 ];
 const SMALL_UTS = ['INDL','INCH','INDH','INPY','INLD','INAN'];
 const COLORS = { p1:'#E8871C', p2:'#1C8A4B', others:'#E4E7EC' };
 
 let pop = {}, selectedId = 'INUP', activeGroup = null, armedToken = null;
-const tokenCounts = { simple:1, special:1 };
+// Reworked 3-flavor token economy: stateRally is the only earned resource
+// (2/phase, accumulates, no more use-it-or-lose-it). Special Powerup and
+// Nationwide Rally are crafted by converting banked stateRally tokens, then
+// each usable exactly once per game — see design/plan.md "Unlock mechanism".
+const CRAFT_COST = { special:6, nationwide:12 };
+const tokenCounts = { stateRally:5 };
+const crafted = { special:false, nationwide:false };
+const used = { special:false, nationwide:false };
+let trayOpen = false;
+
+// Politician-driven agendas — see design/plan.md "The 20-politician roster".
+// Modi's signature 4 for this mockup; each is committed to independently
+// (not contested), +25% per tap, completion pays a flavor popularity bump
+// and counts as a breaking-news moment same as a rally/special power.
+const AGENDAS = ['Infrastructure','Hindutva','EconomicLiberalization','NationalDefense'];
+const agendaProgress = { Infrastructure:0, Hindutva:0, EconomicLiberalization:0, NationalDefense:0 };
+let agendaTrayOpen = false;
+let phase = 1;
 
 function seed(){
   const ids = STATES.map(s=>s.svgId).slice();
@@ -423,13 +552,31 @@ function showToast(msg){
   showToast._h = setTimeout(()=>t.classList.remove('show'), 1600);
 }
 
+// Breaking-news ticker: only the game-changing moments — a State Rally
+// landing, a Special Powerup or Nationwide Rally going off — get a headline.
+// Arming prompts, craft confirmations, UT taps, and phase turns stay
+// toast-only; pushNews() is called explicitly at those three sites, not
+// hooked into every showToast.
+const newsFeed = [];
+function pushNews(msg){
+  newsFeed.unshift(msg);
+  if(newsFeed.length>6) newsFeed.pop();
+  renderNews();
+}
+function renderNews(){
+  const items = newsFeed.length ? newsFeed : ['Welcome to Booth Ink — the campaign trail begins.'];
+  const html = items.map(m=>`<span>${m}</span>`).join('<span aria-hidden="true">&nbsp;&nbsp;•&nbsp;&nbsp;</span>');
+  document.getElementById('newsTrack').innerHTML = html + '<span aria-hidden="true">&nbsp;&nbsp;•&nbsp;&nbsp;</span>' + html;
+}
+
 document.getElementById('map').addEventListener('click', e=>{
   const path = e.target.closest('path[id]'); if(!path) return;
   selectState(path.id);
-  if(armedToken){
-    investIn(path.id, armedToken==='special'?4:2);
-    tokenCounts[armedToken]=0;
-    showToast(`${armedToken==='special'?'⭐ Special':'📢 Rally'} deployed`);
+  if(armedToken==='stateRally'){
+    investIn(path.id, 2);
+    tokenCounts.stateRally--;
+    showToast('📢 State Rally deployed');
+    pushNews(`📢 BREAKING: State Rally held in ${STATES.find(s=>s.svgId===path.id).name}`);
     armedToken=null; renderTokens();
   } else investIn(path.id, 1);
 });
@@ -437,6 +584,12 @@ document.getElementById('map').addEventListener('click', e=>{
 document.getElementById('utsBtn').addEventListener('click', ()=>{
   SMALL_UTS.forEach(id => investIn(id, 1));
   showToast('Invested in all Union Territories');
+});
+
+document.getElementById('goaBtn').addEventListener('click', ()=>{
+  selectState('INGA');
+  investIn('INGA', 1);
+  showToast('Invested in Goa');
 });
 
 function applyGroupHighlight(){
@@ -457,41 +610,150 @@ function applyGroupHighlight(){
 
 function buildGroupsBox(){
   const box = document.getElementById('groupsBox');
-  GROUPS.forEach(g=>{
-    const b = document.createElement('button');
-    b.className='gchip'; b.dataset.key=g.key; b.title=g.label;
-    b.innerHTML = `${g.icon}<span class="badge"></span>`;
-    b.addEventListener('click', ()=>{
-      activeGroup = (activeGroup===g.key) ? null : g.key;
-      document.querySelectorAll('.gchip').forEach(x=>x.classList.toggle('on', x.dataset.key===activeGroup));
-      applyGroupHighlight();
+  // 8 on top, 7 on bottom — 15 split as evenly as possible across 2 rows.
+  const rows = [GROUPS.slice(0, 8), GROUPS.slice(8)];
+  rows.forEach((rowMembers, i)=>{
+    const row = document.createElement('div');
+    row.className = `hex-row ${i===0?'row-a':'row-b'}`;
+    rowMembers.forEach(g=>{
+      const b = document.createElement('button');
+      b.className='gchip'; b.dataset.key=g.key; b.title=`${g.label} — ${g.seats} seats`;
+      b.innerHTML = `<span class="hex">${g.icon}</span><span class="badge"></span>`;
+      b.addEventListener('click', ()=>{
+        activeGroup = (activeGroup===g.key) ? null : g.key;
+        document.querySelectorAll('.gchip').forEach(x=>x.classList.toggle('on', x.dataset.key===activeGroup));
+        applyGroupHighlight();
+      });
+      row.appendChild(b);
     });
-    box.appendChild(b);
+    box.appendChild(row);
   });
 }
 
-function renderTokens(){
-  document.getElementById('rallyBadge').textContent = tokenCounts.simple;
-  document.getElementById('specialBadge').textContent = tokenCounts.special;
-  document.getElementById('rallyBtn').classList.toggle('depleted', tokenCounts.simple<=0);
-  document.getElementById('specialBtn').classList.toggle('depleted', tokenCounts.special<=0);
-  document.getElementById('rallyBtn').classList.toggle('armed', armedToken==='simple');
-  document.getElementById('specialBtn').classList.toggle('armed', armedToken==='special');
+function craftSlotState(flavor){
+  if(used[flavor]) return 'used';
+  if(crafted[flavor]) return 'ready';
+  if(tokenCounts.stateRally >= CRAFT_COST[flavor]) return 'craftable';
+  return 'locked';
 }
-function armToken(type){
-  if(tokenCounts[type]<=0) return;
-  armedToken = (armedToken===type) ? null : type;
-  renderTokens();
-  if(armedToken) showToast('Tap a state to deploy');
-}
-document.getElementById('rallyBtn').addEventListener('click', ()=> armToken('simple'));
-document.getElementById('specialBtn').addEventListener('click', ()=> armToken('special'));
 
+function setTray(open){
+  trayOpen = open;
+  document.getElementById('tokenTray').classList.toggle('open', trayOpen);
+  if(open) setAgendaTray(false);
+}
+
+function setAgendaTray(open){
+  agendaTrayOpen = open;
+  document.getElementById('agendaTray').classList.toggle('open', agendaTrayOpen);
+  if(open) setTray(false);
+}
+
+function renderAgendas(){
+  let doneCount = 0;
+  AGENDAS.forEach(name=>{
+    const pct = agendaProgress[name];
+    const done = pct>=100;
+    if(done) doneCount++;
+    document.getElementById(`agenda${name}Fill`).style.width = pct+'%';
+    document.getElementById(`agenda${name}Badge`).textContent = done ? '✓' : pct+'%';
+    document.getElementById(`agenda${name}`).classList.toggle('agenda-done', done);
+  });
+  document.getElementById('agendaToggleBadge').textContent = AGENDAS.length - doneCount;
+  document.getElementById('agendaToggleDot').classList.toggle('show', doneCount>0 && doneCount<AGENDAS.length);
+}
+
+function investAgenda(name){
+  if(agendaProgress[name]>=100) return;
+  agendaProgress[name] = Math.min(100, agendaProgress[name]+25);
+  if(agendaProgress[name]>=100){
+    showToast(`${name} agenda completed`);
+    pushNews(`📜 BREAKING: ${name.replace(/([A-Z])/g,' $1').trim()} agenda fully committed`);
+    investIn(selectedId, 3);
+  } else {
+    showToast(`Invested in ${name}`);
+  }
+  renderAgendas();
+}
+
+function renderTokens(){
+  document.getElementById('rallyBadge').textContent = tokenCounts.stateRally;
+  document.getElementById('rallyBtn').classList.toggle('depleted', tokenCounts.stateRally<=0);
+  document.getElementById('rallyBtn').classList.toggle('armed', armedToken==='stateRally');
+
+  let readyCount = 0;
+  [['special','specialBtn','specialBadge','⭐'], ['nationwide','nationwideBtn','nationwideBadge','🇮🇳']]
+  .forEach(([flavor, btnId, badgeId])=>{
+    const state = craftSlotState(flavor);
+    const btn = document.getElementById(btnId), badge = document.getElementById(badgeId);
+    btn.classList.remove('locked','craftable','used','armed');
+    if(state==='locked'){ btn.classList.add('locked'); badge.textContent = `${tokenCounts.stateRally}/${CRAFT_COST[flavor]}`; }
+    else if(state==='craftable'){ btn.classList.add('craftable'); badge.textContent = `${tokenCounts.stateRally}/${CRAFT_COST[flavor]}`; readyCount++; }
+    else if(state==='ready'){ btn.classList.toggle('armed', armedToken===flavor); badge.textContent = 'READY'; readyCount++; }
+    else { btn.classList.add('used'); badge.textContent = '✓'; }
+  });
+
+  // toggle FAB mirrors the tray's headline number (banked State Rally) and
+  // flags a red dot when something inside is worth opening the tray for.
+  document.getElementById('tokenToggleBadge').textContent = tokenCounts.stateRally;
+  document.getElementById('tokenToggleDot').classList.toggle('show', readyCount>0);
+  document.getElementById('tokenToggleBtn').classList.toggle('armed', !!armedToken);
+}
+
+function armToken(type){
+  if(type==='stateRally'){
+    if(tokenCounts.stateRally<=0) return;
+    armedToken = (armedToken===type) ? null : type;
+    renderTokens();
+    setTray(false);
+    if(armedToken) showToast('Tap a state to deploy');
+    return;
+  }
+  // special / nationwide: craft on first tap once affordable, use on the next tap.
+  const state = craftSlotState(type);
+  if(state==='locked'){ showToast(`Need ${CRAFT_COST[type]} State Rally tokens (have ${tokenCounts.stateRally})`); return; }
+  if(state==='used') return;
+  if(state==='craftable'){
+    tokenCounts.stateRally -= CRAFT_COST[type];
+    crafted[type] = true;
+    armedToken = null;
+    renderTokens();
+    showToast(type==='special' ? '⭐ Special Powerup crafted — tap to activate' : '🇮🇳 Nationwide Rally crafted — tap to activate');
+    return;
+  }
+  // ready: activate immediately — both effects resolve instantly, no map tap needed.
+  used[type] = true;
+  armedToken = null;
+  if(type==='nationwide'){
+    STATES.forEach(s=> investIn(s.svgId, 3));
+    showToast('🇮🇳 Nationwide Rally activated');
+    pushNews('🇮🇳 BREAKING: Nationwide Rally launched — every state feels it');
+  } else {
+    investIn(selectedId, 6);
+    showToast('⭐ Special Power activated');
+    pushNews('⭐ BREAKING: Special Power invoked');
+  }
+  renderTokens();
+  setTray(false);
+}
+document.getElementById('rallyBtn').addEventListener('click', ()=> armToken('stateRally'));
+document.getElementById('specialBtn').addEventListener('click', ()=> armToken('special'));
+document.getElementById('nationwideBtn').addEventListener('click', ()=> armToken('nationwide'));
+document.getElementById('tokenToggleBtn').addEventListener('click', ()=> setTray(!trayOpen));
+
+AGENDAS.forEach(name=> document.getElementById(`agenda${name}`).addEventListener('click', ()=> investAgenda(name)));
+document.getElementById('agendaToggleBtn').addEventListener('click', ()=> setAgendaTray(!agendaTrayOpen));
+
+document.getElementById('resetBtn').title = 'Next phase (demo): +2 State Rally';
 document.getElementById('resetBtn').addEventListener('click', ()=>{
   seed(); paintMap(); updateCard(); updateSeatProjection(); applyGroupHighlight();
-  tokenCounts.simple=1; tokenCounts.special=1; armedToken=null; renderTokens();
+  phase = Math.min(8, phase+1);
+  document.querySelector('.phase-chip b').textContent = `${phase}/8`;
+  tokenCounts.stateRally += 2;
+  armedToken=null; renderTokens();
+  showToast(`Phase ${phase} — +2 State Rally`);
 });
 
-seed(); buildGroupsBox(); renderTokens(); paintMap();
+seed(); buildGroupsBox(); renderTokens(); renderAgendas(); paintMap(); renderNews();
 selectState('INUP'); updateSeatProjection();
 </script>

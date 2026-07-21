@@ -36,7 +36,7 @@ async function useSimpleRallyToken(stateId, playerId) {
         // Track rally for visual indicator (only for simple rallies)
         if (!playerData.ralliesHeld.includes(stateId)) {
             playerData.ralliesHeld.push(stateId);
-            addRallyIndicatorToState(stateId);
+            addPersistentRallyIndicatorToState(stateId, playerId);
         }
         
         // Play rally sound effect
@@ -158,13 +158,16 @@ function updateRallyTokenDisplay() {
     }
     
     if (specialTokenCount) {
-        specialTokenCount.textContent = player1Data.rallyTokens.special;
+        specialTokenSlot.innerHTML = `<div class="special-token-card" style="display:flex; align-items:center; justify-content:center; background:white; border:2px solid #FFD700; border-radius:6px; padding:4px;">
+           <span class="golden-star" style="font-size:18px;">⭐</span>
+           <div class="token-count" style="margin-left:4px; font-weight:bold;">${player1Data.rallyTokens.special}</div>
+        </div>`;
         if (player1Data.rallyTokens.special <= 0) {
-            specialTokenSlot?.classList.add('disabled');
-            specialTokenSlot?.classList.remove('can-pickup');
+            specialTokenSlot.classList.add('disabled');
+            specialTokenSlot.classList.remove('can-pickup');
         } else {
-            specialTokenSlot?.classList.remove('disabled');
-            specialTokenSlot?.classList.add('can-pickup');
+            specialTokenSlot.classList.remove('disabled');
+            specialTokenSlot.classList.add('can-pickup');
         }
     }
     

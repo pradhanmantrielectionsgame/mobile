@@ -1,5 +1,15 @@
 # Findings
 
+## 2026-07-20 — Collapsed trays (`max-height:0`) still occupy their full declared width in flex layouts
+**Finding:** In Booth Ink's expandable token/agenda tray pattern, a tray collapsed via `max-height:0; overflow:hidden` still consumed its full 294px declared width as a flex sibling, even while rendering zero height. This silently pushed two adjacent FAB toggle buttons far apart despite an explicit small `gap` on their shared flex row — the visible gap looked huge because ~171px of invisible tray width sat between each button and its own stack.
+**Context:** Debugging an unexpectedly large gap between the agenda (📜) and tokens (🎟️) FAB buttons after wiring up the second expandable tray.
+**Implication:** Any collapsible tray/panel meant to sit "above" a fixed toggle button in this UI must be taken out of normal flow with `position:absolute` (anchored to a `position:relative` wrapper around just that button) — collapsing height alone does not make a flex sibling neutral to layout width.
+
+## 2026-07-20 — Honeycomb rows with different item counts self-align without manual offset
+**Finding:** Building the 2-row hex "groups bar" (8 hexagons on top, 7 on bottom), simply centering each row independently (`justify-content:center`, no horizontal shift) produced a correctly-interlocked honeycomb — no manual `margin-left`/transform offset was needed. An 8-item row and a 7-item row, both centered on the same container width, differ by exactly half a hex+gap pitch, which is precisely the offset a honeycomb needs.
+**Context:** Implementing the final groups-bar layout after earlier attempts at explicit tier-clustering produced comically oversized or undersized hexagons (see the existing 2026-07-19 CSS Grid `1fr` finding below — same shrink-to-fit trap, hit again with `repeat(5,1fr)` inside 3 tier rows before being fixed with an explicit `min(vw,px)`/`calc()` hex size).
+**Implication:** For any future alternating-row hex/brick layout in this project, prefer differing row item-counts (N, N−1) plus independent centering over manually computed horizontal offsets — it's simpler and self-corrects automatically if the hex size changes later.
+
 ## 2026-07-20 — Desktop's random-events.js only ever affects Player 1
 **Finding:** In `random-events.js` (desktop repo), `applyRandomEvent()` hardcodes `isPositive` events to help Player 1 and negative events to hurt Player 1 — Player 2's popularity is never touched by any random event, regardless of type. This is a bug, not a design choice.
 **Context:** Investigated after the user reported that desktop's random events, home-state bonus, and token odds — despite being "randomization" systems — never made replays feel different.
