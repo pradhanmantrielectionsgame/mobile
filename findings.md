@@ -1,5 +1,15 @@
 # Findings
 
+## 2026-07-20 — Booth Ink prototype has no real game logic behind its UI
+**Finding:** `design/prototypes/pme-mobile-sheet.html` (759 lines, one inline `<script>` block, 20 functions) is UI/interaction-only — its `seed()` function fabricates mock popularity numbers and `investIn()`/`renderTokens()` etc. operate on that fake data. There is no real popularity math, campaign-fund accounting, phase timer, or policy-tag resolution; none of it calls into or matches the real engine in `js/*.js`.
+**Context:** Investigated while evaluating the user's proposal to "abandon the old mobile project" and restart from just `design/plan.md` + Booth Ink, to check whether that would actually preserve working game logic.
+**Implication:** Booth Ink is the UI/markup layer only. Any work wiring it into the real game must rewire its stub functions to call the actual engine functions in `investment-system.js`, `rally-system.js`, etc. — it is not a functional replacement for `index.html` + `js/*.js`, which stays as the engine regardless of skin changes.
+
+## 2026-07-20 — Service worker registration needs a secure context; LAN IPs don't qualify, only localhost or real HTTPS
+**Finding:** The secure-context exemption that lets service workers register over plain HTTP only applies to `localhost`/`127.0.0.1` on the same machine. Reaching a local dev server from a phone over LAN (e.g. `http://192.168.x.x:8000`) is a plain-HTTP, non-localhost origin from the phone's perspective — not a secure context — so service worker registration (and by extension real PWA install/offline behavior) will not work there.
+**Context:** User asked whether a local server is sufficient for testing the planned PWA scaffolding (Phase 0 of `design/plan.md`'s roadmap), or whether GitHub Pages is required.
+**Implication:** Desktop-only iteration on manifest/service-worker code can use `localhost` freely. Testing actual "Add to Home Screen" + offline caching on a physical iPhone requires real HTTPS reachable from the phone — GitHub Pages (already in the stack, zero extra setup) or a tunnel (ngrok/Cloudflare Tunnel) for faster iteration than push-to-Pages each time.
+
 ## 2026-07-20 — Collapsed trays (`max-height:0`) still occupy their full declared width in flex layouts
 **Finding:** In Booth Ink's expandable token/agenda tray pattern, a tray collapsed via `max-height:0; overflow:hidden` still consumed its full 294px declared width as a flex sibling, even while rendering zero height. This silently pushed two adjacent FAB toggle buttons far apart despite an explicit small `gap` on their shared flex row — the visible gap looked huge because ~171px of invisible tray width sat between each button and its own stack.
 **Context:** Debugging an unexpectedly large gap between the agenda (📜) and tokens (🎟️) FAB buttons after wiring up the second expandable tray.

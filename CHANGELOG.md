@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### 🧹 Repository Hygiene — Stale Docs & Prototype Cleanup
+- **REMOVED**: 10 stale docs/ files — ARCHITECTURE.md, CODE_STYLE.md, GLOSSARY.md, ONBOARDING.md, TESTING_GUIDE.md, README.md, DEVELOPER_GUIDE.md, RALLY_TOKENS_SYSTEM.md, UI_DESIGN_REQUIREMENTS.md, feature-request.md
+  - Reason: 5 were thin generic scaffolding; 2 documented mechanics superseded by replayability redesign and Booth Ink; 1 documented old control scheme (Shift+Click) being replaced by touch tray; 1 was a closed task log
+- **REMOVED**: 10+ superseded design/prototypes/ files — pme-mobile-tabs.html, pme-mobile-sheet-template.html, pme-mobile-tabs-template.html, pme-play-broadcast.html, pme-play-evm.html, pme-play-gazette.html, pme-play-template.html, pme-visual-directions.html, generate_mobile_first_mockups.py, generate_play_mockups.py, stray server.log
+  - Reason: Only pme-mobile-sheet.html (Booth Ink) is the committed UI direction per CLAUDE.md; the others were dead exploration, templates, and unused generator scripts
+- **REMOVED**: live_checklist.md (unfilled template, never used)
+- **Rationale**: Reduce context bloat and increase clarity during AI-assisted development; git history preserves all deletions if needed; zero engine-code changes, purely hygiene
+
 ### 🎮 Game Design — Replayability Overhaul
 
 #### Design Decisions & Architecture

@@ -14,12 +14,15 @@ A turn-based election simulation game on a mobile-first interactive India map. P
    ```bash
    python -m http.server 8000
    ```
-   Then open `http://localhost:8000` or add to iPhone home screen via `http://<your-ip>:8000`.
+   Then open `http://localhost:8000` or add to iPhone home screen via `http://<your-ip>:8000` (current game build at `index.html`).
 
-3. **Play:**
-   - Tap states to invest (click with Shift+Click to alternate players locally)
+3. **Play the current build:**
+   - Tap states to invest
+   - **Shift+Click** a state to alternate players (local hotseat; no AI opponent yet)
    - Use group filter bar to show/hide state groups
    - Rally token buttons boost a state (regular) or nationwide (special)
+
+**Note:** The game engine (js/, data/, assets/, index.html) is functional and working. A redesigned mobile UI (Booth Ink, in `design/prototypes/pme-mobile-sheet.html`) is in progress per `design/plan.md` — the old Shift+Click/Alt+Click controls below apply to the current index.html build, not the incoming redesigned UI.
 
 ## Installation
 
@@ -40,14 +43,18 @@ python -m http.server 8000
 
 ## Usage
 
-### Controls
+### Controls (Current index.html Build)
 
 - **Tap a state** → invest your Player budget into that state's popularity
-- **Hold/long-press a state** → see state details (name, current leader, group)
+- **Shift+Click a state** → alternate to Player 2 (local hotseat, no AI opponent yet)
+- **Alt+Click a state** → open rally token menu
+- **Ctrl+Click a state** → info-only (no interaction)
 - **Rally button** (bottom-right) → open rally token picker; tap token to boost one state
 - **Special rally button** → deploy special rally token (5% probability per phase) for nationwide boost
 - **Group filter bar** (under header) → toggle visibility of state groups (political alliances)
 - **UT (Union Territory) panel** (bottom-left) → batch-invest into all small UTs at once
+
+**Note:** The redesigned Booth Ink UI (coming in Phase 1 per `design/plan.md`) will replace these keyboard-based controls with a touch-first tray-based interaction pattern.
 
 ### Game Phases
 
@@ -84,11 +91,23 @@ The game uses `game-config.json` for all tunable parameters (rally token boosts,
 | [ADR-0002: Firebase/Supabase Backend](docs/adr/0002-firebase-matchmaking-backend.md) | Accepted | Zero-ops, anonymous auth, free tier covers hobby scale |
 | [ADR-0003: Capacitor (not React Native/Flutter)](docs/adr/0003-capacitor-native-distribution.md) | Accepted | Preserve DOM/CSS/SVG fidelity; game is turn-based, not real-time |
 
+## Current Status
+
+**Game Engine:** Functional and stable. The game logic (`js/*.js`, `data/`, assets) is working and not being rewritten. All current work is UI-focused.
+
+**UI Migration:** Redesigned mobile UI direction is Booth Ink (`design/prototypes/pme-mobile-sheet.html`). This is a new UI skin replacing the old index.html/styles.css, not a replacement for the game engine. The migration is planned in phases:
+- **Phase 0** (PWA scaffolding) — Backend matchmaking setup, manifest.json, service worker. *Not yet started.*
+- **Phase 1** — Booth Ink implementation, AI opponent port, session start/end screens
+- **Phase 2+** — See `design/plan.md` roadmap for replayability redesign and content phases
+
+For more detail, see `design/plan.md`.
+
 ## Known Limitations
 
-- **No AI opponent yet** — Player 2 is same-device hotseat (Shift+Click) only; `ai-player-controller.js` from desktop is not ported
-- **No session boundaries** — no welcome screen, game-over screen, or options menu (all currently stubs logging to console)
-- **Replayability redesign pending implementation** — design complete (see design/plan.md); includes 20-politician roster with personal signature agendas, special powers with instant cost/benefit tradeoffs, and 3-flavor rally-token economy; now awaiting code implementation
+- **No AI opponent yet** — Player 2 is same-device hotseat (Shift+Click in index.html) only; `ai-player-controller.js` from desktop is not ported
+- **No session boundaries** — no welcome screen, game-over screen, or functional options menu (currently stubs)
+- **Replayability design complete; implementation pending** — design/plan.md covers the full redesign (20-politician roster, special powers with instant cost/benefit tradeoffs, 3-flavor rally-token economy); code implementation is Phase 4+
+- **Booth Ink UI not yet wired to real engine** — `pme-mobile-sheet.html` has UI/interaction only; operates on mock data, not the real js/* engine. Wiring starts Phase 1
 - **Small UTs not directly tappable** — Delhi, Chandigarh, Puducherry, etc. route through button-cluster pattern (confirmed as production-ready, see findings.md)
 - **SVG map undersized** — current `assets/icons/INDIA_V3_smaller_viewbox.svg` wastes ~27% of viewBox area; tightened viewBox would render 27% larger with zero crop risk
 
