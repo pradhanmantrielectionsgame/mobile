@@ -468,10 +468,24 @@ async function loadStatesData(){
     seats: STATES.filter(s => s.groups.includes(g.key)).reduce((a, s) => a + s.seats, 0),
   }));
 }
+
+// baseCostPerSeat/startingFunds mirror data/game-config.json (single source
+// of truth per CLAUDE.md) — defaults here only cover the fetch failing.
+let gameConfig = { baseCostPerSeat: 10, startingFunds: 2500 };
+async function loadGameConfig(){
+  const res = await fetch('../../data/game-config.json');
+  const raw = await res.json();
+  gameConfig.baseCostPerSeat = raw.investmentSystem.baseCostPerSeat;
+  gameConfig.startingFunds = raw.playerSettings.startingFunds;
+}
 const SMALL_UTS = ['INCH','INDH','INPY','INLD','INAN']; // excludes Delhi — it has its own dedicated button now
 const COLORS = { p1:'#E8871C', p2:'#1C8A4B', others:'#AEB4C0' };
 
 let pop = {}, selectedId = 'INUP', activeGroup = null, armedToken = null;
+// Only player 1 spends cash here — Booth Ink has no player-2 turn/input
+// path yet (see findings.md), so p2's header funds figure stays decorative.
+let funds = { p1: 2500 };
+function updateFundsDisplay(){ document.getElementById('p1Funds').textContent = `₹${funds.p1}Cr`; }
 // Reworked 3-flavor token economy: stateRally is the only earned resource
 // (2/phase, accumulates, no more use-it-or-lose-it). Special Powerup and
 // Nationwide Rally are crafted by converting banked stateRally tokens, then
@@ -552,6 +566,19 @@ function selectState(id){
   selectedId = id; updateCard();
 }
 
+// Direct cash investment (map tap, UT/Delhi/Goa quick-invest buttons) costs
+// funds; rally tokens, agenda completion, and special-power effects call
+// investIn() directly since those are already paid for via their own
+// token/agenda resource, not cash.
+function investInPaid(id, mult){
+  const s = STATES.find(s => s.svgId === id); if(!s) return;
+  const cost = s.seats * gameConfig.baseCostPerSeat;
+  if(funds.p1 < cost){ showToast('Insufficient funds'); return; }
+  funds.p1 -= cost;
+  updateFundsDisplay();
+  investIn(id, mult);
+}
+
 function investIn(id, mult){
   const p = pop[id]; if(!p) return;
   const take = Math.min(4*mult, p.others);
@@ -595,23 +622,23 @@ document.getElementById('map').addEventListener('click', e=>{
     showToast('📢 State Rally deployed');
     pushNews(`📢 BREAKING: State Rally held in ${STATES.find(s=>s.svgId===path.id).name}`);
     armedToken=null; renderTokens();
-  } else investIn(path.id, 1);
+  } else investInPaid(path.id, 1);
 });
 
 document.getElementById('utsBtn').addEventListener('click', ()=>{
-  SMALL_UTS.forEach(id => investIn(id, 1));
+  SMALL_UTS.forEach(id => investInPaid(id, 1));
   showToast('Invested in all Union Territories');
 });
 
 document.getElementById('delhiBtn').addEventListener('click', ()=>{
   selectState('INDL');
-  investIn('INDL', 1);
+  investInPaid('INDL', 1);
   showToast('Invested in Delhi');
 });
 
 document.getElementById('goaBtn').addEventListener('click', ()=>{
   selectState('INGA');
-  investIn('INGA', 1);
+  investInPaid('INGA', 1);
   showToast('Invested in Goa');
 });
 
@@ -777,10 +804,11 @@ document.getElementById('resetBtn').addEventListener('click', ()=>{
   showToast(`Phase ${phase} — +2 State Rally`);
 });
 
-loadStatesData().then(() => {
-  seed(); buildGroupsBox(); renderTokens(); renderAgendas(); paintMap(); renderNews();
+Promise.all([loadStatesData(), loadGameConfig()]).then(() => {
+  funds.p1 = gameConfig.startingFunds;
+  seed(); buildGroupsBox(); renderTokens(); renderAgendas(); paintMap(); renderNews(); updateFundsDisplay();
   selectState('INUP'); updateSeatProjection();
 }).catch(err => {
-  console.error('Failed to load data/states_data.json — is this served over http(s), not file://?', err);
+  console.error('Failed to load data/states_data.json or game-config.json — is this served over http(s), not file://?', err);
 });
 </script>

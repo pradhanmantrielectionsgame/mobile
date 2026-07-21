@@ -1,5 +1,60 @@
 # Findings
 
+## 2026-07-21 — Desktop's real direct-investment cost is seats × 1 (millions), not seats × 10
+**Finding:** `campaign-spending.js`'s `calculateBaseCost()` on the desktop app computes cost as `seats × 1`, in millions — a full order of magnitude different from mobile's `data/game-config.json` assumption of `seats × 10` (crores).
+**Context:** Auditing the in-game economy per explicit instruction to use the desktop app as reference, not mobile's ported/known-broken code.
+**Implication:** Any cost/budget tuning should compare cost-to-lifetime-budget ratios, not raw numbers, when reconciling desktop's and mobile's differently-scaled economies.
+
+## 2026-07-21 — Desktop's home-state bonus is both a cost discount and a flat popularity floor, applied together
+**Finding:** `home-state-bonus.js` applies a 20% discount on every campaign cost (`getCampaignCost`) **and** a separate one-time flat +20 percentage-point popularity floor the moment the home state is touched (`applyHomeStateBonus`) — not a per-tap scaling multiplier, and not an either/or choice.
+**Context:** Read directly while resolving a design question about whether a politician's regional affinity should discount cost or boost effect.
+**Implication:** Desktop's actual precedent combines both mechanisms simultaneously; worth knowing before finalizing mobile's politician-state affinity design.
+
+## 2026-07-21 — Desktop's popularity-gain-per-tap decay formula
+**Finding:** Each campaign tap gives `5% × max(0.8, 1 − cumulativeSpendInState × 0.005)` — a mild decay toward an 80%-of-base floor as more money is spent in that specific state, confirmed in `state-info.js`'s `recordStateAction()`.
+**Context:** Needed the real formula to model cost-to-dominate accurately for an interactive economy-balance tool.
+**Implication:** This is now the reference decay curve used in that tool; any future mobile port of investment decay should match it rather than inventing a new one.
+
+## 2026-07-21 — Desktop's regional dominance bonus pays 50% of the group's seats, plus recurring carry-forward
+**Finding:** `group-rewards.js`'s `awardGroupDominationBonus()` pays `Math.round(totalSeats * 0.5)` in currency once dominance is first achieved, then repeats the same award as a carry-forward bonus while dominance is maintained.
+**Context:** Same economy audit, reading `group-rewards.js` and `state-groups.js` directly.
+**Implication:** Far more generous than mobile's flat 200+50/phase bonus — worth aligning mobile's numbers to this scale since desktop is the intended reference.
+
+## 2026-07-21 — Desktop's "every state in group must individually exceed 50%" rule is intentional, not a mobile bug
+**Finding:** `state-groups.js`'s `checkGroupDomination()` requires `p1DominatingStates === states.length` — every single state in the group individually at ≥50%, not a seat-weighted average. Mobile's ported version uses the identical strict rule.
+**Context:** Checked desktop's real threshold logic after finding mobile's version used the same rule, to confirm whether it was a porting bug.
+**Implication:** This strictness is desktop's actual design; balance work should treat it as intentional rather than something to loosen without deliberate reason.
+
+## 2026-07-21 — Mobile's regional-dominance check is stale and covers only 4 of 15 real groups
+**Finding:** `campaign-system.js`'s `checkRegionalDominanceBonuses()` hardcodes only `['SouthIndia', 'HindiHeartland', 'NortheastIndia', 'CoastalIndia']`. `NortheastIndia` was already deleted from `states_data.json` in the 15-group rebalance (retired in favor of Eastern/Western Border) and can never match again; the other 11 of the current 15 groups aren't checked at all.
+**Context:** Auditing whether regional dominance bonuses are actually achievable in the current mobile codebase.
+**Implication:** This function needs a real rewrite against the current 15-group list before any group beyond South India/Hindi Heartland/Coastal India can ever pay out on mobile.
+
+## 2026-07-21 — Mobile's investAgenda() has zero funds cost, same bug pattern as the pre-fix investIn()
+**Finding:** Booth Ink's `investAgenda()` increments agenda progress with no funds check at all, despite `design/plan.md`'s own D2 decision explicitly calling for agenda commitment to cost "one lump sum per phase."
+**Context:** Auditing "how much should agendas cost" as part of the in-game economy walkthrough.
+**Implication:** Agenda cost-gating needs the same kind of fix `investInPaid()` just received for direct map-tap investment; not yet implemented.
+
+## 2026-07-21 — Desktop already has a working win condition; it's specifically missing from Booth Ink, not the whole project
+**Finding:** `js/ui-manager.js`'s `showElectionResults()` implements a real 272/543-seat majority check, wired through `phase-system.js`'s `endGame()`. This contradicts an earlier assumption in this session that no win condition existed anywhere in the codebase.
+**Context:** Traced `endGame()`'s call chain while researching how much money it takes to actually win the game.
+**Implication:** Porting/adapting this existing logic into Booth Ink is the real Phase 3 task — not writing a win condition from scratch.
+
+## 2026-07-21 — totalPhases is inconsistent: config says 10, design docs and Booth Ink assume 8
+**Finding:** `data/game-config.json` and `phase-system.js` both set `totalPhases: 10`, but `design/plan.md`'s roadmap text ("finishing 8 phases shows a result") and Booth Ink's own UI hardcode 8.
+**Context:** Computing total lifetime budget (`startingFunds + refreshFundsPerPhase × totalPhases`) for the economy audit surfaced the discrepancy.
+**Implication:** Changes total lifetime budget by a full 2 phases' worth of refresh funds (2000Cr at current mobile values) — needs a decision on which number is canonical before finalizing budget-dependent balance work.
+
+## 2026-07-21 — National Defense's own support and oppose tags overlap on 4 real states, netting to zero there
+**Finding:** National Defense supports `EasternBorder`/`WesternBorder` and opposes `HindiHeartland`/`CoastalIndia` — but Uttar Pradesh, Bihar, Uttarakhand, and Himachal Pradesh are all tagged both `EasternBorder` and `HindiHeartland` simultaneously. Under the agreed sum-every-matching-tag netting rule, these 4 states get +12 and −12 at once, netting to zero for this policy specifically.
+**Context:** Worked a concrete manual-investment-vs-agenda cost comparison for National Defense.
+**Implication:** The real "clean" affected footprint for National Defense is smaller than its raw support-tag seat count suggests (~137 of 266 seats, not all 266) — worth checking other policies for similar self-canceling overlap before finalizing agenda balance.
+
+## 2026-07-21 — Direct-investment cost-per-seat-share is size-invariant; rally tokens are not
+**Finding:** Under the current cost formula (`cost = seats × costPerSeat`, popularity gain independent of seat count), the cost to gain one percentage-point of seat-share is identical regardless of a state's size — investing in Uttar Pradesh (80 seats) is exactly as cost-efficient, seat-for-seat, as investing in a 1-seat union territory. Rally tokens break this: they cost a flat amount regardless of target state size but deliver the same flat percentage swing, so a token is objectively more valuable spent on a large state than a small one.
+**Context:** Derived while auditing the total cost to win the game outright, and encoded directly into the interactive economy-balance tool built this session.
+**Implication:** There's no pure-efficiency reason to prefer big states over small ones for cash investment; token-spending strategy, by contrast, should explicitly favor the largest available states.
+
 ## 2026-07-20 — Chromium-based testing cannot reproduce real Safari viewport-meta behavior
 **Finding:** Playwright's `chromium` engine, even with an explicit `--viewport-size`/`viewport` option, overrides or ignores a page's own `<meta name="viewport">` tag entirely — every automated check run against Chromium this session passed cleanly, yet the real regression (see the viewport-meta finding below) was fully reproducible only once testing switched to Playwright's `webkit` engine with the `devices['iPhone 14']` device profile (`window.innerHeight` measured 664px in real WebKit vs the naive assumption of 844px).
 **Context:** Spent several rounds diagnosing a real-device-only layout bug ("everything stacking") that never showed up in headless Chromium screenshots, before realizing the browser engine itself was the blind spot, not the CSS.

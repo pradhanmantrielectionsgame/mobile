@@ -8,6 +8,8 @@
 ## Game design principles
 
 - Avoid click-fest mechanics — cap player actions per phase (a fixed number of moves/commitments) rather than allowing unlimited repeated clicking with diminishing returns. Every action should have real opportunity cost against the others available that phase.
+- Regional/group dominance bonuses require **every single state** in the group to individually cross 50% popularity — not a seat-weighted average. Confirmed intentional in the desktop app's own logic; treat this as deliberate design, not a bug to loosen.
+- For game-economy/balance work (costs, bonuses, decay curves, dominance payouts), reference the **desktop app's real code** (`game-config.js`, `state-info.js`, `campaign-spending.js`, `home-state-bonus.js`, `group-rewards.js`, `state-groups.js`) as ground truth, not mobile's ported version — mobile's economy code is known broken/incomplete in several places (e.g. `checkRegionalDominanceBonuses()` still references retired region fields) and is being actively rewired.
 
 ## Architecture constraints
 
@@ -16,6 +18,8 @@
 ## Data & config conventions
 
 - Prefer config/data files (JSON under `data/`) over hardcoding values in JS — politician rosters, state groupings, policy tags, token/economy constants, etc. belong in JSON, not embedded in engine code. Keeps experimentation (tuning a bonus value, rebalancing a group, adding a politician) a data edit instead of a code change, and matches this project's existing single-source-of-truth pattern (`game-config.json` driving `config-manager.js`).
+- Politicians draw their agendas from a **shared pool** (`data/policy-tags.json`, ~23 entries) — each politician's `policies` array just lists 4 names from that pool, plus 1 unique special power. Multiple politicians can and do share the same agenda (e.g. National Defense). Don't build a per-politician bespoke agenda table. An agenda becomes "exclusive" simply by only one politician's list referencing it — no explicit exclusivity flag needed.
+- No CRUD script/tool wanted for managing `politicians-data.json`/`policy-tags.json` — edits happen via direct natural-language requests to Claude (e.g. "add a politician profile for X", "change Hindutva's tier"), not a CLI or admin UI. `check_data_consistency.js` is the validation safety net; run it after any edit.
 
 ## Frontend technical rules
 

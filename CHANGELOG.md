@@ -6,6 +6,39 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### 🎯 Direct Investment Cost Gating & Game Economy Decisions
+
+#### Implementation
+- **FIXED**: `pme-mobile-sheet.html` now routes all cash-driven taps (map click, UT/Delhi/Goa buttons) through new `investInPaid()` cost-gated wrapper, not free `investIn()`
+  - Cost formula: `seats × baseCostPerSeat` (fetched live from `data/game-config.json`)
+  - Funds deducted before state popularity increases
+  - Token/agenda/power-driven calls remain routed through free `investIn()` (they pay via their own resource, not cash)
+
+#### Design Decisions Finalized
+- **DECISION D1**: Direct-investment cost formula — only cash-driven UI taps (map click, quick-invest buttons) charge funds; token/agenda/power-driven `investIn()` calls stay free since they're paid via their own resource. Fix applied at cost-gated wrapper layer, not touching resource-paid call paths.
+- **DECISION D2**: Agenda region-tag popularity effect — instant + cumulative (each 25% tap applies share immediately), netting via sum-every-matching-tag (not binary per side), single baseMagnitude per policy (not per-tag). NOT YET IMPLEMENTED IN CODE — design decision only. User confirmed this matches desktop's real `policy-popularity-calculator.js` formula.
+- **DECISION D3**: Politician/agenda data stays a shared pool (`data/policy-tags.json`, ~23 entries); "exclusive" agendas achieved by convention (only one politician references that entry) rather than explicit exclusivity flag. Matches existing schema size; uniqueness falls out naturally from roster design.
+- **DECISION D4**: No CRUD script/tool for managing `politicians-data.json` or `policy-tags.json` — direct natural-language requests to Claude are the intended workflow, with `check_data_consistency.js` as validation safety net.
+- **DECISION D5**: Game-economy/balance auditing should reference **desktop app's real code** (`game-config.js`, `state-info.js`, `campaign-spending.js`, `home-state-bonus.js`, `group-rewards.js`, `state-groups.js`), not mobile's ported version. Desktop is working reference implementation; mobile's numbers in this area are provisional/broken.
+
+#### Documentation & Project Instructions
+- **UPDATED**: `CLAUDE.md` Data & Config Conventions section — added bullets on shared agenda pool pattern (no bespoke per-politician tables) and no CRUD tooling desired
+- **UPDATED**: `CLAUDE.md` Game Design Principles section — added bullet on dominance-threshold rule (every state must individually cross 50%) and desktop-as-reference instruction for economy work
+
+#### Findings & Discoveries
+- Session produced 11 dated 2026-07-21 findings entries in `findings.md` (written directly by /checkpoint), covering:
+  - Desktop's real seats×1 cost formula (millions), not seats×10
+  - Desktop's combined home-state cost-discount + flat-popularity-floor mechanic
+  - Desktop's popularity-decay curve (5%×max(0.8, 1−spend×0.005))
+  - Desktop's 50%-of-seats dominance payout with carry-forward
+  - Confirmation: "every state must individually exceed 50%" rule is intentional, not a mobile bug
+  - Mobile's `checkRegionalDominanceBonuses()` stale/broken (retired NortheastIndia field, checks only 4 of 15 groups)
+  - Mobile's `investAgenda()` has zero cost (same bug pattern as investIn() before this fix)
+  - Desktop's existing win condition (272/543-seat majority check via `showElectionResults()`)
+  - totalPhases inconsistency (config says 10, design docs/Booth Ink assume 8)
+  - National Defense's self-canceling tags on 4 overlapping states (UP/Bihar/Uttarakhand/Himachal Pradesh)
+  - Cost-per-seat-share size-invariance vs. rally tokens' state-size asymmetry
+
 ### 🧹 Repository Hygiene — Stale Docs & Prototype Cleanup
 - **REMOVED**: 10 stale docs/ files — ARCHITECTURE.md, CODE_STYLE.md, GLOSSARY.md, ONBOARDING.md, TESTING_GUIDE.md, README.md, DEVELOPER_GUIDE.md, RALLY_TOKENS_SYSTEM.md, UI_DESIGN_REQUIREMENTS.md, feature-request.md
   - Reason: 5 were thin generic scaffolding; 2 documented mechanics superseded by replayability redesign and Booth Ink; 1 documented old control scheme (Shift+Click) being replaced by touch tray; 1 was a closed task log
