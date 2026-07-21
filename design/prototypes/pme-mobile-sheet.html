@@ -12,11 +12,11 @@
   --line:#14161C; --rule:#D8DCE3;
   --accent:#2451D6; --accent-ink:#FFFFFF;
   --stamp:#B3311D;
-  --p1:#E8871C; --p2:#1C8A4B; --map-base:#E4E7EC; --map-stroke:#14161C;
+  --p1:#E8871C; --p2:#1C8A4B; --map-base:#AEB4C0; --map-stroke:#14161C;
   --font: -apple-system, "SF Pro Text", "Segoe UI", sans-serif;
   --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
 }
-*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent; touch-action:manipulation;}
 html,body{height:100%; margin:0; overscroll-behavior:none;}
 body{ font-family:var(--font); background:var(--page); color:var(--ink); }
 button{ font-family:inherit; border:none; background:none; color:inherit; }
@@ -78,12 +78,12 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
    shape itself. Union Territories are handled as a single button instead.
    All corner controls live INSIDE map-wrap so their position is relative
    to the map's own box, never to the full viewport. ---- */
-.map-wrap{ flex:1 1 auto; position:relative; min-height:0; overflow:hidden; background:
+.map-wrap{ flex:1 1 auto; position:relative; min-height:160px; overflow:hidden; background:
   repeating-linear-gradient(0deg, rgba(20,22,28,.025) 0px, rgba(20,22,28,.025) 1px, transparent 1px, transparent 26px),
   var(--page); }
-.india-map{ position:absolute; inset:0; width:100%; height:100%; transform:scale(1.1); transform-origin:center; }
-.india-map path{ fill:var(--map-base); stroke:var(--map-stroke); stroke-width:1.1; cursor:pointer; transition:opacity .25s ease, fill .2s ease; }
-.india-map path.selected{ stroke:var(--accent); stroke-width:3; stroke-dasharray:5 3; animation:march .7s linear infinite; }
+.india-map{ position:absolute; inset:0; width:100%; height:100%; transform:scale(1.03); transform-origin:center; }
+.india-map path, .india-map circle{ fill:var(--map-base); stroke:var(--map-stroke); stroke-width:1.1; cursor:pointer; transition:fill-opacity .25s ease, fill .2s ease; }
+.india-map path.selected, .india-map circle.selected{ stroke:var(--accent); stroke-width:3; stroke-dasharray:5 3; animation:march .7s linear infinite; }
 @keyframes march{ to{ stroke-dashoffset:-8; } }
 .india-map path#INLD, .india-map path#INAN, .india-map rect#bbox-lakshadweep{ display:none; }
 
@@ -96,9 +96,9 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
 .corner-right{ right:27px; display:flex; flex-direction:row; align-items:flex-end; gap:14px; }
 .fab-stack{ position:relative; }
 
-.uts-btn{ display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; width:138px; height:123px; border-radius:27px; background:var(--surface); border:3px solid var(--line); box-shadow:6px 6px 0 var(--line); font-size:55px; }
-.uts-btn .lb{ font-size:23px; font-weight:800; letter-spacing:.02em; color:var(--ink-soft); }
-.uts-btn:active{ transform:translate(6px,6px); box-shadow:none; }
+.uts-btn{ display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; width:98px; height:82px; border-radius:19px; background:var(--surface); border:3px solid var(--line); box-shadow:4px 4px 0 var(--line); font-size:36px; }
+.uts-btn .lb{ font-size:15px; font-weight:800; letter-spacing:.02em; color:var(--ink-soft); }
+.uts-btn:active{ transform:translate(4px,4px); box-shadow:none; }
 
 .fab{ position:relative; width:123px; height:123px; border-radius:27px;
   background:var(--surface); border:3px solid var(--line); box-shadow:6px 6px 0 var(--line);
@@ -368,6 +368,7 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
     <div class="toast" id="toast"></div>
 
     <div class="corner-left">
+      <button class="uts-btn" id="delhiBtn" title="Invest in Delhi — too small to tap reliably on the map">🏙️<span class="lb">DELHI</span></button>
       <button class="uts-btn" id="goaBtn" title="Invest in Goa — too small to tap reliably on the map">🌴<span class="lb">GOA</span></button>
       <button class="uts-btn" id="utsBtn" title="Invest in all Union Territories at once">🏛️<span class="lb">ALL UTS</span></button>
     </div>
@@ -428,31 +429,47 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
 </div>
 
 <script>
-const STATES = [{"name":"Andaman And Nicobar Islands","seats":1,"svgId":"INAN","groups":["CoastalIndia","TribalLands","TravelAndTourism","MinorityAreas"]},{"name":"Andhra Pradesh","seats":25,"svgId":"INAP","groups":["CoastalIndia","SouthIndia","AgriculturalRegion","Pilgrimage","NaturalResources"]},{"name":"Arunachal Pradesh","seats":2,"svgId":"INAR","groups":["TribalLands","MinorityAreas","EasternBorder"]},{"name":"Assam","seats":14,"svgId":"INAS","groups":["NaturalResources","MinorityAreas","NationalParksWildlife","EasternBorder"]},{"name":"Bihar","seats":40,"svgId":"INBR","groups":["HindiHeartland","AgriculturalRegion","Pilgrimage","EasternBorder"]},{"name":"Chandigarh","seats":1,"svgId":"INCH","groups":["HindiHeartland","Education"]},{"name":"Chhattisgarh","seats":11,"svgId":"INCT","groups":["HindiHeartland","TribalLands","NaturalResources"]},{"name":"Dadra And Nagar Haveli And Daman And Diu","seats":2,"svgId":"INDH","groups":["CoastalIndia","TravelAndTourism"]},{"name":"Delhi","seats":7,"svgId":"INDL","groups":["HindiHeartland","IndustrialCorridor","Education","TravelAndTourism"]},{"name":"Goa","seats":2,"svgId":"INGA","groups":["CoastalIndia","TravelAndTourism","MinorityAreas"]},{"name":"Gujarat","seats":26,"svgId":"INGJ","groups":["CoastalIndia","Pilgrimage","IndustrialCorridor","Manufacturing","NaturalResources","WesternBorder"]},{"name":"Haryana","seats":10,"svgId":"INHR","groups":["HindiHeartland","AgriculturalRegion","IndustrialCorridor","Manufacturing"]},{"name":"Himachal Pradesh","seats":4,"svgId":"INHP","groups":["HindiHeartland","TravelAndTourism","WesternBorder"]},{"name":"Jammu And Kashmir","seats":5,"svgId":"INJK","groups":["Pilgrimage","TravelAndTourism","MinorityAreas","WesternBorder"]},{"name":"Jharkhand","seats":14,"svgId":"INJH","groups":["HindiHeartland","TribalLands","NaturalResources","IndustrialCorridor"]},{"name":"Karnataka","seats":28,"svgId":"INKA","groups":["CoastalIndia","SouthIndia","AgriculturalRegion","Manufacturing","Education","NationalParksWildlife"]},{"name":"Kerala","seats":20,"svgId":"INKL","groups":["CoastalIndia","SouthIndia","Education","TravelAndTourism","NaturalResources","MinorityAreas"]},{"name":"Ladakh","seats":1,"svgId":"INLA","groups":["TravelAndTourism","WesternBorder"]},{"name":"Lakshadweep","seats":1,"svgId":"INLD","groups":["CoastalIndia","TravelAndTourism","MinorityAreas"]},{"name":"Madhya Pradesh","seats":29,"svgId":"INMP","groups":["HindiHeartland","AgriculturalRegion","IndustrialCorridor","TribalLands","NaturalResources","NationalParksWildlife"]},{"name":"Maharashtra","seats":48,"svgId":"INMH","groups":["CoastalIndia","AgriculturalRegion","IndustrialCorridor","Manufacturing","Education"]},{"name":"Manipur","seats":2,"svgId":"INMN","groups":["TribalLands","MinorityAreas","EasternBorder"]},{"name":"Meghalaya","seats":2,"svgId":"INML","groups":["TribalLands","MinorityAreas","EasternBorder"]},{"name":"Mizoram","seats":1,"svgId":"INMZ","groups":["TribalLands","MinorityAreas","EasternBorder"]},{"name":"Nagaland","seats":1,"svgId":"INNL","groups":["TribalLands","MinorityAreas","EasternBorder"]},{"name":"Odisha","seats":21,"svgId":"INOR","groups":["CoastalIndia","Pilgrimage","TribalLands","NaturalResources","NationalParksWildlife"]},{"name":"Puducherry","seats":1,"svgId":"INPY","groups":["CoastalIndia","SouthIndia","TravelAndTourism"]},{"name":"Punjab","seats":13,"svgId":"INPB","groups":["AgriculturalRegion","Pilgrimage","MinorityAreas","WesternBorder"]},{"name":"Rajasthan","seats":25,"svgId":"INRJ","groups":["HindiHeartland","IndustrialCorridor","TravelAndTourism","NationalParksWildlife","WesternBorder"]},{"name":"Sikkim","seats":1,"svgId":"INSK","groups":["TravelAndTourism","MinorityAreas","EasternBorder"]},{"name":"Tamil Nadu","seats":39,"svgId":"INTN","groups":["CoastalIndia","SouthIndia","Pilgrimage","Manufacturing","Education","TravelAndTourism"]},{"name":"Telangana","seats":17,"svgId":"INTG","groups":["SouthIndia","Manufacturing","Education","NaturalResources"]},{"name":"Tripura","seats":2,"svgId":"INTR","groups":["TribalLands","EasternBorder"]},{"name":"Uttar Pradesh","seats":80,"svgId":"INUP","groups":["HindiHeartland","AgriculturalRegion","Pilgrimage","IndustrialCorridor","TravelAndTourism","EasternBorder"]},{"name":"Uttarakhand","seats":5,"svgId":"INUT","groups":["HindiHeartland","Pilgrimage","TravelAndTourism","NationalParksWildlife","EasternBorder"]},{"name":"West Bengal","seats":42,"svgId":"INWB","groups":["CoastalIndia","Manufacturing","Education","NaturalResources","MinorityAreas","EasternBorder"]}];
-// Tiered per design/plan.md's "State-groups rebalance" — 5 groups per tier,
-// ordered by seat count within each tier (see that section for the full
-// seat-total table and the reasoning behind every add/drop/split).
+let STATES = []; // populated at runtime from data/states_data.json — see loadStatesData()
 // Ordered ascending by seat count (smallest group first) rather than boxed
 // by tier — see design/plan.md "State-groups rebalance" for the full table.
-const GROUPS = [
-  {key:'WesternBorder', icon:'🏔️', label:'Western Border', seats:74},
-  {key:'TribalLands', icon:'🌳', label:'Tribal Lands', seats:86},
-  {key:'MinorityAreas', icon:'🕌', label:'Minority Areas', seats:107},
-  {key:'NationalParksWildlife', icon:'🐅', label:'National Parks & Wildlife', seats:122},
-  {key:'SouthIndia', icon:'🌴', label:'South India', seats:130},
-  {key:'EasternBorder', icon:'🌄', label:'Eastern Border', seats:192},
-  {key:'TravelAndTourism', icon:'✈️', label:'Travel & Tourism', seats:194},
-  {key:'Education', icon:'🎓', label:'Education', seats:202},
-  {key:'Manufacturing', icon:'⚙️', label:'Manufacturing', seats:210},
-  {key:'NaturalResources', icon:'⛏️', label:'Natural Resources', seats:219},
-  {key:'HindiHeartland', icon:'🕉️', label:'Hindi Heartland', seats:226},
-  {key:'IndustrialCorridor', icon:'🏭', label:'Industrial Corridor', seats:239},
-  {key:'Pilgrimage', icon:'🙏', label:'Pilgrimage', seats:254},
-  {key:'CoastalIndia', icon:'🌊', label:'Coastal India', seats:256},
-  {key:'AgriculturalRegion', icon:'🌾', label:'Agricultural Region', seats:273},
+// Seats are computed from states_data.json at load time, not hardcoded here.
+const GROUP_META = [
+  {key:'WesternBorder', icon:'🏔️', label:'Western Border'},
+  {key:'TribalLands', icon:'🌳', label:'Tribal Lands'},
+  {key:'MinorityAreas', icon:'🕌', label:'Minority Areas'},
+  {key:'NationalParksWildlife', icon:'🐅', label:'National Parks & Wildlife'},
+  {key:'SouthIndia', icon:'🌴', label:'South India'},
+  {key:'EasternBorder', icon:'🌄', label:'Eastern Border'},
+  {key:'TravelAndTourism', icon:'✈️', label:'Travel & Tourism'},
+  {key:'Education', icon:'🎓', label:'Education'},
+  {key:'Manufacturing', icon:'⚙️', label:'Manufacturing'},
+  {key:'NaturalResources', icon:'⛏️', label:'Natural Resources'},
+  {key:'HindiHeartland', icon:'🕉️', label:'Hindi Heartland'},
+  {key:'IndustrialCorridor', icon:'🏭', label:'Industrial Corridor'},
+  {key:'Pilgrimage', icon:'🙏', label:'Pilgrimage'},
+  {key:'CoastalIndia', icon:'🌊', label:'Coastal India'},
+  {key:'AgriculturalRegion', icon:'🌾', label:'Agricultural Region'},
 ];
-const SMALL_UTS = ['INDL','INCH','INDH','INPY','INLD','INAN'];
-const COLORS = { p1:'#E8871C', p2:'#1C8A4B', others:'#E4E7EC' };
+let GROUPS = []; // GROUP_META + computed seats — see loadStatesData()
+
+const NON_GROUP_FIELDS = new Set(['State', 'LokSabhaSeats', 'SvgId', 'UnionTerritory']);
+
+async function loadStatesData(){
+  const res = await fetch('../../data/states_data.json');
+  const raw = await res.json();
+  STATES = raw.map(s => ({
+    name: s.State,
+    seats: parseInt(s.LokSabhaSeats, 10),
+    svgId: s.SvgId,
+    groups: Object.keys(s).filter(k => !NON_GROUP_FIELDS.has(k) && s[k] === 'TRUE'),
+  }));
+  GROUPS = GROUP_META.map(g => ({
+    ...g,
+    seats: STATES.filter(s => s.groups.includes(g.key)).reduce((a, s) => a + s.seats, 0),
+  }));
+}
+const SMALL_UTS = ['INCH','INDH','INPY','INLD','INAN']; // excludes Delhi — it has its own dedicated button now
+const COLORS = { p1:'#E8871C', p2:'#1C8A4B', others:'#AEB4C0' };
 
 let pop = {}, selectedId = 'INUP', activeGroup = null, armedToken = null;
 // Reworked 3-flavor token economy: stateRally is the only earned resource
@@ -491,7 +508,7 @@ function leaderColor(id){ const p=pop[id]; if(!p) return COLORS.others;
   if(p.p1>=p.p2 && p.p1>=p.others) return COLORS.p1;
   if(p.p2>=p.p1 && p.p2>=p.others) return COLORS.p2;
   return COLORS.others; }
-function paintMap(){ document.querySelectorAll('.india-map path[id]').forEach(p=>{ p.style.fill = leaderColor(p.id); }); }
+function paintMap(){ document.querySelectorAll('.india-map path[id], .india-map circle[id]').forEach(p=>{ p.style.fill = leaderColor(p.id); }); }
 
 function updateCard(){
   const s = STATES.find(s=>s.svgId===selectedId); const p = pop[selectedId];
@@ -530,7 +547,7 @@ function updateSeatProjection(){
 }
 
 function selectState(id){
-  document.querySelectorAll('.india-map path.selected').forEach(p=>p.classList.remove('selected'));
+  document.querySelectorAll('.india-map path.selected, .india-map circle.selected').forEach(p=>p.classList.remove('selected'));
   const el = document.getElementById(id); if(el) el.classList.add('selected');
   selectedId = id; updateCard();
 }
@@ -570,7 +587,7 @@ function renderNews(){
 }
 
 document.getElementById('map').addEventListener('click', e=>{
-  const path = e.target.closest('path[id]'); if(!path) return;
+  const path = e.target.closest('path[id], circle[id]'); if(!path) return;
   selectState(path.id);
   if(armedToken==='stateRally'){
     investIn(path.id, 2);
@@ -586,6 +603,12 @@ document.getElementById('utsBtn').addEventListener('click', ()=>{
   showToast('Invested in all Union Territories');
 });
 
+document.getElementById('delhiBtn').addEventListener('click', ()=>{
+  selectState('INDL');
+  investIn('INDL', 1);
+  showToast('Invested in Delhi');
+});
+
 document.getElementById('goaBtn').addEventListener('click', ()=>{
   selectState('INGA');
   investIn('INGA', 1);
@@ -594,7 +617,7 @@ document.getElementById('goaBtn').addEventListener('click', ()=>{
 
 function applyGroupHighlight(){
   const members = !activeGroup ? null : STATES.filter(s=>s.groups.includes(activeGroup)).map(s=>s.svgId);
-  document.querySelectorAll('.india-map path[id]').forEach(p=>{ p.style.opacity = (!members || members.includes(p.id)) ? '1' : '0.15'; });
+  document.querySelectorAll('.india-map path[id], .india-map circle[id]').forEach(p=>{ p.style.fillOpacity = (!members || members.includes(p.id)) ? '1' : '0'; });
   document.querySelectorAll('.gchip').forEach(c=>c.classList.remove('qualified'));
   const readout = document.getElementById('groupReadout');
   if(!members){ readout.hidden = true; return; }
@@ -754,6 +777,10 @@ document.getElementById('resetBtn').addEventListener('click', ()=>{
   showToast(`Phase ${phase} — +2 State Rally`);
 });
 
-seed(); buildGroupsBox(); renderTokens(); renderAgendas(); paintMap(); renderNews();
-selectState('INUP'); updateSeatProjection();
+loadStatesData().then(() => {
+  seed(); buildGroupsBox(); renderTokens(); renderAgendas(); paintMap(); renderNews();
+  selectState('INUP'); updateSeatProjection();
+}).catch(err => {
+  console.error('Failed to load data/states_data.json — is this served over http(s), not file://?', err);
+});
 </script>

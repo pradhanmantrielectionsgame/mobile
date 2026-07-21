@@ -9,7 +9,7 @@
     "Rural Development": {
       "tier": 2,
       "baseMagnitude": 8,
-      "supportTags": ["AgriculturalRegion", "NortheastIndia"],
+      "supportTags": ["AgriculturalRegion", "EasternBorder"],
       "opposeTags": ["IndustrialCorridor", "Manufacturing"]
     },
     "Women's Empowerment": {
@@ -93,20 +93,20 @@
     "Law and Order": {
       "tier": 3,
       "baseMagnitude": 4,
-      "supportTags": ["BorderLands", "IndustrialCorridor"],
+      "supportTags": ["EasternBorder", "WesternBorder", "IndustrialCorridor"],
       "opposeTags": ["MinorityAreas", "TravelAndTourism"]
     },
     "Hindi Language": {
       "tier": 2,
       "baseMagnitude": 8,
       "supportTags": ["HindiHeartland"],
-      "opposeTags": ["SouthIndia", "NortheastIndia", "MinorityAreas"]
+      "opposeTags": ["SouthIndia", "EasternBorder", "MinorityAreas"]
     },
     "Hindutva": {
       "tier": 1,
       "baseMagnitude": 12,
       "supportTags": ["HindiHeartland", "Pilgrimage"],
-      "opposeTags": ["MinorityAreas", "SouthIndia", "NortheastIndia"]
+      "opposeTags": ["MinorityAreas", "SouthIndia", "EasternBorder"]
     },
     "Secularism": {
       "tier": 1,
@@ -117,7 +117,7 @@
     "Indigenous Rights": {
       "tier": 2,
       "baseMagnitude": 8,
-      "supportTags": ["TribalLands", "NortheastIndia"],
+      "supportTags": ["TribalLands", "EasternBorder"],
       "opposeTags": ["IndustrialCorridor", "Manufacturing"]
     },
     "Caste Reservation": {
@@ -130,18 +130,18 @@
       "tier": 1,
       "baseMagnitude": 12,
       "supportTags": ["HindiHeartland"],
-      "opposeTags": ["MinorityAreas", "NortheastIndia"]
+      "opposeTags": ["MinorityAreas", "EasternBorder"]
     },
     "State's Rights": {
       "tier": 2,
       "baseMagnitude": 8,
-      "supportTags": ["SouthIndia", "NortheastIndia"],
+      "supportTags": ["SouthIndia", "EasternBorder"],
       "opposeTags": ["HindiHeartland"]
     },
     "National Defense": {
       "tier": 1,
       "baseMagnitude": 12,
-      "supportTags": ["BorderLands"],
+      "supportTags": ["EasternBorder", "WesternBorder"],
       "opposeTags": ["CoastalIndia", "HindiHeartland"]
     }
   },

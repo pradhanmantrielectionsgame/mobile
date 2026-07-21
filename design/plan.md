@@ -560,11 +560,11 @@ footer ul{ margin:0 0 16px; padding-left:18px; }
       <tr><td class="feat">Mid</td><td class="desc">Manufacturing</td><td class="desc">210</td><td class="desc">7</td><td class="desc">none</td></tr>
       <tr><td class="feat">Mid</td><td class="desc">Education</td><td class="desc">202</td><td class="desc">8</td><td class="desc">none</td></tr>
       <tr><td class="feat">Mid</td><td class="desc">Travel &amp; Tourism</td><td class="desc">194</td><td class="desc">15</td><td class="desc">−Karnataka</td></tr>
-      <tr><td class="feat">Mid</td><td class="desc">Eastern Border</td><td class="desc">192</td><td class="desc">12</td><td class="desc">new — replaces Northeast India + half of Border Lands</td></tr>
+      <tr><td class="feat">Mid</td><td class="desc">Eastern Border</td><td class="desc">197</td><td class="desc">14</td><td class="desc">new — replaces Northeast India + half of Border Lands; Ladakh and Himachal Pradesh both included (both border China/Tibet as well as Pakistan, so both are dual-tagged with Western Border)</td></tr>
       <tr><td class="feat">Small</td><td class="desc">South India</td><td class="desc">130</td><td class="desc">6</td><td class="desc">none</td></tr>
       <tr><td class="feat">Small</td><td class="desc">National Parks &amp; Wildlife</td><td class="desc">122</td><td class="desc">6</td><td class="desc">new</td></tr>
-      <tr><td class="feat">Small</td><td class="desc">Minority Areas</td><td class="desc">107</td><td class="desc">14</td><td class="desc">none</td></tr>
-      <tr><td class="feat">Small</td><td class="desc">Tribal Lands</td><td class="desc">86</td><td class="desc">11</td><td class="desc">none</td></tr>
+      <tr><td class="feat">Small</td><td class="desc">Minority Areas</td><td class="desc">109</td><td class="desc">15</td><td class="desc">+Tripura (Christian tribal population + historic Bengali Muslim minority)</td></tr>
+      <tr><td class="feat">Small</td><td class="desc">Tribal Lands</td><td class="desc">101</td><td class="desc">13</td><td class="desc">+Assam (Bodoland Territorial Region + hill tribes), +Sikkim (~33%+ ST population — Lepcha, Bhutia)</td></tr>
       <tr><td class="feat">Small</td><td class="desc">Western Border</td><td class="desc">74</td><td class="desc">6</td><td class="desc">new — other half of Border Lands</td></tr>
     </tbody>
   </table>
@@ -577,11 +577,11 @@ footer ul{ margin:0 0 16px; padding-left:18px; }
     <div class="pwa-item"><span class="f">Pilgrimage (254)</span><span class="d">Andhra Pradesh, Bihar, Gujarat, Jammu &amp; Kashmir, Odisha, Punjab, Tamil Nadu, Uttar Pradesh, Uttarakhand</span></div>
     <div class="pwa-item"><span class="f">Industrial Corridor (239)</span><span class="d">Delhi, Gujarat, Haryana, Madhya Pradesh, Maharashtra, Rajasthan, Uttar Pradesh, Jharkhand</span></div>
     <div class="pwa-item"><span class="f">Travel &amp; Tourism (194)</span><span class="d">Andaman &amp; Nicobar, Dadra &amp; Nagar Haveli and Daman &amp; Diu, Delhi, Goa, Himachal Pradesh, Jammu &amp; Kashmir, Kerala, Ladakh, Lakshadweep, Puducherry, Rajasthan, Sikkim, Tamil Nadu, Uttar Pradesh, Uttarakhand</span></div>
-    <div class="pwa-item"><span class="f">Eastern Border (192)</span><span class="d">Uttarakhand, Uttar Pradesh, Bihar, West Bengal, Sikkim, Arunachal Pradesh, Assam, Meghalaya, Tripura, Mizoram, Manipur, Nagaland — the Nepal/Bhutan/Bangladesh/Myanmar/eastern-China frontier</span></div>
+    <div class="pwa-item"><span class="f">Eastern Border (197)</span><span class="d">Uttarakhand, Uttar Pradesh, Bihar, West Bengal, Sikkim, Arunachal Pradesh, Assam, Meghalaya, Tripura, Mizoram, Manipur, Nagaland, Ladakh, Himachal Pradesh — the Nepal/Bhutan/Bangladesh/Myanmar/eastern-China frontier. Ladakh and Himachal Pradesh are intentionally dual-tagged with Western Border below — both border Pakistan (west) as well as China/Tibet/Aksai Chin (east).</span></div>
     <div class="pwa-item"><span class="f">National Parks &amp; Wildlife (122)</span><span class="d">Madhya Pradesh (Kanha, Bandhavgarh — most tiger reserves of any state), Assam (Kaziranga), Rajasthan (Ranthambore), Uttarakhand (Jim Corbett — India's first national park), Odisha (Similipal, Bhitarkanika), Karnataka (Nagarhole, Bandipur)</span></div>
     <div class="pwa-item"><span class="f">Western Border (74)</span><span class="d">Gujarat, Rajasthan, Punjab, Jammu &amp; Kashmir, Ladakh, Himachal Pradesh — the Pakistan/western-China frontier</span></div>
   </div>
-  <p class="section-note">Coastal India, Hindi Heartland, Natural Resources, Manufacturing, Education, South India, Minority Areas, and Tribal Lands are unchanged from the original data.</p>
+  <p class="section-note">Coastal India, Hindi Heartland, Natural Resources, Manufacturing, Education, and South India are unchanged from the original data. Minority Areas gained Tripura; Tribal Lands gained Assam and Sikkim (corrections made during implementation, not part of the original rebalance pass).</p>
 
   <h4>Groups considered and rejected — don't re-litigate these</h4>
   <div class="gap">

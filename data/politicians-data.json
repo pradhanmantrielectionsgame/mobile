@@ -1,37 +1,26 @@
 {
-  "politicians": [    {
+  "politicians": [
+    {
       "id": "narendra-modi",
       "name": "Narendra Modi",
       "party": "BJP",
       "homeState": "Gujarat",
       "image": "assets/images/Narendra_Modi.png",
       "partyLogo": "assets/icons/Bharatiya_Janata_Party_(icon).svg",
-      "primaryColor": "#FF9933","policies": [
-        {
-          "name": "Healthcare",
-          "bonus": 30
-        },
-        {
-          "name": "Infrastructure",
-          "bonus": 40
-        },
-        {
-          "name": "Economic Liberalization",
-          "bonus": 30
-        },
-        {
-          "name": "Anti-Corruption",
-          "bonus": 20
-        },
-        {
-          "name": "Hindutva",
-          "bonus": 40
-        },
-        {
-          "name": "National Defense",
-          "bonus": 30
-        }
-      ]    },    {
+      "primaryColor": "#FF9933",
+      "policies": [
+        { "name": "Infrastructure", "bonus": 40 },
+        { "name": "Hindutva", "bonus": 40 },
+        { "name": "Economic Liberalization", "bonus": 30 },
+        { "name": "National Defense", "bonus": 30 }
+      ],
+      "specialPower": {
+        "name": "Demonetization",
+        "effect": "Opponent instantly loses a lump sum of funds",
+        "cost": "-5% popularity nationwide"
+      }
+    },
+    {
       "id": "manmohan-singh",
       "name": "Manmohan Singh",
       "party": "INC",
@@ -40,62 +29,38 @@
       "partyLogo": "assets/icons/Indian_National_Congress_hand_logo.svg",
       "primaryColor": "#138808",
       "policies": [
-        {
-          "name": "Economic Liberalization",
-          "bonus": 40
-        },
-        {
-          "name": "Education",
-          "bonus": 30
-        },
-        {
-          "name": "Agricultural Reforms",
-          "bonus": 30
-        },
-        {
-          "name": "Public Sector",
-          "bonus": 40
-        },
-        {
-          "name": "Press Freedom",
-          "bonus": 30
-        },
-        {
-          "name": "Secularism",
-          "bonus": 40
-        }
-      ]    },    {
+        { "name": "Economic Liberalization", "bonus": 40 },
+        { "name": "Public Sector", "bonus": 40 },
+        { "name": "Secularism", "bonus": 40 },
+        { "name": "Education", "bonus": 30 }
+      ],
+      "specialPower": {
+        "name": "Economic Reform",
+        "effect": "Large one-time funds boost",
+        "cost": "-8% popularity in Agricultural Region / Public Sector states"
+      }
+    },
+    {
       "id": "rahul-gandhi",
       "name": "Rahul Gandhi",
       "party": "INC",
       "homeState": "Uttar Pradesh",
       "image": "assets/images/Rahul_Gandhi.png",
       "partyLogo": "assets/icons/Indian_National_Congress_hand_logo.svg",
-      "primaryColor": "#138808","policies": [
-        {
-          "name": "Rural Development",
-          "bonus": 40
-        },
-        {
-          "name": "Land Reforms",
-          "bonus": 30
-        },
-        {
-          "name": "Privatization",
-          "bonus": 20
-        },
-        {
-          "name": "Anti-Corruption",
-          "bonus": 20
-        },
-        {
-          "name": "Secularism",
-          "bonus": 30
-        },
-        {
-          "name": "Caste Reservation",
-          "bonus": 30
-        }      ]    },    {
+      "primaryColor": "#138808",
+      "policies": [
+        { "name": "Rural Development", "bonus": 40 },
+        { "name": "Land Reforms", "bonus": 30 },
+        { "name": "Secularism", "bonus": 30 },
+        { "name": "Caste Reservation", "bonus": 30 }
+      ],
+      "specialPower": {
+        "name": "Bharat Jodo Yatra",
+        "effect": "Popularity boost in Secularism / Minority Areas states",
+        "cost": "Instant lump-sum funds payment"
+      }
+    },
+    {
       "id": "atal-bihari-vajpayee",
       "name": "Atal Bihari Vajpayee",
       "party": "BJP",
@@ -104,62 +69,37 @@
       "partyLogo": "assets/icons/Bharatiya_Janata_Party_(icon).svg",
       "primaryColor": "#FF9933",
       "policies": [
-        {
-          "name": "Education",
-          "bonus": 30
-        },
-        {
-          "name": "Infrastructure",
-          "bonus": 40
-        },
-        {
-          "name": "Economic Liberalization",
-          "bonus": 30
-        },
-        {
-          "name": "Judicial Activism",
-          "bonus": 20
-        },
-        {
-          "name": "Hindi Language",
-          "bonus": 30
-        },
-        {
-          "name": "National Defense",
-          "bonus": 40
-        }      ]
-    },    {
+        { "name": "Infrastructure", "bonus": 40 },
+        { "name": "National Defense", "bonus": 40 },
+        { "name": "Hindi Language", "bonus": 30 },
+        { "name": "Economic Liberalization", "bonus": 30 }
+      ],
+      "specialPower": {
+        "name": "Pokhran Test",
+        "effect": "+10% popularity nationwide",
+        "cost": "Instant heavy funds penalty"
+      }
+    },
+    {
       "id": "arvind-kejriwal",
       "name": "Arvind Kejriwal",
       "party": "AAP",
-      "homeState": "Delhi",      "image": "assets/images/Arvind_Kejriwal.png",
+      "homeState": "Delhi",
+      "image": "assets/images/Arvind_Kejriwal.png",
       "partyLogo": "assets/icons/Aam_Aadmi_Party_logo_(English).svg",
       "primaryColor": "#2196F3",
       "policies": [
-        {
-          "name": "Anti-Corruption",
-          "bonus": 40
-        },
-        {
-          "name": "Education",
-          "bonus": 40
-        },
-        {
-          "name": "Healthcare",
-          "bonus": 30
-        },
-        {
-          "name": "Digital Transformation",
-          "bonus": 30
-        },
-        {
-          "name": "Water and Mineral Rights",
-          "bonus": 30
-        },
-        {
-          "name": "Women's Empowerment",
-          "bonus": 20
-        }      ]    },
+        { "name": "Anti-Corruption", "bonus": 40 },
+        { "name": "Education", "bonus": 40 },
+        { "name": "Healthcare", "bonus": 30 },
+        { "name": "Water and Mineral Rights", "bonus": 30 }
+      ],
+      "specialPower": {
+        "name": "Anti-Corruption Raid",
+        "effect": "Voids one opponent agenda commitment, refunds their spend",
+        "cost": "Instantly forfeit any rally tokens currently held"
+      }
+    },
     {
       "id": "mamata-banerjee",
       "name": "Mamata Banerjee",
@@ -169,62 +109,37 @@
       "partyLogo": "assets/icons/All_India_Trinamool_Congress_logo_(3).svg",
       "primaryColor": "#00AAFF",
       "policies": [
-        {
-          "name": "Women's Empowerment",
-          "bonus": 40
-        },
-        {
-          "name": "Agricultural Reforms",
-          "bonus": 30
-        },
-        {
-          "name": "Public Sector",
-          "bonus": 30
-        },
-        {
-          "name": "Press Freedom",
-          "bonus": 20
-        },
-        {
-          "name": "Secularism",
-          "bonus": 30
-        },
-        {
-          "name": "State's Rights",
-          "bonus": 30
-        }      ]
-    },    {
+        { "name": "Women's Empowerment", "bonus": 40 },
+        { "name": "State's Rights", "bonus": 30 },
+        { "name": "Secularism", "bonus": 30 },
+        { "name": "Agricultural Reforms", "bonus": 30 }
+      ],
+      "specialPower": {
+        "name": "State Autonomy Stand",
+        "effect": "Home state + State's Rights states immune to opponent's agendas/rallies for rest of game",
+        "cost": "Funds hit now"
+      }
+    },
+    {
       "id": "nitish-kumar",
       "name": "Nitish Kumar",
       "party": "JD(U)",
-      "homeState": "Bihar",      "image": "assets/images/Nitish_Kumar.png",
+      "homeState": "Bihar",
+      "image": "assets/images/Nitish_Kumar.png",
       "partyLogo": "assets/icons/Janata_Dal_(United)_Flag.svg",
       "primaryColor": "#5CB85C",
       "policies": [
-        {
-          "name": "Rural Development",
-          "bonus": 30
-        },
-        {
-          "name": "Women's Empowerment",
-          "bonus": 30
-        },
-        {
-          "name": "Law and Order",
-          "bonus": 20
-        },
-        {
-          "name": "Caste Reservation",
-          "bonus": 40
-        },
-        {
-          "name": "Anti-Corruption",
-          "bonus": 20
-        },
-        {
-          "name": "State's Rights",
-          "bonus": 30
-        }      ]    },
+        { "name": "Caste Reservation", "bonus": 40 },
+        { "name": "Rural Development", "bonus": 30 },
+        { "name": "Women's Empowerment", "bonus": 30 },
+        { "name": "State's Rights", "bonus": 30 }
+      ],
+      "specialPower": {
+        "name": "Alliance Switch",
+        "effect": "Copies the effect of the opponent's last-used agenda",
+        "cost": "-5% popularity nationwide"
+      }
+    },
     {
       "id": "yogi-adityanath",
       "name": "Yogi Adityanath",
@@ -234,31 +149,256 @@
       "partyLogo": "assets/icons/Bharatiya_Janata_Party_(icon).svg",
       "primaryColor": "#FF9933",
       "policies": [
-        {
-          "name": "Healthcare",
-          "bonus": 30
-        },
-        {
-          "name": "Infrastructure",
-          "bonus": 30
-        },
-        {
-          "name": "Privatization",
-          "bonus": 20
-        },
-        {
-          "name": "Law and Order",
-          "bonus": 40
-        },
-        {
-          "name": "Hindutva",
-          "bonus": 40
-        },
-        {
-          "name": "Uniform Civil Code",
-          "bonus": 30
-        }
-      ]
+        { "name": "Law and Order", "bonus": 40 },
+        { "name": "Hindutva", "bonus": 40 },
+        { "name": "Uniform Civil Code", "bonus": 30 },
+        { "name": "Infrastructure", "bonus": 30 }
+      ],
+      "specialPower": {
+        "name": "Bulldozer Action",
+        "effect": "Sharply cuts opponent's popularity in one target state",
+        "cost": "-popularity nationwide in Minority Areas states"
+      }
+    },
+    {
+      "id": "indira-gandhi",
+      "name": "Indira Gandhi",
+      "party": "INC",
+      "homeState": "Uttar Pradesh",
+      "image": "assets/images/Indira_Gandhi.png",
+      "partyLogo": "assets/icons/Indian_National_Congress_hand_logo.svg",
+      "primaryColor": "#138808",
+      "policies": [
+        { "name": "National Defense", "bonus": 40 },
+        { "name": "Public Sector", "bonus": 30 },
+        { "name": "Land Reforms", "bonus": 30 },
+        { "name": "Rural Development", "bonus": 30 }
+      ],
+      "specialPower": {
+        "name": "National Emergency",
+        "effect": "Instantly seizes a large popularity swing from the opponent across all states",
+        "cost": "Instant -10% popularity nationwide + instant heavy funds loss"
+      }
+    },
+    {
+      "id": "jawaharlal-nehru",
+      "name": "Jawaharlal Nehru",
+      "party": "INC",
+      "homeState": "Uttar Pradesh",
+      "image": "assets/images/Jawaharlal_Nehru.png",
+      "partyLogo": "assets/icons/Indian_National_Congress_hand_logo.svg",
+      "primaryColor": "#138808",
+      "policies": [
+        { "name": "Education", "bonus": 40 },
+        { "name": "Secularism", "bonus": 40 },
+        { "name": "Public Sector", "bonus": 30 },
+        { "name": "Infrastructure", "bonus": 30 }
+      ],
+      "specialPower": {
+        "name": "Non-Alignment",
+        "effect": "Blocks the next special power the opponent tries to use (standing shield, no time limit)",
+        "cost": "Instant funds penalty on activation"
+      }
+    },
+    {
+      "id": "sardar-patel",
+      "name": "Sardar Patel",
+      "party": "INC",
+      "homeState": "Gujarat",
+      "image": "assets/images/Sardar_Patel.png",
+      "partyLogo": "assets/icons/Indian_National_Congress_hand_logo.svg",
+      "primaryColor": "#138808",
+      "policies": [
+        { "name": "National Defense", "bonus": 40 },
+        { "name": "Law and Order", "bonus": 30 },
+        { "name": "Infrastructure", "bonus": 30 },
+        { "name": "Anti-Corruption", "bonus": 30 }
+      ],
+      "specialPower": {
+        "name": "Iron Unification",
+        "effect": "Instantly flips one small state/UT fully to your majority",
+        "cost": "Heavy instant funds hit"
+      }
+    },
+    {
+      "id": "br-ambedkar",
+      "name": "B.R. Ambedkar",
+      "party": "Independent",
+      "homeState": "Maharashtra",
+      "image": "assets/images/BR_Ambedkar.png",
+      "partyLogo": null,
+      "primaryColor": "#0033A0",
+      "policies": [
+        { "name": "Caste Reservation", "bonus": 40 },
+        { "name": "Judicial Activism", "bonus": 40 },
+        { "name": "Education", "bonus": 30 },
+        { "name": "Indigenous Rights", "bonus": 30 }
+      ],
+      "specialPower": {
+        "name": "Constitutional Reform",
+        "effect": "Permanent, non-decaying popularity floor in Caste Reservation / Indigenous Rights states",
+        "cost": "High instant funds hit"
+      }
+    },
+    {
+      "id": "jayalalithaa",
+      "name": "Jayalalithaa",
+      "party": "AIADMK",
+      "homeState": "Tamil Nadu",
+      "image": "assets/images/Jayalalithaa.png",
+      "partyLogo": null,
+      "primaryColor": "#00A651",
+      "policies": [
+        { "name": "State's Rights", "bonus": 40 },
+        { "name": "Public Sector", "bonus": 30 },
+        { "name": "Women's Empowerment", "bonus": 30 },
+        { "name": "Healthcare", "bonus": 30 }
+      ],
+      "specialPower": {
+        "name": "Amma Welfare Scheme",
+        "effect": "Large popularity boost in home state + Public Sector states",
+        "cost": "Heavy instant funds hit"
+      }
+    },
+    {
+      "id": "lal-bahadur-shastri",
+      "name": "Lal Bahadur Shastri",
+      "party": "INC",
+      "homeState": "Uttar Pradesh",
+      "image": "assets/images/Lal_Bahadur_Shastri.png",
+      "partyLogo": "assets/icons/Indian_National_Congress_hand_logo.svg",
+      "primaryColor": "#138808",
+      "policies": [
+        { "name": "National Defense", "bonus": 40 },
+        { "name": "Agricultural Reforms", "bonus": 40 },
+        { "name": "Anti-Corruption", "bonus": 30 },
+        { "name": "Public Sector", "bonus": 30 }
+      ],
+      "specialPower": {
+        "name": "Jai Jawan Jai Kisan",
+        "effect": "Popularity boost in Eastern Border/Western Border AND Agricultural Region states at once",
+        "cost": "Instant funds penalty"
+      }
+    },
+    {
+      "id": "pv-narasimha-rao",
+      "name": "P.V. Narasimha Rao",
+      "party": "INC",
+      "homeState": "Telangana",
+      "image": "assets/images/PV_Narasimha_Rao.png",
+      "partyLogo": "assets/icons/Indian_National_Congress_hand_logo.svg",
+      "primaryColor": "#138808",
+      "policies": [
+        { "name": "Economic Liberalization", "bonus": 40 },
+        { "name": "Judicial Activism", "bonus": 30 },
+        { "name": "State's Rights", "bonus": 30 },
+        { "name": "Digital Transformation", "bonus": 30 }
+      ],
+      "specialPower": {
+        "name": "Minority Government Survival",
+        "effect": "Re-activate one of your own agenda cards a second time",
+        "cost": "Instant heavy funds penalty"
+      }
+    },
+    {
+      "id": "rajiv-gandhi",
+      "name": "Rajiv Gandhi",
+      "party": "INC",
+      "homeState": "Uttar Pradesh",
+      "image": "assets/images/Rajiv_Gandhi.png",
+      "partyLogo": "assets/icons/Indian_National_Congress_hand_logo.svg",
+      "primaryColor": "#138808",
+      "policies": [
+        { "name": "Digital Transformation", "bonus": 40 },
+        { "name": "Infrastructure", "bonus": 30 },
+        { "name": "Education", "bonus": 30 },
+        { "name": "State's Rights", "bonus": 30 }
+      ],
+      "specialPower": {
+        "name": "Telecom Revolution",
+        "effect": "Permanently discounts Digital Transformation agenda costs for rest of game",
+        "cost": "Heavy upfront funds hit"
+      }
+    },
+    {
+      "id": "amitabh-bachchan",
+      "name": "Amitabh Bachchan",
+      "party": "Independent",
+      "homeState": "Uttar Pradesh",
+      "image": "assets/images/Amitabh_Bachchan.png",
+      "partyLogo": null,
+      "primaryColor": "#B8860B",
+      "policies": [
+        { "name": "Press Freedom", "bonus": 40 },
+        { "name": "Digital Transformation", "bonus": 30 },
+        { "name": "Education", "bonus": 30 },
+        { "name": "Healthcare", "bonus": 30 }
+      ],
+      "specialPower": {
+        "name": "Celebrity Endorsement",
+        "effect": "Converts undecided (\"Others\") popularity to you nationwide, not taken from the opponent",
+        "cost": "Funds hit this phase"
+      }
+    },
+    {
+      "id": "sachin-tendulkar",
+      "name": "Sachin Tendulkar",
+      "party": "Independent",
+      "homeState": "Maharashtra",
+      "image": "assets/images/Sachin_Tendulkar.png",
+      "partyLogo": null,
+      "primaryColor": "#004BA0",
+      "policies": [
+        { "name": "Education", "bonus": 40 },
+        { "name": "Healthcare", "bonus": 30 },
+        { "name": "Infrastructure", "bonus": 30 },
+        { "name": "Digital Transformation", "bonus": 30 }
+      ],
+      "specialPower": {
+        "name": "National Icon",
+        "effect": "Flat popularity boost split across all states",
+        "cost": "Usable only in the game's final phase"
+      }
+    },
+    {
+      "id": "hema-malini",
+      "name": "Hema Malini",
+      "party": "BJP",
+      "homeState": "Uttar Pradesh",
+      "image": "assets/images/Hema_Malini.png",
+      "partyLogo": "assets/icons/Bharatiya_Janata_Party_(icon).svg",
+      "primaryColor": "#FF9933",
+      "policies": [
+        { "name": "Women's Empowerment", "bonus": 40 },
+        { "name": "Healthcare", "bonus": 30 },
+        { "name": "Infrastructure", "bonus": 30 },
+        { "name": "Education", "bonus": 30 }
+      ],
+      "specialPower": {
+        "name": "Star Power Rally",
+        "effect": "Popularity boost in home state + one adjacent state",
+        "cost": "Only usable while below national-average popularity"
+      }
+    },
+    {
+      "id": "rajinikanth",
+      "name": "Rajinikanth",
+      "party": "Independent",
+      "homeState": "Tamil Nadu",
+      "image": "assets/images/Sivaji_Rao.png",
+      "partyLogo": null,
+      "primaryColor": "#8B0000",
+      "policies": [
+        { "name": "Anti-Corruption", "bonus": 40 },
+        { "name": "Press Freedom", "bonus": 30 },
+        { "name": "Digital Transformation", "bonus": 30 },
+        { "name": "Education", "bonus": 30 }
+      ],
+      "specialPower": {
+        "name": "Thalaivar Announcement",
+        "effect": "Massive one-time nationwide popularity surge",
+        "cost": "Permanently locks your other 4 agendas for the rest of the game"
+      }
     }
   ]
 }

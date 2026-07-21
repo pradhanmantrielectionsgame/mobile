@@ -93,9 +93,11 @@ The game uses `game-config.json` for all tunable parameters (rally token boosts,
 
 ## Current Status
 
-**Game Engine:** Functional and stable. The game logic (`js/*.js`, `data/`, assets) is working and not being rewritten. All current work is UI-focused.
+**Game Engine:** Functional and stable. The game logic (`js/*.js`, assets) is working and not being rewritten. 
 
-**UI Migration:** Redesigned mobile UI direction is Booth Ink (`design/prototypes/pme-mobile-sheet.html`). This is a new UI skin replacing the old index.html/styles.css, not a replacement for the game engine. The migration is planned in phases:
+**Data Layer Rebalancing:** `data/` is being rebalanced per the replayability redesign (20-politician roster, 15 state groups, special powers with token-economy unlock gates). Booth Ink now fetches `data/states_data.json` live at runtime (no duplication). A consistency checker (`check_data_consistency.js`) guards against silent breaks from field renames.
+
+**UI Migration:** Redesigned mobile UI direction is Booth Ink (`design/prototypes/pme-mobile-sheet.html`). This is a new UI skin replacing the old index.html/styles.css, not a replacement for the game engine. Data layer wired (live fetch); game logic wiring starts Phase 1. The migration is planned in phases:
 - **Phase 0** (PWA scaffolding) — Backend matchmaking setup, manifest.json, service worker. *Not yet started.*
 - **Phase 1** — Booth Ink implementation, AI opponent port, session start/end screens
 - **Phase 2+** — See `design/plan.md` roadmap for replayability redesign and content phases
@@ -106,8 +108,8 @@ For more detail, see `design/plan.md`.
 
 - **No AI opponent yet** — Player 2 is same-device hotseat (Shift+Click in index.html) only; `ai-player-controller.js` from desktop is not ported
 - **No session boundaries** — no welcome screen, game-over screen, or functional options menu (currently stubs)
-- **Replayability design complete; implementation pending** — design/plan.md covers the full redesign (20-politician roster, special powers with instant cost/benefit tradeoffs, 3-flavor rally-token economy); code implementation is Phase 4+
-- **Booth Ink UI not yet wired to real engine** — `pme-mobile-sheet.html` has UI/interaction only; operates on mock data, not the real js/* engine. Wiring starts Phase 1
+- **Replayability design complete; data layer partial, engine logic pending** — design/plan.md covers the full redesign (20-politician roster, special powers with instant cost/benefit tradeoffs, 3-flavor rally-token economy). Data layer rebalanced (politicians-data.json, states_data.json expanded per plan); engine logic implementation Phase 4+
+- **Booth Ink data layer wired; game engine logic pending** — `pme-mobile-sheet.html` now fetches `data/states_data.json` live; map rendering and group filtering work. Game logic (investment, rally, scoring) still operates on mock data. Wiring starts Phase 1
 - **Small UTs not directly tappable** — Delhi, Chandigarh, Puducherry, etc. route through button-cluster pattern (confirmed as production-ready, see findings.md)
 - **SVG map undersized** — current `assets/icons/INDIA_V3_smaller_viewbox.svg` wastes ~27% of viewBox area; tightened viewBox would render 27% larger with zero crop risk
 

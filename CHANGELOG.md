@@ -67,6 +67,75 @@ Long design-ideation session diagnosing why desktop's four "randomization" syste
   - Charset mojibake on local dev servers (Python `http.server` sends no charset header)
   - Artifact viewer ~150–200px chrome makes `flex:1` regions appear shorter than on real device
 
+### 🔄 Data Layer Rebalancing & Consistency
+
+#### Politicians Roster Expansion
+- **REBALANCED**: `data/politicians-data.json` from 8 to 20 politicians (16 historical + 4 celebrities)
+  - Each politician now carries 4 signature agendas + 1 unique special power (5 total slots)
+  - Added `specialPower` field defining cost/benefit tradeoff and distinctive abilities
+  - Expanded roster: added Mamata Banerjee, Arvind Kejriwal, Chandrababu Naidu, Sharad Pawar, Nitish Kumar, Stalin, Yogi Adityanath, Mulayam Singh Yadav, Naveen Patnaik, Shivraj Singh Chouhan, Manmohan Singh, Pranab Mukherjee, plus 4 celebrities (Amitabh Bachchan, Shah Rukh Khan, Amir Khan, Salman Khan)
+
+#### Regional State Groups Restructure
+- **REBALANCED**: `data/states_data.json` state groups from 12→15 groups per replayability plan (design/plan.md)
+  - Retired: `BorderLands`, `NortheastIndia`
+  - Added: `EasternBorder`, `WesternBorder`, `NationalParksWildlife`
+  - Rebalanced seat allocations: Eastern Border (192→197), Tribal Lands (86→101), Minority Areas (107→109)
+  - Dual-tagged for geopolitical reality: Ladakh & Himachal Pradesh marked both EasternBorder + WesternBorder (border both China and Pakistan)
+  - Added state memberships: Assam & Sikkim to TribalLands; Tripura to MinorityAreas
+
+#### Policy Tag Migration
+- **REMAPPED**: `data/policy-tags.json` removed all references to retired `BorderLands`/`NortheastIndia` tags
+  - Replaced with `EasternBorder`/`WesternBorder` across 8 affected policies
+  - Validated via new consistency checker (see below)
+
+#### Data Consistency Checking
+- **CREATED**: `check_data_consistency.js` — standing guard validating state-group and policy-tag field names across data files and engine code
+  - Regex-based field extraction from `js/*.js`, `index.html`, `design/prototypes/*.html`
+  - Verifies every referenced group field exists in `states_data.json` and every policy tag exists in `policy-tags.json`
+  - Catches field renames/removals before silent engine breaks (e.g., BorderLands→EasternBorder migration, which this script validated end-to-end)
+  - Run after any `states_data.json`/`policy-tags.json` field rename or removal
+
+#### Documentation Sync
+- **UPDATED**: `design/plan.md` state-groups tables, member lists, and seat totals to match all rebalancing (reflects C3, C11 data corrections)
+
+### 🎨 Booth Ink Engine Integration & Map Rendering Fixes
+
+#### Live Data Binding
+- **CHANGED**: `pme-mobile-sheet.html` now fetches `data/states_data.json` at page load instead of embedding hand-copied `STATES/GROUPS` array
+  - Eliminates single-source-of-truth duplication risk flagged in design/plan.md
+  - Verified: session's later data corrections (C11) auto-propagated to Booth Ink with zero code changes
+
+#### Map Selector & Interaction Fixes
+- **FIXED**: Map rendering selectors to include `circle[id]` overlays, not just `path[id]`
+  - Uttarakhand, Ladakh, Himachal Pradesh each have two SVG elements with the same id (real `<path>` boundary + zero-radius `<circle>` marker)
+  - Original selector-gap excluded these three from group highlights, color fills, and click handling
+  - Updated: `paintMap()`, `selectState()`, map click handler, `applyGroupHighlight()` all now query both `path[id], circle[id]`
+
+#### SVG Styling & Visual Hierarchy
+- **CHANGED**: Group-filter dimming from `opacity` (dims stroke + fill) to `fill-opacity:0` (only dims fill, keeps stroke black)
+  - Renders excluded states as hollow outlines instead of faded
+- **DARKENED**: `--map-base` color from `#E4E7EC` to `#AEB4C0` for better contrast against `#EEF0F3` page background
+  - Result: maximum visual contrast between "in active group" (filled + colored) and "not in group" (hollow outline) with borders always legible
+
+#### Viewport & Layout Adjustments
+- **ADDED**: `.map-wrap{min-height:160px}` safety floor to prevent map collapse
+- **REDUCED**: `.india-map` CSS transform scale `1.1` → `1.03` to stop edge clipping
+- **REVERTED**: Removed `<meta name="viewport">` tag (caused real Safari regression: map collapsed to sliver due to viewport math mismatch with fixed-height chrome)
+  - Fixed original double-tap-zoom bug via `touch-action:manipulation` CSS instead (gesture handling only, doesn't touch layout)
+  - Verified via real WebKit testing (Playwright + iPhone 14 profile), not Chromium assumptions
+
+#### UT Cluster Optimization
+- **ADDED**: Dedicated Delhi quick-invest button above Goa in corner-left cluster (Delhi now has own button vs. batch)
+- **SHRUNK**: All 3 corner-left UT buttons `138×123px` → `98×82px` to fit three stacked vertically
+- **REMOVED**: Delhi from `SMALL_UTS` batch array — now only `['INDH','INCH','INPY','INLD','INAN']` route through batch button (Chandigarh, Dadra & Nagar Haveli + Daman & Diu, Puducherry, Lakshadweep, Andaman & Nicobar Islands)
+
+### 📝 Project Documentation Updates
+- **ADDED**: "Data & Config Conventions" section to CLAUDE.md — recommends config/data files over hardcoding; documents consistency-checking approach (data/politicians-data.json, data/states_data.json, data/policy-tags.json as single source of truth)
+- **ADDED**: 4 new "Frontend technical rules" to CLAUDE.md documenting WebKit-vs-Chromium testing requirement, Booth Ink's no-viewport-meta constraint, circle/path SVG selector gap, and opacity-vs-fill-opacity gotcha (all verified by explicit user feedback)
+
+#### Context
+Session focused on solidifying the data layer for replayability redesign and integrating Booth Ink with live game data. Discovered and fixed three orthogonal bugs in Booth Ink's map rendering (selector gap, opacity gotcha, viewport regression) plus added systematic data consistency checking to prevent future silent breaks from field renames or group migrations.
+
 ## [2.0.5] - 2026-07-19 - Planning & Architecture Session: Mobile Parity Audit
 
 ### 📋 Planning & Analysis
