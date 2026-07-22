@@ -6,6 +6,37 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### 🔍 Economy Data Corrections & Authoritative Design Reference — 2026-07-22
+
+#### Data Corrections
+- **FIXED**: `data/policy-tags.json` National Defense `opposeTags` — removed `HindiHeartland`, kept only `CoastalIndia` (corrects policy effect from −25.3 to +1.8 seat-equivalent)
+- **ADDED**: `nationwideBonus: 2` field to Women's Empowerment, Healthcare, and Anti-Corruption policies (implements previously undocumented +2% nationwide effect, distinct from `baseMagnitude` which would overshoot by ~6x)
+
+#### Documentation Consolidation
+- **REWRITTEN**: `design/economy-status-map.md` from economy-numbers-only status page into authoritative single-source-of-truth design reference — added core loop, win condition, starting-position breakdown, redistribution rule, all mechanic categories, politician roster index, plausibility proof-numbers, and open items
+  - Rationale: consolidates scattered design decisions from `design/plan.md`, CHANGELOG.md, findings.md, and session conversations into one place the build cycle can reference for "how is X supposed to work"
+  - Retained previous status-tracking convention (decided/open/gap/assumed fields) for ongoing design clarity
+- **UPDATED**: `findings.md` with 7 new dated findings (2026-07-22) and cross-annotations on 3 pre-existing entries, surfacing implementation gaps and undocumented code behaviors
+
+#### Design Decisions Finalized
+- **DECISION D1**: National Defense `opposeTags` fix — drop `HindiHeartland`, keep only `CoastalIndia`. Root cause: six states (UP, Bihar, Gujarat, Rajasthan, Uttarakhand, West Bengal) carry both a supported (`EasternBorder`/`WesternBorder`) and an opposed tag (`HindiHeartland`/`CoastalIndia`), netting each to exactly zero. Removing `HindiHeartland` un-cancels UP (+9.6 seat-equiv) and Bihar (+4.8), moving the national effect from −25.3 to +1.8. Rationale: removes an arbitrary thematic collision, keeps a genuine reason (both coastal and border-region states actually cancel).
+- **DECISION D2**: Three zero-tag policies (Women's Empowerment, Healthcare, Anti-Corruption) get explicit flat +2% nationwide effect via new `nationwideBonus` field. Rationale: `baseMagnitude` (8–12 for these three) already appears in UI label logic and would produce ~6x the intended effect if used as implementation; a separate field prevents future bugs and documents the real intended number.
+- **DECISION D3**: `design/economy-status-map.md` scope expanded to full finalized game design (core loop, win condition, starting position, redistribution rule, all mechanics, politician roster, plausibility numbers, open items) as the single authoritative reference for the build cycle. Rationale: direct match for the explicit request — one document, so build cycle has a single source instead of four scattered ones.
+
+#### Findings & Discoveries
+- Session produced 7 dated 2026-07-22 findings entries (written by /checkpoint), covering:
+  - Rally per-state cap (`maxRalliesPerState`) is configured in game-config.json but never enforced in the live code path (`useSimpleRallyToken()`), only in dead code
+  - Three colliding definitions of `resetRallyTokensForPhase()` across `player-manager.js` and `rally-system.js`; live behavior is decided by script load order in index.html, not an intentional decision
+  - Dead rally implementation (8% boost, own token pool) in `campaign-system.js` is never called but still matches campaign grid's on-screen "Alt+Click for rallies" instructional text
+  - `simulatePopularityChanges()` is an uncapturable, never-cleared `setInterval` random-drift timer that contradicts the project's own anti-randomization design decisions elsewhere
+  - Correction to 2026-07-21 National Defense finding: 6 states cancel (Uttar Pradesh, Bihar, Gujarat, Rajasthan, Uttarakhand, West Bengal), not the originally stated 4 (Himachal Pradesh nets +1, not zero)
+  - `state-manager.js` also references retired `BorderLands` field (in addition to already-known `NortheastIndia` references in `campaign-system.js`)
+  - Campaign grid display code (generateCampaignGrid()) implies a `baseMagnitude%-nationwide` convention for zero-tag policies that would produce ~65 seat-equivalent for Healthcare if implemented, overshooting the newly-decided +2% by roughly 6x
+- (See `findings.md` for full entry texts and code references)
+
+#### Context
+Follow-up auditing and data-correction session after 2026-07-21 economy plausibility review. Focused on: fixing an identified policy imbalance (National Defense's self-canceling tags on six overlapping states), documenting an overlooked design intent (+2% nationwide bonus for three unimplemented policies), consolidating all settled design decisions into a single authoritative reference, and surfacing seven new implementation gaps and undocumented code behaviors for priority in the build cycle.
+
 ### 💰 Economy Plausibility & Rebalancing — 2026-07-21
 
 #### Key Decisions Finalized

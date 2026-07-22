@@ -16,13 +16,15 @@
       "tier": 2,
       "baseMagnitude": 8,
       "supportTags": [],
-      "opposeTags": []
+      "opposeTags": [],
+      "nationwideBonus": 2
     },
     "Healthcare": {
       "tier": 1,
       "baseMagnitude": 12,
       "supportTags": [],
-      "opposeTags": []
+      "opposeTags": [],
+      "nationwideBonus": 2
     },
     "Land Reforms": {
       "tier": 2,
@@ -76,7 +78,8 @@
       "tier": 2,
       "baseMagnitude": 8,
       "supportTags": [],
-      "opposeTags": []
+      "opposeTags": [],
+      "nationwideBonus": 2
     },
     "Judicial Activism": {
       "tier": 3,
@@ -142,7 +145,7 @@
       "tier": 1,
       "baseMagnitude": 12,
       "supportTags": ["EasternBorder", "WesternBorder"],
-      "opposeTags": ["CoastalIndia", "HindiHeartland"]
+      "opposeTags": ["CoastalIndia"]
     }
   },
   "tierDefinitions": {
