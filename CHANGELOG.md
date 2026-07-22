@@ -6,6 +6,35 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### 💰 Economy Plausibility & Rebalancing — 2026-07-21
+
+#### Key Decisions Finalized
+- **DECISION D1**: `totalPhases = 10` is canonical (not 8). Config and phase-system.js both implement 10; design/plan.md's prose and Booth Ink's UI still hardcode 8, which is now stale and needs updating (tracked, not yet done).
+- **DECISION D2**: Direct-investment decay curve stays mobile's own existing linear glide (5%→2% over 20 taps, floors at 2%), not desktop's multiplicative formula (5%×max(0.8, 1−spend×0.005)). Deliberately chosen override of the general desktop-reference convention.
+- **DECISION D3**: Base economy scale = mobile's own numbers (2,500 Cr start, 1,000 Cr/phase refresh per player, cost = seats×10). Stopped comparing/reconciling against desktop's numbers (200/200/seats×1) entirely. Per-player refresh verified via `phase-system.js`'s `awardRefreshFunds()`. Lifetime budget per player = 12,500 Cr. Scale is now independently canonical per explicit user decision (see CLAUDE.md exception).
+- **DECISION D4**: Agenda commitment cost = 500 Cr/tap (each tap = 25% completion). Direct consequence: 2,000 Cr to max one agenda, 8,000 Cr to max all four agendas. Maxing all agendas leaves only 4,500 Cr of lifetime budget for direct map investment.
+- **DECISION D5**: Agenda commitment taps NOT capped per phase — players can commit as many taps as funds allow. Only money is the gate, not an action-count cap. Hoarding cash for burst-commits later is strategic (self-taxing via opponent's unopposed popularity climb), not an exploit.
+- **DECISION D6**: Group-dominance payout formula corrected: `5 × Σ(seats in group)` (not `0.5 × Σ(seats)` as originally documented). Ties the 0.5 multiplier to the group's cost-as-a-unit (seats×10). Fixes 10× bug in original formula. Even with correction, cost-to-dominate exceeds entire lifetime budget; group dominance is a bonus on states already being pushed to 50% for national seat race, never a standalone cash target.
+- **DECISION D7**: Rally token system has three undocumented caps, all confirmed directly by user:
+  - Spend cap: max 2 tokens/phase/player
+  - Per-state cap: max 2 total plays per state for entire game, shared across both players (Nationwide Rally exempt)
+  - Crafting counts against spend cap: Special Powerup (6 tokens → 3-phase minimum), Nationwide Rally (12 tokens → 6-phase minimum) — same pool as individual rallies, not separate actions
+  - Consequence: total earnable = 28 (20 base + 8 bonus), but total usable = 20 (2/phase × 10 phases); agenda-bonus tokens give scheduling flexibility only, not ceiling raise
+
+#### Implementation & Code
+- **FIXED**: `js/phase-system.js` — removed independent `data/game-config.json` fetch with drifted hardcoded fallback (500/phase vs. live 1000/phase). Now calls shared `getGameConfig()` from `config-manager.js`. One config loader in codebase now, not two that could silently diverge.
+
+#### Documentation & Project Instructions
+- **CREATED**: `design/economy-status-map.md` — economy status-map reference (mirrors published Claude Artifact), following design/plan.md convention of storing HTML/CSS content in .md files
+- **UPDATED**: `CLAUDE.md` — added explicit exception to game-economy/balance-work bullet, noting mobile's base economy scale is now independently canonical, no longer benchmarked against desktop
+
+#### Findings & Discoveries
+- Session produced 9 dated 2026-07-21 findings entries (written by /checkpoint), covering: starting-position breakdown (~54% contested), direct-cash ceiling (~195/543 seats), agenda seat-value swing (±51.8 to −25.3), majority threshold (cash+token+2-agenda barely clears ~278/543), group-dominance payout bug and cost-ROI, rally token caps clarified, phase-count/scale-benchmark conflicts resolved, `checkRegionalDominanceBonuses()` stale/broken, `investAgenda()` cost gap, desktop win-condition found, National Defense self-canceling tags, cost-per-seat-share size-invariance vs. token asymmetry
+- (See `findings.md` for full entry texts and economic modeling details)
+
+#### Context
+Third session in ongoing economy-redesign series (prior: D1-D5 implementation decisions on 2026-07-21, D1-D9 game-design decisions on 2026-07-20). Focused on plausibility modeling: confirming newly-decided numeric values make the game winnable, fixing config-loader bug allowing separate values to drift, resolving phase-count and economy-scale conflicts that were blocking formula finalization and economy-status-map tool build.
+
 ### 🎯 Direct Investment Cost Gating & Game Economy Decisions
 
 #### Implementation

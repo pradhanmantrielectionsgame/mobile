@@ -1,9 +1,49 @@
 # Findings
 
+## 2026-07-21 — Real starting-position breakdown: ~54% of the map is genuinely contested, not player-vs-player
+**Finding:** `popularity-manager.js`'s actual init algorithm gives Player 1 a 2-state stronghold (Uttar Pradesh + Maharashtra, 128 seats), Player 2 a 3-state stronghold (West Bengal + Bihar + Tamil Nadu, 121 seats), and leaves the remaining 31 states (294 seats, 54% of all 543) as "competitive" territory where both players start low (5–29%) and "Others" dominates. Expected baseline seat share at game start: P1 ≈24.6%, P2 ≈24.3%, Others ≈51.1%.
+**Context:** Computed against live `data/states_data.json` while modeling whether the decided economy numbers make the game winnable and how adversarial the early game actually is.
+**Implication:** Most of the early game is a race to harvest the uncommitted "Others" pool, not direct player-vs-player combat — real zero-sum friction concentrates in the shared competitive-state pool and in attacks on each other's strongholds, not everywhere.
+
+## 2026-07-21 — Direct cash investment alone cannot win the game under the decided numbers
+**Finding:** Simulating the real decay curve against real state-size data, the theoretical best case for cash-only play (full 12,500 lifetime budget, spent optimally spread across all states, opponent does nothing) tops out at ~195/543 seats (35.9%) — well short of the 272-seat majority (50.1%) needed to win.
+**Context:** Modeled while assessing whether the newly-decided base economy numbers (2,500 start / 1,000 per phase / seats×10 cost) make the game plausibly winnable.
+**Implication:** Rally tokens and agendas are mathematically required to reach a majority under current numbers, not optional flavor layered on top of cash investment — the map-tapping mechanic alone is not a viable win path.
+
+## 2026-07-21 — Agenda seat-equivalent value swings from +51.8 to −25.3 across the real 23-policy pool; 3 policies currently do nothing
+**Finding:** Computing `baseMagnitude × Σ(matching support tags − matching oppose tags)` against every real state in `data/states_data.json`, national seat-equivalent value ranges from Economic Liberalization (+51.8, best) to National Defense (−25.3, actively harmful if picked) across the 23 policies in `data/policy-tags.json`. Women's Empowerment, Healthcare, and Anti-Corruption have zero support/oppose tags configured, so completing them currently applies no popularity effect at all under the decided formula.
+**Context:** Computed while auditing whether the game is fairly winnable regardless of which of the 20 politicians a player picks, given each is locked into 4 specific agendas.
+**Implication:** A single agenda slot can swing ~77 seats between best and worst pick — larger than the ~6-seat margin by which a combined cash+token+2-agenda strategy crosses the majority threshold (see the next finding). Politician/agenda-pick quality is likely a bigger determinant of outcome than player skill under current numbers. The three zero-tag policies are likely an oversight (old `policy-popularity-calculator.js` had a "no tags → flat nationwide bonus" fallback the new formula doesn't implement). Not yet audited: which of the 20 roster politicians got assigned these dead or negative-value agendas.
+
+## 2026-07-21 — A combined cash+token+2-agenda strategy just barely crosses the majority threshold (~278/543)
+**Finding:** Adding free rally tokens (+20.6 seat-equiv from 20 base tokens on the biggest states) and two strong agendas (Economic Liberalization + Education, +101.2 combined) on top of a reduced cash allocation reaches ~278/543 seats (51.2%) — a majority, with only ~6 seats to spare.
+**Context:** Built as the realistic "best case that isn't cash-only" scenario, following the cash-only ceiling finding above.
+**Implication:** The game is winnable, but the margin is thin and highly sensitive to agenda-pick quality (see above) — worth confirming the actual 20-politician roster doesn't leave any politician mathematically unwinnable.
+
+## 2026-07-21 — Group-dominance payout formula was a 10x-too-small bug; even corrected, cost to dominate any group exceeds the entire lifetime budget
+**Finding:** The payout formula was first documented as `0.5 × Σseats-in-group` (matching desktop's `group-rewards.js` literally), but the actual intended formula ties the 0.5 multiplier to the *cost* of a tap on the group treated as one unit: `0.5 × (seats × 10) = 5 × seats` — a 10x correction, confirmed by the user via a worked Maharashtra example. Even with the correction, computing the real cash cost to push every member state of a group to 50% (using the real decay curve and real starting positions) shows every single one of the 15 dominable groups costs more to actually dominate via direct cash than the entire 12,500 lifetime budget — e.g. Agricultural Region costs ~12,480 Cr to dominate for a corrected payout of only 1,365 Cr (~11% ROI).
+**Context:** Surfaced when the user walked through a concrete cost-vs-payout example and found the numbers "wildly wrong," then clarified the intended formula.
+**Implication:** Fixed the formula shape for whenever group dominance is implemented/ported to mobile (`campaign-system.js`'s `checkRegionalDominanceBonuses()` is stale per the existing 2026-07-21 finding below and doesn't implement any payout yet). Group dominance should be understood and communicated as a bonus on states already being pushed to 50% for the national seat-share race — never as a standalone cash-ROI target, even at the corrected magnitude.
+
+## 2026-07-21 — Rally token system has undocumented caps: 2/phase spend, 2/state lifetime, and a real ceiling of 20 usable tokens (not 28)
+**Finding:** Clarified directly by the user: token spending (whether an individual per-state rally play or converting tokens into a Special Powerup/Nationwide Rally craft) is capped at 2 per phase per player, and separately capped at 2 total plays per state for the whole game (shared between both players, Nationwide Rally exempt). Since income is also 2/phase, and the spend cap matches it exactly, the real hard ceiling on tokens ever *usable* across a 10-phase game is 20 (2×10) — regardless of the up-to-28 (20 base + 8 agenda bonus) that can be *earned*. The +8 agenda-completion bonus tokens don't raise this ceiling; they only give scheduling flexibility in when the same 20 get spent, and can go permanently unused if a player already spends their base income at the cap every phase.
+**Context:** None of these caps were previously documented anywhere in the project. Surfaced through several rounds of direct clarification after incorrect assumptions (tokens unlimited per state; crafting exempt from the per-phase cap; crafting and base income as separate pools) were each proposed and corrected by the user.
+**Implication:** Crafting a Special Powerup (6 tokens) needs a minimum of 3 phases of dedicated commitment; a Nationwide Rally (12 tokens) needs a minimum of 6 — meaning it must be started almost immediately in a 10-phase game or it can't be finished in time. This is one shared token pool, not separate tracks for base vs. bonus tokens.
+
+## 2026-07-21 — phase-system.js had its own independent, drifted config loader; fixed to share config-manager.js's
+**Finding:** `js/phase-system.js` fetched `data/game-config.json` independently of the rest of the app, with a hardcoded fallback default that had drifted to 500/phase against the real live config value of 1000/phase.
+**Context:** User asked to fix the fallback-default inconsistency; investigation found the root cause was two entirely separate config-loading systems in the codebase — `phase-system.js`'s own fetch vs. the shared `config-manager.js` already used by `campaign-system.js`, `player-manager.js`, `rally-system.js`, and `investment-system.js`.
+**Implication:** Fixed at the root, not just the number: deleted `phase-system.js`'s independent config-loading system entirely; it now calls the shared `getGameConfig()` from `config-manager.js`, same as every other module. One config loader in the codebase now, not two that could silently drift apart again.
+
+## 2026-07-21 — totalPhases and base economy scale conflicts (flagged earlier this session) are now resolved by decision
+**Finding:** The `totalPhases: 8 vs 10` conflict (see finding below) is resolved: 10 is canonical. `design/plan.md`'s "8" references and Booth Ink's UI still need updating to match — not yet done. The desktop-vs-mobile price-scale mismatch (see the `seats × 1 vs seats × 10` and `50% of seats` findings below) is also resolved: mobile keeps its own numbers (2,500 start / 1,000 per phase / seats×10 cost) and stops comparing to desktop's scale entirely — desktop is no longer treated as the numeric reference for base economy scale, though other formula *shapes* (the redistribution rule, the agenda effect formula) were separately confirmed to still match desktop's.
+**Context:** Direct user decisions during this session's economy-plausibility review.
+**Implication:** Any future economy work should treat these as closed, not reopen the desktop-comparison question — see `design/economy-status-map.md` for the full current formula set.
+
 ## 2026-07-21 — Desktop's real direct-investment cost is seats × 1 (millions), not seats × 10
 **Finding:** `campaign-spending.js`'s `calculateBaseCost()` on the desktop app computes cost as `seats × 1`, in millions — a full order of magnitude different from mobile's `data/game-config.json` assumption of `seats × 10` (crores).
 **Context:** Auditing the in-game economy per explicit instruction to use the desktop app as reference, not mobile's ported/known-broken code.
-**Implication:** Any cost/budget tuning should compare cost-to-lifetime-budget ratios, not raw numbers, when reconciling desktop's and mobile's differently-scaled economies.
+**Implication:** Any cost/budget tuning should compare cost-to-lifetime-budget ratios, not raw numbers, when reconciling desktop's and mobile's differently-scaled economies. (Superseded 2026-07-21 — see the resolution finding above: mobile's own scale is now canonical, this comparison is closed.)
 
 ## 2026-07-21 — Desktop's home-state bonus is both a cost discount and a flat popularity floor, applied together
 **Finding:** `home-state-bonus.js` applies a 20% discount on every campaign cost (`getCampaignCost`) **and** a separate one-time flat +20 percentage-point popularity floor the moment the home state is touched (`applyHomeStateBonus`) — not a per-tap scaling multiplier, and not an either/or choice.
@@ -13,12 +53,12 @@
 ## 2026-07-21 — Desktop's popularity-gain-per-tap decay formula
 **Finding:** Each campaign tap gives `5% × max(0.8, 1 − cumulativeSpendInState × 0.005)` — a mild decay toward an 80%-of-base floor as more money is spent in that specific state, confirmed in `state-info.js`'s `recordStateAction()`.
 **Context:** Needed the real formula to model cost-to-dominate accurately for an interactive economy-balance tool.
-**Implication:** This is now the reference decay curve used in that tool; any future mobile port of investment decay should match it rather than inventing a new one.
+**Implication:** This is now the reference decay curve used in that tool; any future mobile port of investment decay should match it rather than inventing a new one. (Superseded 2026-07-21 — decided to keep mobile's own existing linear-glide curve instead; see the resolution finding above.)
 
 ## 2026-07-21 — Desktop's regional dominance bonus pays 50% of the group's seats, plus recurring carry-forward
 **Finding:** `group-rewards.js`'s `awardGroupDominationBonus()` pays `Math.round(totalSeats * 0.5)` in currency once dominance is first achieved, then repeats the same award as a carry-forward bonus while dominance is maintained.
 **Context:** Same economy audit, reading `group-rewards.js` and `state-groups.js` directly.
-**Implication:** Far more generous than mobile's flat 200+50/phase bonus — worth aligning mobile's numbers to this scale since desktop is the intended reference.
+**Implication:** Far more generous than mobile's flat 200+50/phase bonus — worth aligning mobile's numbers to this scale since desktop is the intended reference. (Superseded 2026-07-21 — mobile stopped comparing to desktop's scale; and this exact `0.5 × seats` formula was found to be a 10x-too-small bug when computing real ROI — see the group-dominance-payout finding above for the corrected formula.)
 
 ## 2026-07-21 — Desktop's "every state in group must individually exceed 50%" rule is intentional, not a mobile bug
 **Finding:** `state-groups.js`'s `checkGroupDomination()` requires `p1DominatingStates === states.length` — every single state in the group individually at ≥50%, not a seat-weighted average. Mobile's ported version uses the identical strict rule.
@@ -33,7 +73,7 @@
 ## 2026-07-21 — Mobile's investAgenda() has zero funds cost, same bug pattern as the pre-fix investIn()
 **Finding:** Booth Ink's `investAgenda()` increments agenda progress with no funds check at all, despite `design/plan.md`'s own D2 decision explicitly calling for agenda commitment to cost "one lump sum per phase."
 **Context:** Auditing "how much should agendas cost" as part of the in-game economy walkthrough.
-**Implication:** Agenda cost-gating needs the same kind of fix `investInPaid()` just received for direct map-tap investment; not yet implemented.
+**Implication:** Agenda cost-gating needs the same kind of fix `investInPaid()` just received for direct map-tap investment; not yet implemented. (The cost is now decided — 500 Cr/tap, see `design/economy-status-map.md` — but this remains an implementation gap in Booth Ink's code.)
 
 ## 2026-07-21 — Desktop already has a working win condition; it's specifically missing from Booth Ink, not the whole project
 **Finding:** `js/ui-manager.js`'s `showElectionResults()` implements a real 272/543-seat majority check, wired through `phase-system.js`'s `endGame()`. This contradicts an earlier assumption in this session that no win condition existed anywhere in the codebase.
@@ -43,12 +83,12 @@
 ## 2026-07-21 — totalPhases is inconsistent: config says 10, design docs and Booth Ink assume 8
 **Finding:** `data/game-config.json` and `phase-system.js` both set `totalPhases: 10`, but `design/plan.md`'s roadmap text ("finishing 8 phases shows a result") and Booth Ink's own UI hardcode 8.
 **Context:** Computing total lifetime budget (`startingFunds + refreshFundsPerPhase × totalPhases`) for the economy audit surfaced the discrepancy.
-**Implication:** Changes total lifetime budget by a full 2 phases' worth of refresh funds (2000Cr at current mobile values) — needs a decision on which number is canonical before finalizing budget-dependent balance work.
+**Implication:** Changes total lifetime budget by a full 2 phases' worth of refresh funds (2000Cr at current mobile values) — needs a decision on which number is canonical before finalizing budget-dependent balance work. (Resolved 2026-07-21 — see the resolution finding above: 10 is canonical.)
 
 ## 2026-07-21 — National Defense's own support and oppose tags overlap on 4 real states, netting to zero there
 **Finding:** National Defense supports `EasternBorder`/`WesternBorder` and opposes `HindiHeartland`/`CoastalIndia` — but Uttar Pradesh, Bihar, Uttarakhand, and Himachal Pradesh are all tagged both `EasternBorder` and `HindiHeartland` simultaneously. Under the agreed sum-every-matching-tag netting rule, these 4 states get +12 and −12 at once, netting to zero for this policy specifically.
 **Context:** Worked a concrete manual-investment-vs-agenda cost comparison for National Defense.
-**Implication:** The real "clean" affected footprint for National Defense is smaller than its raw support-tag seat count suggests (~137 of 266 seats, not all 266) — worth checking other policies for similar self-canceling overlap before finalizing agenda balance.
+**Implication:** The real "clean" affected footprint for National Defense is smaller than its raw support-tag seat count suggests (~137 of 266 seats, not all 266) — worth checking other policies for similar self-canceling overlap before finalizing agenda balance. (See the full 23-policy seat-equivalent ranking above — National Defense nets negative overall, −25.3 seat-equiv.)
 
 ## 2026-07-21 — Direct-investment cost-per-seat-share is size-invariant; rally tokens are not
 **Finding:** Under the current cost formula (`cost = seats × costPerSeat`, popularity gain independent of seat count), the cost to gain one percentage-point of seat-share is identical regardless of a state's size — investing in Uttar Pradesh (80 seats) is exactly as cost-efficient, seat-for-seat, as investing in a 1-seat union territory. Rally tokens break this: they cost a flat amount regardless of target state size but deliver the same flat percentage swing, so a token is objectively more valuable spent on a large state than a small one.

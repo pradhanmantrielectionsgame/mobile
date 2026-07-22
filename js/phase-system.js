@@ -16,30 +16,18 @@ const phaseState = {
     intervalId: null
 };
 
-// Load game configuration from JSON
+// Load game configuration via the shared loader in config-manager.js — single source of truth,
+// no local fallback: if data/game-config.json can't be loaded, getGameConfig() throws rather than
+// silently continuing on fabricated numbers.
 async function loadPhaseGameConfig() {
-    try {
-        const response = await fetch('data/game-config.json');
-        phaseGameConfig = await response.json();
-        
-        // Update phase state with config values
-        phaseState.totalPhases = phaseGameConfig.gameSettings.totalPhases;
-        phaseState.timeRemaining = phaseGameConfig.gameSettings.phaseDurationSeconds;
-        
-        console.log('Phase game configuration loaded:', phaseGameConfig);
-        return phaseGameConfig;
-    } catch (error) {
-        console.error('Failed to load phase game configuration:', error);
-        // Fallback to default values
-        phaseGameConfig = {
-            gameSettings: {
-                totalPhases: 10,
-                phaseDurationSeconds: 30,
-                refreshFundsPerPhase: 500
-            }
-        };
-        return phaseGameConfig;
-    }
+    phaseGameConfig = await getGameConfig();
+
+    // Update phase state with config values
+    phaseState.totalPhases = phaseGameConfig.gameSettings.totalPhases;
+    phaseState.timeRemaining = phaseGameConfig.gameSettings.phaseDurationSeconds;
+
+    console.log('Phase game configuration loaded:', phaseGameConfig);
+    return phaseGameConfig;
 }
 
 // Initialize the phase management system
@@ -442,7 +430,7 @@ function getGameStatus() {
 function testRefreshFunds() {
     if (typeof updatePlayerFunds === 'function') {
         const config = getPhaseGameConfig();
-        const amount = config?.gameSettings?.refreshFundsPerPhase || 500;
+        const amount = config?.gameSettings?.refreshFundsPerPhase;
         updatePlayerFunds('player1', amount);
         updatePlayerFunds('player2', amount);
         console.log(`Manually awarded ₹${amount}Cr to both players`);
