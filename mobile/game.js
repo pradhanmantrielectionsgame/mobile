@@ -79,10 +79,22 @@
   // ---------------------------------------------------------------------
   // Game creation
   // ---------------------------------------------------------------------
-  function makePlayer(politician, cfg, isAI) {
+  // AI personality profiles — picked randomly per match so the single
+  // greedy heuristic (runAI, below) plays out a few different ways instead
+  // of always the same shape of game. Not adversarially tuned, just varied.
+  var AI_PROFILES = [
+    { key: 'aggressive-investor', agendaTapCapPerPolicyPerPhase: 1, craftsTokens: true, groupFocus: false },
+    { key: 'policy-rusher', agendaTapCapPerPolicyPerPhase: 4, craftsTokens: true, groupFocus: false },
+    { key: 'rally-spammer', agendaTapCapPerPolicyPerPhase: 2, craftsTokens: false, groupFocus: false },
+    { key: 'group-bonus-rusher', agendaTapCapPerPolicyPerPhase: 2, craftsTokens: true, groupFocus: true }
+  ];
+  function pickAIProfile(rng) { return AI_PROFILES[Math.floor(rng() * AI_PROFILES.length)]; }
+
+  function makePlayer(politician, cfg, isAI, aiProfile) {
     return {
       politician: politician,
       isAI: !!isAI,
+      aiProfile: aiProfile || null,
       fundsCr: cfg.startingFundsCr,
       tokens: { stateRally: 0 },
       tokensSpentThisPhase: 0,
@@ -121,7 +133,7 @@
       winner: null,
       hungParliament: false,
       finalSeats: null,
-      players: { p1: makePlayer(p1Pol, data.cfg, false), p2: makePlayer(p2Pol, data.cfg, true) }
+      players: { p1: makePlayer(p1Pol, data.cfg, false), p2: makePlayer(p2Pol, data.cfg, true, pickAIProfile(rng)) }
     };
     startPhase(game);
     return game;
@@ -441,7 +453,22 @@
     return done[0];
   }
 
-  function aiInvestRemainingFunds(game) {
+  // groupFocus profile bonus: push a laggard state that's the only thing
+  // standing between the AI and a regional-dominance payout.
+  function groupFocusBonus(game, state) {
+    var bonus = 0;
+    state.tags.forEach(function (tag) {
+      var members = game.states.filter(function (s) { return s.tags.indexOf(tag) !== -1; });
+      if (!members.length) return;
+      var thisQualifies = game.pop[state.svgId].p2 >= game.cfg.regionalDominance.thresholdBps;
+      if (thisQualifies) return;
+      var qualifying = members.filter(function (s) { return game.pop[s.svgId].p2 >= game.cfg.regionalDominance.thresholdBps; }).length;
+      if (qualifying >= members.length - 2) bonus += 0.5;
+    });
+    return bonus;
+  }
+
+  function aiInvestRemainingFunds(game, profile) {
     var pl = game.players.p2;
     var guard = 0;
     while (pl.fundsCr >= game.cfg.investment.costPerSeatCr && guard++ < 2000) {
@@ -452,6 +479,7 @@
         var tapNum = (pl.investmentTaps[s.svgId] || 0) + 1;
         var boost = E.investmentBoostBps(tapNum, game.cfg.investment);
         var score = boost / cost + (game.pop[s.svgId].p1 - game.pop[s.svgId].p2) / 100000;
+        if (profile && profile.groupFocus) score += groupFocusBonus(game, s);
         if (score > bestScore) { bestScore = score; best = s; }
       });
       if (!best) break;
@@ -461,6 +489,7 @@
 
   function runAI(game) {
     var pl = game.players.p2;
+    var profile = pl.aiProfile || AI_PROFILES[0];
 
     while (pl.tokensSpentThisPhase < game.cfg.rally.maxTokenSpendPerPhase && pl.tokens.stateRally > 0) {
       var target = pickAIRallyTarget(game);
@@ -468,8 +497,10 @@
       if (!playRallyToken(game, 'p2', target).ok) break;
     }
 
-    craftToken(game, 'p2', 'special');
-    craftToken(game, 'p2', 'nationwide');
+    if (profile.craftsTokens) {
+      craftToken(game, 'p2', 'special');
+      craftToken(game, 'p2', 'nationwide');
+    }
 
     if (pl.craftedSpecial && !pl.usedSpecial) {
       var power = pl.politician.power;
@@ -491,12 +522,12 @@
     ranked.forEach(function (name) {
       var guard = 0;
       while (pl.fundsCr >= game.cfg.agenda.costPerTapCr &&
-        (pl.agendaProgress[name] || 0) < game.cfg.agenda.tapsToComplete && guard++ < 4) {
+        (pl.agendaProgress[name] || 0) < game.cfg.agenda.tapsToComplete && guard++ < profile.agendaTapCapPerPolicyPerPhase) {
         if (!tapAgenda(game, 'p2', name).ok) break;
       }
     });
 
-    aiInvestRemainingFunds(game);
+    aiInvestRemainingFunds(game, profile);
   }
 
   var API = {

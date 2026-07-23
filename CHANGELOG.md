@@ -6,6 +6,47 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### 🤖 AI Personalities, PWA Integration, and Redistribution Engine Fixes — 2026-07-23
+
+#### Engine & AI
+- **FIXED**: `mobile/engine.js` — loseAt() degenerate-case bug where a player holding exactly 100% of a state (reachable via repeated cheap UT taps) could lose popularity with nowhere for it to go, breaking the bps-sum invariant. Freed share now falls to Others pool when both opponent and others are at 0 (mirrors existing "round one, derive the other" discipline). Added regression test in engine self-check.
+- **ADDED**: `mobile/game.js` — 4 AI personality profiles (aggressive-investor, policy-rusher, rally-spammer, group-bonus-rusher) wired into createGame/runAI/aiInvestRemainingFunds. Profiles vary agenda-tap aggressiveness, rally-token-craft strategy, and group-dominance-seeking investment-scoring bias. Implementation as parameters on the single existing greedy heuristic, not separate AI functions.
+
+#### Mobile Build
+- **ENHANCED**: `mobile/main.js` — double-tap-to-invest interaction model, 4 UI feedback animations (tap flash, invalid-action shake+buzz, red/green fund-change flash text), full audio system (8 triggers: bg_music, cash_added, money_spent, invalid_action, fanfare, game_over, phase_reset, rally_sound), margin-based map state coloring (|P1% − P2%|), and settings menu wiring.
+- **ENHANCED**: `mobile/index.html` — settings overlay, fx-layer for animations, gear button, manifest/icon links, supporting CSS for new features.
+- **CREATED**: `mobile/manifest.json` — minimal PWA manifest (icons, display mode, start URL).
+- **CREATED**: `mobile/sw.js` — minimal cache-first service worker with explicit filename precache list (no bare directory paths, which silently 404 on this project's dev server).
+- **CREATED**: `assets/icons/pme-icon.svg` — generated square SVG app icon (unblocks PWA manifest icon link; PNG assets remain out of scope for MVP).
+
+#### Data & Design
+- **FIXED**: `data/policy-tags.json` — corrected 2 accidental tag-cancellation bugs:
+  - Uniform Civil Code: dropped stray `EasternBorder` oppose tag that canceled support in UP/Bihar/Uttarakhand/Himachal Pradesh (same pattern as pre-fix National Defense)
+  - Indigenous Rights: reduced `IndustrialCorridor` oppose from -8 to -4 (partial fix, matching Hindi Language precedent; preserves real tribal-land-vs-industry tension while un-canceling policy's core thematic states)
+- **UPDATED**: `design/economy-status-map.md` — recorded full policy-audit findings, updated policy ranking table (Uniform Civil Code -9.6→+14.0, Indigenous Rights -12.1→-2.5), expanded "Still open" list with remaining unaudited policies and options-menu gap.
+- **CREATED**: `design/TASKLIST.md` — task tracking (initially 13 tasks from design doc's "Known bugs"/"Still open" sections, then updated post-verification: 5 discovered already fixed, 8 implemented or confirmed working, 0 remaining).
+
+#### Project Documentation
+- **UPDATED**: `findings.md` (via /checkpoint Phase 1.3) — 3 new 2026-07-23 entries (design doc's "Known bugs" list stale relative to real code, engine.js's loseAt() invariant bug surfaced by AI personality changes, service worker precache 404s on bare directory paths). See findings.md for details.
+- **UPDATED**: `CLAUDE.md` (via /checkpoint Phase 1.3, user-approved) — 3 new durable game-design rules (verify design-doc bug lists against code before implementing, service-worker precache lists need explicit filenames on this dev server, re-run npm test + stress test after AI-behavior changes).
+
+#### Key Design Decisions
+- **[D1] Task Verification Discipline**: Treated 5 of 13 originally-planned tasks as already-fixed after verifying against actual code (AI fund spend, 200-seat starting-position bug, bps-sum drift, agenda proration, hung-parliament resolution) rather than re-implementing. Ran targeted diagnostic scripts and stress tests directly against mobile/engine.js and mobile/game.js before writing any fix.
+  - **Rationale**: Design doc's "Known bugs" and "Still open" sections can be stale relative to real code state. Verifying first caught already-correct code before any wasted re-implementation.
+- **[D2] loseAt() Bug Resolution**: Gave freed share to Others (neutral default) when both opponent and others are 0, rather than leaving it lost or assigning to opponent.
+  - **Rationale**: Mirrors existing "round one, derive the other" discipline's spirit — no proportion to split by when both other shares are 0, so the neutral "Others" default absorbs it.
+- **[D3-D4] Policy Tag Audit Decisions**: 
+  - **[D3]** Indigenous Rights: partial magnitude reduction (IndustrialCorridor -8→-4) rather than full removal, matching Hindi Language precedent. Real tribal-land-vs-industry tension is thematically legitimate, unlike UCC's pure accidental collision.
+  - **[D4]** Uniform Civil Code: full removal of stray EasternBorder oppose tag. No thematic reason for border proximity to affect this policy; pure accidental collision matching National Defense pattern.
+- **[D5-D6] Remaining Policy Audits**: Flagged Public Sector's inverted tag directions (industrial-region PSUs benefiting from public-sector jobs, yet tagged as opposing industrial/manufacturing regions) but did not unilaterally fix — outside this audit's scope per project convention. Reviewed and left unchanged: Land Reforms, Agricultural Reforms, Caste Reservation, Secularism — their support/oppose tag collisions represent real thematic polarization, not bugs.
+- **[D7] PWA Asset Strategy**: Used generated square SVG icon instead of PNG assets. PWA infrastructure was originally scoped as blocked on "needs real image assets," but generating a simple vector icon fully unblocked the task rather than leaving it stalled on an asset-creation dependency that was never a hard requirement.
+- **[D8] AI Implementation Architecture**: Implemented 4 personality profiles as parameters on the single existing runAI() greedy heuristic, not as separate AI decision functions. Matches the design doc's own stated intent exactly ("3-4 parameter profiles... picked randomly per match, on the same decision engine") and keeps AI a single maintainable code path.
+
+#### Context
+Session focused on completing the mobile build end-to-end: AI opponent sophistication (4 personality profiles with tunable parameters), PWA infrastructure (manifest, service worker, icon), full UI polish (double-tap investment, animations, audio, settings menu), and data audit of policy tags for accidental-vs-deliberate polarization. All changes are in-memory or test-scoped; no external infrastructure required.
+
+---
+
 ### 📋 Design Documentation Consolidation & Interaction Design Finalization — 2026-07-23
 
 #### Design Reference Consolidation

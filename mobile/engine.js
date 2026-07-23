@@ -47,16 +47,26 @@
   }
 
   // Negative boost — mirrors gainAt's 'both' path exactly, direction reversed.
+  // Unlike gainAt (where self hitting BPS forces gain to 0 before the denom-0
+  // case can ever be reached), self CAN legitimately be exactly BPS here
+  // (opp=others=0) while still taking a loss — e.g. a 1-seat UT invested up
+  // to 100% ownership, then hit with a negative agenda effect. With no
+  // opponent/others share to split by proportion, the freed share has to
+  // land somewhere or p1+p2+others silently stops summing to BPS; Others
+  // (the neutral default) absorbs it.
   function loseAt(pop, actor, lossBps) {
     var opp = otherPlayer(actor);
     var self = pop[actor];
     var loss = Math.max(0, Math.min(lossBps, self));
     if (loss <= 0) return 0;
     var oppBps = pop[opp], othBps = pop.others, denom = oppBps + othBps;
-    var oppGain = 0, othGain = 0;
+    var oppGain, othGain;
     if (denom > 0) {
       oppGain = Math.round(loss * oppBps / denom);
       othGain = loss - oppGain;
+    } else {
+      oppGain = 0;
+      othGain = loss;
     }
     pop[actor] -= loss;
     pop[opp] += oppGain;
@@ -304,6 +314,19 @@ if (typeof module !== 'undefined' && require.main === module) {
     var loss = E.loseAt(pop, 'p1', 500);
     assert.strictEqual(loss, 500);
     assert.strictEqual(pop.p1, 2000);
+    assert.strictEqual(pop.p1 + pop.p2 + pop.others, 10000);
+  })();
+
+  // loseAt when actor holds 100% (opp=others=0, no proportion to split by —
+  // regression test: a real bug let this loss vanish instead of landing in
+  // Others, silently breaking the p1+p2+others=10000 invariant)
+  (function () {
+    var pop = { p1: 10000, p2: 0, others: 0 };
+    var loss = E.loseAt(pop, 'p1', 300);
+    assert.strictEqual(loss, 300);
+    assert.strictEqual(pop.p1, 9700);
+    assert.strictEqual(pop.p2, 0);
+    assert.strictEqual(pop.others, 300);
     assert.strictEqual(pop.p1 + pop.p2 + pop.others, 10000);
   })();
 

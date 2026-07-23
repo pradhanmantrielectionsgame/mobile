@@ -8,6 +8,9 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="PME Booth">
 <meta name="theme-color" content="#EEF0F3">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="../assets/icons/pme-icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/icons/pme-icon.svg">
 <style>
 :root{
   --page:#EEF0F3; --surface:#FFFFFF; --surface2:#F7F8FA; --track:#E4E7EC;
@@ -206,6 +209,28 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
 .end-overlay button{ background:var(--accent); color:var(--accent-ink); font-weight:700; padding:12px 22px; border-radius:100px; font-size:14px; }
 .target-banner{ position:fixed; top:0; left:0; right:0; z-index:60; background:var(--stamp); color:#fff; text-align:center; font-size:12.5px; font-weight:700; padding:8px; }
 .target-banner[hidden]{ display:none; }
+
+/* ---- settings overlay ---- */
+.settings-body{ padding:16px; display:flex; flex-direction:column; gap:10px; max-width:420px; margin:0 auto; width:100%; }
+.settings-row{ background:var(--surface); border:1px solid var(--rule); border-radius:12px; padding:14px 16px; font-size:15px; font-weight:600; text-align:left; display:block; width:100%; }
+.settings-row.danger{ color:var(--stamp); }
+.settings-help{ background:var(--surface2); border-radius:12px; padding:14px 16px; font-size:13px; color:var(--ink-soft); line-height:1.5; }
+.settings-help b{ display:block; margin-bottom:6px; color:var(--ink); }
+
+/* ---- feedback fx layer: viewport-fixed so it works over both the map and
+   the corner UT buttons alike (design doc "Touch interaction & feedback") ---- */
+.fx-layer{ position:fixed; inset:0; z-index:80; pointer-events:none; overflow:hidden; }
+.fx-flash{ position:absolute; width:16px; height:16px; margin:-8px 0 0 -8px; border-radius:50%;
+  background:var(--accent); opacity:.55; animation:fx-flash-anim .45s ease-out forwards; }
+@keyframes fx-flash-anim{ to{ width:110px; height:110px; margin:-55px 0 0 -55px; opacity:0; } }
+.fx-money{ position:absolute; transform:translate(-50%,-50%); font-family:var(--font-mono); font-weight:800; font-size:22px;
+  animation:fx-money-anim .7s ease-out forwards; white-space:nowrap; }
+.fx-money.spend{ color:var(--stamp); }
+.fx-money.gain{ color:#1C8A4B; }
+@keyframes fx-money-anim{ from{ opacity:1; transform:translate(-50%,-50%); } to{ opacity:0; transform:translate(-50%,-130%); } }
+@keyframes fx-shake{ 10%,90%{ transform:translate(-1px,0); } 20%,80%{ transform:translate(2px,0); }
+  30%,50%,70%{ transform:translate(-4px,0); } 40%,60%{ transform:translate(4px,0); } }
+.shake{ animation:fx-shake .4s ease; }
 </style>
 
 </head>
@@ -226,13 +251,32 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
 </div>
 
 <div class="target-banner" id="targetBanner" hidden>Tap a state to target</div>
+<div class="fx-layer" id="fxLayer"></div>
+
+<div class="overlay settings-overlay" id="settingsOverlay" hidden>
+  <div class="overlay-header"><h1>Settings</h1></div>
+  <div class="settings-body">
+    <button class="settings-row" id="soundToggleBtn">🔊 Sound: <span id="soundToggleState">On</span></button>
+    <button class="settings-row" id="musicToggleBtn">🎵 Music: <span id="musicToggleState">On</span></button>
+    <button class="settings-row" id="pauseToggleBtn">⏸ Pause</button>
+    <div class="settings-help">
+      <b>How to play</b>
+      <p>Tap a state to select it, double-tap to invest. Delhi, Goa, and the other small Union Territories invest through the corner buttons the same way. Craft rally tokens into a Special Powerup or Nationwide Rally from the token tray. Commit funds to your politician's agendas from the agenda tray. Cross 272 of 543 seats to win.</p>
+    </div>
+    <button class="settings-row danger" id="newGameBtn">🔁 New Game</button>
+    <button class="settings-row" id="closeSettingsBtn">Close</button>
+  </div>
+</div>
 
 <div class="stage" id="stage" hidden>
   <div class="topstrip">
     <div class="seatbar"><div class="seg p1" id="segP1"></div><div class="seg oth" id="segOth"></div><div class="seg p2" id="segP2"></div></div>
     <div class="topstrip-row">
       <div class="phase-chip">PHASE <b id="phaseNum">1/10</b> &nbsp;&middot;&nbsp; <span id="phaseTimer">00:45</span></div>
-      <div class="top-actions"><button class="iconbtn" id="endPhaseBtn" title="End phase now">⏭</button></div>
+      <div class="top-actions">
+        <button class="iconbtn" id="settingsBtn" title="Settings">⚙️</button>
+        <button class="iconbtn" id="endPhaseBtn" title="End phase now">⏭</button>
+      </div>
     </div>
     <div class="players-mini">
       <span class="pmini p1">🪷 <span id="p1Funds">₹2500Cr</span> <span class="sub" id="p1Seats">— seats</span></span>

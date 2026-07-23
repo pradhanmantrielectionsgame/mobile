@@ -58,13 +58,13 @@
       "tagEffects": { "MinorityAreas": 12, "Education": 12, "HindiHeartland": -12, "Pilgrimage": -12 }
     },
     "Indigenous Rights": {
-      "tagEffects": { "TribalLands": 8, "EasternBorder": 8, "IndustrialCorridor": -8, "Manufacturing": -8 }
+      "tagEffects": { "TribalLands": 8, "EasternBorder": 8, "IndustrialCorridor": -4, "Manufacturing": -8 }
     },
     "Caste Reservation": {
       "tagEffects": { "HindiHeartland": 12, "Education": -12, "MinorityAreas": -12 }
     },
     "Uniform Civil Code": {
-      "tagEffects": { "HindiHeartland": 12, "MinorityAreas": -12, "EasternBorder": -12 }
+      "tagEffects": { "HindiHeartland": 12, "MinorityAreas": -12 }
     },
     "State's Rights": {
       "tagEffects": { "SouthIndia": 8, "EasternBorder": 8, "HindiHeartland": -8 }
