@@ -9,15 +9,46 @@
       "partyLogo": "assets/icons/Bharatiya_Janata_Party_(icon).svg",
       "primaryColor": "#FF9933",
       "policies": [
-        { "name": "Infrastructure", "bonus": 40 },
-        { "name": "Hindutva", "bonus": 40 },
-        { "name": "Economic Liberalization", "bonus": 30 },
-        { "name": "National Defense", "bonus": 30 }
+        {
+          "name": "Infrastructure",
+          "bonus": 40
+        },
+        {
+          "name": "Hindutva",
+          "bonus": 40
+        },
+        {
+          "name": "Economic Liberalization",
+          "bonus": 30
+        },
+        {
+          "name": "National Defense",
+          "bonus": 30
+        }
       ],
       "specialPower": {
         "name": "Demonetization",
         "effect": "Opponent instantly loses a lump sum of funds",
         "cost": "-5% popularity nationwide"
+      },
+      "power": {
+        "name": "Demonetization",
+        "description": "Opponent instantly loses a lump sum of funds; costs you popularity nationwide.",
+        "benefits": [
+          {
+            "kind": "funds",
+            "target": "opponent",
+            "amountCr": -2000
+          }
+        ],
+        "costs": [
+          {
+            "kind": "popularity",
+            "target": "self",
+            "scope": "nationwide",
+            "bps": -500
+          }
+        ]
       }
     },
     {
@@ -29,15 +60,49 @@
       "partyLogo": "assets/icons/Indian_National_Congress_hand_logo.svg",
       "primaryColor": "#138808",
       "policies": [
-        { "name": "Economic Liberalization", "bonus": 40 },
-        { "name": "Public Sector", "bonus": 40 },
-        { "name": "Secularism", "bonus": 40 },
-        { "name": "Education", "bonus": 30 }
+        {
+          "name": "Economic Liberalization",
+          "bonus": 40
+        },
+        {
+          "name": "Public Sector",
+          "bonus": 40
+        },
+        {
+          "name": "Secularism",
+          "bonus": 40
+        },
+        {
+          "name": "Education",
+          "bonus": 30
+        }
       ],
       "specialPower": {
         "name": "Economic Reform",
         "effect": "Large one-time funds boost",
         "cost": "-8% popularity in Agricultural Region / Public Sector states"
+      },
+      "power": {
+        "name": "Economic Reform",
+        "description": "A large one-time funds boost, at the cost of popularity in Agricultural Region states.",
+        "benefits": [
+          {
+            "kind": "funds",
+            "target": "self",
+            "amountCr": 2500
+          }
+        ],
+        "costs": [
+          {
+            "kind": "popularity",
+            "target": "self",
+            "scope": "tags",
+            "tags": [
+              "AgriculturalRegion"
+            ],
+            "bps": -800
+          }
+        ]
       }
     },
     {
@@ -49,15 +114,50 @@
       "partyLogo": "assets/icons/Indian_National_Congress_hand_logo.svg",
       "primaryColor": "#138808",
       "policies": [
-        { "name": "Rural Development", "bonus": 40 },
-        { "name": "Land Reforms", "bonus": 30 },
-        { "name": "Secularism", "bonus": 30 },
-        { "name": "Caste Reservation", "bonus": 30 }
+        {
+          "name": "Rural Development",
+          "bonus": 40
+        },
+        {
+          "name": "Land Reforms",
+          "bonus": 30
+        },
+        {
+          "name": "Secularism",
+          "bonus": 30
+        },
+        {
+          "name": "Caste Reservation",
+          "bonus": 30
+        }
       ],
       "specialPower": {
         "name": "Bharat Jodo Yatra",
         "effect": "Popularity boost in Secularism / Minority Areas states",
         "cost": "Instant lump-sum funds payment"
+      },
+      "power": {
+        "name": "Bharat Jodo Yatra",
+        "description": "Popularity boost in Minority Areas states, funded by an instant lump-sum spend.",
+        "benefits": [
+          {
+            "kind": "popularity",
+            "target": "self",
+            "scope": "tags",
+            "tags": [
+              "MinorityAreas"
+            ],
+            "bps": 1200,
+            "source": "both"
+          }
+        ],
+        "costs": [
+          {
+            "kind": "funds",
+            "target": "self",
+            "amountCr": -1500
+          }
+        ]
       }
     },
     {
@@ -69,15 +169,41 @@
       "partyLogo": "assets/icons/Bharatiya_Janata_Party_(icon).svg",
       "primaryColor": "#FF9933",
       "policies": [
-        { "name": "Infrastructure", "bonus": 40 },
-        { "name": "National Defense", "bonus": 40 },
-        { "name": "Hindi Language", "bonus": 30 },
-        { "name": "Privatization", "bonus": 30 }
+        {
+          "name": "Infrastructure",
+          "bonus": 40
+        },
+        {
+          "name": "National Defense",
+          "bonus": 40
+        },
+        {
+          "name": "Hindi Language",
+          "bonus": 30
+        },
+        {
+          "name": "Privatization",
+          "bonus": 30
+        }
       ],
       "specialPower": {
         "name": "Pokhran Test",
         "effect": "+10% popularity nationwide",
         "cost": "Instant heavy funds penalty"
+      },
+      "power": {
+        "name": "Pokhran Test",
+        "description": "+10% popularity nationwide. Reviewed and kept as the roster’s deliberate signature outlier — no additional cost beyond the craft.",
+        "benefits": [
+          {
+            "kind": "popularity",
+            "target": "self",
+            "scope": "nationwide",
+            "bps": 1000,
+            "source": "both"
+          }
+        ],
+        "costs": []
       }
     },
     {
@@ -89,15 +215,45 @@
       "partyLogo": "assets/icons/Aam_Aadmi_Party_logo_(English).svg",
       "primaryColor": "#2196F3",
       "policies": [
-        { "name": "Anti-Corruption", "bonus": 40 },
-        { "name": "Education", "bonus": 40 },
-        { "name": "Healthcare", "bonus": 30 },
-        { "name": "Water and Mineral Rights", "bonus": 30 }
+        {
+          "name": "Anti-Corruption",
+          "bonus": 40
+        },
+        {
+          "name": "Education",
+          "bonus": 40
+        },
+        {
+          "name": "Healthcare",
+          "bonus": 30
+        },
+        {
+          "name": "Water and Mineral Rights",
+          "bonus": 30
+        }
       ],
       "specialPower": {
         "name": "Anti-Corruption Raid",
         "effect": "Robs the opponent of 50% of their cash on hand",
         "cost": "-15% popularity in the opponent's home state"
+      },
+      "power": {
+        "name": "Anti-Corruption Raid",
+        "description": "Robs the opponent of 50% of their cash on hand; costs you popularity in the opponent’s home state.",
+        "benefits": [
+          {
+            "kind": "stealFundsPct",
+            "pct": 50
+          }
+        ],
+        "costs": [
+          {
+            "kind": "popularity",
+            "target": "self",
+            "scope": "opponentHome",
+            "bps": -1500
+          }
+        ]
       }
     },
     {
@@ -109,15 +265,47 @@
       "partyLogo": "assets/icons/All_India_Trinamool_Congress_logo_(3).svg",
       "primaryColor": "#00AAFF",
       "policies": [
-        { "name": "Women's Empowerment", "bonus": 40 },
-        { "name": "State's Rights", "bonus": 30 },
-        { "name": "Secularism", "bonus": 30 },
-        { "name": "Agricultural Reforms", "bonus": 30 }
+        {
+          "name": "Women's Empowerment",
+          "bonus": 40
+        },
+        {
+          "name": "State's Rights",
+          "bonus": 30
+        },
+        {
+          "name": "Secularism",
+          "bonus": 30
+        },
+        {
+          "name": "Agricultural Reforms",
+          "bonus": 30
+        }
       ],
       "specialPower": {
         "name": "State Autonomy Stand",
         "effect": "Home state + State's Rights states immune to opponent's agendas/rallies for rest of game",
         "cost": "Funds hit now"
+      },
+      "power": {
+        "name": "State Autonomy Stand",
+        "description": "Instant popularity boost in your home state, funded by an upfront spend.",
+        "benefits": [
+          {
+            "kind": "popularity",
+            "target": "self",
+            "scope": "home",
+            "bps": 1500,
+            "source": "both"
+          }
+        ],
+        "costs": [
+          {
+            "kind": "funds",
+            "target": "self",
+            "amountCr": -1500
+          }
+        ]
       }
     },
     {
@@ -129,15 +317,59 @@
       "partyLogo": "assets/icons/Janata_Dal_(United)_Flag.svg",
       "primaryColor": "#5CB85C",
       "policies": [
-        { "name": "Caste Reservation", "bonus": 40 },
-        { "name": "Rural Development", "bonus": 30 },
-        { "name": "Women's Empowerment", "bonus": 30 },
-        { "name": "State's Rights", "bonus": 30 }
+        {
+          "name": "Caste Reservation",
+          "bonus": 40
+        },
+        {
+          "name": "Rural Development",
+          "bonus": 30
+        },
+        {
+          "name": "Women's Empowerment",
+          "bonus": 30
+        },
+        {
+          "name": "State's Rights",
+          "bonus": 30
+        }
       ],
       "specialPower": {
         "name": "Alliance Switch",
         "effect": "+7% popularity nationwide for you, -7% popularity nationwide for your opponent",
         "cost": "Instant 1,000 Cr funds cost + 2 rally tokens, deducted on activation"
+      },
+      "power": {
+        "name": "Alliance Switch",
+        "description": "+7% popularity nationwide for you, -7% for your opponent; costs funds and rally tokens.",
+        "benefits": [
+          {
+            "kind": "popularity",
+            "target": "self",
+            "scope": "nationwide",
+            "bps": 700,
+            "source": "both"
+          },
+          {
+            "kind": "popularity",
+            "target": "opponent",
+            "scope": "nationwide",
+            "bps": -700
+          }
+        ],
+        "costs": [
+          {
+            "kind": "funds",
+            "target": "self",
+            "amountCr": -1000
+          },
+          {
+            "kind": "tokens",
+            "target": "self",
+            "tokenType": "stateRally",
+            "amount": -2
+          }
+        ]
       }
     },
     {
@@ -149,15 +381,51 @@
       "partyLogo": "assets/icons/Bharatiya_Janata_Party_(icon).svg",
       "primaryColor": "#FF9933",
       "policies": [
-        { "name": "Law and Order", "bonus": 40 },
-        { "name": "Hindutva", "bonus": 40 },
-        { "name": "Uniform Civil Code", "bonus": 30 },
-        { "name": "Infrastructure", "bonus": 30 }
+        {
+          "name": "Law and Order",
+          "bonus": 40
+        },
+        {
+          "name": "Hindutva",
+          "bonus": 40
+        },
+        {
+          "name": "Uniform Civil Code",
+          "bonus": 30
+        },
+        {
+          "name": "Infrastructure",
+          "bonus": 30
+        }
       ],
       "specialPower": {
         "name": "Bulldozer Action",
         "effect": "Sharply cuts opponent's popularity in one target state",
         "cost": "-popularity nationwide in Minority Areas states"
+      },
+      "power": {
+        "name": "Bulldozer Action",
+        "description": "Sharply cuts the opponent’s popularity in one state you choose; costs you popularity in Minority Areas states.",
+        "benefits": [
+          {
+            "kind": "popularity",
+            "target": "opponent",
+            "scope": "targetState",
+            "bps": -2000
+          }
+        ],
+        "costs": [
+          {
+            "kind": "popularity",
+            "target": "self",
+            "scope": "tags",
+            "tags": [
+              "MinorityAreas"
+            ],
+            "bps": -600
+          }
+        ],
+        "requiresTargetState": true
       }
     },
     {
@@ -169,15 +437,53 @@
       "partyLogo": "assets/icons/Indian_National_Congress_hand_logo.svg",
       "primaryColor": "#138808",
       "policies": [
-        { "name": "National Defense", "bonus": 40 },
-        { "name": "Public Sector", "bonus": 30 },
-        { "name": "Land Reforms", "bonus": 30 },
-        { "name": "Rural Development", "bonus": 30 }
+        {
+          "name": "National Defense",
+          "bonus": 40
+        },
+        {
+          "name": "Public Sector",
+          "bonus": 30
+        },
+        {
+          "name": "Land Reforms",
+          "bonus": 30
+        },
+        {
+          "name": "Rural Development",
+          "bonus": 30
+        }
       ],
       "specialPower": {
         "name": "National Emergency",
         "effect": "Instantly seizes a large popularity swing from the opponent across all states",
         "cost": "Instant -10% popularity nationwide + instant heavy funds loss"
+      },
+      "power": {
+        "name": "National Emergency",
+        "description": "Seizes a large popularity swing from the opponent nationwide; costs you popularity and funds.",
+        "benefits": [
+          {
+            "kind": "popularity",
+            "target": "self",
+            "scope": "nationwide",
+            "bps": 800,
+            "source": "opponent"
+          }
+        ],
+        "costs": [
+          {
+            "kind": "popularity",
+            "target": "self",
+            "scope": "nationwide",
+            "bps": -1000
+          },
+          {
+            "kind": "funds",
+            "target": "self",
+            "amountCr": -2000
+          }
+        ]
       }
     },
     {
@@ -189,15 +495,44 @@
       "partyLogo": "assets/icons/Indian_National_Congress_hand_logo.svg",
       "primaryColor": "#138808",
       "policies": [
-        { "name": "Education", "bonus": 40 },
-        { "name": "Secularism", "bonus": 40 },
-        { "name": "Public Sector", "bonus": 30 },
-        { "name": "Infrastructure", "bonus": 30 }
+        {
+          "name": "Education",
+          "bonus": 40
+        },
+        {
+          "name": "Secularism",
+          "bonus": 40
+        },
+        {
+          "name": "Public Sector",
+          "bonus": 30
+        },
+        {
+          "name": "Infrastructure",
+          "bonus": 30
+        }
       ],
       "specialPower": {
         "name": "Non-Alignment",
         "effect": "If the opponent hasn't used their special power yet, it is secretly nullified — they don't find out until they try to activate it, after already spending the tokens to craft it. If the opponent has already used their special power, gain a flat 2,000 Cr instead.",
         "cost": "None"
+      },
+      "power": {
+        "name": "Non-Alignment",
+        "description": "If the opponent hasn’t used their special power yet, it is secretly nullified — they only find out when they try to activate it. If they’ve already used theirs, you gain a flat 2,000 Cr instead. No separate resource cost: the payoff’s uncertainty is itself the cost.",
+        "benefits": [
+          {
+            "kind": "nullifyOpponentPower"
+          }
+        ],
+        "fallbackBenefits": [
+          {
+            "kind": "funds",
+            "target": "self",
+            "amountCr": 2000
+          }
+        ],
+        "costs": []
       }
     },
     {
@@ -209,15 +544,49 @@
       "partyLogo": "assets/icons/Indian_National_Congress_hand_logo.svg",
       "primaryColor": "#138808",
       "policies": [
-        { "name": "National Defense", "bonus": 40 },
-        { "name": "Law and Order", "bonus": 30 },
-        { "name": "Infrastructure", "bonus": 30 },
-        { "name": "Anti-Corruption", "bonus": 30 }
+        {
+          "name": "National Defense",
+          "bonus": 40
+        },
+        {
+          "name": "Law and Order",
+          "bonus": 30
+        },
+        {
+          "name": "Infrastructure",
+          "bonus": 30
+        },
+        {
+          "name": "Anti-Corruption",
+          "bonus": 30
+        }
       ],
       "specialPower": {
         "name": "Iron Unification",
         "effect": "Instantly flips one small state/UT fully to your majority",
         "cost": "Heavy instant funds hit"
+      },
+      "power": {
+        "name": "Iron Unification",
+        "description": "Instantly flips one small state/UT toward your majority; costs a heavy upfront spend.",
+        "benefits": [
+          {
+            "kind": "popularity",
+            "target": "self",
+            "scope": "targetState",
+            "toBps": 7000,
+            "source": "both",
+            "constraint": "smallUT"
+          }
+        ],
+        "costs": [
+          {
+            "kind": "funds",
+            "target": "self",
+            "amountCr": -3000
+          }
+        ],
+        "requiresTargetState": true
       }
     },
     {
@@ -229,15 +598,47 @@
       "partyLogo": null,
       "primaryColor": "#0033A0",
       "policies": [
-        { "name": "Caste Reservation", "bonus": 40 },
-        { "name": "Judicial Activism", "bonus": 40 },
-        { "name": "Education", "bonus": 30 },
-        { "name": "Indigenous Rights", "bonus": 30 }
+        {
+          "name": "Caste Reservation",
+          "bonus": 40
+        },
+        {
+          "name": "Judicial Activism",
+          "bonus": 40
+        },
+        {
+          "name": "Education",
+          "bonus": 30
+        },
+        {
+          "name": "Indigenous Rights",
+          "bonus": 30
+        }
       ],
       "specialPower": {
         "name": "Constitutional Reform",
         "effect": "Permanent, non-decaying popularity floor in Caste Reservation / Indigenous Rights states",
         "cost": "High instant funds hit"
+      },
+      "power": {
+        "name": "Constitutional Reform",
+        "description": "Instant popularity boost in your home state, funded by a high upfront spend.",
+        "benefits": [
+          {
+            "kind": "popularity",
+            "target": "self",
+            "scope": "home",
+            "bps": 1500,
+            "source": "both"
+          }
+        ],
+        "costs": [
+          {
+            "kind": "funds",
+            "target": "self",
+            "amountCr": -2500
+          }
+        ]
       }
     },
     {
@@ -249,15 +650,50 @@
       "partyLogo": null,
       "primaryColor": "#00A651",
       "policies": [
-        { "name": "State's Rights", "bonus": 40 },
-        { "name": "Public Sector", "bonus": 30 },
-        { "name": "Women's Empowerment", "bonus": 30 },
-        { "name": "Healthcare", "bonus": 30 }
+        {
+          "name": "State's Rights",
+          "bonus": 40
+        },
+        {
+          "name": "Public Sector",
+          "bonus": 30
+        },
+        {
+          "name": "Women's Empowerment",
+          "bonus": 30
+        },
+        {
+          "name": "Healthcare",
+          "bonus": 30
+        }
       ],
       "specialPower": {
         "name": "Amma Welfare Scheme",
         "effect": "Large popularity boost in home state + Public Sector states",
         "cost": "Heavy instant funds hit"
+      },
+      "power": {
+        "name": "Amma Welfare Scheme",
+        "description": "Large popularity boost across South India, funded by a heavy upfront spend.",
+        "benefits": [
+          {
+            "kind": "popularity",
+            "target": "self",
+            "scope": "tags",
+            "tags": [
+              "SouthIndia"
+            ],
+            "bps": 1800,
+            "source": "both"
+          }
+        ],
+        "costs": [
+          {
+            "kind": "funds",
+            "target": "self",
+            "amountCr": -2500
+          }
+        ]
       }
     },
     {
@@ -269,15 +705,52 @@
       "partyLogo": "assets/icons/Indian_National_Congress_hand_logo.svg",
       "primaryColor": "#138808",
       "policies": [
-        { "name": "National Defense", "bonus": 40 },
-        { "name": "Agricultural Reforms", "bonus": 40 },
-        { "name": "Anti-Corruption", "bonus": 30 },
-        { "name": "Public Sector", "bonus": 30 }
+        {
+          "name": "National Defense",
+          "bonus": 40
+        },
+        {
+          "name": "Agricultural Reforms",
+          "bonus": 40
+        },
+        {
+          "name": "Anti-Corruption",
+          "bonus": 30
+        },
+        {
+          "name": "Public Sector",
+          "bonus": 30
+        }
       ],
       "specialPower": {
         "name": "Jai Jawan Jai Kisan",
         "effect": "Popularity boost in Eastern Border/Western Border AND Agricultural Region states at once",
         "cost": "Instant funds penalty"
+      },
+      "power": {
+        "name": "Jai Jawan Jai Kisan",
+        "description": "Popularity boost across Eastern Border, Western Border, and Agricultural Region states at once; costs funds.",
+        "benefits": [
+          {
+            "kind": "popularity",
+            "target": "self",
+            "scope": "tags",
+            "tags": [
+              "EasternBorder",
+              "WesternBorder",
+              "AgriculturalRegion"
+            ],
+            "bps": 1000,
+            "source": "both"
+          }
+        ],
+        "costs": [
+          {
+            "kind": "funds",
+            "target": "self",
+            "amountCr": -1500
+          }
+        ]
       }
     },
     {
@@ -289,15 +762,44 @@
       "partyLogo": "assets/icons/Indian_National_Congress_hand_logo.svg",
       "primaryColor": "#138808",
       "policies": [
-        { "name": "Economic Liberalization", "bonus": 40 },
-        { "name": "Judicial Activism", "bonus": 30 },
-        { "name": "State's Rights", "bonus": 30 },
-        { "name": "Digital Transformation", "bonus": 30 }
+        {
+          "name": "Economic Liberalization",
+          "bonus": 40
+        },
+        {
+          "name": "Judicial Activism",
+          "bonus": 30
+        },
+        {
+          "name": "State's Rights",
+          "bonus": 30
+        },
+        {
+          "name": "Digital Transformation",
+          "bonus": 30
+        }
       ],
       "specialPower": {
         "name": "Minority Government Survival",
         "effect": "Re-activate one of your own agenda cards a second time",
         "cost": "Instant heavy funds penalty"
+      },
+      "power": {
+        "name": "Minority Government Survival",
+        "description": "Re-applies one of your already-completed agendas’ full effect a second time; costs a heavy upfront spend.",
+        "benefits": [
+          {
+            "kind": "replayAgenda"
+          }
+        ],
+        "costs": [
+          {
+            "kind": "funds",
+            "target": "self",
+            "amountCr": -2000
+          }
+        ],
+        "requiresCompletedAgenda": true
       }
     },
     {
@@ -309,15 +811,45 @@
       "partyLogo": "assets/icons/Indian_National_Congress_hand_logo.svg",
       "primaryColor": "#138808",
       "policies": [
-        { "name": "Digital Transformation", "bonus": 40 },
-        { "name": "Infrastructure", "bonus": 30 },
-        { "name": "Education", "bonus": 30 },
-        { "name": "State's Rights", "bonus": 30 }
+        {
+          "name": "Digital Transformation",
+          "bonus": 40
+        },
+        {
+          "name": "Infrastructure",
+          "bonus": 30
+        },
+        {
+          "name": "Education",
+          "bonus": 30
+        },
+        {
+          "name": "State's Rights",
+          "bonus": 30
+        }
       ],
       "specialPower": {
         "name": "Telecom Revolution",
         "effect": "Permanently discounts Digital Transformation agenda costs for rest of game",
         "cost": "Heavy upfront funds hit"
+      },
+      "power": {
+        "name": "Telecom Revolution",
+        "description": "An instant rebate representing a permanent discount, reframed as a one-time payout since duration-based effects aren’t allowed; costs an upfront spend.",
+        "benefits": [
+          {
+            "kind": "funds",
+            "target": "self",
+            "amountCr": 2000
+          }
+        ],
+        "costs": [
+          {
+            "kind": "funds",
+            "target": "self",
+            "amountCr": -1000
+          }
+        ]
       }
     },
     {
@@ -329,15 +861,47 @@
       "partyLogo": null,
       "primaryColor": "#B8860B",
       "policies": [
-        { "name": "Press Freedom", "bonus": 40 },
-        { "name": "Digital Transformation", "bonus": 30 },
-        { "name": "Education", "bonus": 30 },
-        { "name": "Healthcare", "bonus": 30 }
+        {
+          "name": "Press Freedom",
+          "bonus": 40
+        },
+        {
+          "name": "Digital Transformation",
+          "bonus": 30
+        },
+        {
+          "name": "Education",
+          "bonus": 30
+        },
+        {
+          "name": "Healthcare",
+          "bonus": 30
+        }
       ],
       "specialPower": {
         "name": "Celebrity Endorsement",
         "effect": "Converts undecided (\"Others\") popularity to you nationwide, not taken from the opponent",
         "cost": "Funds hit this phase"
+      },
+      "power": {
+        "name": "Celebrity Endorsement",
+        "description": "Converts undecided (\"Others\") popularity to you nationwide — never taken from the opponent; costs funds.",
+        "benefits": [
+          {
+            "kind": "popularity",
+            "target": "self",
+            "scope": "nationwide",
+            "bps": 600,
+            "source": "others"
+          }
+        ],
+        "costs": [
+          {
+            "kind": "funds",
+            "target": "self",
+            "amountCr": -1000
+          }
+        ]
       }
     },
     {
@@ -349,15 +913,48 @@
       "partyLogo": null,
       "primaryColor": "#004BA0",
       "policies": [
-        { "name": "Education", "bonus": 40 },
-        { "name": "Healthcare", "bonus": 30 },
-        { "name": "Infrastructure", "bonus": 30 },
-        { "name": "Digital Transformation", "bonus": 30 }
+        {
+          "name": "Education",
+          "bonus": 40
+        },
+        {
+          "name": "Healthcare",
+          "bonus": 30
+        },
+        {
+          "name": "Infrastructure",
+          "bonus": 30
+        },
+        {
+          "name": "Digital Transformation",
+          "bonus": 30
+        }
       ],
       "specialPower": {
         "name": "National Icon",
         "effect": "Flat popularity boost split across all states",
         "cost": "Instant 1,000 Cr funds cost, deducted on activation — requires holding at least 1,000 Cr to activate; usable any phase"
+      },
+      "power": {
+        "name": "National Icon",
+        "description": "Flat popularity boost nationwide. Any phase; requires holding ≥1,000 Cr; costs a flat 1,000 Cr instantly.",
+        "benefits": [
+          {
+            "kind": "popularity",
+            "target": "self",
+            "scope": "nationwide",
+            "bps": 300,
+            "source": "both"
+          }
+        ],
+        "costs": [
+          {
+            "kind": "funds",
+            "target": "self",
+            "amountCr": -1000
+          }
+        ],
+        "requiresMinFundsCr": 1000
       }
     },
     {
@@ -369,15 +966,48 @@
       "partyLogo": "assets/icons/Bharatiya_Janata_Party_(icon).svg",
       "primaryColor": "#FF9933",
       "policies": [
-        { "name": "Women's Empowerment", "bonus": 40 },
-        { "name": "Healthcare", "bonus": 30 },
-        { "name": "Infrastructure", "bonus": 30 },
-        { "name": "Education", "bonus": 30 }
+        {
+          "name": "Women's Empowerment",
+          "bonus": 40
+        },
+        {
+          "name": "Healthcare",
+          "bonus": 30
+        },
+        {
+          "name": "Infrastructure",
+          "bonus": 30
+        },
+        {
+          "name": "Education",
+          "bonus": 30
+        }
       ],
       "specialPower": {
         "name": "Star Power Rally",
         "effect": "+5% popularity nationwide",
         "cost": "Instant 500 Cr funds cost, deducted on activation — requires holding at least 500 Cr to activate; usable any phase"
+      },
+      "power": {
+        "name": "Star Power Rally",
+        "description": "+5% popularity nationwide; requires holding ≥500 Cr; costs 500 Cr instantly.",
+        "benefits": [
+          {
+            "kind": "popularity",
+            "target": "self",
+            "scope": "nationwide",
+            "bps": 500,
+            "source": "both"
+          }
+        ],
+        "costs": [
+          {
+            "kind": "funds",
+            "target": "self",
+            "amountCr": -500
+          }
+        ],
+        "requiresMinFundsCr": 500
       }
     },
     {
@@ -389,15 +1019,59 @@
       "partyLogo": null,
       "primaryColor": "#8B0000",
       "policies": [
-        { "name": "Anti-Corruption", "bonus": 40 },
-        { "name": "Press Freedom", "bonus": 30 },
-        { "name": "Digital Transformation", "bonus": 30 },
-        { "name": "Education", "bonus": 30 }
+        {
+          "name": "Anti-Corruption",
+          "bonus": 40
+        },
+        {
+          "name": "Press Freedom",
+          "bonus": 30
+        },
+        {
+          "name": "Digital Transformation",
+          "bonus": 30
+        },
+        {
+          "name": "Education",
+          "bonus": 30
+        }
       ],
       "specialPower": {
         "name": "Thalaivar Announcement",
         "effect": "+20% popularity in South India and Maharashtra (Bollywood)",
         "cost": "Instant 2,000 Cr funds cost, deducted on activation — requires holding at least 2,000 Cr to activate; usable any phase"
+      },
+      "power": {
+        "name": "Thalaivar Announcement",
+        "description": "+20% popularity in South India and Maharashtra; requires holding ≥2,000 Cr; costs 2,000 Cr instantly.",
+        "benefits": [
+          {
+            "kind": "popularity",
+            "target": "self",
+            "scope": "tags",
+            "tags": [
+              "SouthIndia"
+            ],
+            "bps": 2000,
+            "source": "both"
+          },
+          {
+            "kind": "popularity",
+            "target": "self",
+            "scope": "state",
+            "stateName": "Maharashtra",
+            "bps": 2000,
+            "source": "both"
+          }
+        ],
+        "costs": [
+          {
+            "kind": "funds",
+            "target": "self",
+            "amountCr": -2000
+          }
+        ],
+        "requiresMinFundsCr": 2000
       }
     }
   ]

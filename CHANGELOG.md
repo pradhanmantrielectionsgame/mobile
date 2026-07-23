@@ -6,6 +6,45 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### 🎮 Mobile Game Engine Complete — Single-Player vs. AI Build — 2026-07-23
+
+#### New Mobile Game Build
+- **CREATED**: `mobile/engine.js` — pure redistribution engine (bps gain/loss with simultaneous-overdraw collision resolution), largest-remainder seat apportionment (Hamilton's method), 3-step randomized starting-position generator with home-state collision handling, and self-check via `node mobile/engine.js`
+- **CREATED**: `mobile/game.js` — complete 10-phase game loop with investment/rally-tokens/agendas/regional-dominance/special-powers systems, greedy heuristic AI opponent for Player 2, and bps/seat invariant assertions
+- **CREATED**: `mobile/index.html` — Booth Ink's committed mobile UI (copied from `design/prototypes/pme-mobile-sheet.html`, now wired to real engine), added politician-select overlay, end-game overlay, target-picker banner, dynamic per-politician agenda tray, and proper `<!DOCTYPE html><html><head><body>` document structure (standards mode, not quirks)
+- **CREATED**: `mobile/main.js` — all DOM wiring/glue; the only file that touches `document`
+- **CREATED**: `mobile/simulate.js` — permanent regression test suite: 5 full 10-phase simulated games plus all 20 politicians' special-power activations, asserting bps/seat invariants throughout
+- **UPDATED**: `package.json` + `package-lock.json` — added `playwright` devDependency, `npm test` (run simulate.js), `npm run serve` (live-reload server), `npm run check-data` (consistency check)
+- **UPDATED**: `.gitignore` — added `node_modules/`
+
+#### Economy & Data
+- **UPDATED**: `data/game-config.json` — added new top-level `mobileEconomy` namespace (phases, funds, investment/rally/agenda/regional-dominance constants) per `design/economy-status-map.md`, without touching existing legacy keys (preserves desktop build compatibility)
+- **UPDATED**: `data/politicians-data.json` — added structured, engine-executable `power` field to all 20 politicians with unified effect schema (popularity/funds/tokens/steal/nullify/replayAgenda) and concrete first-pass magnitude numbers for the 13 powers lacking explicit balance numbers in the design doc (flagged as provisional pending real playtesting)
+
+#### Project Documentation
+- **UPDATED**: `CLAUDE.md` — updated mobile/ pointer (now the real playable build, not the Booth Ink prototype), documented AI-only scope decision, provisional special-power balance, missing politician portrait images, legacy-config-key fragility as a durable architectural rule, Playwright iPhone-14-viewport gotcha (664px content height, not 844px), and data-file BOM/wrapper-key gotcha
+- **UPDATED**: `findings.md` — already populated directly by `/checkpoint` Phase 1.3 with 4 new entries (2026-07-23): legacy config key fragility, Playwright iPhone 14 viewport, data file BOM/wrapper-key, seat-conversion rounding, agenda effect timing clarity, Kejriwal wording ambiguity
+
+#### Architecture Decisions Finalized
+- **[D1] Single-Player vs. AI Scope** — Built mobile as single-player-vs-AI only, deferring human matchmaking backend to later phase. Rationale: completeness now (playable game on day 1), design validation before backend investment, independent phase dependencies (see ADR-0007)
+- **[D2] Additive Config Schema** — Preserved backward compatibility with legacy desktop build via new `mobileEconomy` namespace, rather than restructuring entire `game-config.json`. Rationale: no silent breakage, explicit namespace isolation, minimal total change (see ADR-0008)
+- **[D3] Unified Special-Power Effect Schema** — All 20 politicians' powers execute through one shared interpreter (popularity/funds/tokens/steal/nullify/replayAgenda effects), not bespoke per-politician functions. Rationale: cleaner codebase, 13 powers need magnitude numbers anyway, first-pass balance numbers follow decided conventions
+- **[D4] Collision Resolution (Snapshot + Retroactive)** — Same-phase, same-state overlaps (both players' actions landing on same state) resolved via phase-start snapshot plus retroactive joint-recompute when overlap detected, preserving instant tap feedback for non-colliding case
+- **[D5] HTML Standards Mode** — `mobile/index.html` wrapped in proper `<!DOCTYPE html><html><head><body>` document structure (standards mode), not bare fragment matching prototype file
+- **[D6] Viewport Meta Tag Deferral** — Deferred adding `<meta name="viewport">` to mobile/index.html despite it now being deployable build, because Booth Ink's fixed chrome (~755–765px) relies on Safari's fallback ~980px virtual-canvas mode. Revisit once Capacitor wrapping and chrome density audit are underway.
+
+#### Key Design Validations
+- **Starting-position randomization**: 3-step generator (50% home-state baseline + ~100-seat random-advantage draw with collision handling + randomized first-move selection) eliminates permanent first-mover bias while preserving contested-territory balance (~54% of map genuinely contested per existing findings)
+- **Redistribution rule conformance**: engine implements exact bps-precision, simultaneous-overdraw joint-solve, "round one, derive the other" discipline per design spec
+- **Seat-conversion rounding**: switched from plain `round()` to largest-remainder apportionment (Hamilton's method) per design/economy-status-map.md's worked example
+- **Agenda effect timing**: implemented as per-tap prorating (each of 4 taps applies exactly 1/4 of magnitude immediately), matching investment-tap mechanics
+- **Special-power balance**: all 20 powers have concrete, non-contingent cost/benefit tradeoffs (instant-only, matched sacrifice + payoff), with Nehru's power as sole deliberate zero-cost exception due to its own risk/uncertainty structure
+
+#### Context
+Session focused on delivering a complete, playable mobile game build end-to-end: engine (redistribution + phase loop + AI), UI integration (wiring Booth Ink to real game logic), data (20-politician powers with unified schema, economy constants in new namespace), and regression tests (simulate.js validates bps/seat invariants through 100+ politician-power activations). All changes upstream of the build are in-memory or test-scoped; no external infrastructure required.
+
+---
+
 ### 🎯 Policy Tag Schema Migration & Special Powers Rebalancing — 2026-07-23
 
 #### Data & Code Updates

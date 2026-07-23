@@ -1,5 +1,20 @@
 # Findings
 
+## 2026-07-23 — Legacy desktop config/data readers use hardcoded key names with no fallback defaults
+**Finding:** `js/config-manager.js` and `js/data-loader.js` read `data/game-config.json`/`data/politicians-data.json` via direct property access on specific key names (e.g. `config.investmentSystem.baseCostPerSeat`, `config.rallySystem.regularTokenBoost`, `config.playerSettings.startingFunds`) with no fallback values — a missing or renamed key doesn't throw, it silently propagates `undefined`/`NaN` into the desktop build's economy.
+**Context:** Discovered while building the real mobile engine (`mobile/engine.js`/`mobile/game.js`) against the decided design in `design/economy-status-map.md`, which requires several numbers (rally boost 5% not 8%, token income 2/phase not 1) that differ from the legacy desktop values already in `game-config.json`.
+**Implication:** Rather than renaming/restructuring the existing keys, added a new additive `mobileEconomy` namespace to `game-config.json` for the new engine to read, leaving every legacy key untouched. Any future schema change to these two data files must either preserve the exact legacy key names the desktop reader expects, or explicitly accept (and document) breaking that already-deprecated build.
+
+## 2026-07-23 — Playwright's `devices['iPhone 14']` viewport is 390×664, not 390×844
+**Finding:** The preset's `viewport` field is `{width:390, height:664}` — 844 is only the `screen` dimension it also reports (`deviceScaleFactor:3`). A screenshot came out 1170×1992px (i.e. 390×664 at 3x) instead of the expected 390×844.
+**Context:** Discovered while visually verifying the new `mobile/index.html` build with Playwright's webkit engine, per this project's existing convention of testing Safari-specific mobile behavior with `devices['iPhone 14']`.
+**Implication:** 664px, not 844px, is the usable content height this device profile actually models (approximating real Safari's chrome-reduced viewport) — relevant when judging whether Booth Ink's ~755–765px fixed chrome will fit, and a reminder that headless Playwright/webkit still isn't a perfect stand-in for real-device Safari on this specific viewport-fallback behavior; a real device or Capacitor-wrapped build remains the final check.
+
+## 2026-07-23 — data/policy-tags.json and politicians-data.json wrap content in a named top-level key; states_data.json has a leading BOM
+**Finding:** `policy-tags.json`'s real content is under a `policyTags` key (not the file root); `politicians-data.json`'s is under `politicians`; `states_data.json` starts with a UTF-8 BOM (`﻿`) that breaks `JSON.parse` if read raw via Node's `fs`.
+**Context:** Discovered writing `mobile/game.js`'s data loader and a one-off Node inspection script — the browser's `fetch().json()` path silently tolerates the BOM, which is why this had never surfaced before in any browser-side code.
+**Implication:** Any future script reading these three files directly via `fs.readFileSync` (rather than through `fetch`) must strip a possible leading BOM and unwrap the named top-level key before parsing/using the content — `mobile/game.js`'s `stripBOM()` + `normalizeGameData()` now does this once, centrally, for both the browser and Node (test) code paths.
+
 ## 2026-07-23 — Seat-conversion rounding (state seats = round(popularity% × seats)) can over-allocate a state's total seats
 **Finding:** Computing each player's seat share independently via plain rounding has no reconciliation step, unlike bps popularity redistribution (which guarantees the three shares always sum exactly). Worst case demonstrated: a 3-seat state at P1 50% / P2 25% / Others 25% gives exact quotas of 1.5 / 0.75 / 0.75 — independent rounding gives 2 / 1 / 1, handing out 4 seats from a state that only has 3.
 **Context:** Found during a requested structural review of `design/economy-status-map.md`, by analogy to the redistribution engine's own "round one side, derive the other" discipline — the seat-conversion step never got the same treatment.

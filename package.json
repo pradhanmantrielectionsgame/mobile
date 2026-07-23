@@ -1,0 +1,20 @@
+{
+  "name": "pradhanmantri-elections-game-mobile",
+  "version": "1.0.0",
+  "description": "A turn-based election simulation game on a mobile-first interactive India map. Players invest resources in states, manage regional dominance bonuses, and deploy rally tokens to shift vote share. Built with vanilla HTML/CSS/JavaScript for iOS and Android via Capacitor.",
+  "main": "check_data_consistency.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "node mobile/engine.js && node mobile/simulate.js",
+    "check-data": "node check_data_consistency.js",
+    "serve": "node -e \"require('http').createServer((req,res)=>{const fs=require('fs'),path=require('path');const types={'.html':'text/html','.js':'application/javascript','.json':'application/json','.css':'text/css','.svg':'image/svg+xml','.png':'image/png'};let p=decodeURIComponent(req.url.split('?')[0]);if(p==='/')p='/mobile/index.html';const full=path.join(process.cwd(),p);fs.readFile(full,(err,data)=>{if(err){res.writeHead(404);res.end('not found: '+p);return;}res.writeHead(200,{'Content-Type':types[path.extname(full)]||'application/octet-stream'});res.end(data);});}).listen(8934,()=>console.log('http://localhost:8934/mobile/index.html'))\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "playwright": "^1.61.1"
+  }
+}

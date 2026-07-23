@@ -1,6 +1,6 @@
 # PradhanMantri Elections Game — Mobile Edition
 
-A turn-based election simulation game on a mobile-first interactive India map. Players invest resources in states, manage regional dominance bonuses, and deploy rally tokens to shift vote share. Built with vanilla HTML/CSS/JavaScript for iOS and Android via Capacitor.
+A turn-based election simulation game on a mobile-first interactive India map. Players invest resources in states, manage regional dominance bonuses, and deploy special powers and rally tokens to shift vote share. Play vs. AI opponent or local hotseat on any device. Built with vanilla HTML/CSS/JavaScript for iOS and Android via Capacitor.
 
 ## Quick Start
 
@@ -8,59 +8,76 @@ A turn-based election simulation game on a mobile-first interactive India map. P
    ```bash
    git clone <repo>
    cd "PradhanMantri Elections Game Mobile"
+   npm install
    ```
 
-2. **Serve locally:**
+2. **Run the tests and live server:**
    ```bash
-   python -m http.server 8000
+   npm test              # Run regression test suite (5 full games + all special powers)
+   npm run serve         # Live-reload dev server at http://localhost:8000
    ```
-   Then open `http://localhost:8000` or add to iPhone home screen via `http://<your-ip>:8000` (current game build at `index.html`).
 
-3. **Play the current build:**
-   - Tap states to invest
-   - **Shift+Click** a state to alternate players (local hotseat; no AI opponent yet)
-   - Use group filter bar to show/hide state groups
-   - Rally token buttons boost a state (regular) or nationwide (special)
+3. **Play the game:**
+   - Open `http://localhost:8000` in your browser, or add to iPhone home screen via `http://<your-machine-ip>:8000`
+   - Game runs entirely in `mobile/index.html` (Booth Ink UI) wired to the real engine in `mobile/engine.js` and `mobile/game.js`
+   - Select a politician, then play vs. AI or hand the phone to Player 2 for local hotseat mode
+   - Tap states to invest funds, use rally tokens for regional boosts, activate special powers, and pursue regional dominance bonuses
+   - First player to 272/543 seats wins
 
-**Note:** The game engine (js/, data/, assets/, index.html) is functional and working. A redesigned mobile UI (Booth Ink, in `design/prototypes/pme-mobile-sheet.html`) is in progress per `design/plan.md` — the old Shift+Click/Alt+Click controls below apply to the current index.html build, not the incoming redesigned UI.
+**Current build:** `mobile/index.html` (Booth Ink UI, fully engine-integrated). The legacy `index.html` at project root is the old desktop-ported skin and is no longer maintained.
 
 ## Installation
 
 **Prerequisites:**
-- Python 3.x (for local dev server) or Node.js (for production hosting)
+- Node.js 16+ (for dev server, testing, and package scripts)
 - Modern browser (Chrome 90+, Safari 14+) or iOS/Android device
+- Playwright (included in `package-lock.json` via `npm install`)
 
 **Setup:**
-1. Ensure `index.html`, `styles.css`, `app.js`, `game-config.json`, and all asset files are in place
-2. Add `<meta charset="UTF-8">` to every HTML file — required for proper emoji/₹ symbol rendering on non-Claude hosting
-3. Declare viewport explicitly: `<meta name="viewport" content="width=device-width, initial-scale=1">`
+1. Clone the repo and run `npm install`
+2. Verify `mobile/`, `data/`, `assets/` directories are in place
+3. Run `npm test` to validate the build with the regression test suite
+4. Run `npm run serve` to start the dev server
 
 **Local dev server (testing on device):**
 ```bash
-python -m http.server 8000
-# Then visit http://<your-machine-ip>:8000 from your phone
+npm run serve
+# Then visit http://localhost:8000 from your device, or
+# http://<your-machine-ip>:8000 for testing from another device on the same LAN
+```
+
+**Playwright testing (screenshots, automated checks):**
+```bash
+npm test              # Runs simulate.js regression suite
+# For visual checks: use Playwright's devices['iPhone 14'] profile
+# Note: viewport is 390×664 (content height with Chrome), not 844px device height
 ```
 
 ## Usage
 
-### Controls (Current index.html Build)
+### Game Setup
 
-- **Tap a state** → invest your Player budget into that state's popularity
-- **Shift+Click a state** → alternate to Player 2 (local hotseat, no AI opponent yet)
-- **Alt+Click a state** → open rally token menu
-- **Ctrl+Click a state** → info-only (no interaction)
-- **Rally button** (bottom-right) → open rally token picker; tap token to boost one state
-- **Special rally button** → deploy special rally token (5% probability per phase) for nationwide boost
-- **Group filter bar** (under header) → toggle visibility of state groups (political alliances)
-- **UT (Union Territory) panel** (bottom-left) → batch-invest into all small UTs at once
+1. **Start screen** — select your politician (defines your 4 agenda commitments + unique special power)
+2. **Choose opponent** — play solo vs. AI, or select "local hotseat" for 2-player on one device
+3. **Game begins** — 10 phases of investment and power deployment
 
-**Note:** The redesigned Booth Ink UI (coming in Phase 1 per `design/plan.md`) will replace these keyboard-based controls with a touch-first tray-based interaction pattern.
+### In-Game Controls
 
-### Game Phases
+- **Tap a state** → invest your current funds into that state's popularity share
+- **Tap agenda pills** (top-right) → commit funds to that politician's signature policies (instant, per-tap scaling)
+- **Rally tokens tray** (bottom) → tap a state to deploy a token (one-time +5% boost); crafted Nationwide Rally affects all states
+- **Special power button** — activate your politician's unique power (one use per game, unlocked after token crafting prerequisites)
+- **Group filter bar** (under header) → tap a region to show/hide that state group
+- **UT quick-invest buttons** (bottom-left) — invest in multiple small union territories at once
 
-1. **Investment phase** — both players spend budget on states
-2. **Dominance check** — calculate regional bonuses (>50% popularity in any group)
-3. **AI or Player 2 turn** — if multiplayer enabled, opponent plays (currently same-device hotseat via Shift+Click)
+**Local hotseat:** Hand the phone to Player 2 after each phase; the game handles turn rotation automatically.
+
+### Game Phases & Win Condition
+
+- **10 total phases** — each phase, both players spend budget, commit to agendas, and deploy tokens/powers
+- **Phase structure** — investment, rally, agenda, power actions; then next player's turn (AI or human)
+- **Win condition** — first player to 272/543 seats (majority) wins the election; checked at phase end
+- **Dominance bonus** — controlling all states in a region (50%+ popularity in every state) earns a one-time lump-sum bonus
 
 ### Board State
 
@@ -69,10 +86,13 @@ python -m http.server 8000
 - **Info panel** — selected state details and group membership
 - **Timer pill** — turn countdown and phase indicator
 
-## Artifacts
+## Build Outputs
 
-**Generated/cached files (none per run):**
-The game uses `game-config.json` for all tunable parameters (rally token boosts, player starting funds, regional bonus amounts). No artifacts are written to disk during play — all state is in-memory or browser LocalStorage (if sessions persist).
+**No artifacts written at runtime** — the game is entirely in-memory. All tunable parameters (economy constants, politician roster, state groupings, policy magnitudes) live in `data/*.json` config files and are loaded at startup.
+
+**Test outputs:**
+- `npm test` runs `mobile/simulate.js`: executes 5 full 10-phase games plus all 20 politicians' special powers, validating that bps/seat totals stay consistent throughout (success = all assertions pass)
+- Screenshot/browser testing: use `npm run serve` + device browser, or Playwright's webkit engine with `devices['iPhone 14']` for Safari-specific checks
 
 ## Architecture & Decisions
 
@@ -93,42 +113,61 @@ The game uses `game-config.json` for all tunable parameters (rally token boosts,
 | [ADR-0004: Instant-Effect-Only Special Powers](docs/adr/0004-instant-effect-special-powers.md) | Accepted | Convert all power effects to instant lump-sum equivalents; robustness against game-length changes |
 | [ADR-0005: Token Economy as Unlock Gate](docs/adr/0005-token-economy-unlock-gate.md) | Accepted | Gate special powers via rally-token crafting; symmetric opportunity regardless of game state |
 | [ADR-0006: Hung Parliament Tie Resolution](docs/adr/0006-hung-parliament-tie-resolution.md) | Accepted | Draw vs. human opponent, Loss vs. AI fallback; ensures fairness in human-vs-human, incentivizes multiplayer |
+| [ADR-0007: Single-Player vs. AI Scope](docs/adr/0007-single-player-ai-scope.md) | Accepted | Built single-player-vs-AI only this session; deferred human matchmaking backend to Phase 0. Prioritizes end-to-end design validation + playable game on day 1 |
+| [ADR-0008: Additive Config Schema Evolution](docs/adr/0008-additive-config-schema-evolution.md) | Accepted | Preserved backward compatibility with legacy desktop build via new `mobileEconomy` namespace, rather than restructuring entire `game-config.json` |
 
 ## Current Status
 
-**Game Engine:** Functional and stable. The game logic (`js/*.js`, assets) is working and not being rewritten. 
+**Game Engine (Complete):** `mobile/engine.js` + `mobile/game.js` + `mobile/index.html` form a fully playable, single-player-vs-AI game. All 10-phase loop, economy mechanics (investment, rally, agenda, dominance), special powers, and AI opponent are functional and validated via regression tests (`mobile/simulate.js`).
 
-**Data Layer Rebalancing & Economy:** `data/` is being rebalanced per the replayability redesign (20-politician roster, 15 state groups, special powers with token-economy unlock gates). Booth Ink now fetches `data/states_data.json` live at runtime (no duplication). A consistency checker (`check_data_consistency.js`) guards against silent breaks from field renames. **Economy formulas are fully decided and specified** in `design/economy-status-map.md` (authoritative reference for totalPhases=10, starting funds/refresh/costs, agenda commitment costs, group-dominance payouts, rally token caps, and plausibility validation); implementation still pending in most engine modules.
+**Game Design (Finalized):** All mechanics specified in `design/economy-status-map.md` (authoritative reference for economy scale, phase count, starting position, redistribution rule, agenda/rally/dominance/special-power formulas, 20-politician roster with verified powers, and plausibility validation showing ~19-seat passive-opponent margin).
 
-**UI Migration:** Redesigned mobile UI direction is Booth Ink (`design/prototypes/pme-mobile-sheet.html`). This is a new UI skin replacing the old index.html/styles.css, not a replacement for the game engine. Data layer wired (live fetch); game logic wiring starts Phase 1. The migration is planned in phases:
-- **Phase 0** (PWA scaffolding) — Backend matchmaking setup, manifest.json, service worker. *Not yet started.*
-- **Phase 1** — Booth Ink implementation, AI opponent port, session start/end screens
-- **Phase 2+** — See `design/plan.md` roadmap for replayability redesign and content phases
+**Data Layer (Complete):** 
+- `data/game-config.json` — extended with `mobileEconomy` namespace (phases=10, starting funds, refresh rate, costs, rally boost, dominance payout)
+- `data/politicians-data.json` — all 20 politicians with 4 signature agendas + 1 special power each; powers have concrete cost/benefit tradeoffs
+- `data/states_data.json` — 28 states + 8 UTs, 15 regional groups, live-fetched by the game
+- `data/policy-tags.json` — 24 policies with per-region effect magnitudes (after tagEffects migration), consistency-checked via `check_data_consistency.js`
 
-For more detail, see `design/plan.md`.
+**UI (Complete for MVP):** `mobile/index.html` (Booth Ink skin) wired to real engine; includes politician select, end-game overlay, dynamic agenda tray, group filter bar, rally token system, special power activation.
+
+**Testing (Complete):** `mobile/simulate.js` regression suite validates 5 full 10-phase games + all 20 politicians' special-power activations, asserting bps/seat invariants throughout. Run via `npm test`.
+
+**Multiplayer (Deferred):** Single-player vs. AI only for this build. Human matchmaking backend (Firebase/Supabase) planned for Phase 0, following the design in ADR-0001/ADR-0002. Local hotseat (pass-the-phone) available now.
+
+**Next phases:**
+- **Phase 0:** Firebase/Supabase matchmaking backend + anonymous auth
+- **Phase 1:** Connect Player 2 selection to real multiplayer queue vs. AI fallback
+- **Phase 2+:** Capacitor wrapping, session management, portrait images, balance tuning based on playtesting
+
+See `design/plan.md` for full roadmap.
 
 ## Known Limitations
 
-- **No AI opponent yet** — Player 2 is same-device hotseat (Shift+Click in index.html) only; `ai-player-controller.js` from desktop is not ported
-- **No session boundaries** — no welcome screen, game-over screen, or functional options menu (currently stubs)
-- **Replayability design complete; data layer partial, engine logic pending** — design/plan.md covers the full redesign (20-politician roster, special powers with instant cost/benefit tradeoffs, 3-flavor rally-token economy). Data layer rebalanced (politicians-data.json, states_data.json expanded per plan); engine logic implementation Phase 4+
-- **Booth Ink data layer wired; game engine logic pending** — `pme-mobile-sheet.html` now fetches `data/states_data.json` live; map rendering and group filtering work. Game logic (investment, rally, scoring) still operates on mock data. Wiring starts Phase 1
-- **Small UTs not directly tappable** — Delhi, Chandigarh, Puducherry, etc. route through button-cluster pattern (confirmed as production-ready, see findings.md)
-- **SVG map undersized** — current `assets/icons/INDIA_V3_smaller_viewbox.svg` wastes ~27% of viewBox area; tightened viewBox would render 27% larger with zero crop risk
+- **Single-player vs. AI only** — no live human multiplayer backend yet (Phase 0, planned for later); local hotseat available via pass-the-phone
+- **No session persistence** — game state lives only in memory during a single session; no save/resume or stats tracking across sessions
+- **No politician portrait images** — politician select screen uses placeholder styling; portrait images are out of scope for MVP
+- **Special-power balance provisional** — 13 of 20 politicians have powers with magnitude numbers assigned for the first time this session; these are first-pass numbers pending real playtesting and balance refinement
+- **Small UTs require dedicated buttons** — Delhi, Chandigarh, Puducherry, Lakshadweep, Andaman & Nicobar, Dadra & Nagar Haveli/Daman & Diu are not directly tappable on the map (too small); they route through button-cluster pattern at bottom-left (confirmed production-ready)
+- **SVG map undersized** — `assets/icons/INDIA_V3_smaller_viewbox.svg` wastes ~27% of viewBox area; tightened viewBox would render 27% larger with zero crop risk (not performance-critical, deferred)
 
-## CSS & Rendering Gotchas
+## Mobile Development Notes
+
+### CSS & Rendering Gotchas
 
 1. **Grid shrink-to-fit sizing bug** — CSS Grid with `grid-template-columns: repeat(Nfr)` and no explicit container width silently overrides declared item sizes. Always give the grid container an explicit, screen-relative width (e.g., `min(calc(100% - Npx), cap)`).
-2. **Charset declaration required** — every HTML file must declare `<meta charset="UTF-8">` (first tag). Claude Artifacts set this via header; local dev servers do not.
-3. **Artifact viewer chrome distorts proportions** — Claude's ~150–200px title-bar makes a `flex:1` map look shorter than it will on a real device. Size against iPhone 14 viewport (390×844) assumptions, not the Artifact preview.
+2. **Charset declaration required** — every HTML file must declare `<meta charset="UTF-8">` as the first tag. Claude Artifacts set this via header; local dev servers do not. Without it, emoji and ₹ symbols render as mojibake.
+3. **Viewport meta tag and Safari fallback mode** — `mobile/index.html` intentionally has no `<meta name="viewport">` tag because Booth Ink's fixed-height chrome (~755–765px) relies on Safari's fallback virtual-canvas mode (~980px). Do not add a viewport tag without first trimming chrome density or confirming standalone/installed mode.
+4. **Playwright iPhone 14 viewport depth** — the preset's `viewport` field is 390×664 (content height with Chrome), not 844px (device height). When evaluating layout fit, use 664px as the usable height, not 844px.
+5. **SVG map selector targeting** — Uttarakhand, Ladakh, Himachal Pradesh each render as both a `<path>` boundary and a `<circle>` overlay (duplicate ID). Any map interaction must query `path[id], circle[id]` together, or these states will be silently skipped.
 
 ## Future Work
 
-- **Phase 0** — Backend matchmaking (Firebase/Supabase) + anonymous auth setup
-- **Phase 1** — Port + tune AI opponent from desktop codebase; integrate with Player 2 fallback logic
-- **Phase 2** — Session start/end screens (welcome, game-over, player names)
-- **Phase 3** — Error handling + edge cases (both players accept match, network disconnect mid-game)
-- **Phase 4** — Implement replayability redesign: 20-politician roster, personal signature agendas (4 per politician), special powers with instant cost/benefit tradeoffs, 3-flavor rally-token economy (see design/plan.md for specification)
+- **Phase 0** — Firebase/Supabase matchmaking backend + anonymous auth setup (per ADR-0001/0002)
+- **Phase 1** — Wire Player 2 selection screen to real matchmaking queue; implement human-vs-AI detection and connection handling
+- **Phase 2** — Capacitor wrapping + iOS/Android app store build pipeline
+- **Phase 3** — Session persistence, stats tracking, player profiles (if multiplayer proves sticky)
+- **Phase 4** — Politician portrait images, balance tuning via real playtesting, edge-case error handling (disconnects mid-game, etc.)
+- **Phase 5+** — Consider adding: a tutorial/onboarding flow, replay viewer, leaderboards, seasonal events (if multiplayer takes off)
 
 ## Troubleshooting
 

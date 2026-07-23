@@ -47,5 +47,41 @@
     "showCountdownWarning": true,
     "countdownWarningSeconds": 10,
     "autoAdvancePhases": true
+  },
+  "mobileEconomy": {
+    "_comment": "Canonical constants for the mobile Booth Ink engine (mobile/engine.js), per design/economy-status-map.md. Namespaced separately from the sections above, which the legacy desktop build (index.html/js/*) reads directly with different key names/values — kept untouched so this doesn't regress that build.",
+    "totalPhases": 10,
+    "phaseDurationSeconds": 45,
+    "startingFundsCr": 2500,
+    "fundsRefreshPerPhaseCr": 1000,
+    "totalSeats": 543,
+    "seatsToWin": 272,
+    "investment": {
+      "costPerSeatCr": 10,
+      "boostStartBps": 500,
+      "boostFloorBps": 200,
+      "boostGlidePathTaps": 20
+    },
+    "rally": {
+      "tokenIncomePerPhase": 2,
+      "maxTokenSpendPerPhase": 2,
+      "maxPlaysPerStateShared": 2,
+      "tokenBoostBps": 500,
+      "specialPowerupCraftCost": 6,
+      "specialPowerupMinPhase": 3,
+      "nationwideRallyCraftCost": 12,
+      "nationwideRallyMinPhase": 6,
+      "nationwideRallyBoostBps": 500,
+      "agendaTokenBonusPerCompletion": 2,
+      "agendaTokenBonusMax": 8
+    },
+    "agenda": {
+      "costPerTapCr": 500,
+      "tapsToComplete": 4
+    },
+    "regionalDominance": {
+      "thresholdBps": 5000,
+      "payoutCrPerSeat": 5
+    }
   }
 }
