@@ -17,14 +17,14 @@
       "baseMagnitude": 8,
       "supportTags": [],
       "opposeTags": [],
-      "nationwideBonus": 2
+      "nationwideBonus": 4
     },
     "Healthcare": {
       "tier": 1,
       "baseMagnitude": 12,
       "supportTags": [],
       "opposeTags": [],
-      "nationwideBonus": 2
+      "nationwideBonus": 4
     },
     "Land Reforms": {
       "tier": 2,
@@ -79,7 +79,7 @@
       "baseMagnitude": 8,
       "supportTags": [],
       "opposeTags": [],
-      "nationwideBonus": 2
+      "nationwideBonus": 4
     },
     "Judicial Activism": {
       "tier": 3,

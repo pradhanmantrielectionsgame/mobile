@@ -189,25 +189,65 @@ footer{ border-top:1px solid var(--rule-strong); padding-top:20px; color:var(--i
   </div>
 
   <h3>Starting position</h3>
-  <p>Not a blank map. Popularity is seeded so each player gets a stronghold and the rest of the map starts genuinely contested:</p>
-  <div class="table-wrap">
-  <table>
-    <thead><tr><th>Player</th><th>Starting stronghold</th><th>Seats</th></tr></thead>
-    <tbody>
-      <tr><td class="feat">Player 1</td><td>Uttar Pradesh + Maharashtra (2 states)</td><td class="num">128</td></tr>
-      <tr><td class="feat">Player 2</td><td>West Bengal + Bihar + Tamil Nadu (3 states)</td><td class="num">121</td></tr>
-      <tr><td class="feat">Contested</td><td>Remaining 31 states/UTs — both players start low (5–29%), "Others" holds the plurality</td><td class="num">294 (54%)</td></tr>
-    </tbody>
-  </table>
+  <p>Not a blank map, and not a fixed table either — the starting position is generated per match, in a fixed three-step order, from whichever politicians the two players pick plus a random roll on top:</p>
+  <div class="flow-grid">
+    <div class="flow-card">
+      <h3>1️⃣ Baseline</h3>
+      <div class="step decided">every state gets an independent random roll, 5%–29%, for each player separately — "Others" holds whatever's left over, everywhere, before either later step runs</div>
+    </div>
+    <div class="flow-card">
+      <h3>2️⃣ Home state</h3>
+      <div class="step decided">each politician carries a fixed <code>homeState</code> (<code>data/politicians-data.json</code>, e.g. Modi → Gujarat, Rahul Gandhi → Uttar Pradesh) — picking them adds +25% on top of your baseline roll there</div>
+      <div class="arrow">↓</div>
+      <div class="step decided">both players' politicians share a home state → the bonus is nullified for both, not split — that one state just keeps its two independent baseline rolls from step 1, no home advantage for either side</div>
+    </div>
+    <div class="flow-card">
+      <h3>3️⃣ Random national edge</h3>
+      <div class="step decided">both players' home states are pulled out of the pool first — no double-dipping your own, and your opponent's random draw can never land on it either</div>
+      <div class="arrow">↓</div>
+      <div class="step decided">players alternate turns drawing one state at a time from the shared remaining pool — a state can only go to whoever draws it, so it can never be drawn by both; who goes first is itself a coin flip each match, so the draw doesn't have a built-in first-mover advantage</div>
+      <div class="arrow">↓</div>
+      <div class="step decided">each drawn state's popularity is set to a fresh random 35%–65% for the player who drew it</div>
+      <div class="arrow">↓</div>
+      <div class="step decided">keep drawing until that player's <code>seatCountWithAdvantage</code> (Lok Sabha seats summed across their drawn states) exceeds 100 — but skip any candidate state that would push it past 130, and try the next instead</div>
+    </div>
   </div>
-  <p class="section-note">Expected national seat share at kickoff, before either player spends a rupee: P1 ≈24.6%, P2 ≈24.3%, Others ≈51.1%. Most of the early game is a race to harvest the uncommitted "Others" pool, not direct player-vs-player combat.</p>
+  <div class="example">
+    <p class="label">Replaces the old fixed-stronghold table</p>
+    <p>An earlier draft scripted specific strongholds (P1: Uttar Pradesh + Maharashtra, P2: West Bengal + Bihar + Tamil Nadu) as a fixed starting position, always the same regardless of who or what was picked. Superseded 2026-07-22: starting position is now generated per match through the three-step procedure above — it varies with politician choice, baseline rolls, and the draw instead of repeating every game.</p>
+  </div>
+  <p class="section-note">Because the politician pick, the baseline rolls, and the draw are all random, the exact national kickoff split now varies match to match rather than landing on the fixed number the old scripted table gave. In spirit it's unchanged: each player starts with a meaningful chunk of the map in their favor, "Others" still holds the plurality, and most of the early game is a race to harvest the uncommitted pool, not direct player-vs-player combat.</p>
+  <div class="example">
+    <p class="label">UP being over-represented in the roster is a feature, not a bug — confirmed 2026-07-22</p>
+    <p>Checked against the real roster (<code>data/politicians-data.json</code>): 10 of the 20 politicians have Uttar Pradesh as their <code>homeState</code>, so the nullified-tie rule above will trigger often, not rarely. That's the right outcome: it means the scenario where one player just starts with a mega lead by dominating the country's single biggest state (80 seats) off a home-state pick is itself made rare, precisely because ties there get cancelled instead of resolved in someone's favor. The concentration isn't a balance problem to fix — it's already doing balancing work.</p>
+  </div>
+  <div class="example">
+    <p class="label">Implementation notes — starting position generator</p>
+    <p>All values in basis points (bps), 10,000 = 100% — see the redistribution rule's precision convention below.</p>
+    <div class="table-wrap"><pre style="background:var(--paper);border:none;border-radius:0;margin:0;padding:12px 14px;font-family:var(--mono);font-size:12px;line-height:1.65;color:var(--ink);white-space:pre-wrap;">1. baseline — for every state, for each player independently:
+   player.pop[state] = randomInt(500, 2900)
+
+2. home state — if p1.homeState ≠ p2.homeState:
+   owner.pop[homeState] += 2500   (capped at 10000)
+   else: no change — both keep their step-1 baseline roll in that state
+
+3. random draw — pool = allStates − {p1.homeState, p2.homeState}, shuffled once
+   firstDrawer = coinFlip(); players alternate turns consuming the pool
+   on your turn, take the next pool state where:
+     seatCountWithAdvantage[you] + state.seats ≤ 130
+     (skip it and try the next pool entry if it would exceed 130)
+   you.pop[state] = randomInt(3500, 6500)
+   seatCountWithAdvantage[you] += state.seats
+   stop drawing for a player once seatCountWithAdvantage[them] > 100</pre></div>
+  </div>
 </section>
 
 <section id="pot">
   <h2>The redistribution rule</h2>
   <p class="section-note">The one mechanic every lever below routes through.</p>
-  <p>Every state holds three numbers that always sum to 100: your share, your opponent's share, "Others." Every action in the game — investment, rally, agenda, special power — is really the same operation: add a boost to your share (capped at 100), and take the equivalent amount away from your opponent and "Others" <i>proportionally to how much of the 100 they currently hold</i>. A state where your rival is strong bleeds mostly from your rival; a state that's mostly undecided bleeds mostly from the undecided middle. Nothing in this game adds points to the pool — every gain is a reassignment.</p>
+  <p>Every state holds three shares that always add up to 100%: yours, your opponent's, and "Others" — the undecided middle. Every action in the game (investment, rally, agenda, special power) does the same basic thing: you gain a boost, capped so you can never pass 100%, and whatever you actually gained is taken away from your opponent and Others in proportion to how much each currently holds. If your rival already owns most of a state, your gain there eats mostly into your rival. If a state is still mostly undecided, your gain eats mostly into the undecided middle. Nothing is ever created out of thin air — every gain is just a reassignment of the same 100%.</p>
   <div class="converge">
+    <p class="section-note" style="text-align:center;margin-bottom:10px;">Four different levers, but they all funnel through the exact same two-step rule:</p>
     <div class="converge-in">
       <span class="feed-chip">cash boost</span>
       <span class="feed-chip">rally boost</span>
@@ -215,9 +255,66 @@ footer{ border-top:1px solid var(--rule-strong); padding-top:20px; color:var(--i
       <span class="feed-chip">power effect</span>
     </div>
     <div class="arrow">↓ ↓ ↓ ↓</div>
-    <div class="hub-box">Shared redistribution rule — gainer +boost (capped 100), opponent + others lose proportionally, renormalize to 100</div>
+    <div class="hub-box">1. You gain the boost — capped so you can never pass 100%</div>
+    <div class="arrow">↓</div>
+    <div class="hub-box">2. Your opponent and Others each give up their share of it, in proportion to how much they currently hold</div>
     <div class="arrow">↓</div>
     <div class="outcome-box">state popularity → seat share (proportional) → win condition</div>
+  </div>
+
+  <h3>Keeping the numbers exact</h3>
+  <p>Behind the scenes, a state's popularity isn't stored as a percentage like "28.12%" — it's stored as a whole number out of 10,000 (every 100 of these = 1%, a unit called <i>basis points</i>, or "bps" for short). This sidesteps two problems that come from using percentages directly: rounded numbers that don't quite add back up to 100, and small rounding errors quietly piling up over the hundreds of little actions in a 10-phase game.</p>
+  <div class="example">
+    <p class="label">Worked example</p>
+    <p>Say a state starts at P1 20%, P2 30%, Others 50%. P1 taps once for a flat 5% boost. P1 has plenty of room (20 + 5 = 25, nowhere near 100), so the full 5% goes through untrimmed. That 5% has to come from somewhere: it's taken from P2 and Others in proportion to what they already hold — a 30:50 split. P2 gives up its share, Others gives up its share, and both amounts get rounded to the nearest whole basis point.</p>
+    <p>The one rule that keeps this exact: round <i>one</i> of the two amounts to a whole number, then get the other by subtracting from the total taken — never round both separately. Two independently-rounded pieces can drift a point off from where they started; one rounded piece plus "whatever's left" never can.</p>
+  </div>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th></th><th>P1</th><th>P2</th><th>Others</th></tr></thead>
+    <tbody>
+      <tr><td class="feat">Before</td><td class="num">20.00%</td><td class="num">30.00%</td><td class="num">50.00%</td></tr>
+      <tr class="verdict-row"><td class="feat">After P1's tap</td><td class="num">25.00%</td><td class="num">28.12%</td><td class="num">46.88%</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="section-note">Players never see the underlying precision — the app always displays whole percentages (28.12% shows as "28%", rounded only on screen, at the very last step). Seat counts are computed from the exact number underneath, not from the already-rounded-for-display percentage, so two roundings never stack on top of each other and quietly drift the score.</p>
+
+  <h3>When both players act on the same state at once</h3>
+  <p>Turns are simultaneous, so both players can target the same state in the same phase. Each one is reaching into two places: the opponent's share, and the Others share. The two players' reaches into <i>each other</i> never collide — your pull on your opponent only ever touches their pile, never Others'. The one place a collision can happen is Others, since both players might be pulling from that same pile at the same moment.</p>
+  <div class="example">
+    <p class="label">Decided: shrink both requests to fit, like splitting a bill that's short on cash</p>
+    <p>If both players' combined pull on Others would ask for more than Others actually has, scale both pulls down proportionally so they fit exactly — same idea as splitting a restaurant bill down when there isn't enough cash on the table to cover what everyone ordered. It makes no difference which player's action gets processed first internally; the result comes out the same either way.</p>
+  </div>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th></th><th>P1</th><th>P2</th><th>Others</th></tr></thead>
+    <tbody>
+      <tr><td class="feat">Before — a small, contested state</td><td class="num">10%</td><td class="num">10%</td><td class="num">80%</td></tr>
+      <tr class="verdict-row"><td class="feat">After — both players throw a huge play at it, same phase</td><td class="num">50%</td><td class="num">50%</td><td class="num">0%</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="section-note">Together the two plays wanted more of that 80% undecided middle than existed, so both got scaled down to fit — and since the two plays were equally large, they land in an exact tie, with Others wiped out entirely. This only ever comes up when two big one-shot effects (a Nationwide Rally, a Special Powerup) land on the very same swing state in the very same phase and jointly overdraw the undecided middle — for an ordinary tap, or one player acting alone, nothing changes: it's just the rule above, run once.</p>
+  <div class="example">
+    <p class="label">Implementation notes — the redistribution engine</p>
+    <div class="table-wrap"><pre style="background:var(--paper);border:none;border-radius:0;margin:0;padding:12px 14px;font-family:var(--mono);font-size:12px;line-height:1.65;color:var(--ink);white-space:pre-wrap;">Single actor:
+  gain = min(boost_bps, 10000 − self_bps)
+  opp_cut_raw = gain × opponent_bps / (opponent_bps + others_bps)
+  opp_cut = round(opp_cut_raw)                 // round this side only
+  others_cut = gain − opp_cut                  // derive, never round independently
+  self += gain; opponent −= opp_cut; others −= others_cut
+
+Both players act on the same state, same phase (compute against the pre-phase snapshot):
+  for each player, compute gain / opp_cut_raw / others_cut_raw as above (unrounded)
+  others_demand = p1's others_cut_raw + p2's others_cut_raw
+  if others_demand > others_bps:
+    scale = others_bps / others_demand
+    both players' others_cut_raw ×= scale        // shrinks, doesn't redirect to opponent
+    each player's actual gain = own opponent-facing cut + own scaled others_cut_raw
+  round each player's final gain to the nearest bps, then split it into its
+  two components (opponent-facing / others-facing) with the same round-one,
+  derive-the-other rule as the single-actor case above</pre></div>
   </div>
 </section>
 
@@ -226,14 +323,22 @@ footer{ border-top:1px solid var(--rule-strong); padding-top:20px; color:var(--i
   <div class="flow-grid">
     <div class="flow-card">
       <h3>💰 Cost &amp; boost</h3>
-      <div class="step decided">cost = seats × 10 Cr — mobile's own scale, not derived from desktop</div>
+      <div class="step decided">cost per tap = the state's seat count × 10 Cr — mobile's own scale, not carried over from desktop</div>
       <div class="arrow">↓</div>
-      <div class="step decided">boost = linear glide, 5%→2% over 20 taps in that state, then floors at 2%</div>
+      <div class="step decided">each tap in a state gives a smaller boost than the last — starts at 5%, shrinks down to 2% by the 20th tap in that state, then stays at 2% for every tap after</div>
     </div>
   </div>
   <div class="example">
     <p class="label">Why state size doesn't matter the way you'd expect</p>
-    <p>Cost per tap scales with seats (seats×10), and the boost curve is identical regardless of state size — work out cost-per-projected-seat and the state's size cancels out completely. A tap in a 5-seat state and a tap in a 40-seat state buy the same Cr-per-seat, roughly 200 Cr/seat on a first tap, rising to ~500 Cr/seat at the decay floor. Big states aren't a trap, small states aren't a shortcut — the only thing that gets more expensive is repeating yourself in the <i>same</i> state.</p>
+    <p>Cost scales with seats, and the shrinking-boost pattern is identical everywhere — the two effects cancel out, so work out the cost per seat gained and a state's size makes no difference. A tap in a 5-seat state and a tap in a 40-seat state buy the same value per Crore: roughly 200 Cr per seat on a first tap in either, rising to ~500 Cr per seat once the boost has shrunk to its 2% floor. Big states aren't a trap and small states aren't a shortcut — the only thing that gets more expensive is tapping the <i>same</i> state over and over.</p>
+  </div>
+  <div class="example">
+    <p class="label">Implementation notes</p>
+    <div class="table-wrap"><pre style="background:var(--paper);border:none;border-radius:0;margin:0;padding:12px 14px;font-family:var(--mono);font-size:12px;line-height:1.65;color:var(--ink);white-space:pre-wrap;">costPerTap(state) = state.seats × 10                              // Cr
+
+boost_bps(tapNumberInThisState) =
+  tap ≤ 20:  round(500 − (tap − 1) × 300/19)   // linear, 500 bps at tap 1 → 200 bps at tap 20
+  tap  > 20: 200                                // floor, forever after</pre></div>
   </div>
 </section>
 
@@ -250,18 +355,35 @@ footer{ border-top:1px solid var(--rule-strong); padding-top:20px; color:var(--i
       <h3>🎯 Scarcity &amp; crafting</h3>
       <div class="step decided">per-state cap: max 2 total token plays per state, ever, shared across both players — Nationwide Rally exempt</div>
       <div class="arrow">↓</div>
-      <div class="step decided">craft 6 → Special Powerup (min. 3 phases, crafting counts against spend cap), 1 use/game</div>
+      <div class="step decided">craft 6 → Special Powerup (min. 3 phases, crafting counts against spend cap), 1 use/game — this <i>is</i> the cost of activating your politician's unique Special Power (see that section below), not a separate generic effect</div>
       <div class="arrow">↓</div>
-      <div class="step decided">craft 12 → Nationwide Rally (min. 6 phases — must start almost immediately in a 10-phase game), 1 use/game, replaces the old random ⭐ roll entirely</div>
+      <div class="step decided">craft 12 → Nationwide Rally (min. 6 phases — must start almost immediately in a 10-phase game), 1 use/game, replaces the old random ⭐ roll entirely — <b>+5% nationwide</b>, applied to every state at once</div>
     </div>
     <div class="flow-card">
       <h3>📜 Agenda tie-in</h3>
       <div class="step decided">+2 tokens per completed agenda, up to +8 across 4 — scheduling flexibility only, doesn't raise the 20-token ceiling</div>
       <div class="arrow">↓</div>
-      <div class="step assumed">per-token popularity boost value — still open, see below</div>
+      <div class="step decided">per-token popularity boost: <b>+5%</b>, flat, no decay — same value as a fresh investment tap, but free and reusable up to the caps above</div>
     </div>
   </div>
   <p class="section-note">One shared pool: spend, convert, or let a token go unused — all subject to the same caps. Agenda-bonus tokens buy timing flexibility, not more power.</p>
+  <div class="example">
+    <p class="label">Why 5%, not desktop's 8% or live code's 4%</p>
+    <p>Investment decays from a 5% opening tap down to a 2% floor, but nothing gives rally tokens a decay curve — with a 2-play-per-state cap, you'd never rack up enough plays for decay to matter, so a single flat number is the right shape. Pricing that flat number at 8% (desktop's old value) would make a free token strictly better than grinding cash taps, undercutting investment as the game's default lever. Pricing it below investment's 2% floor makes tokens worse than a decayed-out cash tap despite being scarcer to earn — nobody would spend them on boosts at all. 5% matches investment's best-case fresh-tap value: a token is worth as much as a completely untouched state's first cash tap, minus the Cr cost, minus the ability to repeat it freely.</p>
+  </div>
+  <div class="example">
+    <p class="label">Nationwide Rally's magnitude — decided 2026-07-22</p>
+    <p>The old desktop-era "special" rally token (superseded — see <code>js/rally-system.js</code>, disconnected from the current <code>game-config.json</code>) applied a flat boost to every state on the map at once. Nationwide Rally inherits that nationwide-sweep role by name and by explicit lineage ("replaces the old random ⭐ roll entirely").</p>
+    <p><b>+5% nationwide</b>, applied to every state simultaneously — reusing the same per-token anchor as the regular boost above rather than inventing a new number. Using the same nationwide-conversion logic as the policy-tags fix (2% nationwide ≈ 10.9 seat-equivalent), 5% nationwide ≈ <b>27 seat-equivalent</b> — roughly half of the single best agenda (Economic Liberalization, +51.8), which feels proportionate given Nationwide Rally costs 60% of a player's entire lifetime token budget (12 of 20) and has to be started almost immediately (6-phase minimum craft time in a 10-phase game). The breadth itself is the real reward: 12 tokens spent individually could never reach more than ~6 states before hitting the 2-per-state cap, so the sweep covers ground manual play structurally cannot.</p>
+  </div>
+  <div class="example">
+    <p class="label">Implementation notes</p>
+    <div class="table-wrap"><pre style="background:var(--paper);border:none;border-radius:0;margin:0;padding:12px 14px;font-family:var(--mono);font-size:12px;line-height:1.65;color:var(--ink);white-space:pre-wrap;">simpleTokenBoost_bps    = 500     // +5%, flat, no decay, per state per play
+nationwideRallyBoost_bps = 500    // +5%, flat, applied to every state at once
+                                   // (same redistribution rule as any other boost —
+                                   //  runs per state, capped at 10000, opponent+Others
+                                   //  split the loss proportionally, same as a normal tap)</pre></div>
+  </div>
 </section>
 
 <section id="agenda">
@@ -275,7 +397,7 @@ footer{ border-top:1px solid var(--rule-strong); padding-top:20px; color:var(--i
     </div>
     <div class="flow-card">
       <h3>⚙️ Effect</h3>
-      <div class="step gap">effect = baseMagnitude × Σ(matching support tags − matching oppose tags), applied per state</div>
+      <div class="step gap">redesigned 2026-07-22 — each policy sets its own support/oppose strength <i>per region it touches</i>, not one shared strength for the whole policy. See "How the effect formula actually works" below — decided, not yet migrated into <code>data/policy-tags.json</code>.</div>
       <div class="arrow">↓</div>
       <div class="step decided">not contested between players — each player funds only their own 4, no shared race, no way to "win" a policy out from under an opponent</div>
     </div>
@@ -301,12 +423,73 @@ footer{ border-top:1px solid var(--rule-strong); padding-top:20px; color:var(--i
   <h3>Two corrections made 2026-07-22, now live in <code>data/policy-tags.json</code></h3>
   <div class="example warn">
     <p class="label">National Defense was net −25.3 seats nationally — now fixed</p>
-    <p>National Defense supports <code>EasternBorder</code>/<code>WesternBorder</code> and opposed <code>CoastalIndia</code>/<code>HindiHeartland</code>. Six of the country's largest states (UP, Bihar, Gujarat, Rajasthan, Uttarakhand, West Bengal) were tagged with both a supported border region and an opposed one at once, netting to exactly zero there — while the states left with a clean, uncancelled effect skewed hard negative (big industrial/coastal states losing 12% outright; only small frontier states/UTs gaining it). Net effect computed against the real map: <b>−25.3 seat-equivalent</b>, the single worst pick in the 23-policy pool. <b>Fix applied:</b> dropped <code>HindiHeartland</code> from <code>opposeTags</code>, leaving only <code>CoastalIndia</code>. This un-cancels UP (+9.6) and Bihar (+4.8) — the two biggest states in the overlap — and the remaining zero-net states (Gujarat, West Bengal) now cancel for a thematically real reason (both are genuinely coastal <i>and</i> border states), not an arbitrary Hindi-Heartland collision. New net effect: <b>+1.8 seat-equivalent</b> — no longer a trap pick, though still the weakest in the pool pending further balance work.</p>
+    <p>National Defense supports <code>EasternBorder</code>/<code>WesternBorder</code> and opposed <code>CoastalIndia</code>/<code>HindiHeartland</code>. Six of the country's largest states (UP, Bihar, Gujarat, Rajasthan, Uttarakhand, West Bengal) were tagged with both a supported border region and an opposed one at once, netting to exactly zero there — while the states left with a clean, uncancelled effect skewed hard negative (big industrial/coastal states losing 12% outright; only small frontier states/UTs gaining it). Net effect computed against the real map: <b>−25.3 seat-equivalent</b> (meaning: nationwide, this policy's pull costs about as many seats as losing 25 outright would) — the single worst pick in the 23-policy pool. <b>Fix applied:</b> dropped <code>HindiHeartland</code> from <code>opposeTags</code>, leaving only <code>CoastalIndia</code>. This un-cancels UP (+9.6) and Bihar (+4.8) — the two biggest states in the overlap — and the remaining zero-net states (Gujarat, West Bengal) now cancel for a thematically real reason (both are genuinely coastal <i>and</i> border states), not an arbitrary Hindi-Heartland collision. New net effect: <b>+1.8 seat-equivalent</b> — no longer a trap pick. (Update: no longer the weakest in the pool either — see the full ranking below, computed after this fix landed.)</p>
   </div>
   <div class="example warn">
-    <p class="label">Three policies with no region tags are supposed to carry a flat +2% nationwide effect</p>
-    <p>Women's Empowerment, Healthcare, and Anti-Corruption have no <code>supportTags</code>/<code>opposeTags</code> configured — under the effect formula above, that computes to exactly zero, a dead pick. <b>Decided:</b> these three are intended to carry a flat, uniform +2% nationwide popularity effect instead of a region-tagged one. Now recorded as an explicit <code>"nationwideBonus": 2</code> field on all three entries in <code>data/policy-tags.json</code>. A flat 2% nationwide converts to roughly <b>+10.9 seat-equivalent</b> (2% × 543 seats) once implemented — a real, modest contributor instead of a dead pick.</p>
-    <p><b>Do not implement this using <code>baseMagnitude</code>.</b> <code>generateCampaignGrid()</code> in <code>campaign-system.js</code> already has display logic that labels a zero-tag policy "+<code>baseMagnitude</code>% Nationwide" for UI purposes only — Healthcare's <code>baseMagnitude</code> is 12, Women's Empowerment and Anti-Corruption are 8. Applying that value as the real effect instead of the decided 2% would make Healthcare worth ~+65 seat-equivalent (stronger than every other policy in the pool, including Economic Liberalization at +51.8) and the other two ~+43 each — a roughly 6× overshoot of the intended value. Read <code>nationwideBonus</code>, not <code>baseMagnitude</code>, when this gets built.</p>
+    <p class="label">Three policies with no region tags carry a flat +4% nationwide effect — bumped 2026-07-22</p>
+    <p>Women's Empowerment, Healthcare, and Anti-Corruption have no <code>supportTags</code>/<code>opposeTags</code> configured — under the effect formula above, that computes to exactly zero, a dead pick. <b>Decided:</b> these three carry a flat, uniform nationwide popularity effect instead of a region-tagged one, originally set at +2% and strengthened to <b>+4%</b> to make them real contenders rather than a modest afterthought. Now recorded as <code>"nationwideBonus": 4</code> on all three entries in <code>data/policy-tags.json</code>. A flat 4% nationwide converts to roughly <b>+21.7 seat-equivalent</b> (4% × 543 seats) — comparable to a genuinely strong regional pick, not just "no longer a dead one."</p>
+    <p><b>Do not implement this using <code>baseMagnitude</code>.</b> <code>generateCampaignGrid()</code> in <code>campaign-system.js</code> already has display logic that labels a zero-tag policy "+<code>baseMagnitude</code>% Nationwide" for UI purposes only — Healthcare's <code>baseMagnitude</code> is 12, Women's Empowerment and Anti-Corruption are 8. Applying that value as the real effect instead of the decided 4% would make Healthcare worth ~+65 seat-equivalent (still stronger than every other policy in the pool, including Economic Liberalization at +51.8) and the other two ~+43 each — roughly 3× and 2× overshoots respectively, smaller than the old 2%-baseline's 6×/4× gap but still wrong. Read <code>nationwideBonus</code>, not <code>baseMagnitude</code>, when this gets built.</p>
+  </div>
+  <h3>How the effect formula works</h3>
+  <p>Tier is not a property of the policy as a whole — it's the strength of that policy's pull on <i>one specific region it touches</i>, chosen individually, region by region. The same region can react differently to different policies, both in direction and strength: Hindi Heartland might swing hard for Hindutva, hard against Secularism, and only mildly for or against something else — different policies, different numbers for the same region, not one shared value repeated everywhere. <code>supportTags</code>/<code>opposeTags</code> entries each carry their own strength, drawn from the same tier scale as before — tier 1 = 12%, tier 2 = 8%, tier 3 = 4% — just picked per region instead of once for the whole policy. (Note: "tier" here means this per-region magnitude bucket, not the Large/Mid/Small tiering used for Regional Dominance groups elsewhere in this document, and not a policy's own top-level <code>tier</code> field, which is unrelated.)</p>
+  <p>A policy costing seats in one part of the country while gaining them elsewhere isn't a flaw to smooth away — real political platforms work exactly that way, and a politician may deliberately spend an agenda to lock down a core base at a cost elsewhere. The net-negative policies in the ranking below should be read in that light, not as bugs by default — though a few may still turn out to be accidental tag overlaps like pre-fix National Defense rather than deliberate polarization, worth an individual look.</p>
+  <div class="example">
+    <p class="label">Implementation notes</p>
+    <div class="table-wrap"><pre style="background:var(--paper);border:none;border-radius:0;margin:0;padding:12px 14px;font-family:var(--mono);font-size:12px;line-height:1.65;color:var(--ink);white-space:pre-wrap;">costPerTap = 500                        // Cr, flat, any policy
+completionPerTap = 25%                  // 4 taps = fully maxed
+
+effect(state, policy) =
+  if policy.nationwideBonus is set:  apply it flat, uniformly, to every state
+  else:                              Σ policy.tagEffects[tag] for every tag the state has
+
+// tagEffects replaces supportTags/opposeTags/baseMagnitude: one signed
+// magnitude per region, e.g. National Defense = { EasternBorder: 12,
+// WesternBorder: 12, CoastalIndia: -12 }. Not yet migrated in
+// data/policy-tags.json (still the old shared-baseMagnitude shape) — the
+// ranking below uses each region defaulted to its policy's current
+// baseMagnitude until someone does the real per-region tuning pass.</pre></div>
+  </div>
+
+  <h3>Full policy ranking — computed 2026-07-22</h3>
+  <p class="section-note">Every policy, run through the <code>Σ tagEffects[tag]</code> formula above against the real map, ranked by national seat-equivalent. Validated against the four figures already established elsewhere in this document (Economic Liberalization, Education, National Defense, the three nationwide-bonus policies), all of which this reproduces exactly. <b>The numbers below are unchanged from before this redesign</b> — expected, not a mistake: every region still defaults to its policy's old <code>baseMagnitude</code>, so the total per policy comes out identical until someone actually assigns different magnitudes to individual regions. This table will move once that tuning pass happens; right now it's a faithful re-derivation, not a new result.</p>
+  <div class="example warn">
+    <p class="label">The pool is 24 entries, not 23 — one is defined but unreachable</p>
+    <p><code>data/policy-tags.json</code> defines 24 policies, not the 23 this document has referred to throughout. The reconciliation: <b>Privatization</b> is fully defined with real tags and a positive effect (+7.0 seat-equivalent, rank 10 of 24) but isn't assigned to <i>any</i> of the 20 politicians' agenda lists — every other policy is drawn by at least one politician, so it's the only one currently unreachable in actual play. "23-policy pool" elsewhere in this document describes what politicians can actually draw from, which is accurate; the data file just has one orphaned extra entry. Worth a decision: give Privatization to a politician, or drop it from the file since nothing references it.</p>
+  </div>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Rank</th><th>Policy</th><th>Seat-equivalent</th></tr></thead>
+    <tbody>
+      <tr><td class="num">1</td><td class="feat">Economic Liberalization</td><td class="num">+51.8</td></tr>
+      <tr><td class="num">2</td><td class="feat">Education</td><td class="num">+49.4</td></tr>
+      <tr><td class="num">3</td><td class="feat">Women's Empowerment <span class="source-note">(nationwide)</span></td><td class="num">+21.7</td></tr>
+      <tr><td class="num">4</td><td class="feat">Healthcare <span class="source-note">(nationwide)</span></td><td class="num">+21.7</td></tr>
+      <tr><td class="num">5</td><td class="feat">Anti-Corruption <span class="source-note">(nationwide)</span></td><td class="num">+21.7</td></tr>
+      <tr><td class="num">6</td><td class="feat">Judicial Activism</td><td class="num">+17.6</td></tr>
+      <tr><td class="num">7</td><td class="feat">Press Freedom</td><td class="num">+12.4</td></tr>
+      <tr><td class="num">8</td><td class="feat">Law and Order</td><td class="num">+8.3</td></tr>
+      <tr><td class="num">9</td><td class="feat">State's Rights</td><td class="num">+8.1</td></tr>
+      <tr><td class="num">10</td><td class="feat">Privatization <span class="source-note">(unused — see above)</span></td><td class="num">+7.0</td></tr>
+      <tr><td class="num">11</td><td class="feat">Water and Mineral Rights</td><td class="num">+5.8</td></tr>
+      <tr><td class="num">12</td><td class="feat">Hindutva</td><td class="num">+5.3</td></tr>
+      <tr><td class="num">13</td><td class="feat">Infrastructure</td><td class="num">+3.0</td></tr>
+      <tr><td class="num">14</td><td class="feat">National Defense <span class="source-note">(post-fix)</span></td><td class="num">+1.8</td></tr>
+      <tr><td class="num">15</td><td class="feat">Rural Development</td><td class="num">+1.7</td></tr>
+      <tr><td class="num">16</td><td class="feat">Land Reforms</td><td class="num">−6.0</td></tr>
+      <tr><td class="num">17</td><td class="feat">Public Sector</td><td class="num">−7.0</td></tr>
+      <tr><td class="num">18</td><td class="feat">Digital Transformation</td><td class="num">−7.5</td></tr>
+      <tr><td class="num">19</td><td class="feat">Uniform Civil Code</td><td class="num">−9.6</td></tr>
+      <tr><td class="num">20</td><td class="feat">Caste Reservation</td><td class="num">−10.2</td></tr>
+      <tr><td class="num">21</td><td class="feat">Indigenous Rights</td><td class="num">−12.1</td></tr>
+      <tr><td class="num">22</td><td class="feat">Agricultural Reforms</td><td class="num">−14.1</td></tr>
+      <tr><td class="num">23</td><td class="feat">Hindi Language</td><td class="num">−16.8</td></tr>
+      <tr class="verdict-row"><td class="num">24</td><td>Secularism — now the single worst pick in the pool</td><td class="num">−20.3</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="example">
+    <p class="label">9 of 24 policies are net-negative nationally</p>
+    <p>Ranks 16–24: Land Reforms, Public Sector, Digital Transformation, Uniform Civil Code, Caste Reservation, Indigenous Rights, Agricultural Reforms, Hindi Language, and Secularism (worst, −20.3) — more than a third of the pool. Worth auditing individually which of these are polarizing for a real thematic reason (Secularism genuinely cutting against Hindi Heartland and Pilgrimage) versus an accidental tag overlap nobody chose deliberately (the National Defense failure mode) — that distinction doesn't show up in the seat-equivalent number alone. Tier doesn't predict quality either: tier-1 "Mega Policy" agendas span the entire range, from the two best picks in the pool (Economic Liberalization +51.8, Education +49.4) to three of the four worst.</p>
   </div>
 </section>
 
@@ -315,7 +498,7 @@ footer{ border-top:1px solid var(--rule-strong); padding-top:20px; color:var(--i
   <div class="flow-grid">
     <div class="flow-card">
       <h3>🎯 Trigger</h3>
-      <div class="step decided">every state in the group individually ≥ 50% — not a seat-weighted average</div>
+      <div class="step decided">every single state in the group at 50% or higher — not an average across the group</div>
     </div>
     <div class="flow-card">
       <h3>🗺️ Groups</h3>
@@ -323,7 +506,7 @@ footer{ border-top:1px solid var(--rule-strong); padding-top:20px; color:var(--i
     </div>
     <div class="flow-card">
       <h3>💰 Payout</h3>
-      <div class="step decided">payout = 5 × Σ(seats in group) — corrected from an earlier 0.5× bug that was 10× too small</div>
+      <div class="step decided">payout = 5 Cr for every seat across all the group's states, added up — corrected from an earlier version that paid only a tenth of this</div>
     </div>
   </div>
 
@@ -338,6 +521,16 @@ footer{ border-top:1px solid var(--rule-strong); padding-top:20px; color:var(--i
   <div class="example">
     <p class="label">Sabotage is cheaper than conquest — also deliberate</p>
     <p>Payout is gated on a live re-check, not a one-time achievement — a single state dropping back under 50% instantly zeroes the whole group's ongoing bonus, even with every other member state still held. Direct consequence of the strict per-state rule above, not a separate bug: it makes a losing player's cheapest counter-play "knock down one state" rather than "out-conquer the leader," which is either a built-in rubber band or a source of real swinginess depending which side of it you're on.</p>
+  </div>
+  <div class="example">
+    <p class="label">Implementation notes</p>
+    <div class="table-wrap"><pre style="background:var(--paper);border:none;border-radius:0;margin:0;padding:12px 14px;font-family:var(--mono);font-size:12px;line-height:1.65;color:var(--ink);white-space:pre-wrap;">dominanceActive(group, player) =
+  every state in group.members: player.pop_bps[state] ≥ 5000
+
+payout(group) = 5 × sum(state.seats for state in group.members)     // Cr
+
+→ re-evaluate dominanceActive every phase, not once — payout stops the instant
+  any single member state drops below 5000 bps, even if it re-crosses later</pre></div>
   </div>
 </section>
 
@@ -378,23 +571,37 @@ footer{ border-top:1px solid var(--rule-strong); padding-top:20px; color:var(--i
 <section id="plausibility">
   <h2>Plausibility check — can the design actually be won?</h2>
   <p class="section-note">Worked numbers against the decided formulas above, modeling one player's best realistic play. Important caveat baked into every number here: this assumes an opponent who does nothing. A real, actively-adversarial opponent almost certainly pushes both players' realistic ceilings lower — nobody has modeled the two-active-player case yet (tracked as open, below).</p>
+  <p class="section-note"><b>Recomputed 2026-07-22</b> against the values decided this session (5% rally tokens, 5% Nationwide Rally, the exact investment decay formula) — replaces the earlier ~195 / ~278 figures below.</p>
 
   <div class="table-wrap">
   <table>
     <thead><tr><th>Scenario</th><th>Best-case seat total</th></tr></thead>
     <tbody>
-      <tr><td class="feat">Cash only — full 12,500 Cr budget, optimally spread</td><td class="num">~195 / 543 (35.9%)</td></tr>
-      <tr><td class="feat">Cash + full 20 tokens + 2 strong agendas (Economic Liberalization, Education)</td><td class="num">~278 / 543 (51.2%)</td></tr>
-      <tr class="verdict-row"><td colspan="2">Majority is reachable, but only using every lever at once, and only by ~6 seats out of 543 even at the model's best case.</td></tr>
+      <tr><td class="feat">Cash only — full 12,500 Cr budget, optimally spread</td><td class="num">~203 / 543 (37.4%)</td></tr>
+      <tr><td class="feat">Cash + full 20 tokens (12 crafted into Nationwide Rally + 8 played individually) + 2 strong agendas (Economic Liberalization, Education)</td><td class="num">~333 / 543 (61.3%)</td></tr>
+      <tr class="verdict-row"><td colspan="2">Majority is comfortably reachable at the model's best case — a ~61-seat margin, not the ~6-seat razor's edge this table previously showed.</td></tr>
     </tbody>
   </table>
   </div>
 
-  <p>Cash alone cannot win under any circumstances — it isn't a skill ceiling, it's a hard mathematical wall: the entire lifetime budget only buys enough popularity to add roughly 60 seats on top of a player's free starting position, and 272 requires closing a much bigger gap than that. Tokens and agendas aren't optional flavor on top of investment; they are the only way to reach a majority at all.</p>
+  <p>Cash alone still cannot win under any circumstances — it's a hard mathematical wall, not a skill ceiling: the entire lifetime budget only buys enough popularity to add ~61 seats on top of a player's starting position, and 272 requires closing a much bigger gap than that. Tokens and agendas remain the only way to reach a majority — but the margin for using them well turns out to be much wider than previously modeled, for three separate reasons:</p>
+
+  <div class="example">
+    <p class="label">Why the combined-strategy number moved so much</p>
+    <p><b>Starting position (~142 seats, up from ~135):</b> the old figure came from the fixed stronghold table this document has since replaced with a randomized generator (see Starting position, above). ~142 is that generator's expected value, averaged across a home state at baseline+25%, ~110 seats of drawn 35–65% advantage, and everything else at the 5–29% baseline — not a guaranteed number the way the old table was, so any individual match will land above or below it.</p>
+    <p><b>Cash contribution at the reduced 8,500 Cr allocation (~42 seats, up from a ~21-seat estimate):</b> recomputed directly from the decay formula now documented in the Investment section's implementation notes — tapping every state once costs a flat 5,430 Cr regardless of which states (seats × 10 Cr/tap, but there are always exactly 543 total seats to tap once), so 8,500 Cr buys one full nationwide round of 5% taps plus a partial second round. This is a materially more rigorous number than the earlier estimate, computed with a formula that didn't exist in this document until this session.</p>
+    <p><b>Token contribution (~48 seats, up from ~21):</b> partly the 4%→5% per-token increase, but mostly a strategy the earlier estimate didn't consider — crafting 12 of the 20 tokens into a Nationwide Rally sweeps <i>all</i> 543 seats at 5%, whereas 20 individually-played tokens are capped at 2-per-state and can only ever reach the biggest 10 states (worth ~38 seats, not ~48). Nationwide Rally beats individual play specifically because it reaches the medium and small states individual tokens structurally cannot touch.</p>
+    <p>Agenda contribution (+101.2, Economic Liberalization + Education combined) is carried over unchanged — it wasn't affected by anything decided this session, and re-verifying it is already tracked below as its own open item.</p>
+  </div>
+
+  <div class="example">
+    <p class="label">The ~61-seat passive-opponent margin is intentional — confirmed 2026-07-22</p>
+    <p>This ~61-seat figure is a ceiling against an opponent doing nothing, not the number that matters for real play. The design intent: a real, adversarial opponent contesting the same states whittles this back down toward 272 — the two-active-player case (still unmodeled, tracked below) is expected to erode most or all of this margin, not treated as a threat to a razor-thin number that needs protecting. A wide passive-opponent ceiling is exactly what should be true if the game is meant to come down to a close race once both players are actually playing against each other, rather than each player racing a ghost.</p>
+  </div>
 
   <div class="example">
     <p class="label">Agenda pick quality swings harder than the winning margin</p>
-    <p>Computing the effect formula against the real map for the original 23-policy pool: national seat-equivalent value ranged from <b>+51.8</b> (Economic Liberalization, best) to <b>−25.3</b> (National Defense, pre-fix) — a ~77-seat swing from a single agenda slot, against a ~6-seat winning margin. Post the National Defense fix above, the floor rises to roughly +1.8 (and to ~+10.9 for the three nationwide-bonus policies, once implemented) — narrowing the swing, but the full 23-policy ranking hasn't been recomputed end-to-end since these fixes landed. Worth doing before treating the roster as balanced.</p>
+    <p>Full 24-policy ranking now computed (see the Agenda section above): national seat-equivalent ranges from <b>+51.8</b> (Economic Liberalization, best) down to <b>−20.3</b> (Secularism, now the actual worst pick, having overtaken pre-fix National Defense's old −25.3 once that policy was fixed) — a ~72-seat swing from a single agenda slot, against a margin that's no longer razor-thin (see above) but is still large relative to it. Nine of the 24 defined policies are net-negative nationally and none of them have had an individual audit the way National Defense got — worth doing before treating the roster as balanced.</p>
   </div>
 </section>
 
@@ -403,10 +610,11 @@ footer{ border-top:1px solid var(--rule-strong); padding-top:20px; color:var(--i
   <p class="section-note">Everything else in this document — the redistribution rule, all category pipelines, the price scale, the group payout formula, the private-agenda model — is decided. These aren't yet.</p>
   <div class="open-card">
     <ul>
-      <li><b>Individual special-power balance numbers</b> across the 20-entry roster — Rajinikanth flagged by name as needing a pass; the roster hasn't had a full cost/benefit audit.</li>
-      <li><b>Rally-token per-play boost value</b> — live code currently applies 4% (not desktop's 8%), never explicitly re-decided under the redesigned token economy.</li>
-      <li><b>Full 23-policy seat-equivalent re-ranking</b> — only the extremes and the three corrected entries have been recomputed since the 2026-07-22 fixes; the other ~19 policies haven't been checked for similar overlap or magnitude issues.</li>
-      <li><b>Two-active-player seat ceiling</b> — every plausibility number above assumes a passive opponent. No one has modeled what happens when both players optimize simultaneously; the real reachable margin for either player is likely lower than the ~6-seat figure above, possibly making hung parliament the common real-play outcome even once every system is fully built.</li>
+      <li><b>Individual special-power balance numbers</b> across the 20-entry roster — Rajinikanth flagged by name as needing a pass; the roster hasn't had a full cost/benefit audit. Now confirmed to include costing the 6-token Special Powerup craft, since that craft <i>is</i> how a politician's unique power gets activated, not a separate mechanic.</li>
+      <li><b>Per-region magnitude tuning</b> — <code>tagEffects</code> (see Agenda section above) still defaults every region to its policy's old shared <code>baseMagnitude</code>; the real point of the redesign — different regions reacting with different strength to the same policy — needs an actual hand-tuning pass, plus migrating <code>data/policy-tags.json</code> to the new shape.</li>
+      <li><b>Auditing the 9 net-negative policies for real vs. accidental polarization</b> — worth doing alongside the tuning pass above, to catch any accidental tag overlaps (the pre-fix National Defense pattern) hiding among deliberate ones.</li>
+      <li><b>Privatization is orphaned</b> — defined with a real, positive effect (+7.0 seat-equivalent) but not assigned to any of the 20 politicians, so it's currently unreachable in play. Decide whether to give it to a politician or drop it from the file.</li>
+      <li><b>Two-active-player seat ceiling</b> — every plausibility number above assumes a passive opponent, and best-case play now clears 272 by ~61 seats against that ghost. Design intent (confirmed 2026-07-22): a real adversarial opponent should whittle this back down toward 272, not leave the same wide margin — nobody has modeled the two-active-player case yet to confirm it actually lands there rather than overshooting into a blowout or undershooting into hung-parliament territory.</li>
       <li><b>Hung-parliament resolution</b> — given the above, worth deciding whether "neither player reaches 272" should stay a null/no-winner result, or resolve some other way (plurality tiebreak, a scored secondary-objective system). Not decided either way yet; flagged here as a live open question, not settled either direction.</li>
     </ul>
   </div>

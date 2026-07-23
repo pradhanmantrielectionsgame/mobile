@@ -6,6 +6,35 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### 🎮 Game Economy Redesign: Starting Position, Redistribution, Rally Tokens, and Plausibility — 2026-07-22
+
+#### Design Overhaul
+- **REWRITTEN**: `design/economy-status-map.md` as the authoritative single-source-of-truth design reference — now documents: core game loop, win condition, starting-position randomization with home-state seeding, redistribution rule with basis-point precision and joint-solve collision handling, all mechanic categories (direct investment, rally tokens, agendas, regional dominance, special powers), 20-politician roster index, full plausibility proof with ~333/543 (61%) best-case majority margin, and open design items.
+  - **Rationale**: consolidates scattered decisions from `design/plan.md`, CHANGELOG.md, findings.md, and session refinements into one place the build cycle references for "how is X supposed to work"
+  - **Coverage**: replaces all economy-numbers-only status tracking with finalized game design that tied together 12 interrelated design decisions (see below)
+
+#### Data & Documentation Updates
+- **UPDATED**: `data/policy-tags.json` — raised `nationwideBonus` from 2% to 4% for Women's Empowerment, Healthcare, and Anti-Corruption policies (now ~21.7 seat-equivalent each, up from ~10.9; strengthens these policies from "no longer dead" to "real contenders")
+- **UPDATED**: `CLAUDE.md` — added two standing notes clarifying that "tier" is a per-(policy, region) magnitude choice (not policy-wide), and that popularity state must be tracked in integer basis points (0–10000), plus corrected policy-pool count to 24 entries (23 actually assigned; Privatization orphaned)
+- **UPDATED**: `findings.md` — seven new dated 2026-07-22 entries documenting implementation gaps (rally per-state cap configured but not enforced, three colliding resetRallyTokensForPhase() definitions, dead rally implementation, unclearable random-drift timer) and design confirmations (UP over-representation intentional as stabilizer, 61-seat majority ceiling accepted)
+
+#### Key Design Decisions Finalized
+- **D1: Starting position generator redesign** — replaced fixed 128/121-seat stronghold table with randomized generator: each player's home state (seeded from chosen politician) gets 50% baseline, plus ~100-seat random-advantage layer with collision handling (reserves both players' home states from pool to prevent overlaps) and randomized first-move selection to eliminate permanent first-mover bias
+- **D2: Home-state tie resolution** — if both players' politicians share a home state, nullify the bonus for both players (not split) — prevents "mega lead from turn 1" scenario on UP's 80 seats; confirmed as deliberate stabilizer given that 10 of 20 politicians have UP as home state
+- **D3: Random-advantage draw structure** — single shared shuffled pool with alternating turns and randomized first-player selection, not two independent draws with post-hoc collision resolution
+- **D4: Same-state-same-phase redistribution** — when both players act simultaneously in the same state, use joint-solve (scale both demands proportionally if combined ask exceeds available Others pool), not sequential-random-order resolution; order-independent and fair for symmetric spend
+- **D5: Basis-point rounding rule** — all in-state popularity tracked as integers 0–10,000 bps; split rounding: round one component to nearest bps, derive the other by subtraction from known total — guarantees shares always sum to exactly 10,000
+- **D6: Rally token magnitude** — set regular per-state rally bonus to +5% flat (no decay); anchors to investment's best-case fresh-tap value; 8% would dominate cash investment, 4% or below would make tokens not worth spending given their scarcity
+- **D7: Special Powerup confirmation** — the 6-token craft IS the activation mechanism for a politician's unique Special Power (not a separate generic effect); folds individual-power balancing into existing 20-roster audit rather than creating separate magnitude decision
+- **D8: Nationwide Rally magnitude** — set 12-token craft to +5% nationwide (~27 seat-equivalent); reuses 5% anchor from D6; ~27 is proportionate given the craft costs 60% of lifetime token budget (12 of 20) and must start almost immediately (6-phase minimum in 10-phase game)
+- **D9: Nationwide-bonus strengthening** — implemented immediately in data; Women's Empowerment, Healthcare, Anti-Corruption each raised to 4% nationwide per [C7]
+- **D10: Plausibility margin & UP concentration** — confirmed ~61-seat passive-opponent ceiling and 10 of 20 politicians hailing from UP are both intentional, not defects; two-active-player match (unmodeled, still open) expected to compress the 61-seat margin back toward 272
+- **D11: Agenda effect formula redesign** — magnitude chosen per (policy, region) pair, not once per policy; tier scale preserved (tier 1 = 12%, tier 2 = 8%, tier 3 = 4%), now describes per-region choice; `nationwideBonus` unaffected; **migration documented but not implemented** — flag for later code/data overhaul
+- **D12: Schema migration deferred** — designed safe behavior-preserving migration (default every region's magnitude to old baseMagnitude just restructured per-region) but explicitly deferred per user instruction; document design now, implement later
+
+#### Context
+Extremely long single-topic session spent iteratively refining `design/economy-status-map.md` through 12 interrelated design decisions and plausibility proofs. The doc was live-deployed as a Claude Artifact and refined in real-time on the user's phone. Resolved structural questions around starting-position randomization, redistribution collisions, rally-token economy scaling, and agenda-formula rebalancing. No source code changes — purely design, documentation, and data tuning.
+
 ### 🔍 Economy Data Corrections & Authoritative Design Reference — 2026-07-22
 
 #### Data Corrections
