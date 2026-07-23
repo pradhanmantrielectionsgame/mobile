@@ -6,6 +6,33 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### 📋 Design Documentation Consolidation & Interaction Design Finalization — 2026-07-23
+
+#### Design Reference Consolidation
+- **EXPANDED**: `design/economy-status-map.md` — added five major new sections consolidating finalized design decisions:
+  - **[C1] Mobile build — known bugs (2026-07-23)**: AI-inactivity/news-ticker mismatch, starting-position-randomizer 120-vs-200 inconsistency, popularity-shares not summing to 100%
+  - **[C2] Map visualization**: Margin-based state-color intensity formula (|P1% − P2%|) per playtest feedback, reflecting the two-player contest despite fixed 100%-sum constraint
+  - **[C3] Touch interaction & feedback**: Single-tap-select / double-tap-invest model applied uniformly to both direct map taps AND small-UT button cluster; added 4 UI feedback animations (tap flash, invalid-action shake+buzz, red/green fund-change flash text)
+  - **[C4] Audio**: Confirmed all 8 sound-file triggers (bg_music, cash_added, money_spent, invalid_action, fanfare, game_over, phase_reset, rally_sound with explicit crafting exclusion)
+  - **[C5] Build status & roadmap**: Consolidated tech stack/deployment table, PWA gap, AI-personality-variety gap, options-menu gap from now-deprecated design/plan.md
+- **[C6] REMOVED**: `design/plan.md` — fully merged into `design/economy-status-map.md` (git history preserves original content); treating the pre-build gap audit as obsolete now that mobile engine is complete
+- **[C7] UPDATED**: `CLAUDE.md` — added "Local development & testing" section (2 bullets: Windows network-category fix for phone LAN testing, mobile/index.html Artifact-publishing limitation)
+- **[C8] UPDATED**: `findings.md` — already populated directly by `/checkpoint` Phase 1.3 with 5 new 2026-07-23 entries (live-deployment status, LAN-networking discovery, Artifact-bundling discovery, stale-region-field-already-fixed discovery, options-menu-gap discovery)
+
+#### Interaction Design Decisions Finalized
+- **[D1] State map color intensity**: Margin-based formula (|P1% − P2%|), not raw leader-%-based. Rationale: user rejected raw-%-based as incoherent since P1%+P2%+Others% always sum exactly 100% — high raw % can just mean Others is small, not that the opponent is weak; margin is the only reading consistent with the zero-sum constraint.
+- **[D2] Tap interaction model**: Single-tap-select / double-tap-invest applies uniformly to both direct map taps AND small-UT button cluster (Delhi, Chandigarh, Dadra & Nagar Haveli and Daman & Diu, Puducherry, Lakshadweep, Andaman & Nicobar Islands). Rationale: consistency across all investable targets over preserving UT buttons as a special case.
+- **[D3] Rally sound trigger**: Fires on every individual State Rally token play; explicitly does NOT fire on crafting Special Powerup or Nationwide Rally. Direct user clarification: "it plays whenever a rally token is played. crafting is irrelevant."
+- **[D4] Design doc consolidation approach**: Delete design/plan.md outright rather than keep as deprecation stub. Rationale: git history preserves original content; stub would be redundant now that everything relevant is migrated or already tracked elsewhere (ADRs for multiplayer design, findings.md for stale-region-field bug).
+
+#### Documentation Sync
+- **UPDATED**: `README.md` — single-tap-select / double-tap-invest interaction model (line 66); updated design/plan.md reference to point to economy-status-map.md "Build status & roadmap" section instead (line 142)
+
+#### Context
+Session focused on finalizing design documentation and interaction model decisions from first real on-device playtest of the single-player-vs-AI build. Consolidated design decisions into the authoritative reference (`design/economy-status-map.md`), finalized interaction model per playtest feedback, and deprecated the pre-build planning document (`design/plan.md`). All changes are documentation/design only; no engine code modified.
+
+---
+
 ### 🎮 Mobile Game Engine Complete — Single-Player vs. AI Build — 2026-07-23
 
 #### New Mobile Game Build

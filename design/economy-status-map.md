@@ -149,7 +149,7 @@ footer{ border-top:1px solid var(--rule-strong); padding-top:20px; color:var(--i
 <header>
   <p class="eyebrow">Design reference · single source of truth</p>
   <h1>What Pradhan Mantri Elections Mobile is supposed to do</h1>
-  <p class="subtitle">Every finalized mechanic, formula, and number in the game's design, consolidated from <code>design/plan.md</code>, <code>CHANGELOG.md</code>, <code>findings.md</code>, and direct design decisions — in one place, so the build cycle has a single document to target instead of four. As of 2026-07-23, everything marked <span class="pill decided" style="vertical-align:1px;">decided</span> is settled and should be built to; anything else is flagged with exactly what's still missing.</p>
+  <p class="subtitle">Every finalized mechanic, formula, and number in the game's design, consolidated from <code>design/plan.md</code>, <code>CHANGELOG.md</code>, <code>findings.md</code>, and direct design decisions — in one place, so the build cycle has a single document to target instead of four. As of 2026-07-23, everything marked <span class="pill decided" style="vertical-align:1px;">decided</span> is settled and should be built to; anything else is flagged with exactly what's still missing. <b>2026-07-23:</b> <code>design/plan.md</code> is now fully merged and deprecated — its still-relevant reference material lives in the Build status section near the end of this document; the rest was a pre-build roadmap now superseded by the finished mobile engine (see CLAUDE.md).</p>
 </header>
 
 <section id="legend">
@@ -160,7 +160,19 @@ footer{ border-top:1px solid var(--rule-strong); padding-top:20px; color:var(--i
     <span class="pill gap">● decided, not coded yet</span>
     <span class="pill assumed">◌ assumed — never explicitly revisited</span>
   </div>
-  <p class="section-note" style="margin-top:10px;">This document describes the <b>design</b> — what the game is supposed to do. It does not track implementation status (what's actually wired up in <code>js/*.js</code> today); that's a separate, faster-moving concern. See <code>findings.md</code> for dated implementation-gap findings.</p>
+  <p class="section-note" style="margin-top:10px;">This document describes the <b>design</b> — what the game is supposed to do. It does not track implementation status (what's actually wired up in <code>js/*.js</code> today); that's a separate, faster-moving concern. See <code>findings.md</code> for dated implementation-gap findings. Exception: the Known bugs section immediately below tracks the current playtest's open bug list directly in this document, per explicit request to keep one authoritative reference during this build-and-fix cycle.</p>
+</section>
+
+<section id="bugs">
+  <h2>Mobile build — known bugs (2026-07-23)</h2>
+  <p class="section-note">Found in the first real on-device playtest of the finished single-player-vs-AI build. These are implementation gaps against the design already decided elsewhere in this document, not new design decisions.</p>
+  <div class="open-card">
+    <ul>
+      <li><b>AI opponent never spends funds or acts, but the news ticker reports it completing agenda items anyway.</b> Starts and stays at 0 Cr the whole game. The news feed and the AI's actual state have come apart — either the AI's fund allocation/spend logic is broken (never runs its funded actions), or the news ticker is faking/mis-sourcing completion events instead of reading real AI state. Start tracing at <code>runAI()</code> in <code>mobile/game.js</code>.</li>
+      <li><b>Starting-position randomizer is inconsistent — sometimes 120 seats (correct), sometimes 200 (wrong).</b> The 3-step generator (Baseline → Home state → Random national edge, see Starting position below) is supposed to reliably stop once <code>seatCountWithAdvantage &gt; 100</code>, capped so a draw never pushes past 130. A 200-seat result means that stop condition isn't firing, or a step is double-applying. Trace against the exact pseudocode in that section's "Implementation notes."</li>
+      <li><b>P1% + P2% + Others% doesn't always sum to exactly 100% for a state — found 2026-07-23, while confirming the map-color formula below.</b> This breaks a load-bearing invariant documented in the redistribution rule above (bps shares must always sum to exactly 10,000 — see "Keeping the numbers exact"). Likely cause: somewhere a gain/loss is being applied without the round-one-derive-the-other discipline the redistribution engine's implementation notes require (both sides rounded independently instead), or a boost is being applied outside the redistribution engine entirely. Needs tracing against every write path that touches <code>pop_bps</code>, not just the obvious ones — the same rounding bug can hide in any of investment, rally, agenda, or special-power code if one of them bypasses the shared engine function.</li>
+    </ul>
+  </div>
 </section>
 
 <section id="core">
@@ -383,6 +395,64 @@ boost_bps(tapNumberInThisState) =
   tap ≤ 20:  round(500 − (tap − 1) × 300/19)   // linear, 500 bps at tap 1 → 200 bps at tap 20
   tap  > 20: 200                                // floor, forever after</pre></div>
   </div>
+</section>
+
+<section id="interaction">
+  <h2>Touch interaction &amp; feedback</h2>
+  <p class="section-note">Decided 2026-07-23, from playtest feedback. Changes how a map tap resolves into an investment, and adds feedback the game currently has none of.</p>
+  <div class="flow-grid">
+    <div class="flow-card">
+      <h3>👆 Tap model</h3>
+      <div class="step decided">single tap on a state = select it (shows its detail panel) — replaces today's single-tap-invests behavior</div>
+      <div class="arrow">↓</div>
+      <div class="step decided">double tap on a state = invest in it (cost/boost per the Direct cash investment section above, unchanged)</div>
+    </div>
+  </div>
+  <div class="example">
+    <p class="label">Applies uniformly, including the small-UT button cluster — confirmed 2026-07-23</p>
+    <p>The small UTs (Delhi, Chandigarh, Dadra &amp; Nagar Haveli and Daman &amp; Diu, Puducherry, Lakshadweep, Andaman &amp; Nicobar Islands) invest via a dedicated button cluster instead of a direct map tap (too small to hit reliably — see CLAUDE.md's UI conventions). Confirmed: those buttons also switch to single-tap-select / double-tap-invest, for consistency with every other investable target rather than keeping their old single-click-invest behavior as a special case.</p>
+  </div>
+  <h3>Feedback to add</h3>
+  <div class="flow-grid">
+    <div class="flow-card">
+      <h3>✅ Valid double-tap invest</h3>
+      <div class="step decided">quick circular flash centered on the tap point, in the state that was double-tapped</div>
+    </div>
+    <div class="flow-card">
+      <h3>🚫 Invalid action (can't afford)</h3>
+      <div class="step decided">quick shake + buzz (haptic) on the attempted target</div>
+    </div>
+    <div class="flow-card">
+      <h3>💸 Funds spent</h3>
+      <div class="step decided">brief red flash text, e.g. "−50 Cr", at the point of spend</div>
+    </div>
+    <div class="flow-card">
+      <h3>💰 Funds received</h3>
+      <div class="step decided">brief green flash text, e.g. "+50 Cr" — same treatment as spend, opposite color</div>
+    </div>
+  </div>
+  <p class="section-note">All four are one-shot, non-blocking feedback — none should pause input or gate the next action, same discipline as "instant-only, no duration effects" for special powers below.</p>
+</section>
+
+<section id="audio">
+  <h2>Audio</h2>
+  <p class="section-note">Decided 2026-07-23 — the game has no sound wired up at all, despite <code>sounds/</code> already containing informatively-named files for each trigger.</p>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>File</th><th>Trigger</th></tr></thead>
+    <tbody>
+      <tr><td class="feat"><code>bg_music.mp3</code></td><td class="desc">Always on, looping, for the duration of a match.</td></tr>
+      <tr><td class="feat"><code>cash_added.mp3</code></td><td class="desc">Whenever the player receives funds (phase refresh, agenda completion bonus, etc.) — pairs with the "+X Cr" green flash above.</td></tr>
+      <tr><td class="feat"><code>money_spent.mp3</code></td><td class="desc">Whenever the player spends funds (investment tap, agenda tap, special power cost) — pairs with the "−X Cr" red flash above.</td></tr>
+      <tr><td class="feat"><code>invalid_action.mp3</code></td><td class="desc">Whenever an action is attempted but can't be afforded — pairs with the shake+buzz above.</td></tr>
+      <tr><td class="feat"><code>fanfare.mp3</code></td><td class="desc">Positive milestone — agenda completed, regional dominance bonus activated, or special power used. Confirmed 2026-07-23.</td></tr>
+      <tr><td class="feat"><code>game_over.mp3</code></td><td class="desc">Match end — win/loss/hung-parliament results screen. Confirmed 2026-07-23.</td></tr>
+      <tr><td class="feat"><code>phase_reset.mp3</code></td><td class="desc">Start of each new phase. Confirmed 2026-07-23.</td></tr>
+      <tr><td class="feat"><code>rally_sound.mp3</code></td><td class="desc">Whenever a rally token is played (any individual State Rally token play). <b>Not</b> on crafting a Special Powerup or Nationwide Rally — confirmed 2026-07-23, crafting is explicitly excluded.</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="section-note">All eight triggers confirmed 2026-07-23.</p>
 </section>
 
 <section id="rally">
@@ -616,6 +686,37 @@ payout(group) = 5 × sum(state.seats for state in group.members)     // Cr
   </div>
 </section>
 
+<section id="mapviz">
+  <h2>Map visualization — state color</h2>
+  <p class="section-note">Decided 2026-07-23, from a playtest bug report: state fill color currently has no correlation to actual popularity numbers.</p>
+  <div class="flow-grid">
+    <div class="flow-card">
+      <h3>🎨 Color spectrum</h3>
+      <div class="step decided">each state sits on one spectrum: P1's assigned party color ↔ neutral ↔ P2's assigned party color</div>
+      <div class="arrow">↓</div>
+      <div class="step decided">P1 at 100% popularity in a state → that state renders at max P1 color; P2 at 100% → max P2 color; higher popularity for whichever player is ahead → higher color intensity</div>
+    </div>
+  </div>
+  <div class="example">
+    <p class="label">Intensity formula — decided 2026-07-23: margin-based</p>
+    <p>Intensity is driven by the <i>margin</i> between the two players' popularity in that state (P1 60% / P2 55% reads as nearly neutral, a close contest), not by the leading player's raw % alone. The raw-% alternative was considered and rejected as incoherent: since P1% + P2% + Others% always sum to exactly 100% in a state, a player's raw % is never independent of the other two shares anyway — a high raw % can just mean Others is small, not that the opponent is being crushed. Margin is the only reading that actually reflects the two-player contest the spectrum is supposed to visualize.</p>
+  </div>
+  <div class="example">
+    <p class="label">Implementation notes</p>
+    <div class="table-wrap"><pre style="background:var(--paper);border:none;border-radius:0;margin:0;padding:12px 14px;font-family:var(--mono);font-size:12px;line-height:1.65;color:var(--ink);white-space:pre-wrap;">stateColor(state):
+  leader = whichever of p1/p2 has higher pop_bps[state]      // tie → neutral
+  margin = abs(p1.pop_bps[state] − p2.pop_bps[state])
+  intensity = clamp(margin / 10000, 0, 1)
+  return mix(neutralColor, leader.partyColor, intensity)
+
+// Use fill-opacity, not opacity, if implemented as a neutral-base +
+// colored-overlay approach — plain opacity also fades the SVG stroke, which
+// can make a dimmed state's outline disappear entirely (Frontend technical
+// rules, CLAUDE.md). Party colors: politicians-data.json's primaryColor
+// field (already read for portrait-fallback initials in mobile/main.js).</pre></div>
+  </div>
+</section>
+
 <section id="powers">
   <h2>Special powers</h2>
   <div class="flow-grid">
@@ -707,6 +808,34 @@ payout(group) = 5 × sum(state.seats for state in group.members)     // Cr
   </div>
 </section>
 
+<section id="buildstatus">
+  <h2>Build status &amp; roadmap</h2>
+  <p class="section-note">Migrated from <code>design/plan.md</code> (the pre-build gap audit and roadmap, written 2026-07-20 before the mobile engine existed), now deprecated in favor of this single document. Most of that plan is historical — the core loop, AI opponent, agenda/special-power/token system, and politician roster it scoped out are all built (see CLAUDE.md). What's below is what's still genuinely relevant.</p>
+
+  <h3>Tech stack &amp; deployment</h3>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Layer</th><th>Choice</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td class="feat">Frontend</td><td class="desc">vanilla HTML/CSS/JS, no build step</td><td class="desc">Confirmed appropriate, not a rewrite candidate — see Architecture constraints in CLAUDE.md. Capacitor wraps this almost unchanged for iOS/Android; React Native/Flutter would buy nothing for a DOM/CSS-heavy, turn-based, non-performance-bound game.</td></tr>
+      <tr><td class="feat">Static hosting</td><td class="desc">GitHub Pages</td><td class="desc">Live deployment target — <code>pradhanmantrielectionsgame.github.io</code>, auto-deploys from <code>main</code>. Free at this scale. As of 2026-07-23, <code>main</code> still serves the old pre-mobile-rebuild desktop-ported site — the finished <code>mobile/</code> build lives only on the local <code>mobile-ui-overhaul</code> branch and hasn't been pushed/merged yet.</td></tr>
+      <tr><td class="feat">Multiplayer backend (if built)</td><td class="desc">Firebase or Supabase Realtime</td><td class="desc">Deliberately not stood up yet — see ADR-0001/0002 and CLAUDE.md: live human matchmaking is out of scope until requested.</td></tr>
+      <tr><td class="feat">iOS/Android distribution (if pursued)</td><td class="desc">Capacitor</td><td class="desc">Wraps the existing web app almost unchanged; only needed for an actual app-store listing. $99/yr Apple Developer Program + $25 one-time Google Play Console apply only then.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>Still not built</h3>
+  <div class="open-card">
+    <ul>
+      <li><b>PWA infrastructure</b> — no <code>manifest.json</code>, no service worker, no home-screen icon set exist yet (checked 2026-07-23). Independent of everything else here, and the fastest way to get an installable phone build: a name/icons/<code>display:standalone</code> manifest, a minimal cache-first service worker, and two new app-icon PNGs (nothing in <code>assets/</code> today is square/icon-shaped).</li>
+      <li><b>AI difficulty/personality variety</b> — the current AI (<code>runAI()</code> in <code>mobile/game.js</code>) is a single greedy heuristic, not adversarially tuned (confirmed in CLAUDE.md). Original idea: 3-4 parameter profiles (aggressive investor / policy rusher / rally spammer / group-bonus rusher) picked randomly per match, on the same decision engine. Not built.</li>
+      <li><b>Secondary/non-win-condition goals</b> — achievements like "swept a region" or "comeback from behind" for players who've already solved the win condition. Minor, low-priority idea carried over, not built.</li>
+      <li><b>Options/settings menu</b> — no Sound/Music/Pause/Help/New-Game controls exist in <code>mobile/main.js</code> (checked 2026-07-23). Note this is different from the old desktop-ported <code>app.js</code>'s stub version plan.md originally flagged (that one existed but every card just <code>console.log</code>'d) — mobile's version doesn't exist as a UI element at all yet. Everything else plan.md's original "five gaps" flagged (AI opponent, start/end screens, action log) is confirmed built in <code>mobile/</code> — politician-select screen and win/loss/hung-parliament end overlay both exist in <code>main.js</code>, and the news ticker (referenced in the AI bug above) already covers the action-log role.</li>
+    </ul>
+  </div>
+</section>
+
 <section id="open">
   <h2>Still open</h2>
   <p class="section-note">Everything else in this document — the redistribution rule, all category pipelines, the price scale, the group payout formula, the private-agenda model — is decided. These aren't yet.</p>
@@ -728,5 +857,6 @@ payout(group) = 5 × sum(state.seats for state in group.members)     // Cr
   <p style="margin:0 0 10px;">This document supersedes the narrower "economy status map" it started as — scope expanded 2026-07-22 to cover the full finalized design (core loop, win condition, starting position, and the politician/agenda roster), not just cost/boost numbers, per explicit request to keep one authoritative reference for the build cycle to target.</p>
   <p style="margin:0 0 10px;">Implementation note (carried over): <code>phase-system.js</code> used to fetch <code>game-config.json</code> independently of the rest of the app — that's why its fallback default had drifted to 500/phase against the real 1,000. Removed; it now shares <code>config-manager.js</code>'s <code>getGameConfig()</code> with every other system.</p>
   <p style="margin:0 0 10px;">2026-07-23 design-review pass: clarified Kejriwal's Anti-Corruption Raid cost (paid by the activating player, in the opponent's home state — not a hit to the opponent), confirmed Nehru's Non-Alignment has no separate resource cost because its variable payoff is itself the cost, decided agenda effects apply ¼ per tap rather than only at 100% completion, confirmed the shared per-state rally-token cap's denial dynamic is deliberate and symmetric, and switched seat conversion from plain rounding to largest-remainder apportionment to eliminate national-total drift — see Core loop and Still Open.</p>
-  <p style="margin:0;" class="source-note">Sources: <code>design/plan.md</code>, <code>CHANGELOG.md</code> (decisions D1–D9, two unrelated series), <code>findings.md</code>, ADR-0004/0005, direct design decisions made 2026-07-22 (National Defense fix, nationwideBonus field) and 2026-07-23 (special-power cost clarifications, agenda per-tap proration, rally-token denial confirmation, largest-remainder seat apportionment), <code>data/policy-tags.json</code>, <code>data/politicians-data.json</code>, <code>data/states_data.json</code>, desktop <code>js/*.js</code> (cited via <code>findings.md</code>) vs. mobile <code>data/game-config.json</code> + <code>js/investment-system.js</code> + <code>js/phase-system.js</code>. <code>check_data_consistency.js</code> run 2026-07-22 after the policy-tags.json edits: clean (3 pre-existing, unrelated implementation-gap failures — <code>NortheastIndia</code>/<code>BorderLands</code> stale references, tracked separately as build status, not design status).</p>
+  <p style="margin:0 0 10px;">2026-07-23, first on-device playtest of the finished mobile build: logged two bugs (AI inactivity/news-ticker mismatch, starting-position randomizer landing on 200 seats) and four new decided specs (map color-by-popularity spectrum, tap-to-select/double-tap-to-invest, four new UI feedback animations, sound-file-to-trigger mapping) — see Known bugs, Map visualization, Touch interaction &amp; feedback, and Audio sections above. Same session: <code>design/plan.md</code> fully merged into this document (Build status section) and deprecated as a standalone file.</p>
+  <p style="margin:0;" class="source-note">Sources: <code>design/plan.md</code> (deprecated 2026-07-23, merged above), <code>CHANGELOG.md</code> (decisions D1–D9, two unrelated series), <code>findings.md</code>, ADR-0004/0005, direct design decisions made 2026-07-22 (National Defense fix, nationwideBonus field), 2026-07-23 (special-power cost clarifications, agenda per-tap proration, rally-token denial confirmation, largest-remainder seat apportionment), and 2026-07-23 playtest session (bugs + map/interaction/audio specs above), <code>data/policy-tags.json</code>, <code>data/politicians-data.json</code>, <code>data/states_data.json</code>, desktop <code>js/*.js</code> (cited via <code>findings.md</code>) vs. mobile <code>data/game-config.json</code> + <code>js/investment-system.js</code> + <code>js/phase-system.js</code>. <code>check_data_consistency.js</code> run 2026-07-22 after the policy-tags.json edits: clean (3 pre-existing, unrelated implementation-gap failures — <code>NortheastIndia</code>/<code>BorderLands</code> stale references, tracked separately as build status, not design status).</p>
 </footer>

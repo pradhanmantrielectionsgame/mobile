@@ -63,7 +63,7 @@ npm test              # Runs simulate.js regression suite
 
 ### In-Game Controls
 
-- **Tap a state** → invest your current funds into that state's popularity share
+- **Single-tap a state** → select it (shows detail panel) · **Double-tap to invest** your current funds into that state's popularity share
 - **Tap agenda pills** (top-right) → commit funds to that politician's signature policies (instant, per-tap scaling)
 - **Rally tokens tray** (bottom) → tap a state to deploy a token (one-time +5% boost); crafted Nationwide Rally affects all states
 - **Special power button** — activate your politician's unique power (one use per game, unlocked after token crafting prerequisites)
@@ -139,7 +139,7 @@ npm test              # Runs simulate.js regression suite
 - **Phase 1:** Connect Player 2 selection to real multiplayer queue vs. AI fallback
 - **Phase 2+:** Capacitor wrapping, session management, portrait images, balance tuning based on playtesting
 
-See `design/plan.md` for full roadmap.
+See `design/economy-status-map.md`'s "Build status & roadmap" section for current tech stack, deployment status, and open items.
 
 ## Known Limitations
 
