@@ -90,6 +90,9 @@ The game uses `game-config.json` for all tunable parameters (rally token boosts,
 | [ADR-0001: Player 2 Matchmaking with AI Fallback](docs/adr/0001-player2-matchmaking-fallback.md) | Accepted | Prefer live multiplayer, fall back to AI after timeout — matches "always have a game" requirement |
 | [ADR-0002: Firebase/Supabase Backend](docs/adr/0002-firebase-matchmaking-backend.md) | Accepted | Zero-ops, anonymous auth, free tier covers hobby scale |
 | [ADR-0003: Capacitor (not React Native/Flutter)](docs/adr/0003-capacitor-native-distribution.md) | Accepted | Preserve DOM/CSS/SVG fidelity; game is turn-based, not real-time |
+| [ADR-0004: Instant-Effect-Only Special Powers](docs/adr/0004-instant-effect-special-powers.md) | Accepted | Convert all power effects to instant lump-sum equivalents; robustness against game-length changes |
+| [ADR-0005: Token Economy as Unlock Gate](docs/adr/0005-token-economy-unlock-gate.md) | Accepted | Gate special powers via rally-token crafting; symmetric opportunity regardless of game state |
+| [ADR-0006: Hung Parliament Tie Resolution](docs/adr/0006-hung-parliament-tie-resolution.md) | Accepted | Draw vs. human opponent, Loss vs. AI fallback; ensures fairness in human-vs-human, incentivizes multiplayer |
 
 ## Current Status
 

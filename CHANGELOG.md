@@ -6,6 +6,41 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### 🎯 Policy Tag Schema Migration & Special Powers Rebalancing — 2026-07-23
+
+#### Data & Code Updates
+- **MIGRATED**: `data/policy-tags.json` from `supportTags`/`opposeTags`/`baseMagnitude`/`tier` to per-region `tagEffects` schema (one signed magnitude per region per policy)
+- **REBALANCED**: Four policies with acute imbalances:
+  - Economic Liberalization: added `TribalLands: -8` and `NaturalResources: -8` aux oppose tags alongside existing `AgriculturalRegion: -12` (net: +51.8 → +26.2 seat-equivalent)
+  - Education: reduced both support tags from 12 to 8 each (net: +49.4 → +33.0; removes pure-upside structure when no thematic opposition exists)
+  - Hindi Language: reduced `EasternBorder` oppose tag from -8 to -4 (net: −16.8 → −8.9; keeps genuine effect without self-cancellation bug)
+  - Digital Transformation: raised `Education` and `IndustrialCorridor` support tags from 4 to 8 each (net: −7.5 → +10.2; flips from negative to positive by un-skewing support/oppose balance)
+- **UPDATED**: `data/politicians-data.json` — swapped Vajpayee's Economic Liberalization agenda for Privatization (thematic fit + moves him off a number that needed fixing anyway)
+- **REWORKED**: Six special powers with concrete cost/benefit tradeoffs (Tendulkar's National Icon, Hema Malini's Star Power Rally, Rajinikanth's Thalaivar Announcement, Kejriwal's Anti-Corruption Raid, Nitish Kumar's Alliance Switch, Nehru's Non-Alignment); each had a distinct structural flaw (see design/economy-status-map.md's Special Powers table for before/after detail)
+- **UPDATED**: `check_data_consistency.js` — repointed field-validation check from `supportTags`/`opposeTags` to `tagEffects`
+- **CREATED**: `recompute_policy_ranking.js` — one-shot script computing full 24-policy seat-equivalent ranking from `tagEffects` + `states_data.json`
+
+#### Design & Documentation
+- **REVISED**: `design/economy-status-map.md` — three separate revisions consolidating hung-parliament resolution, `tagEffects` migration notes, net-first-apply-once redistribution rule with worked examples, updated ranking table (3 final iterations), plausibility recompute, and special-powers rework audit table
+- **UPDATED**: `CLAUDE.md` — added 3 new durable game-design rules (net-first-apply-once, special-power cost must be real sacrifice, accidental-tag-overlap audit discipline) plus corrected 2 stale facts (tier→tagEffects migration clarification, Privatization now assigned)
+- **DOCUMENTED**: `findings.md` — 4 new entries (2026-07-23) covering the policy rebalancing decisions and implication scoping
+
+#### Key Design Decisions Finalized
+- **[D1] Hung parliament tie resolution**: Draw vs. human opponent, Loss vs. AI fallback (incentivizes human multiplayer; ensures fairness in human-vs-human)
+- **[D2] Privatization assignment**: Vajpayee's agenda swap from Economic Liberalization (thematic + removes him from needing-fix number)
+- **[D3] tagEffects schema**: Per-region magnitude replaces tier/baseMagnitude/supportTags/opposeTags; magnitude is chosen per (policy, region) pair, not policy-wide
+- **[D4] Redistribution rule**: State's net agenda effect (sum of every matching tag) computed once, then applied as single transaction (not per-tag)
+- **[D5] Economic Liberalization fix**: Additive aux oppose tags eliminate the triple-co-occur problem in Gujarat while keeping other states' genuine cancellations
+- **[D6] Education fix**: Magnitude reduction (only lever available when no real thematic opposition exists) drops it to mid-pack +33.0
+- **[D7] Hindi Language fix**: Reduced oppose tag preserves genuine effect without accidental-cancellation bug
+- **[D8] Digital Transformation fix**: Raised support tags un-skew the imbalance (genuine skew, not accidental overlap)
+- **[D9] Six special powers audit**: Each power now has concrete cost/benefit; Vajpayee's Pokhran Test (+10% nationwide) retained as accepted outlier/reference; Nehru's power explicitly zero-cost exception
+
+#### Impact Summary
+Combined policy rebalancing compressed the range from [+51.8, −25.3] to [+51.8, −20.3], shrinking the plausibility margin from ~61 to ~19 seats. This wasn't a deliberate margin-tuning move, it's a side effect of fixing real design bugs (the triple co-occur in Gujarat, the pure-upside Education, the accidental cancellations in Hindi Language). Two-active-player match modeling (still open) may further compress the margin toward the 272-seat threshold.
+
+---
+
 ### 🎮 Game Economy Redesign: Starting Position, Redistribution, Rally Tokens, and Plausibility — 2026-07-22
 
 #### Design Overhaul

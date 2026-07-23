@@ -188,6 +188,11 @@ footer{ border-top:1px solid var(--rule-strong); padding-top:20px; color:var(--i
     </div>
   </div>
 
+  <div class="example">
+    <p class="label">Hung parliament resolution — decided 2026-07-22</p>
+    <p>Neither player reaching 272 resolves differently depending on who Player 2 actually is (see <code>docs/adr/0001-player2-matchmaking-fallback.md</code> — Player 2 is either a matched human or an AI fallback, decided per match): a hung parliament against a <b>human</b> opponent counts as a <b>draw</b>; a hung parliament against the <b>AI</b> fallback counts as a <b>loss</b> for the human player. No plurality tiebreak, no secondary-objective scoring — the human is simply held to a higher bar than a draw when the opponent is a bot, since failing to beat the AI outright shouldn't be rewarded the same as fighting a real opponent to a stalemate.</p>
+  </div>
+
   <h3>Starting position</h3>
   <p>Not a blank map, and not a fixed table either — the starting position is generated per match, in a fixed three-step order, from whichever politicians the two players pick plus a random roll on top:</p>
   <div class="flow-grid">
@@ -298,12 +303,21 @@ footer{ border-top:1px solid var(--rule-strong); padding-top:20px; color:var(--i
   <p class="section-note">Together the two plays wanted more of that 80% undecided middle than existed, so both got scaled down to fit — and since the two plays were equally large, they land in an exact tie, with Others wiped out entirely. This only ever comes up when two big one-shot effects (a Nationwide Rally, a Special Powerup) land on the very same swing state in the very same phase and jointly overdraw the undecided middle — for an ordinary tap, or one player acting alone, nothing changes: it's just the rule above, run once.</p>
   <div class="example">
     <p class="label">Implementation notes — the redistribution engine</p>
-    <div class="table-wrap"><pre style="background:var(--paper);border:none;border-radius:0;margin:0;padding:12px 14px;font-family:var(--mono);font-size:12px;line-height:1.65;color:var(--ink);white-space:pre-wrap;">Single actor:
+    <div class="table-wrap"><pre style="background:var(--paper);border:none;border-radius:0;margin:0;padding:12px 14px;font-family:var(--mono);font-size:12px;line-height:1.65;color:var(--ink);white-space:pre-wrap;">Single actor, positive boost (cash tap, rally token, Nationwide Rally, or a
+state whose net agenda effect came out ≥ 0 — see "net first, apply once" below):
   gain = min(boost_bps, 10000 − self_bps)
   opp_cut_raw = gain × opponent_bps / (opponent_bps + others_bps)
   opp_cut = round(opp_cut_raw)                 // round this side only
   others_cut = gain − opp_cut                  // derive, never round independently
   self += gain; opponent −= opp_cut; others −= others_cut
+
+Single actor, negative boost (a state whose net agenda effect came out < 0 —
+mirrors the gain case exactly, direction reversed):
+  loss = min(−boost_bps, self_bps)             // can't lose more than you hold
+  opp_gain_raw = loss × opponent_bps / (opponent_bps + others_bps)
+  opp_gain = round(opp_gain_raw)               // round this side only
+  others_gain = loss − opp_gain                // derive, never round independently
+  self −= loss; opponent += opp_gain; others += others_gain
 
 Both players act on the same state, same phase (compute against the pre-phase snapshot):
   for each player, compute gain / opp_cut_raw / others_cut_raw as above (unrounded)
@@ -314,7 +328,15 @@ Both players act on the same state, same phase (compute against the pre-phase sn
     each player's actual gain = own opponent-facing cut + own scaled others_cut_raw
   round each player's final gain to the nearest bps, then split it into its
   two components (opponent-facing / others-facing) with the same round-one,
-  derive-the-other rule as the single-actor case above</pre></div>
+  derive-the-other rule as the single-actor case above
+  // (the same-state-same-phase overdraw case only arises for gains pulling on
+  // Others' pool — the two levers capable of a same-phase collision, Nationwide
+  // Rally and Special Powerup, are both flat positive boosts, never agenda-driven,
+  // so the negative/loss path never needs this collision handling)</pre></div>
+  </div>
+  <div class="example">
+    <p class="label">Net first, apply once — required whenever a single action's effect on a state can be a sum of several signed parts (agendas today; any future multi-tag lever)</p>
+    <p>A state can carry several of a policy's tags at once — some supporting, some opposing, at whatever per-region magnitudes are set. The only correct way to apply this: sum every matching tag's signed magnitude for that state into <b>one net number</b> first, then run that single net value through the redistribution engine exactly once (positive → the gain path above, negative → the mirrored loss path, zero → no-op). <b>Never apply each tag as its own separate transaction.</b> Two sequential transactions on the same state don't cancel out even when their magnitudes do on paper — the 100%-cap and the proportional opponent/Others split are both non-linear per transaction, so a +12 gain immediately followed by a −12 loss lands somewhere different from a true no-op once cap-clamping and per-transaction rounding are involved. A state at +12 support / −4 oppose nets to +8 and gets applied as a single +8 gain — not as a +12 transaction followed by a separate −4 transaction, and not any different in kind from the +12/−12 case above just because the two magnitudes happen not to be equal.</p>
   </div>
 </section>
 
@@ -374,7 +396,7 @@ boost_bps(tapNumberInThisState) =
   <div class="example">
     <p class="label">Nationwide Rally's magnitude — decided 2026-07-22</p>
     <p>The old desktop-era "special" rally token (superseded — see <code>js/rally-system.js</code>, disconnected from the current <code>game-config.json</code>) applied a flat boost to every state on the map at once. Nationwide Rally inherits that nationwide-sweep role by name and by explicit lineage ("replaces the old random ⭐ roll entirely").</p>
-    <p><b>+5% nationwide</b>, applied to every state simultaneously — reusing the same per-token anchor as the regular boost above rather than inventing a new number. Using the same nationwide-conversion logic as the policy-tags fix (2% nationwide ≈ 10.9 seat-equivalent), 5% nationwide ≈ <b>27 seat-equivalent</b> — roughly half of the single best agenda (Economic Liberalization, +51.8), which feels proportionate given Nationwide Rally costs 60% of a player's entire lifetime token budget (12 of 20) and has to be started almost immediately (6-phase minimum craft time in a 10-phase game). The breadth itself is the real reward: 12 tokens spent individually could never reach more than ~6 states before hitting the 2-per-state cap, so the sweep covers ground manual play structurally cannot.</p>
+    <p><b>+5% nationwide</b>, applied to every state simultaneously — reusing the same per-token anchor as the regular boost above rather than inventing a new number. Using the same nationwide-conversion logic as the policy-tags fix (2% nationwide ≈ 10.9 seat-equivalent), 5% nationwide ≈ <b>27 seat-equivalent</b> — in the same range as the pool's best single agenda (Education, +33.0 post-rebalance; was Economic Liberalization at +51.8 before that fix, which would have made this comparison read "roughly half" instead), which feels proportionate given Nationwide Rally costs 60% of a player's entire lifetime token budget (12 of 20) and has to be started almost immediately (6-phase minimum craft time in a 10-phase game). The breadth itself is the real reward: 12 tokens spent individually could never reach more than ~6 states before hitting the 2-per-state cap, so the sweep covers ground manual play structurally cannot.</p>
   </div>
   <div class="example">
     <p class="label">Implementation notes</p>
@@ -428,10 +450,10 @@ nationwideRallyBoost_bps = 500    // +5%, flat, applied to every state at once
   <div class="example warn">
     <p class="label">Three policies with no region tags carry a flat +4% nationwide effect — bumped 2026-07-22</p>
     <p>Women's Empowerment, Healthcare, and Anti-Corruption have no <code>supportTags</code>/<code>opposeTags</code> configured — under the effect formula above, that computes to exactly zero, a dead pick. <b>Decided:</b> these three carry a flat, uniform nationwide popularity effect instead of a region-tagged one, originally set at +2% and strengthened to <b>+4%</b> to make them real contenders rather than a modest afterthought. Now recorded as <code>"nationwideBonus": 4</code> on all three entries in <code>data/policy-tags.json</code>. A flat 4% nationwide converts to roughly <b>+21.7 seat-equivalent</b> (4% × 543 seats) — comparable to a genuinely strong regional pick, not just "no longer a dead one."</p>
-    <p><b>Do not implement this using <code>baseMagnitude</code>.</b> <code>generateCampaignGrid()</code> in <code>campaign-system.js</code> already has display logic that labels a zero-tag policy "+<code>baseMagnitude</code>% Nationwide" for UI purposes only — Healthcare's <code>baseMagnitude</code> is 12, Women's Empowerment and Anti-Corruption are 8. Applying that value as the real effect instead of the decided 4% would make Healthcare worth ~+65 seat-equivalent (still stronger than every other policy in the pool, including Economic Liberalization at +51.8) and the other two ~+43 each — roughly 3× and 2× overshoots respectively, smaller than the old 2%-baseline's 6×/4× gap but still wrong. Read <code>nationwideBonus</code>, not <code>baseMagnitude</code>, when this gets built.</p>
+    <p><b>Do not implement this using <code>baseMagnitude</code>.</b> <code>generateCampaignGrid()</code> in <code>campaign-system.js</code> already has display logic that labels a zero-tag policy "+<code>baseMagnitude</code>% Nationwide" for UI purposes only — Healthcare's <code>baseMagnitude</code> is 12, Women's Empowerment and Anti-Corruption are 8. Applying that value as the real effect instead of the decided 4% would make Healthcare worth ~+65 seat-equivalent (still stronger than every other policy in the pool) and the other two ~+43 each — roughly 3× and 2× overshoots respectively, smaller than the old 2%-baseline's 6×/4× gap but still wrong. Read <code>nationwideBonus</code>, not <code>baseMagnitude</code>, when this gets built.</p>
   </div>
   <h3>How the effect formula works</h3>
-  <p>Tier is not a property of the policy as a whole — it's the strength of that policy's pull on <i>one specific region it touches</i>, chosen individually, region by region. The same region can react differently to different policies, both in direction and strength: Hindi Heartland might swing hard for Hindutva, hard against Secularism, and only mildly for or against something else — different policies, different numbers for the same region, not one shared value repeated everywhere. <code>supportTags</code>/<code>opposeTags</code> entries each carry their own strength, drawn from the same tier scale as before — tier 1 = 12%, tier 2 = 8%, tier 3 = 4% — just picked per region instead of once for the whole policy. (Note: "tier" here means this per-region magnitude bucket, not the Large/Mid/Small tiering used for Regional Dominance groups elsewhere in this document, and not a policy's own top-level <code>tier</code> field, which is unrelated.)</p>
+  <p>A policy's pull on the map isn't one shared strength — it's chosen individually, per region it touches. The same region can react differently to different policies, both in direction and strength: Hindi Heartland might swing hard for Hindutva, hard against Secularism, and only mildly for or against something else — different policies, different numbers for the same region, not one shared value repeated everywhere. <code>tagEffects</code> entries each carry their own signed strength directly (currently still defaulted from the old shared tier scale — 12/8/4 — until the real per-region tuning pass happens; see "Still open" below). The policy's own top-level <code>tier</code> field, and the whole tiered-magnitude concept it implied, has been removed from <code>data/policy-tags.json</code> entirely (decided 2026-07-22) — now that magnitude is set directly per region, there's no shared policy-wide strength left for a tier to describe. (Unrelated: the Large/Mid/Small tiering used for Regional Dominance groups elsewhere in this document is a completely different concept and is unaffected.)</p>
   <p>A policy costing seats in one part of the country while gaining them elsewhere isn't a flaw to smooth away — real political platforms work exactly that way, and a politician may deliberately spend an agenda to lock down a core base at a cost elsewhere. The net-negative policies in the ranking below should be read in that light, not as bugs by default — though a few may still turn out to be accidental tag overlaps like pre-fix National Defense rather than deliberate polarization, worth an individual look.</p>
   <div class="example">
     <p class="label">Implementation notes</p>
@@ -441,55 +463,77 @@ completionPerTap = 25%                  // 4 taps = fully maxed
 effect(state, policy) =
   if policy.nationwideBonus is set:  apply it flat, uniformly, to every state
   else:                              Σ policy.tagEffects[tag] for every tag the state has
+  // this Σ is the single net value — see #pot "net first, apply once":
+  // it is computed once per state and fed through the redistribution engine
+  // exactly once, never applied tag-by-tag as separate transactions.
 
-// tagEffects replaces supportTags/opposeTags/baseMagnitude: one signed
-// magnitude per region, e.g. National Defense = { EasternBorder: 12,
-// WesternBorder: 12, CoastalIndia: -12 }. Not yet migrated in
-// data/policy-tags.json (still the old shared-baseMagnitude shape) — the
-// ranking below uses each region defaulted to its policy's current
-// baseMagnitude until someone does the real per-region tuning pass.</pre></div>
+// tagEffects (migrated 2026-07-22): one signed magnitude per region, e.g.
+// National Defense = { EasternBorder: 12, WesternBorder: 12, CoastalIndia: -12 }.
+// Replaces the old supportTags/opposeTags/baseMagnitude/tier shape in
+// data/policy-tags.json. Mutually exclusive with nationwideBonus — a policy
+// has one or the other, never both. Migration was purely mechanical (support
+// tag → +baseMagnitude, oppose tag → −baseMagnitude, per policy's old tier),
+// so it reproduces every number in the ranking below exactly — verified by
+// recompute_policy_ranking.js, which re-derives the same table directly from
+// states_data.json + policy-tags.json and should be re-run after every future
+// tuning-pass edit rather than re-deriving the table by hand.</pre></div>
   </div>
 
-  <h3>Full policy ranking — computed 2026-07-22</h3>
-  <p class="section-note">Every policy, run through the <code>Σ tagEffects[tag]</code> formula above against the real map, ranked by national seat-equivalent. Validated against the four figures already established elsewhere in this document (Economic Liberalization, Education, National Defense, the three nationwide-bonus policies), all of which this reproduces exactly. <b>The numbers below are unchanged from before this redesign</b> — expected, not a mistake: every region still defaults to its policy's old <code>baseMagnitude</code>, so the total per policy comes out identical until someone actually assigns different magnitudes to individual regions. This table will move once that tuning pass happens; right now it's a faithful re-derivation, not a new result.</p>
+  <h3>Full policy ranking — computed 2026-07-22, retuned 2026-07-22</h3>
+  <p class="section-note">Every policy, run through the <code>Σ tagEffects[tag]</code> formula above against the real map, ranked by national seat-equivalent — reproduced exactly by <code>recompute_policy_ranking.js</code>. Every region still defaults to its policy's old shared magnitude (12/8/4) <b>except Economic Liberalization and Education</b>, the two outlier fixes below — those two are the first entries in the per-region tuning pass, done ahead of the rest because they were flagged as structurally broken (see below), not because the general tuning pass is complete. Rest of the pool is still faithfully re-derived, unchanged.</p>
+  <div class="example">
+    <p class="label">Privatization no longer orphaned — resolved 2026-07-22</p>
+    <p><code>data/policy-tags.json</code> defines 24 policies; <b>Privatization</b> (+7.0 seat-equivalent, rank 10 of 24) previously wasn't assigned to any of the 20 politicians' agenda lists. Fixed by swapping it into <b>Atal Bihari Vajpayee</b>'s roster in place of Economic Liberalization — thematically Privatization fits him better (his government ran the actual Disinvestment Ministry). Vajpayee's agendas are now Infrastructure, National Defense, Hindi Language, Privatization. The 23/24 distinction ("23-policy pool" vs. "24 defined") made earlier in this document no longer applies — all 24 are now reachable in play.</p>
+  </div>
   <div class="example warn">
-    <p class="label">The pool is 24 entries, not 23 — one is defined but unreachable</p>
-    <p><code>data/policy-tags.json</code> defines 24 policies, not the 23 this document has referred to throughout. The reconciliation: <b>Privatization</b> is fully defined with real tags and a positive effect (+7.0 seat-equivalent, rank 10 of 24) but isn't assigned to <i>any</i> of the 20 politicians' agenda lists — every other policy is drawn by at least one politician, so it's the only one currently unreachable in actual play. "23-policy pool" elsewhere in this document describes what politicians can actually draw from, which is accurate; the data file just has one orphaned extra entry. Worth a decision: give Privatization to a politician, or drop it from the file since nothing references it.</p>
+    <p class="label">Economic Liberalization and Education were a structurally different kind of imbalanced — fixed 2026-07-22</p>
+    <p>Before this fix, these two ranked #1 (+51.8) and #2 (+49.4) by a wide margin over the rest of the pool — not because their magnitude was unusually high (both used the same tier-1 12% as several other policies), but because of <i>how</i> their tags were chosen: <b>Education had zero oppose tags at all</b> — <code>{ Education, Manufacturing }</code>, no downside anywhere, the only large multi-tag policy in the pool with no cost to any state (the three flat <code>nationwideBonus</code> policies also have no downside, but their magnitude is deliberately capped low precisely because they're uncontested). <b>Economic Liberalization</b> had three support tags that heavily co-occur in the same big industrial states (Gujarat carried all three at once, netting <b>+36</b> from a single policy) against one oppose tag (<code>AgriculturalRegion</code>) that barely overlapped those same states — 18 states gained, only Bihar and Punjab lost anything. Compare to a working polarizing policy in the same pool, e.g. Secularism: +29.5 seat-equivalent of gains (Bengal, Kerala, the Northeast) against −49.8 of losses (UP, Bihar, MP, Rajasthan) — genuinely two-sided, just skewed by which side holds more seats. Economic Liberalization and Education had no real "losing" side at all.</p>
+    <p><b>Fix applied</b> — deliberately not a magnitude change, since the flat 12/8/4 scale itself stays as-is pending the full tuning pass:</p>
+    <p><b>Economic Liberalization:</b> added <code>TribalLands: -8</code> and <code>NaturalResources: -8</code> alongside the existing <code>AgriculturalRegion: -12</code> — liberalization/industrialization read as also driving resource exploitation and tribal-land displacement, a real and distinct losing constituency from farmers. (An earlier version of this fix considered <i>replacing</i> <code>AgriculturalRegion</code> with the two new tags instead of adding them — rejected because it barely moved the total, +51.8 → +46.2, and made Maharashtra and Uttar Pradesh <i>worse</i> by removing their only existing cancellation.) New total: <b>+26.2</b>.</p>
+    <p><b>Education:</b> no oppose tag added — there's no real thematic constituency that opposes education investment, so forcing one in would be an artificial cancellation rather than a genuine trade-off. Instead, both support magnitudes dropped from the shared tier-1 value (12) to tier-2 (8): <code>{ Education: 8, Manufacturing: 8 }</code>. New total: <b>+33.0</b> — now ranks <i>above</i> the retuned Economic Liberalization, which is the correct outcome: an uncontested-but-modest pick can reasonably beat a powerful-but-now-genuinely-costly one.</p>
+  </div>
+  <div class="example warn">
+    <p class="label">Hindi Language had the exact same accidental-cancellation bug as pre-fix National Defense — fixed 2026-07-22</p>
+    <p>Uttar Pradesh (80 seats) and Bihar (40 seats) — the two biggest Hindi Heartland states, along with Himachal Pradesh and Uttarakhand — were tagged both <code>HindiHeartland</code> (support, +8) <i>and</i> <code>EasternBorder</code> (oppose, −8), which canceled to exactly zero. Hindi Language's strongest natural supporters were contributing nothing, while the oppose side (<code>SouthIndia</code>, <code>EasternBorder</code>, <code>MinorityAreas</code>) fired freely elsewhere — and two of those three oppose tags heavily co-occur in the Northeast, so those states took a double hit on top of it. There's no clear thematic reason a state's border status should make it oppose Hindi-language policy specifically. <b>Fix applied:</b> <code>EasternBorder</code> reduced from −8 to <b>−4</b> (not dropped entirely — kept as a smaller, genuine factor rather than removed outright). New total: <b>−16.8 → −8.9</b>.</p>
+  </div>
+  <div class="example">
+    <p class="label">Digital Transformation — genuine skew, not a bug, rebalanced 2026-07-22</p>
+    <p>Two support tags (<code>Education</code>, <code>IndustrialCorridor</code>) rarely co-occur in the same state, while three oppose tags (<code>AgriculturalRegion</code>, <code>Pilgrimage</code>, <code>TribalLands</code>) often do — Bihar, Andhra Pradesh, Odisha, and Punjab each carry two of the three oppose tags at once, taking a double hit the support side had no equivalent way to match. Unlike Hindi Language, no accidental same-state cancellation was involved — this was a real support/oppose count imbalance, not a stray tag. <b>Fix applied:</b> both support tags raised from tier-3 (4) to tier-2 (8): <code>{ Education: 8, IndustrialCorridor: 8 }</code>, oppose tags unchanged. New total: <b>−7.5 → +10.2</b> — flips from net-negative to a solid mid-pack pick.</p>
   </div>
   <div class="table-wrap">
   <table>
     <thead><tr><th>Rank</th><th>Policy</th><th>Seat-equivalent</th></tr></thead>
     <tbody>
-      <tr><td class="num">1</td><td class="feat">Economic Liberalization</td><td class="num">+51.8</td></tr>
-      <tr><td class="num">2</td><td class="feat">Education</td><td class="num">+49.4</td></tr>
+      <tr><td class="num">1</td><td class="feat">Education</td><td class="num">+33.0</td></tr>
+      <tr><td class="num">2</td><td class="feat">Economic Liberalization</td><td class="num">+26.2</td></tr>
       <tr><td class="num">3</td><td class="feat">Women's Empowerment <span class="source-note">(nationwide)</span></td><td class="num">+21.7</td></tr>
       <tr><td class="num">4</td><td class="feat">Healthcare <span class="source-note">(nationwide)</span></td><td class="num">+21.7</td></tr>
       <tr><td class="num">5</td><td class="feat">Anti-Corruption <span class="source-note">(nationwide)</span></td><td class="num">+21.7</td></tr>
       <tr><td class="num">6</td><td class="feat">Judicial Activism</td><td class="num">+17.6</td></tr>
       <tr><td class="num">7</td><td class="feat">Press Freedom</td><td class="num">+12.4</td></tr>
-      <tr><td class="num">8</td><td class="feat">Law and Order</td><td class="num">+8.3</td></tr>
-      <tr><td class="num">9</td><td class="feat">State's Rights</td><td class="num">+8.1</td></tr>
-      <tr><td class="num">10</td><td class="feat">Privatization <span class="source-note">(unused — see above)</span></td><td class="num">+7.0</td></tr>
-      <tr><td class="num">11</td><td class="feat">Water and Mineral Rights</td><td class="num">+5.8</td></tr>
-      <tr><td class="num">12</td><td class="feat">Hindutva</td><td class="num">+5.3</td></tr>
-      <tr><td class="num">13</td><td class="feat">Infrastructure</td><td class="num">+3.0</td></tr>
-      <tr><td class="num">14</td><td class="feat">National Defense <span class="source-note">(post-fix)</span></td><td class="num">+1.8</td></tr>
-      <tr><td class="num">15</td><td class="feat">Rural Development</td><td class="num">+1.7</td></tr>
-      <tr><td class="num">16</td><td class="feat">Land Reforms</td><td class="num">−6.0</td></tr>
-      <tr><td class="num">17</td><td class="feat">Public Sector</td><td class="num">−7.0</td></tr>
-      <tr><td class="num">18</td><td class="feat">Digital Transformation</td><td class="num">−7.5</td></tr>
-      <tr><td class="num">19</td><td class="feat">Uniform Civil Code</td><td class="num">−9.6</td></tr>
-      <tr><td class="num">20</td><td class="feat">Caste Reservation</td><td class="num">−10.2</td></tr>
-      <tr><td class="num">21</td><td class="feat">Indigenous Rights</td><td class="num">−12.1</td></tr>
-      <tr><td class="num">22</td><td class="feat">Agricultural Reforms</td><td class="num">−14.1</td></tr>
-      <tr><td class="num">23</td><td class="feat">Hindi Language</td><td class="num">−16.8</td></tr>
-      <tr class="verdict-row"><td class="num">24</td><td>Secularism — now the single worst pick in the pool</td><td class="num">−20.3</td></tr>
+      <tr><td class="num">8</td><td class="feat">Digital Transformation <span class="source-note">(rebalanced)</span></td><td class="num">+10.2</td></tr>
+      <tr><td class="num">9</td><td class="feat">Law and Order</td><td class="num">+8.3</td></tr>
+      <tr><td class="num">10</td><td class="feat">State's Rights</td><td class="num">+8.1</td></tr>
+      <tr><td class="num">11</td><td class="feat">Privatization <span class="source-note">(Vajpayee)</span></td><td class="num">+7.0</td></tr>
+      <tr><td class="num">12</td><td class="feat">Water and Mineral Rights</td><td class="num">+5.8</td></tr>
+      <tr><td class="num">13</td><td class="feat">Hindutva</td><td class="num">+5.3</td></tr>
+      <tr><td class="num">14</td><td class="feat">Infrastructure</td><td class="num">+3.0</td></tr>
+      <tr><td class="num">15</td><td class="feat">National Defense <span class="source-note">(post-fix)</span></td><td class="num">+1.8</td></tr>
+      <tr><td class="num">16</td><td class="feat">Rural Development</td><td class="num">+1.7</td></tr>
+      <tr><td class="num">17</td><td class="feat">Land Reforms</td><td class="num">−6.0</td></tr>
+      <tr><td class="num">18</td><td class="feat">Public Sector</td><td class="num">−7.0</td></tr>
+      <tr><td class="num">19</td><td class="feat">Hindi Language <span class="source-note">(rebalanced)</span></td><td class="num">−8.9</td></tr>
+      <tr><td class="num">20</td><td class="feat">Uniform Civil Code</td><td class="num">−9.6</td></tr>
+      <tr><td class="num">21</td><td class="feat">Caste Reservation</td><td class="num">−10.2</td></tr>
+      <tr><td class="num">22</td><td class="feat">Indigenous Rights</td><td class="num">−12.1</td></tr>
+      <tr><td class="num">23</td><td class="feat">Agricultural Reforms</td><td class="num">−14.1</td></tr>
+      <tr class="verdict-row"><td class="num">24</td><td>Secularism — the single worst pick in the pool</td><td class="num">−20.3</td></tr>
     </tbody>
   </table>
   </div>
   <div class="example">
-    <p class="label">9 of 24 policies are net-negative nationally</p>
-    <p>Ranks 16–24: Land Reforms, Public Sector, Digital Transformation, Uniform Civil Code, Caste Reservation, Indigenous Rights, Agricultural Reforms, Hindi Language, and Secularism (worst, −20.3) — more than a third of the pool. Worth auditing individually which of these are polarizing for a real thematic reason (Secularism genuinely cutting against Hindi Heartland and Pilgrimage) versus an accidental tag overlap nobody chose deliberately (the National Defense failure mode) — that distinction doesn't show up in the seat-equivalent number alone. Tier doesn't predict quality either: tier-1 "Mega Policy" agendas span the entire range, from the two best picks in the pool (Economic Liberalization +51.8, Education +49.4) to three of the four worst.</p>
+    <p class="label">8 of 24 policies are net-negative nationally (down from 9 — Digital Transformation flipped positive in today's rebalance)</p>
+    <p>Ranks 17–24: Land Reforms, Public Sector, Hindi Language, Uniform Civil Code, Caste Reservation, Indigenous Rights, Agricultural Reforms, and Secularism (worst, −20.3) — a third of the pool. Two of the original nine (Hindi Language, Digital Transformation) have already been individually audited and fixed this session (see above) — Hindi Language turned out to be the accidental-tag-overlap failure mode (like pre-fix National Defense), Digital Transformation turned out to be genuine skew, just under-supported. The remaining six (Land Reforms, Public Sector, Uniform Civil Code, Caste Reservation, Indigenous Rights, Agricultural Reforms) plus Secularism still haven't had that same audit — worth doing before treating the roster as balanced, since the distinction between "real polarization" and "accidental cancellation" doesn't show up in the seat-equivalent number alone. The old shared-magnitude tier (12/8/4, now removed from the schema — see Agenda section above) never predicted quality either: pre-rebalance, the policies that shared the top 12%-magnitude bucket spanned the entire range, from the two best picks in the pool (Economic Liberalization, Education) to three of the four worst — and those same top two turned out to be broken for a completely different reason than magnitude, unrelated to which tier bucket they started in.</p>
   </div>
 </section>
 
@@ -541,12 +585,32 @@ payout(group) = 5 × sum(state.seats for state in group.members)     // Cr
       <h3>⚡ Rules</h3>
       <div class="step decided">resolve instantly only — no duration-based effects, ever</div>
       <div class="arrow">↓</div>
-      <div class="step decided">matched cost + benefit, distinct verb, per politician — no two powers are the same mechanic reskinned</div>
+      <div class="step decided">matched cost + benefit, distinct verb, per politician — no two powers are the same mechanic reskinned (one deliberate exception: Nehru, see below)</div>
       <div class="arrow">↓</div>
-      <div class="step open">individual balance numbers across the 20-entry roster — Rajinikanth flagged by name as needing a pass</div>
+      <div class="step gap">6 of 20 powers reworked and Vajpayee's reviewed-and-kept 2026-07-22 — 13 still need the same pass</div>
     </div>
   </div>
   <p class="section-note">Instant-only is a load-bearing rule, not a style preference: a duration-based effect ("frozen for 1 phase") has nothing left to apply to if it unlocks on the game's last phase, which under any achievement-gated unlock it eventually will. Converting every effect to an instant lump-sum equivalent removes the dependency on borrowed future game-time entirely.</p>
+
+  <h3>Six powers reworked 2026-07-22 — each had a different flaw</h3>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Politician</th><th>Power</th><th>What was wrong</th><th>Fix</th></tr></thead>
+    <tbody>
+      <tr><td class="feat">Sachin Tendulkar</td><td>National Icon</td><td>Cost was a timing gate ("final phase only") — a free power once phase 10 arrived, no real sacrifice.</td><td>Any phase; requires holding ≥1,000 Cr; costs a flat 1,000 Cr instantly.</td></tr>
+      <tr><td class="feat">Hema Malini</td><td>Star Power Rally</td><td>Cost was an eligibility condition ("only below national average") — free whenever usable.</td><td>+5% popularity nationwide; requires holding ≥500 Cr; costs 500 Cr instantly.</td></tr>
+      <tr><td class="feat">Rajinikanth</td><td>Thalaivar Announcement</td><td>Undefined "massive" benefit against a uniquely severe, permanent cost (locked all 4 remaining agendas for the rest of the game) — the roster's flagged outlier.</td><td>+20% popularity in South India + Maharashtra; requires holding ≥2,000 Cr; costs 2,000 Cr instantly.</td></tr>
+      <tr><td class="feat">Arvind Kejriwal</td><td>Anti-Corruption Raid</td><td>Cost was "forfeit rally tokens currently held" — zero if holding none, gameable by spending down first.</td><td>Robs the opponent of 50% of their cash on hand, at a fixed cost of −15% popularity in the opponent's home state.</td></tr>
+      <tr><td class="feat">Nitish Kumar</td><td>Alliance Switch</td><td>Value entirely contingent on the opponent's last agenda — worth nothing if they hadn't played one, wildly variable otherwise.</td><td>+7% popularity nationwide for you, −7% for the opponent; costs 1,000 Cr + 2 rally tokens.</td></tr>
+      <tr><td class="feat">Jawaharlal Nehru</td><td>Non-Alignment</td><td>"Blocks the opponent's next special power" — worthless if they'd already used theirs.</td><td>If unused, secretly nullifies the opponent's power (they don't find out until they've already spent the tokens to craft it); if already used, grants a flat 2,000 Cr instead. Deliberately zero direct cost — the only power in the roster without one.</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="example">
+    <p class="label">Vajpayee's Pokhran Test (+10% nationwide) reviewed and kept as-is</p>
+    <p>Flagged during this pass as a concrete numeric outlier — +10% nationwide is exactly double Nationwide Rally's +5% for roughly half the token cost (Special Powerup's 6-token craft vs. Rally's 12) — but kept deliberately: special powers are one-time-per-game, and the roster can support one or two standout "signature" plays without that being a design flaw on its own. Used as the reference point for sanity-checking every other power's magnitude during this pass (e.g. Hema Malini's cost was raised specifically because her original proposal would have exceeded it for less).</p>
+  </div>
+  <p class="section-note">Remaining 13 (Modi, Manmohan Singh, Rahul Gandhi, Mamata Banerjee, Yogi Adityanath, Indira Gandhi, Sardar Patel, B.R. Ambedkar, Jayalalithaa, Lal Bahadur Shastri, P.V. Narasimha Rao, Rajiv Gandhi, Amitabh Bachchan) haven't had this audit yet — several have benefits with no assigned magnitude at all (e.g. "Large one-time funds boost," "Large popularity boost") and costs of similarly vague size, which is a materially lighter issue than the six fixed above (no known structural bug, just missing numbers) but still open.</p>
 </section>
 
 <section id="roster">
@@ -571,37 +635,37 @@ payout(group) = 5 × sum(state.seats for state in group.members)     // Cr
 <section id="plausibility">
   <h2>Plausibility check — can the design actually be won?</h2>
   <p class="section-note">Worked numbers against the decided formulas above, modeling one player's best realistic play. Important caveat baked into every number here: this assumes an opponent who does nothing. A real, actively-adversarial opponent almost certainly pushes both players' realistic ceilings lower — nobody has modeled the two-active-player case yet (tracked as open, below).</p>
-  <p class="section-note"><b>Recomputed 2026-07-22</b> against the values decided this session (5% rally tokens, 5% Nationwide Rally, the exact investment decay formula) — replaces the earlier ~195 / ~278 figures below.</p>
+  <p class="section-note"><b>Recomputed 2026-07-22</b> against the values decided this session (5% rally tokens, 5% Nationwide Rally, the exact investment decay formula) — replaces the earlier ~195 / ~278 figures below. <b>Recomputed again, same day</b>, after the Economic Liberalization / Education rebalance (see Agenda section above) dropped the combined agenda contribution from +101.2 to +59.2 — this materially shrinks the margin below, not just the ranking table.</p>
 
   <div class="table-wrap">
   <table>
     <thead><tr><th>Scenario</th><th>Best-case seat total</th></tr></thead>
     <tbody>
       <tr><td class="feat">Cash only — full 12,500 Cr budget, optimally spread</td><td class="num">~203 / 543 (37.4%)</td></tr>
-      <tr><td class="feat">Cash + full 20 tokens (12 crafted into Nationwide Rally + 8 played individually) + 2 strong agendas (Economic Liberalization, Education)</td><td class="num">~333 / 543 (61.3%)</td></tr>
-      <tr class="verdict-row"><td colspan="2">Majority is comfortably reachable at the model's best case — a ~61-seat margin, not the ~6-seat razor's edge this table previously showed.</td></tr>
+      <tr><td class="feat">Cash + full 20 tokens (12 crafted into Nationwide Rally + 8 played individually) + 2 strong agendas (Education, Economic Liberalization)</td><td class="num">~291 / 543 (53.6%)</td></tr>
+      <tr class="verdict-row"><td colspan="2">Majority is still reachable at the model's best case, but by a much tighter <b>~19-seat margin</b> — down from the ~61 this table showed before today's agenda rebalance, and much closer to the old ~6-seat figure from before the rally-token recompute.</td></tr>
     </tbody>
   </table>
   </div>
 
-  <p>Cash alone still cannot win under any circumstances — it's a hard mathematical wall, not a skill ceiling: the entire lifetime budget only buys enough popularity to add ~61 seats on top of a player's starting position, and 272 requires closing a much bigger gap than that. Tokens and agendas remain the only way to reach a majority — but the margin for using them well turns out to be much wider than previously modeled, for three separate reasons:</p>
+  <p>Cash alone still cannot win under any circumstances — it's a hard mathematical wall, not a skill ceiling: the entire lifetime budget only buys enough popularity to add ~42 seats on top of a player's starting position, and 272 requires closing a much bigger gap than that. Tokens and agendas remain the only way to reach a majority — but the margin for using them well is tighter than the previous version of this section modeled, for four separate reasons (the first three unaffected by today's session, the fourth new):</p>
 
   <div class="example">
-    <p class="label">Why the combined-strategy number moved so much</p>
+    <p class="label">Why the combined-strategy number moved</p>
     <p><b>Starting position (~142 seats, up from ~135):</b> the old figure came from the fixed stronghold table this document has since replaced with a randomized generator (see Starting position, above). ~142 is that generator's expected value, averaged across a home state at baseline+25%, ~110 seats of drawn 35–65% advantage, and everything else at the 5–29% baseline — not a guaranteed number the way the old table was, so any individual match will land above or below it.</p>
-    <p><b>Cash contribution at the reduced 8,500 Cr allocation (~42 seats, up from a ~21-seat estimate):</b> recomputed directly from the decay formula now documented in the Investment section's implementation notes — tapping every state once costs a flat 5,430 Cr regardless of which states (seats × 10 Cr/tap, but there are always exactly 543 total seats to tap once), so 8,500 Cr buys one full nationwide round of 5% taps plus a partial second round. This is a materially more rigorous number than the earlier estimate, computed with a formula that didn't exist in this document until this session.</p>
+    <p><b>Cash contribution at the reduced 8,500 Cr allocation (~42 seats, up from a ~21-seat estimate):</b> recomputed directly from the decay formula now documented in the Investment section's implementation notes — tapping every state once costs a flat 5,430 Cr regardless of which states (seats × 10 Cr/tap, but there are always exactly 543 total seats to tap once), so 8,500 Cr buys one full nationwide round of 5% taps plus a partial second round.</p>
     <p><b>Token contribution (~48 seats, up from ~21):</b> partly the 4%→5% per-token increase, but mostly a strategy the earlier estimate didn't consider — crafting 12 of the 20 tokens into a Nationwide Rally sweeps <i>all</i> 543 seats at 5%, whereas 20 individually-played tokens are capped at 2-per-state and can only ever reach the biggest 10 states (worth ~38 seats, not ~48). Nationwide Rally beats individual play specifically because it reaches the medium and small states individual tokens structurally cannot touch.</p>
-    <p>Agenda contribution (+101.2, Economic Liberalization + Education combined) is carried over unchanged — it wasn't affected by anything decided this session, and re-verifying it is already tracked below as its own open item.</p>
+    <p><b>Agenda contribution (+59.2, down from +101.2):</b> Economic Liberalization and Education were the two best agendas in the pool specifically because they were structurally broken — near-zero real opposition anywhere on the map (see the fix above). Fixing that broke-ness is exactly what shrank this scenario's total, not an error: a "best-case combined strategy" number that leaned on two undercosted agendas was never a real best case, just an inflated one. +59.2 (26.2 + 33.0) is the honest post-fix figure.</p>
   </div>
 
-  <div class="example">
-    <p class="label">The ~61-seat passive-opponent margin is intentional — confirmed 2026-07-22</p>
-    <p>This ~61-seat figure is a ceiling against an opponent doing nothing, not the number that matters for real play. The design intent: a real, adversarial opponent contesting the same states whittles this back down toward 272 — the two-active-player case (still unmodeled, tracked below) is expected to erode most or all of this margin, not treated as a threat to a razor-thin number that needs protecting. A wide passive-opponent ceiling is exactly what should be true if the game is meant to come down to a close race once both players are actually playing against each other, rather than each player racing a ghost.</p>
+  <div class="example warn">
+    <p class="label">The passive-opponent margin shrank from ~61 to ~19 seats — a side effect of today's agenda fix, worth flagging explicitly</p>
+    <p>This ~19-seat figure is still a ceiling against an opponent doing nothing, not the number that matters for real play — a real, adversarial opponent contesting the same states was always expected to whittle this margin back down toward 272 (the two-active-player case remains unmodeled, tracked below). But the passive-opponent cushion that margin has to work with just shrank by two-thirds, purely as a side effect of fixing Economic Liberalization and Education's imbalance, not a deliberate rebalancing decision aimed at the win margin itself. Worth being aware of before treating ~19 seats as a comfortable passive-play buffer: it's roughly back in the range of the original ~6-seat figure this document had before the rally-token values were finalized, not the wide ~61-seat margin confirmed as intentional in the previous session. Whether ~19 is still wide enough once a real adversarial opponent is modeled is now a more live question than it was an hour ago.</p>
   </div>
 
   <div class="example">
     <p class="label">Agenda pick quality swings harder than the winning margin</p>
-    <p>Full 24-policy ranking now computed (see the Agenda section above): national seat-equivalent ranges from <b>+51.8</b> (Economic Liberalization, best) down to <b>−20.3</b> (Secularism, now the actual worst pick, having overtaken pre-fix National Defense's old −25.3 once that policy was fixed) — a ~72-seat swing from a single agenda slot, against a margin that's no longer razor-thin (see above) but is still large relative to it. Nine of the 24 defined policies are net-negative nationally and none of them have had an individual audit the way National Defense got — worth doing before treating the roster as balanced.</p>
+    <p>Full 24-policy ranking now computed (see the Agenda section above): national seat-equivalent ranges from <b>+33.0</b> (Education, best, post-rebalance) down to <b>−20.3</b> (Secularism, the worst pick, having overtaken pre-fix National Defense's old −25.3 once that policy was fixed) — a ~53-seat swing from a single agenda slot, against a margin that's now down to ~19 seats (see above) — the swing is close to <i>3× the entire margin</i>, meaning agenda pick quality alone can plausibly decide a match on its own. Eight of the 24 defined policies are net-negative nationally; Hindi Language has now had the individual audit the way National Defense (and Economic Liberalization/Education/Digital Transformation) got, but the other seven negative picks haven't — worth doing before treating the roster as balanced.</p>
   </div>
 </section>
 
@@ -610,12 +674,13 @@ payout(group) = 5 × sum(state.seats for state in group.members)     // Cr
   <p class="section-note">Everything else in this document — the redistribution rule, all category pipelines, the price scale, the group payout formula, the private-agenda model — is decided. These aren't yet.</p>
   <div class="open-card">
     <ul>
-      <li><b>Individual special-power balance numbers</b> across the 20-entry roster — Rajinikanth flagged by name as needing a pass; the roster hasn't had a full cost/benefit audit. Now confirmed to include costing the 6-token Special Powerup craft, since that craft <i>is</i> how a politician's unique power gets activated, not a separate mechanic.</li>
-      <li><b>Per-region magnitude tuning</b> — <code>tagEffects</code> (see Agenda section above) still defaults every region to its policy's old shared <code>baseMagnitude</code>; the real point of the redesign — different regions reacting with different strength to the same policy — needs an actual hand-tuning pass, plus migrating <code>data/policy-tags.json</code> to the new shape.</li>
-      <li><b>Auditing the 9 net-negative policies for real vs. accidental polarization</b> — worth doing alongside the tuning pass above, to catch any accidental tag overlaps (the pre-fix National Defense pattern) hiding among deliberate ones.</li>
-      <li><b>Privatization is orphaned</b> — defined with a real, positive effect (+7.0 seat-equivalent) but not assigned to any of the 20 politicians, so it's currently unreachable in play. Decide whether to give it to a politician or drop it from the file.</li>
-      <li><b>Two-active-player seat ceiling</b> — every plausibility number above assumes a passive opponent, and best-case play now clears 272 by ~61 seats against that ghost. Design intent (confirmed 2026-07-22): a real adversarial opponent should whittle this back down toward 272, not leave the same wide margin — nobody has modeled the two-active-player case yet to confirm it actually lands there rather than overshooting into a blowout or undershooting into hung-parliament territory.</li>
-      <li><b>Hung-parliament resolution</b> — given the above, worth deciding whether "neither player reaches 272" should stay a null/no-winner result, or resolve some other way (plurality tiebreak, a scored secondary-objective system). Not decided either way yet; flagged here as a live open question, not settled either direction.</li>
+      <li><b>Individual special-power balance numbers</b> — 6 of 20 reworked and Vajpayee's reviewed-and-kept 2026-07-22 (see Special Powers section above): Tendulkar, Hema Malini, Rajinikanth, Kejriwal, Nitish Kumar, and Nehru all had a real structural flaw (zero-cost loopholes, an undefined severe permanent cost, or value contingent entirely on opponent behavior) and now have concrete numbers. The other 13 still need the same pass — most don't have a bug, just no assigned magnitude yet (e.g. "Large one-time funds boost" with no number). Includes costing the 6-token Special Powerup craft, since that craft <i>is</i> how a politician's unique power gets activated, not a separate mechanic.</li>
+      <li><b>Per-region magnitude tuning</b> — the <code>tagEffects</code> schema migration is done (see Agenda section above), but every region still defaults to its policy's old shared 12/8/4 magnitude; the real point of the redesign — different regions reacting with different strength to the same policy — still needs an actual hand-tuning pass. Re-run <code>recompute_policy_ranking.js</code> after any tuning edit rather than re-deriving the ranking table by hand.</li>
+      <li><b>Auditing the remaining net-negative policies for real vs. accidental polarization</b> — Hindi Language (accidental cancellation, fixed) and Digital Transformation (genuine skew, rebalanced) have had this audit; Land Reforms, Public Sector, Uniform Civil Code, Caste Reservation, Indigenous Rights, Agricultural Reforms, and Secularism still haven't — worth doing alongside the tuning pass above, to catch any accidental tag overlaps (the pre-fix National Defense pattern) hiding among deliberate ones.</li>
+      <li><s><b>Privatization is orphaned</b></s> — resolved 2026-07-22, given to Vajpayee (see Agenda section above).</li>
+      <li><b>Seat-equivalent numbers still need the rest of the rebalancing pass</b> — Economic Liberalization, Education, Hindi Language, and Digital Transformation were fixed 2026-07-22 (see above); the other 20 policies still default to the old flat 12/8/4 magnitude and aren't fully trusted as final. Re-run <code>recompute_policy_ranking.js</code> and re-check the plausibility numbers (also above — sensitive to agenda seat-equivalents) after any further tuning edit.</li>
+      <li><b>Two-active-player seat ceiling</b> — every plausibility number above assumes a passive opponent, and best-case play now clears 272 by only <b>~19 seats</b> against that ghost (down from ~61, after the Economic Liberalization/Education fix — see the Plausibility section above). Design intent (confirmed 2026-07-22, before that fix): a real adversarial opponent should whittle the margin back down toward 272, not leave the same wide cushion — but with the passive-opponent cushion now much narrower to begin with, nobody has modeled the two-active-player case yet to confirm whether it still lands near 272 or tips into hung-parliament territory instead.</li>
+      <li><s><b>Hung-parliament resolution</b></s> — decided 2026-07-22, see the Core loop section below.</li>
     </ul>
   </div>
 </section>

@@ -72,7 +72,7 @@
         { "name": "Infrastructure", "bonus": 40 },
         { "name": "National Defense", "bonus": 40 },
         { "name": "Hindi Language", "bonus": 30 },
-        { "name": "Economic Liberalization", "bonus": 30 }
+        { "name": "Privatization", "bonus": 30 }
       ],
       "specialPower": {
         "name": "Pokhran Test",
@@ -96,8 +96,8 @@
       ],
       "specialPower": {
         "name": "Anti-Corruption Raid",
-        "effect": "Voids one opponent agenda commitment, refunds their spend",
-        "cost": "Instantly forfeit any rally tokens currently held"
+        "effect": "Robs the opponent of 50% of their cash on hand",
+        "cost": "-15% popularity in the opponent's home state"
       }
     },
     {
@@ -136,8 +136,8 @@
       ],
       "specialPower": {
         "name": "Alliance Switch",
-        "effect": "Copies the effect of the opponent's last-used agenda",
-        "cost": "-5% popularity nationwide"
+        "effect": "+7% popularity nationwide for you, -7% popularity nationwide for your opponent",
+        "cost": "Instant 1,000 Cr funds cost + 2 rally tokens, deducted on activation"
       }
     },
     {
@@ -196,8 +196,8 @@
       ],
       "specialPower": {
         "name": "Non-Alignment",
-        "effect": "Blocks the next special power the opponent tries to use (standing shield, no time limit)",
-        "cost": "Instant funds penalty on activation"
+        "effect": "If the opponent hasn't used their special power yet, it is secretly nullified — they don't find out until they try to activate it, after already spending the tokens to craft it. If the opponent has already used their special power, gain a flat 2,000 Cr instead.",
+        "cost": "None"
       }
     },
     {
@@ -357,7 +357,7 @@
       "specialPower": {
         "name": "National Icon",
         "effect": "Flat popularity boost split across all states",
-        "cost": "Usable only in the game's final phase"
+        "cost": "Instant 1,000 Cr funds cost, deducted on activation — requires holding at least 1,000 Cr to activate; usable any phase"
       }
     },
     {
@@ -376,8 +376,8 @@
       ],
       "specialPower": {
         "name": "Star Power Rally",
-        "effect": "Popularity boost in home state + one adjacent state",
-        "cost": "Only usable while below national-average popularity"
+        "effect": "+5% popularity nationwide",
+        "cost": "Instant 500 Cr funds cost, deducted on activation — requires holding at least 500 Cr to activate; usable any phase"
       }
     },
     {
@@ -396,8 +396,8 @@
       ],
       "specialPower": {
         "name": "Thalaivar Announcement",
-        "effect": "Massive one-time nationwide popularity surge",
-        "cost": "Permanently locks your other 4 agendas for the rest of the game"
+        "effect": "+20% popularity in South India and Maharashtra (Bollywood)",
+        "cost": "Instant 2,000 Cr funds cost, deducted on activation — requires holding at least 2,000 Cr to activate; usable any phase"
       }
     }
   ]

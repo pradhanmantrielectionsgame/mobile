@@ -1,168 +1,76 @@
 {
   "policyTags": {
     "Education": {
-      "tier": 1,
-      "baseMagnitude": 12,
-      "supportTags": ["Education", "Manufacturing"],
-      "opposeTags": []
+      "tagEffects": { "Education": 8, "Manufacturing": 8 }
     },
     "Rural Development": {
-      "tier": 2,
-      "baseMagnitude": 8,
-      "supportTags": ["AgriculturalRegion", "EasternBorder"],
-      "opposeTags": ["IndustrialCorridor", "Manufacturing"]
+      "tagEffects": { "AgriculturalRegion": 8, "EasternBorder": 8, "IndustrialCorridor": -8, "Manufacturing": -8 }
     },
     "Women's Empowerment": {
-      "tier": 2,
-      "baseMagnitude": 8,
-      "supportTags": [],
-      "opposeTags": [],
       "nationwideBonus": 4
     },
     "Healthcare": {
-      "tier": 1,
-      "baseMagnitude": 12,
-      "supportTags": [],
-      "opposeTags": [],
       "nationwideBonus": 4
     },
     "Land Reforms": {
-      "tier": 2,
-      "baseMagnitude": 8,
-      "supportTags": ["AgriculturalRegion", "TribalLands"],
-      "opposeTags": ["IndustrialCorridor", "Manufacturing"]
+      "tagEffects": { "AgriculturalRegion": 8, "TribalLands": 8, "IndustrialCorridor": -8, "Manufacturing": -8 }
     },
     "Agricultural Reforms": {
-      "tier": 2,
-      "baseMagnitude": 8,
-      "supportTags": ["AgriculturalRegion"],
-      "opposeTags": ["IndustrialCorridor", "Manufacturing"]
+      "tagEffects": { "AgriculturalRegion": 8, "IndustrialCorridor": -8, "Manufacturing": -8 }
     },
     "Water and Mineral Rights": {
-      "tier": 3,
-      "baseMagnitude": 4,
-      "supportTags": ["AgriculturalRegion", "TribalLands", "NaturalResources"],
-      "opposeTags": ["IndustrialCorridor", "Manufacturing"]
+      "tagEffects": { "AgriculturalRegion": 4, "TribalLands": 4, "NaturalResources": 4, "IndustrialCorridor": -4, "Manufacturing": -4 }
     },
     "Infrastructure": {
-      "tier": 3,
-      "baseMagnitude": 4,
-      "supportTags": ["IndustrialCorridor", "Manufacturing"],
-      "opposeTags": ["TribalLands", "AgriculturalRegion"]
+      "tagEffects": { "IndustrialCorridor": 4, "Manufacturing": 4, "TribalLands": -4, "AgriculturalRegion": -4 }
     },
     "Economic Liberalization": {
-      "tier": 1,
-      "baseMagnitude": 12,
-      "supportTags": ["IndustrialCorridor", "Manufacturing", "CoastalIndia"],
-      "opposeTags": ["AgriculturalRegion"]
+      "tagEffects": { "IndustrialCorridor": 12, "Manufacturing": 12, "CoastalIndia": 12, "AgriculturalRegion": -12, "TribalLands": -8, "NaturalResources": -8 }
     },
     "Privatization": {
-      "tier": 3,
-      "baseMagnitude": 4,
-      "supportTags": ["IndustrialCorridor", "Manufacturing"],
-      "opposeTags": ["AgriculturalRegion"]
+      "tagEffects": { "IndustrialCorridor": 4, "Manufacturing": 4, "AgriculturalRegion": -4 }
     },
     "Public Sector": {
-      "tier": 3,
-      "baseMagnitude": 4,
-      "supportTags": ["AgriculturalRegion"],
-      "opposeTags": ["IndustrialCorridor", "Manufacturing"]
+      "tagEffects": { "AgriculturalRegion": 4, "IndustrialCorridor": -4, "Manufacturing": -4 }
     },
     "Digital Transformation": {
-      "tier": 3,
-      "baseMagnitude": 4,
-      "supportTags": ["Education", "IndustrialCorridor"],
-      "opposeTags": ["AgriculturalRegion", "Pilgrimage", "TribalLands"]
+      "tagEffects": { "Education": 8, "IndustrialCorridor": 8, "AgriculturalRegion": -4, "Pilgrimage": -4, "TribalLands": -4 }
     },
     "Anti-Corruption": {
-      "tier": 2,
-      "baseMagnitude": 8,
-      "supportTags": [],
-      "opposeTags": [],
       "nationwideBonus": 4
     },
     "Judicial Activism": {
-      "tier": 3,
-      "baseMagnitude": 4,
-      "supportTags": ["Education", "IndustrialCorridor"],
-      "opposeTags": []
+      "tagEffects": { "Education": 4, "IndustrialCorridor": 4 }
     },
     "Press Freedom": {
-      "tier": 3,
-      "baseMagnitude": 4,
-      "supportTags": ["Education", "MinorityAreas"],
-      "opposeTags": []
+      "tagEffects": { "Education": 4, "MinorityAreas": 4 }
     },
     "Law and Order": {
-      "tier": 3,
-      "baseMagnitude": 4,
-      "supportTags": ["EasternBorder", "WesternBorder", "IndustrialCorridor"],
-      "opposeTags": ["MinorityAreas", "TravelAndTourism"]
+      "tagEffects": { "EasternBorder": 4, "WesternBorder": 4, "IndustrialCorridor": 4, "MinorityAreas": -4, "TravelAndTourism": -4 }
     },
     "Hindi Language": {
-      "tier": 2,
-      "baseMagnitude": 8,
-      "supportTags": ["HindiHeartland"],
-      "opposeTags": ["SouthIndia", "EasternBorder", "MinorityAreas"]
+      "tagEffects": { "HindiHeartland": 8, "SouthIndia": -8, "EasternBorder": -4, "MinorityAreas": -8 }
     },
     "Hindutva": {
-      "tier": 1,
-      "baseMagnitude": 12,
-      "supportTags": ["HindiHeartland", "Pilgrimage"],
-      "opposeTags": ["MinorityAreas", "SouthIndia", "EasternBorder"]
+      "tagEffects": { "HindiHeartland": 12, "Pilgrimage": 12, "MinorityAreas": -12, "SouthIndia": -12, "EasternBorder": -12 }
     },
     "Secularism": {
-      "tier": 1,
-      "baseMagnitude": 12,
-      "supportTags": ["MinorityAreas", "Education"],
-      "opposeTags": ["HindiHeartland", "Pilgrimage"]
+      "tagEffects": { "MinorityAreas": 12, "Education": 12, "HindiHeartland": -12, "Pilgrimage": -12 }
     },
     "Indigenous Rights": {
-      "tier": 2,
-      "baseMagnitude": 8,
-      "supportTags": ["TribalLands", "EasternBorder"],
-      "opposeTags": ["IndustrialCorridor", "Manufacturing"]
+      "tagEffects": { "TribalLands": 8, "EasternBorder": 8, "IndustrialCorridor": -8, "Manufacturing": -8 }
     },
     "Caste Reservation": {
-      "tier": 1,
-      "baseMagnitude": 12,
-      "supportTags": ["HindiHeartland"],
-      "opposeTags": ["Education", "MinorityAreas"]
+      "tagEffects": { "HindiHeartland": 12, "Education": -12, "MinorityAreas": -12 }
     },
     "Uniform Civil Code": {
-      "tier": 1,
-      "baseMagnitude": 12,
-      "supportTags": ["HindiHeartland"],
-      "opposeTags": ["MinorityAreas", "EasternBorder"]
+      "tagEffects": { "HindiHeartland": 12, "MinorityAreas": -12, "EasternBorder": -12 }
     },
     "State's Rights": {
-      "tier": 2,
-      "baseMagnitude": 8,
-      "supportTags": ["SouthIndia", "EasternBorder"],
-      "opposeTags": ["HindiHeartland"]
+      "tagEffects": { "SouthIndia": 8, "EasternBorder": 8, "HindiHeartland": -8 }
     },
     "National Defense": {
-      "tier": 1,
-      "baseMagnitude": 12,
-      "supportTags": ["EasternBorder", "WesternBorder"],
-      "opposeTags": ["CoastalIndia"]
-    }
-  },
-  "tierDefinitions": {
-    "1": {
-      "name": "Mega Policy",
-      "description": "Major transformative policies with highest impact",
-      "defaultBaseMagnitude": 12
-    },
-    "2": {
-      "name": "Major Policy", 
-      "description": "Significant policies with moderate impact",
-      "defaultBaseMagnitude": 8
-    },
-    "3": {
-      "name": "Standard Policy",
-      "description": "Regular policies with smaller impact",
-      "defaultBaseMagnitude": 4
+      "tagEffects": { "EasternBorder": 12, "WesternBorder": 12, "CoastalIndia": -12 }
     }
   }
 }

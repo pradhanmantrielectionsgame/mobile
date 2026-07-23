@@ -5,7 +5,7 @@
 //
 // Verifies every state-group / region-tag field name referenced in js/*.js, index.html,
 // and design/prototypes/*.html actually exists as a key on states_data.json's state
-// records — and that every policy-tags.json supportTags/opposeTags entry does too.
+// records — and that every policy-tags.json tagEffects entry does too.
 // Run after any states_data.json / policy-tags.json field rename or removal.
 
 const fs = require('fs');
@@ -27,9 +27,9 @@ const canonicalFields = new Set(
 
 const problems = [];
 
-// 1. policy-tags.json supportTags/opposeTags must reference real fields
+// 1. policy-tags.json tagEffects must reference real fields
 for (const [policyName, def] of Object.entries(policyTags.policyTags)) {
-  for (const tag of [...(def.supportTags || []), ...(def.opposeTags || [])]) {
+  for (const tag of Object.keys(def.tagEffects || {})) {
     if (!canonicalFields.has(tag)) {
       problems.push(`policy-tags.json: "${policyName}" references unknown field "${tag}"`);
     }
