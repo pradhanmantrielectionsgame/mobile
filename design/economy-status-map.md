@@ -149,7 +149,7 @@ footer{ border-top:1px solid var(--rule-strong); padding-top:20px; color:var(--i
 <header>
   <p class="eyebrow">Design reference · single source of truth</p>
   <h1>What Pradhan Mantri Elections Mobile is supposed to do</h1>
-  <p class="subtitle">Every finalized mechanic, formula, and number in the game's design, consolidated from <code>design/plan.md</code>, <code>CHANGELOG.md</code>, <code>findings.md</code>, and direct design decisions — in one place, so the build cycle has a single document to target instead of four. As of 2026-07-22, everything marked <span class="pill decided" style="vertical-align:1px;">decided</span> is settled and should be built to; anything else is flagged with exactly what's still missing.</p>
+  <p class="subtitle">Every finalized mechanic, formula, and number in the game's design, consolidated from <code>design/plan.md</code>, <code>CHANGELOG.md</code>, <code>findings.md</code>, and direct design decisions — in one place, so the build cycle has a single document to target instead of four. As of 2026-07-23, everything marked <span class="pill decided" style="vertical-align:1px;">decided</span> is settled and should be built to; anything else is flagged with exactly what's still missing.</p>
 </header>
 
 <section id="legend">
@@ -182,7 +182,7 @@ footer{ border-top:1px solid var(--rule-strong); padding-top:20px; color:var(--i
     </div>
     <div class="flow-card">
       <h3>🗺️ Seats</h3>
-      <div class="step decided">state seats = round(popularity% × state's Lok Sabha seats) — proportional, not winner-take-all</div>
+      <div class="step decided">state seats = largest-remainder apportionment of popularity% across state's Lok Sabha seats — proportional, not winner-take-all</div>
       <div class="arrow">↓</div>
       <div class="step decided">whoever clears <b>272 of 543</b> nationally wins; both under 272 = hung parliament</div>
     </div>
@@ -191,6 +191,27 @@ footer{ border-top:1px solid var(--rule-strong); padding-top:20px; color:var(--i
   <div class="example">
     <p class="label">Hung parliament resolution — decided 2026-07-22</p>
     <p>Neither player reaching 272 resolves differently depending on who Player 2 actually is (see <code>docs/adr/0001-player2-matchmaking-fallback.md</code> — Player 2 is either a matched human or an AI fallback, decided per match): a hung parliament against a <b>human</b> opponent counts as a <b>draw</b>; a hung parliament against the <b>AI</b> fallback counts as a <b>loss</b> for the human player. No plurality tiebreak, no secondary-objective scoring — the human is simply held to a higher bar than a draw when the opponent is a bot, since failing to beat the AI outright shouldn't be rewarded the same as fighting a real opponent to a stalemate.</p>
+  </div>
+
+  <div class="example warn">
+    <p class="label">Seat-conversion rounding — decided 2026-07-23, replaces plain round()</p>
+    <p>Rounding P1's and P2's seat shares independently (plain <code>round(popularity% × seats)</code>) can over-allocate a state: if two of the three shares (P1, P2, Others) each have a fractional remainder ≥0.5, both round up and the state hands out more seats than it has. Concrete break: a 3-seat state at P1 50% / P2 25% / Others 25% gives quotas of 1.5 / 0.75 / 0.75 — independent rounding gives 2 / 1 / 1 = <b>4 seats from a 3-seat state</b>. Fixed by switching to <b>largest-remainder apportionment</b> (Hamilton's method — the same algorithm real electoral systems use for proportional seat allocation): give every side its <code>floor(quota)</code> first, then hand out the state's leftover seats (state total minus the sum of floors — always a small non-negative integer, since the three quotas always sum exactly to the state's seat count) one at a time to whoever has the largest fractional remainder. Same example, correctly: floors are 1 / 0 / 0 (1 seat handed out), 2 leftover seats go to the two largest remainders (P2's 0.75, Others' 0.75, tied over P1's 0.5) → final 1 / 1 / 1, summing exactly to 3. Only P1's and P2's resulting seat counts matter for the win condition — Others still has to go through the same apportionment as a third party purely so the arithmetic reconciles; its seat count is never shown anywhere.</p>
+    <div class="table-wrap"><pre style="background:var(--paper);border:none;border-radius:0;margin:0;padding:12px 14px;font-family:var(--mono);font-size:12px;line-height:1.65;color:var(--ink);white-space:pre-wrap;">apportionSeats(state):
+  for each of P1, P2, Others:
+    quota[x]  = pop_bps[x] × state.seats / 10000     // these three always sum exactly
+                                                       // to state.seats — guaranteed by
+                                                       // the bps redistribution rule
+    floor[x]  = floor(quota[x])
+    remainder[x] = quota[x] − floor[x]
+
+  leftover = state.seats − (floor[P1] + floor[P2] + floor[Others])
+             // always 0, 1, or 2 — never more than (number of shares − 1)
+
+  give 1 extra seat each to the `leftover` shares with the largest remainder[x]
+  // tie-break, deterministic: higher pop_bps wins; if still tied, fixed
+  // order P1 > P2 > Others
+
+  seats[x] = floor[x] + (1 if x got an extra seat, else 0)</pre></div>
   </div>
 
   <h3>Starting position</h3>
@@ -399,6 +420,10 @@ boost_bps(tapNumberInThisState) =
     <p><b>+5% nationwide</b>, applied to every state simultaneously — reusing the same per-token anchor as the regular boost above rather than inventing a new number. Using the same nationwide-conversion logic as the policy-tags fix (2% nationwide ≈ 10.9 seat-equivalent), 5% nationwide ≈ <b>27 seat-equivalent</b> — in the same range as the pool's best single agenda (Education, +33.0 post-rebalance; was Economic Liberalization at +51.8 before that fix, which would have made this comparison read "roughly half" instead), which feels proportionate given Nationwide Rally costs 60% of a player's entire lifetime token budget (12 of 20) and has to be started almost immediately (6-phase minimum craft time in a 10-phase game). The breadth itself is the real reward: 12 tokens spent individually could never reach more than ~6 states before hitting the 2-per-state cap, so the sweep covers ground manual play structurally cannot.</p>
   </div>
   <div class="example">
+    <p class="label">Per-state token cap is shared, not per-player — deliberate, confirmed 2026-07-23</p>
+    <p>The 2-plays-per-state cap is a shared lifetime pool, not 2-per-player — so a player can burn both slots on a state early specifically to permanently deny the other side any token access there, not just to boost it. Confirmed intentional: the denial play is symmetric — either player can do it, to any state, including ones the opponent hasn't touched yet — so it's a real tactical option available equally to both sides, not a one-sided exploit. Same category of deliberate asymmetric-cost tactic as "sabotage is cheaper than conquest" in Regional Dominance, above.</p>
+  </div>
+  <div class="example">
     <p class="label">Implementation notes</p>
     <div class="table-wrap"><pre style="background:var(--paper);border:none;border-radius:0;margin:0;padding:12px 14px;font-family:var(--mono);font-size:12px;line-height:1.65;color:var(--ink);white-space:pre-wrap;">simpleTokenBoost_bps    = 500     // +5%, flat, no decay, per state per play
 nationwideRallyBoost_bps = 500    // +5%, flat, applied to every state at once
@@ -420,6 +445,8 @@ nationwideRallyBoost_bps = 500    // +5%, flat, applied to every state at once
     <div class="flow-card">
       <h3>⚙️ Effect</h3>
       <div class="step gap">redesigned 2026-07-22 — each policy sets its own support/oppose strength <i>per region it touches</i>, not one shared strength for the whole policy. See "How the effect formula actually works" below — decided, not yet migrated into <code>data/policy-tags.json</code>.</div>
+      <div class="arrow">↓</div>
+      <div class="step decided">confirmed 2026-07-23 — each of the 4 taps applies exactly ¼ of the state's net effect, immediately, through the redistribution engine — not held back until 100% completion</div>
       <div class="arrow">↓</div>
       <div class="step decided">not contested between players — each player funds only their own 4, no shared race, no way to "win" a policy out from under an opponent</div>
     </div>
@@ -460,12 +487,23 @@ nationwideRallyBoost_bps = 500    // +5%, flat, applied to every state at once
     <div class="table-wrap"><pre style="background:var(--paper);border:none;border-radius:0;margin:0;padding:12px 14px;font-family:var(--mono);font-size:12px;line-height:1.65;color:var(--ink);white-space:pre-wrap;">costPerTap = 500                        // Cr, flat, any policy
 completionPerTap = 25%                  // 4 taps = fully maxed
 
-effect(state, policy) =
+netEffect(state, policy) =
   if policy.nationwideBonus is set:  apply it flat, uniformly, to every state
   else:                              Σ policy.tagEffects[tag] for every tag the state has
   // this Σ is the single net value — see #pot "net first, apply once":
-  // it is computed once per state and fed through the redistribution engine
-  // exactly once, never applied tag-by-tag as separate transactions.
+  // it is computed once per state, then divided across taps as below —
+  // never applied tag-by-tag as separate transactions.
+
+perTapEffect(state, policy) = netEffect(state, policy) / 4
+  // decided 2026-07-23: each of the 4 taps fires perTapEffect through the
+  // redistribution engine immediately (gain path if positive, loss path if
+  // negative) — proration is per tap, not withheld until 100% completion.
+  // Mechanically identical to how investment taps already work (a sequence
+  // of discrete boosts, each independently redistribution-capped), just flat
+  // magnitude instead of decaying, and costs 500 Cr/tap instead of scaling
+  // with seats. This is also why "hoard and burst-commit late" (see Agenda
+  // section above) is a real trade-off and not a no-op: delaying a tap
+  // delays exactly when its 1/4 share of the effect actually lands.
 
 // tagEffects (migrated 2026-07-22): one signed magnitude per region, e.g.
 // National Defense = { EasternBorder: 12, WesternBorder: 12, CoastalIndia: -12 }.
@@ -600,9 +638,9 @@ payout(group) = 5 × sum(state.seats for state in group.members)     // Cr
       <tr><td class="feat">Sachin Tendulkar</td><td>National Icon</td><td>Cost was a timing gate ("final phase only") — a free power once phase 10 arrived, no real sacrifice.</td><td>Any phase; requires holding ≥1,000 Cr; costs a flat 1,000 Cr instantly.</td></tr>
       <tr><td class="feat">Hema Malini</td><td>Star Power Rally</td><td>Cost was an eligibility condition ("only below national average") — free whenever usable.</td><td>+5% popularity nationwide; requires holding ≥500 Cr; costs 500 Cr instantly.</td></tr>
       <tr><td class="feat">Rajinikanth</td><td>Thalaivar Announcement</td><td>Undefined "massive" benefit against a uniquely severe, permanent cost (locked all 4 remaining agendas for the rest of the game) — the roster's flagged outlier.</td><td>+20% popularity in South India + Maharashtra; requires holding ≥2,000 Cr; costs 2,000 Cr instantly.</td></tr>
-      <tr><td class="feat">Arvind Kejriwal</td><td>Anti-Corruption Raid</td><td>Cost was "forfeit rally tokens currently held" — zero if holding none, gameable by spending down first.</td><td>Robs the opponent of 50% of their cash on hand, at a fixed cost of −15% popularity in the opponent's home state.</td></tr>
+      <tr><td class="feat">Arvind Kejriwal</td><td>Anti-Corruption Raid</td><td>Cost was "forfeit rally tokens currently held" — zero if holding none, gameable by spending down first.</td><td>Robs the opponent of 50% of their cash on hand; costs the <b>activating player</b> 15 points of their own popularity share, taken specifically in the opponent's home state — not a hit to the opponent's popularity, a real sacrifice of your own foothold there. Confirmed 2026-07-23 (the wording reads ambiguously enough that it's worth spelling out explicitly here).</td></tr>
       <tr><td class="feat">Nitish Kumar</td><td>Alliance Switch</td><td>Value entirely contingent on the opponent's last agenda — worth nothing if they hadn't played one, wildly variable otherwise.</td><td>+7% popularity nationwide for you, −7% for the opponent; costs 1,000 Cr + 2 rally tokens.</td></tr>
-      <tr><td class="feat">Jawaharlal Nehru</td><td>Non-Alignment</td><td>"Blocks the opponent's next special power" — worthless if they'd already used theirs.</td><td>If unused, secretly nullifies the opponent's power (they don't find out until they've already spent the tokens to craft it); if already used, grants a flat 2,000 Cr instead. Deliberately zero direct cost — the only power in the roster without one.</td></tr>
+      <tr><td class="feat">Jawaharlal Nehru</td><td>Non-Alignment</td><td>"Blocks the opponent's next special power" — worthless if they'd already used theirs.</td><td>If unused, secretly nullifies the opponent's power (they don't find out until they've already spent the tokens to craft it); if already used, grants a flat 2,000 Cr instead. Deliberately zero direct cost beyond the shared 6-token craft — confirmed 2026-07-23: the payoff is variable and contingent on something the activating player doesn't control (whether the opponent has already used their power), and that built-in gamble is treated as the power's cost in place of a separate resource sacrifice. The only power in the roster without one.</td></tr>
     </tbody>
   </table>
   </div>
@@ -681,6 +719,7 @@ payout(group) = 5 × sum(state.seats for state in group.members)     // Cr
       <li><b>Seat-equivalent numbers still need the rest of the rebalancing pass</b> — Economic Liberalization, Education, Hindi Language, and Digital Transformation were fixed 2026-07-22 (see above); the other 20 policies still default to the old flat 12/8/4 magnitude and aren't fully trusted as final. Re-run <code>recompute_policy_ranking.js</code> and re-check the plausibility numbers (also above — sensitive to agenda seat-equivalents) after any further tuning edit.</li>
       <li><b>Two-active-player seat ceiling</b> — every plausibility number above assumes a passive opponent, and best-case play now clears 272 by only <b>~19 seats</b> against that ghost (down from ~61, after the Economic Liberalization/Education fix — see the Plausibility section above). Design intent (confirmed 2026-07-22, before that fix): a real adversarial opponent should whittle the margin back down toward 272, not leave the same wide cushion — but with the passive-opponent cushion now much narrower to begin with, nobody has modeled the two-active-player case yet to confirm whether it still lands near 272 or tips into hung-parliament territory instead.</li>
       <li><s><b>Hung-parliament resolution</b></s> — decided 2026-07-22, see the Core loop section below.</li>
+      <li><s><b>Seat-conversion rounding can drift the national total</b></s> — decided 2026-07-23, see the Core loop section above: switched to largest-remainder apportionment (Hamilton's method), guaranteeing P1 + P2 + Others always sums exactly to each state's seat count. Still worth a re-check once implemented against the plausibility numbers (above) — this changes the exact seat totals in edge cases, though not the shape of the ~19-seat margin finding.</li>
     </ul>
   </div>
 </section>
@@ -688,5 +727,6 @@ payout(group) = 5 × sum(state.seats for state in group.members)     // Cr
 <footer>
   <p style="margin:0 0 10px;">This document supersedes the narrower "economy status map" it started as — scope expanded 2026-07-22 to cover the full finalized design (core loop, win condition, starting position, and the politician/agenda roster), not just cost/boost numbers, per explicit request to keep one authoritative reference for the build cycle to target.</p>
   <p style="margin:0 0 10px;">Implementation note (carried over): <code>phase-system.js</code> used to fetch <code>game-config.json</code> independently of the rest of the app — that's why its fallback default had drifted to 500/phase against the real 1,000. Removed; it now shares <code>config-manager.js</code>'s <code>getGameConfig()</code> with every other system.</p>
-  <p style="margin:0;" class="source-note">Sources: <code>design/plan.md</code>, <code>CHANGELOG.md</code> (decisions D1–D9, two unrelated series), <code>findings.md</code>, ADR-0004/0005, direct design decisions made 2026-07-22 (National Defense fix, nationwideBonus field), <code>data/policy-tags.json</code>, <code>data/politicians-data.json</code>, <code>data/states_data.json</code>, desktop <code>js/*.js</code> (cited via <code>findings.md</code>) vs. mobile <code>data/game-config.json</code> + <code>js/investment-system.js</code> + <code>js/phase-system.js</code>. <code>check_data_consistency.js</code> run 2026-07-22 after the policy-tags.json edits: clean (3 pre-existing, unrelated implementation-gap failures — <code>NortheastIndia</code>/<code>BorderLands</code> stale references, tracked separately as build status, not design status).</p>
+  <p style="margin:0 0 10px;">2026-07-23 design-review pass: clarified Kejriwal's Anti-Corruption Raid cost (paid by the activating player, in the opponent's home state — not a hit to the opponent), confirmed Nehru's Non-Alignment has no separate resource cost because its variable payoff is itself the cost, decided agenda effects apply ¼ per tap rather than only at 100% completion, confirmed the shared per-state rally-token cap's denial dynamic is deliberate and symmetric, and switched seat conversion from plain rounding to largest-remainder apportionment to eliminate national-total drift — see Core loop and Still Open.</p>
+  <p style="margin:0;" class="source-note">Sources: <code>design/plan.md</code>, <code>CHANGELOG.md</code> (decisions D1–D9, two unrelated series), <code>findings.md</code>, ADR-0004/0005, direct design decisions made 2026-07-22 (National Defense fix, nationwideBonus field) and 2026-07-23 (special-power cost clarifications, agenda per-tap proration, rally-token denial confirmation, largest-remainder seat apportionment), <code>data/policy-tags.json</code>, <code>data/politicians-data.json</code>, <code>data/states_data.json</code>, desktop <code>js/*.js</code> (cited via <code>findings.md</code>) vs. mobile <code>data/game-config.json</code> + <code>js/investment-system.js</code> + <code>js/phase-system.js</code>. <code>check_data_consistency.js</code> run 2026-07-22 after the policy-tags.json edits: clean (3 pre-existing, unrelated implementation-gap failures — <code>NortheastIndia</code>/<code>BorderLands</code> stale references, tracked separately as build status, not design status).</p>
 </footer>

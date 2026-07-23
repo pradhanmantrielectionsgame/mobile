@@ -21,9 +21,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - **CREATED**: `recompute_policy_ranking.js` — one-shot script computing full 24-policy seat-equivalent ranking from `tagEffects` + `states_data.json`
 
 #### Design & Documentation
-- **REVISED**: `design/economy-status-map.md` — three separate revisions consolidating hung-parliament resolution, `tagEffects` migration notes, net-first-apply-once redistribution rule with worked examples, updated ranking table (3 final iterations), plausibility recompute, and special-powers rework audit table
-- **UPDATED**: `CLAUDE.md` — added 3 new durable game-design rules (net-first-apply-once, special-power cost must be real sacrifice, accidental-tag-overlap audit discipline) plus corrected 2 stale facts (tier→tagEffects migration clarification, Privatization now assigned)
-- **DOCUMENTED**: `findings.md` — 4 new entries (2026-07-23) covering the policy rebalancing decisions and implication scoping
+- **REVISED**: `design/economy-status-map.md` — consolidating hung-parliament resolution, `tagEffects` migration notes, net-first-apply-once redistribution rule with worked examples, updated ranking table (3 final iterations), plausibility recompute, and special-powers rework audit table, plus follow-up refinements:
+  - **C1**: Tightened Kejriwal's Anti-Corruption Raid cost wording (clarified −15% popularity cost is paid by activating player, not opponent)
+  - **C2**: Added rationale to Nehru's Non-Alignment power (variable/opponent-contingent payoff is itself the cost)
+  - **C3**: Decided agenda effects apply exactly 1/4 of net effect per tap, immediately (not withheld until 100% completion)
+  - **C4**: Added note confirming rally token per-state cap's denial dynamic (shared, not per-player, lifetime cap) is deliberate and symmetric
+  - **C5**: Replaced seat-conversion formula (plain round() → largest-remainder apportionment / Hamilton's method) with worked example and pseudocode
+  - **C6**: Updated "Still open" list (struck seat-rounding as resolved), header date (2026-07-23), footer decision log/sources
+- **UPDATED**: `CLAUDE.md` — added 3 new durable game-design rules (net-first-apply-once, special-power cost must be real sacrifice, accidental-tag-overlap audit discipline) plus:
+  - **C7**: Generalized bps "round one, derive the other" rule to N-way conversion of shares into whole units, referencing largest-remainder apportionment (Hamilton's method) as canonical approach
+- **DOCUMENTED**: `findings.md` — 3 new entries (2026-07-23) covering seat-rounding discovery, agenda-timing gap discovery, and Kejriwal wording-ambiguity discovery
 
 #### Key Design Decisions Finalized
 - **[D1] Hung parliament tie resolution**: Draw vs. human opponent, Loss vs. AI fallback (incentivizes human multiplayer; ensures fairness in human-vs-human)
