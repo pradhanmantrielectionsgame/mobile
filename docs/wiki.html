@@ -1,0 +1,697 @@
+<title>Booth Ink Wiki — Pradhan Mantri Elections Mobile</title>
+<meta name="description" content="How the game works, how the code implements it, and where the two currently disagree.">
+<style>
+:root{
+  --paper:#EEECE1; --paper-raised:#FFFFFF; --ink:#1C1B2E; --ink-soft:#5B596E;
+  --rule:#DEDBCC; --rule-strong:#C9C5B0;
+  --accent:#4A3F8F; --accent-soft:#786CB8; --accent-tint:#ECEAF6; --accent-tint-strong:#DEDAF0;
+  --p1:#B9721C; --p2:#2F6E4E;
+  --verified-bg:#E3EFE5; --verified-fg:#2A6B48; --verified-line:#7FB894;
+  --flagged-bg:#F5E3E0; --flagged-fg:#96291F; --flagged-line:#CC8177;
+  --open-bg:#F5E9D2; --open-fg:#93650E; --open-line:#D2A24B;
+  --code-bg:#F5F3E9; --code-ink:#332F26;
+  --shadow: 0 1px 2px rgba(28,27,46,.06), 0 8px 24px -12px rgba(28,27,46,.18);
+  --serif: ui-serif, Georgia, "Iowan Old Style", "Times New Roman", serif;
+  --sans: -apple-system, "Segoe UI", system-ui, "Helvetica Neue", sans-serif;
+  --mono: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
+}
+:root[data-theme="dark"]{
+  --paper:#17151F; --paper-raised:#1E1C2A; --ink:#ECE9F2; --ink-soft:#A6A2BA;
+  --rule:#312D40; --rule-strong:#3F3A52;
+  --accent:#9C90E8; --accent-soft:#7A6FC4; --accent-tint:#241F38; --accent-tint-strong:#2C2645;
+  --p1:#E0A44E; --p2:#6FC79A;
+  --verified-bg:#1D2C22; --verified-fg:#8ED3A9; --verified-line:#3C5A46;
+  --flagged-bg:#2F1E1C; --flagged-fg:#E39A8F; --flagged-line:#6B3B34;
+  --open-bg:#2E2717; --open-fg:#E8BE72; --open-line:#5E4A28;
+  --code-bg:#1B1926; --code-ink:#D9D5E6;
+  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 30px -14px rgba(0,0,0,.6);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#17151F; --paper-raised:#1E1C2A; --ink:#ECE9F2; --ink-soft:#A6A2BA;
+    --rule:#312D40; --rule-strong:#3F3A52;
+    --accent:#9C90E8; --accent-soft:#7A6FC4; --accent-tint:#241F38; --accent-tint-strong:#2C2645;
+    --p1:#E0A44E; --p2:#6FC79A;
+    --verified-bg:#1D2C22; --verified-fg:#8ED3A9; --verified-line:#3C5A46;
+    --flagged-bg:#2F1E1C; --flagged-fg:#E39A8F; --flagged-line:#6B3B34;
+    --open-bg:#2E2717; --open-fg:#E8BE72; --open-line:#5E4A28;
+    --code-bg:#1B1926; --code-ink:#D9D5E6;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 30px -14px rgba(0,0,0,.6);
+  }
+}
+
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  background:var(--paper); color:var(--ink); font-family:var(--serif);
+  margin:0; line-height:1.6; font-size:16.5px;
+}
+::selection{background:var(--accent); color:var(--paper);}
+a{color:var(--accent);}
+code{font-family:var(--mono); font-size:.88em; background:var(--code-bg); color:var(--code-ink); padding:.12em .4em; border-radius:5px;}
+h1,h2,h3,h4{font-family:var(--sans); text-wrap:balance; color:var(--ink); line-height:1.22;}
+p{max-width:66ch;}
+.shell{display:flex; max-width:1280px; margin:0 auto; align-items:flex-start;}
+
+/* ---------- sidebar ---------- */
+.toc{
+  position:sticky; top:0; height:100vh; overflow-y:auto; flex:0 0 258px;
+  padding:28px 14px 60px 22px; font-family:var(--sans); font-size:13.5px;
+  border-right:1px solid var(--rule);
+}
+.toc .brand{display:flex; align-items:center; gap:9px; margin-bottom:22px;}
+.toc .brand .mark{
+  width:30px; height:30px; border-radius:7px; background:var(--accent); color:var(--paper);
+  display:flex; align-items:center; justify-content:center; font-family:var(--serif); font-weight:700; font-size:16px;
+  flex:none;
+}
+.toc .brand b{font-weight:700; font-size:14.5px; letter-spacing:-.01em;}
+.toc .brand span{display:block; font-size:10.5px; color:var(--ink-soft);}
+.toc-group{margin-bottom:20px;}
+.toc-group .eyebrow{
+  font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-soft);
+  font-weight:700; margin:0 0 7px 10px;
+}
+.toc-group a{
+  display:block; padding:6px 10px; border-radius:7px; color:var(--ink-soft); text-decoration:none;
+  border-left:2px solid transparent; font-size:13px;
+}
+.toc-group a:hover{background:var(--accent-tint); color:var(--ink);}
+.toc-group a.current{background:var(--accent-tint-strong); color:var(--accent); border-left-color:var(--accent); font-weight:600;}
+.toc-count{
+  display:inline-block; font-family:var(--mono); font-size:10px; background:var(--flagged-bg); color:var(--flagged-fg);
+  border-radius:100px; padding:1px 6px; margin-left:6px; vertical-align:1px;
+}
+#navToggle{display:none;}
+
+main{flex:1 1 auto; min-width:0; padding:44px clamp(20px,5vw,64px) 120px;}
+
+/* ---------- hero ---------- */
+.hero{border-bottom:1px solid var(--rule-strong); padding-bottom:30px; margin-bottom:40px;}
+.hero .eyebrow{
+  font-family:var(--sans); font-size:11.5px; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--accent-soft); font-weight:700; margin:0 0 10px;
+}
+.hero h1{font-size:clamp(30px,4.4vw,42px); font-weight:700; margin:0 0 12px; letter-spacing:-.015em;}
+.hero .sub{font-family:var(--serif); font-size:17.5px; color:var(--ink-soft); max-width:64ch; margin:0 0 20px;}
+.legend{display:flex; flex-wrap:wrap; gap:8px; font-family:var(--sans);}
+.pill{
+  display:inline-flex; align-items:center; gap:6px; font-size:11.5px; font-weight:700;
+  padding:4px 11px; border-radius:100px; letter-spacing:.01em; border:1px solid transparent;
+}
+.pill.verified{background:var(--verified-bg); color:var(--verified-fg); border-color:var(--verified-line);}
+.pill.flagged{background:var(--flagged-bg); color:var(--flagged-fg); border-color:var(--flagged-line);}
+.pill.open{background:var(--open-bg); color:var(--open-fg); border-color:var(--open-line);}
+.pill.audience{background:var(--accent-tint); color:var(--accent);}
+
+/* ---------- sections ---------- */
+section{margin-bottom:64px; scroll-margin-top:24px;}
+section > .kicker{
+  font-family:var(--sans); font-size:11px; letter-spacing:.13em; text-transform:uppercase;
+  color:var(--ink-soft); font-weight:700; margin:0 0 8px;
+}
+section > h2{font-size:26px; margin:0 0 6px; font-weight:700;}
+section > .dek{font-size:15.5px; color:var(--ink-soft); max-width:68ch; margin:0 0 26px; font-family:var(--sans);}
+h3{font-size:16px; font-weight:700; margin:30px 0 12px;}
+h4{font-size:13.5px; font-weight:700; margin:20px 0 8px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.04em;}
+
+/* ---------- flow / step cards (mechanics diagrams) ---------- */
+.flow-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:14px; margin:18px 0;}
+.flow-card{background:var(--paper-raised); border:1px solid var(--rule); border-radius:12px; padding:15px 15px 13px; box-shadow:var(--shadow);}
+.flow-card h4{margin:0 0 10px; text-align:center; color:var(--ink);}
+.step{border:1.5px solid var(--rule-strong); background:var(--paper); border-radius:8px; padding:9px 11px; font-family:var(--sans); font-size:12.8px; line-height:1.4; text-align:center;}
+.arrow{text-align:center; color:var(--ink-soft); font-size:14px; line-height:1; margin:4px 0;}
+
+/* ---------- worked examples ---------- */
+.example{border:1px solid var(--rule); border-left:3px solid var(--accent); background:var(--paper-raised); border-radius:9px; padding:16px 20px; margin:16px 0; box-shadow:var(--shadow);}
+.example .label{font-family:var(--sans); font-size:10.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--accent); font-weight:700; margin:0 0 9px;}
+.example p{margin:0 0 10px; font-size:15px;}
+.example p:last-child{margin-bottom:0;}
+
+/* ---------- tables ---------- */
+.table-wrap{overflow-x:auto; border:1px solid var(--rule); border-radius:10px; margin:14px 0; box-shadow:var(--shadow);}
+table{border-collapse:collapse; width:100%; min-width:460px; font-size:13.8px; font-family:var(--sans);}
+thead th{text-align:left; font-size:10px; letter-spacing:.07em; text-transform:uppercase; color:var(--ink-soft); background:var(--paper); padding:10px 14px; border-bottom:1px solid var(--rule-strong); white-space:nowrap;}
+tbody td{padding:9px 14px; border-bottom:1px solid var(--rule); vertical-align:top; background:var(--paper-raised);}
+tbody tr:last-child td{border-bottom:none;}
+td.num{font-family:var(--mono); font-variant-numeric:tabular-nums; font-size:13px; white-space:nowrap;}
+td.feat{font-weight:700;}
+tr.hl td{background:var(--accent-tint); font-weight:600;}
+
+/* ---------- code ---------- */
+pre.code{background:var(--code-bg); color:var(--code-ink); border:1px solid var(--rule); border-radius:9px; padding:14px 16px; overflow-x:auto; font-family:var(--mono); font-size:12.3px; line-height:1.65; white-space:pre;}
+
+/* ---------- divergence cards ---------- */
+.divergence{
+  border:1px solid var(--flagged-line); border-left:4px solid var(--flagged-fg); background:var(--flagged-bg);
+  border-radius:10px; padding:18px 22px; margin:18px 0;
+}
+.divergence .dhead{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px; font-family:var(--sans);}
+.divergence .dtitle{font-weight:700; font-size:15px; color:var(--flagged-fg);}
+.divergence .sev{font-family:var(--mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; padding:2px 8px; border-radius:100px; background:var(--paper-raised); border:1px solid var(--flagged-line); color:var(--flagged-fg);}
+.divergence p{font-size:14.5px; margin:0 0 9px;}
+.divergence .verdict{font-family:var(--sans); font-size:12.5px; color:var(--ink-soft); border-top:1px dashed var(--flagged-line); margin-top:10px; padding-top:10px;}
+.divergence .cite{font-family:var(--mono); font-size:11.5px; color:var(--ink-soft);}
+.divergence.resolved{border-color:var(--verified-line); border-left-color:var(--verified-fg); background:var(--verified-bg);}
+.divergence.resolved .dtitle{color:var(--verified-fg);}
+.divergence.resolved .sev{border-color:var(--verified-line); color:var(--verified-fg);}
+.divergence.resolved .verdict{border-top-color:var(--verified-line);}
+
+.note{border:1px solid var(--rule); border-left:3px solid var(--open-line); background:var(--paper-raised); border-radius:9px; padding:14px 18px; margin:16px 0; font-size:14.5px;}
+.note .label{font-family:var(--sans); font-size:10.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--open-fg); font-weight:700; margin:0 0 7px;}
+
+/* ---------- file tree ---------- */
+.tree{font-family:var(--mono); font-size:13px; background:var(--paper-raised); border:1px solid var(--rule); border-radius:10px; padding:16px 20px; line-height:1.85; overflow-x:auto; box-shadow:var(--shadow);}
+.tree .dim{color:var(--ink-soft);}
+.tree .hi{color:var(--accent); font-weight:700;}
+
+/* ---------- mermaid ---------- */
+.diagram{background:var(--paper-raised); border:1px solid var(--rule); border-radius:12px; padding:18px; margin:18px 0; box-shadow:var(--shadow); overflow-x:auto;}
+
+/* ---------- badges within prose ---------- */
+.b{display:inline-block; font-family:var(--mono); font-size:11px; padding:1px 7px; border-radius:5px; background:var(--accent-tint); color:var(--accent); font-weight:600;}
+
+footer{border-top:1px solid var(--rule-strong); padding-top:22px; color:var(--ink-soft); font-size:12.5px; font-family:var(--sans);}
+
+@media (max-width:880px){
+  .shell{display:block;}
+  .toc{position:relative; height:auto; width:auto; border-right:none; border-bottom:1px solid var(--rule); padding:16px 18px;}
+  .toc-body{display:none;}
+  #navToggle:checked ~ .toc-body{display:block;}
+  .toc label.mobile-toggle{display:flex; justify-content:space-between; align-items:center; cursor:pointer; font-weight:700;}
+}
+@media (min-width:881px){
+  .toc label.mobile-toggle{display:none;}
+}
+</style>
+
+<div class="shell">
+  <nav class="toc">
+    <input type="checkbox" id="navToggle">
+    <div class="brand"><div class="mark">बी</div><div><b>Booth Ink</b><span>Pradhan Mantri Elections — Mobile</span></div></div>
+    <label class="mobile-toggle" for="navToggle">Contents ▾</label>
+    <div class="toc-body">
+      <div class="toc-group">
+        <p class="eyebrow">Play</p>
+        <a href="#core-loop">How a match works</a>
+        <a href="#redistribution">The map &amp; the 100% rule</a>
+        <a href="#starting-position">Starting position</a>
+        <a href="#economy">Money, rallies &amp; agendas</a>
+        <a href="#powers">Special powers</a>
+        <a href="#dominance">Regional dominance</a>
+        <a href="#roster">Politicians &amp; agendas</a>
+      </div>
+      <div class="toc-group">
+        <p class="eyebrow">Build</p>
+        <a href="#architecture">Architecture</a>
+        <a href="#data-files">Data files</a>
+        <a href="#ai">The AI opponent</a>
+        <a href="#testing">Testing &amp; invariants</a>
+      </div>
+      <div class="toc-group">
+        <p class="eyebrow">Review</p>
+        <a href="#divergence-log">Divergence log<span class="toc-count" style="background:var(--verified-bg);color:var(--verified-fg);">7 resolved</span></a>
+        <a href="#open-questions">Open design questions</a>
+      </div>
+    </div>
+  </nav>
+
+  <main>
+    <header class="hero">
+      <p class="eyebrow">Project wiki · compiled from design/economy-status-map.md + mobile/*.js + data/*.json</p>
+      <h1>How Booth Ink actually works</h1>
+      <p class="sub">Pradhan Mantri Elections Mobile is a 2-player, 10-phase election simulation played on a map of India: invest cash, deploy rally tokens, commit to policy agendas, and pull a state's popularity away from your rival and the undecided middle until one side clears 272 of 543 Lok&nbsp;Sabha seats. This page explains the mechanics for players, the implementation for developers, and — in the last section — seven places where the design document and the shipped code had quietly drifted apart, all reviewed and reconciled on 2026-07-24.</p>
+      <div class="legend">
+        <span class="pill verified">✓ verified in code</span>
+        <span class="pill flagged">⚑ divergence flagged</span>
+        <span class="pill open">◌ open / not balanced</span>
+        <span class="pill audience">building block</span>
+      </div>
+    </header>
+
+    <!-- ======================================================== -->
+    <section id="core-loop">
+      <p class="kicker">Play — the shape of a match</p>
+      <h2>How a match works</h2>
+      <p class="dek">Two players, no accounts, ten timed phases. Everything else in this document is a way of moving one number: your share of a state's popularity.</p>
+
+      <div class="flow-grid">
+        <div class="flow-card">
+          <h4>🕐 Structure</h4>
+          <div class="step">10 phases, ~45s each. Both players act <b>simultaneously</b> — there's no turn order within a phase.</div>
+        </div>
+        <div class="flow-card">
+          <h4>💰 Funds</h4>
+          <div class="step">Start with <b>5,000 Cr</b>, refresh <b>+2,500 Cr</b> per phase per player, independently.<br><span style="color:var(--ink-soft)">Lifetime budget: 5,000 + 2,500×10 = <b>30,000 Cr</b></span></div>
+        </div>
+        <div class="flow-card">
+          <h4>🗺️ Seats</h4>
+          <div class="step">Each state's Lok Sabha seats split proportionally to popularity share (largest-remainder apportionment, not winner-take-all).</div>
+        </div>
+        <div class="flow-card">
+          <h4>🏆 Win condition</h4>
+          <div class="step">First to <b>272 / 543</b> national seats wins. Both under 272 after phase 10 → <b>hung parliament</b>.</div>
+        </div>
+      </div>
+
+      <div class="diagram">
+<pre class="mermaid">
+flowchart LR
+  A["Phase starts<br/>funds +2,500 Cr · tokens +2<br/>dominance re-checked"] --> B["Both players act at once:<br/>invest · rally · agenda · power"]
+  B --> C{"Phase 10<br/>complete?"}
+  C -- "no" --> A
+  C -- "yes" --> D{"Either player<br/>≥ 272 seats?"}
+  D -- "yes, one side" --> E["That player wins"]
+  D -- "no" --> F{"Opponent is<br/>the AI?"}
+  F -- "yes" --> G["Human loses<br/>(hung parliament vs. AI)"]
+  F -- "no, human vs human" --> H["Draw<br/>(hung parliament vs. human)"]
+</pre>
+      </div>
+      <p style="font-size:13px;color:var(--ink-soft);font-family:var(--sans);margin-top:-6px;">The asymmetric hung-parliament rule (draw vs. a human, loss vs. the AI) is deliberate — see <a href="#" onclick="return false;">ADR-0006</a>. This build is always human-vs-AI, since live matchmaking isn't built (see <a href="#architecture">Architecture</a>).</p>
+
+      <div class="example">
+        <p class="label">Where the 30,000 Cr figure comes from</p>
+        <p><code>data/game-config.json → mobileEconomy</code> sets <code>startingFundsCr: 5000</code> and <code>fundsRefreshPerPhaseCr: 2500</code> — deliberately bumped on 2026-07-24, double the original 2,500 / 1,000, after playtesting found the old budget too tight to realistically reach a majority. The design doc's Core&nbsp;loop prose and its Plausibility-check table hadn't been updated to match until this pass — now they are, and the table's win-margin figures widened substantially as a result. See <a href="#div-1">Divergence&nbsp;1</a> for the before/after.</p>
+      </div>
+    </section>
+
+    <!-- ======================================================== -->
+    <section id="redistribution">
+      <p class="kicker">Play — the one rule everything routes through</p>
+      <h2>The map &amp; the 100% rule</h2>
+      <p class="dek">Every state always splits exactly three ways: <span style="color:var(--p1);font-weight:700;">you</span>, <span style="color:var(--p2);font-weight:700;">your opponent</span>, and <b>Others</b> — the undecided middle. Nothing is ever created; every action just reassigns a slice of that same 100%.</p>
+
+      <div class="diagram">
+<pre class="mermaid">
+flowchart TD
+  L["A lever fires:<br/>cash tap · rally token · agenda tap · special power"] --> G["1. You gain the boost<br/>— capped so you can never pass 100%"]
+  G --> S["2. Opponent and Others each give up<br/>their share of it, in proportion to what they currently hold"]
+  S --> O["State popularity → seat share (proportional) → national win condition"]
+</pre>
+      </div>
+
+      <h3>Why basis points, not percent</h3>
+      <p>Under the hood a state's popularity isn't "28.12%" — it's <b>2812 out of 10,000 basis points (bps)</b>. Splitting a gain between two recipients rounds <i>one</i> side to a whole number and gets the other by subtraction, never rounds both independently — that's the only way to guarantee the three shares always sum to exactly 10,000. Screens still just show "28%," rounded once, right at display time.</p>
+
+      <div class="example">
+        <p class="label">Worked example — a single tap</p>
+        <p>A state sits at <b>P1 20% · P2 30% · Others 50%</b>. P1 taps once for a flat +5%. P1 has headroom (20+5=25, nowhere near 100), so the full 5% goes through. That 5% comes out of P2 and Others in their existing 30:50 ratio.</p>
+        <div class="table-wrap"><table>
+          <thead><tr><th></th><th>P1</th><th>P2</th><th>Others</th></tr></thead>
+          <tbody>
+            <tr><td class="feat">Before</td><td class="num">20.00%</td><td class="num">30.00%</td><td class="num">50.00%</td></tr>
+            <tr class="hl"><td class="feat">After P1's tap</td><td class="num">25.00%</td><td class="num">28.12%</td><td class="num">46.88%</td></tr>
+          </tbody>
+        </table></div>
+        <p style="font-size:13px;color:var(--ink-soft)">Verified against <code>mobile/engine.js</code>'s self-check (<code>gainAt</code>, run via <code>node mobile/engine.js</code>): identical numbers, bit-for-bit. <span class="pill verified" style="margin-left:4px;">✓</span></p>
+      </div>
+
+      <div class="example">
+        <p class="label">Worked example — two big plays collide on the same state</p>
+        <p>Turns are simultaneous, so both players can target the <i>same</i> state the same phase. Pulls on each other's share never collide — only pulls on <b>Others</b> can overdraw. When they would, both requests shrink proportionally to fit, like splitting a bill that's short on cash.</p>
+        <div class="table-wrap"><table>
+          <thead><tr><th></th><th>P1</th><th>P2</th><th>Others</th></tr></thead>
+          <tbody>
+            <tr><td class="feat">Before — a contested small state</td><td class="num">10%</td><td class="num">10%</td><td class="num">80%</td></tr>
+            <tr class="hl"><td class="feat">After — both fire a huge play, same phase</td><td class="num">50%</td><td class="num">50%</td><td class="num">0%</td></tr>
+          </tbody>
+        </table></div>
+        <p>Only two levers are big/simultaneous-capable: a <b>Nationwide Rally</b> and a <b>Special Powerup</b>. Implemented as <code>resolveSimultaneousGain()</code> in <code>engine.js</code>, invoked through <code>applyBigAction()</code> in <code>game.js</code>.</p>
+      </div>
+
+      <h3>Seats: largest-remainder apportionment, not plain rounding</h3>
+      <p>Rounding each side's seat share independently can hand out more seats than a state has. A 3-seat state at 50% / 25% / 25% gives quotas 1.5 / 0.75 / 0.75 — round each separately and you get 2+1+1 = <b>4 seats from a 3-seat state</b>. Instead: give everyone <code>floor(quota)</code> first, then hand the state's few leftover seats to whoever has the largest fractional remainder (ties broken by higher bps, then fixed order P1 &gt; P2 &gt; Others).</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Share</th><th>Quota</th><th>Floor</th><th>Remainder</th><th>Final seats</th></tr></thead>
+        <tbody>
+          <tr><td class="feat">P1 (50%)</td><td class="num">1.50</td><td class="num">1</td><td class="num">0.50</td><td class="num">1</td></tr>
+          <tr><td class="feat">P2 (25%)</td><td class="num">0.75</td><td class="num">0</td><td class="num">0.75</td><td class="num hl">1 <span style="color:var(--ink-soft);font-family:var(--sans)">← largest remainder</span></td></tr>
+          <tr><td class="feat">Others (25%)</td><td class="num">0.75</td><td class="num">0</td><td class="num">0.75</td><td class="num hl">1 <span style="color:var(--ink-soft);font-family:var(--sans)">← tied, but ranks above P1's 0.50</span></td></tr>
+        </tbody>
+      </table></div>
+      <p>Implemented as <code>apportionSeats()</code> in <code>mobile/engine.js:130-149</code> (Hamilton's method — the same algorithm real proportional electoral systems use). <span class="pill verified">✓ self-check passes 2,000 random splits</span></p>
+    </section>
+
+    <!-- ======================================================== -->
+    <section id="starting-position">
+      <p class="kicker">Play — before the first phase even starts</p>
+      <h2>Starting position</h2>
+      <p class="dek">Not a blank map and not a fixed table — generated fresh per match, per politician pair, in a strict three-step order.</p>
+      <div class="flow-grid">
+        <div class="flow-card">
+          <h4>1️⃣ Baseline</h4>
+          <div class="step">Every state gets an independent random 5%–29% for each player. Others holds the rest, everywhere.</div>
+        </div>
+        <div class="flow-card">
+          <h4>2️⃣ Home state</h4>
+          <div class="step">Your politician's <code>homeState</code> gets +25% on top of your baseline (capped at 100%). Same home state on both sides → the bonus is nullified for both, not split.</div>
+        </div>
+        <div class="flow-card">
+          <h4>3️⃣ Random draw</h4>
+          <div class="step">Both home states are pulled from the pool. Players alternate drawing (coin-flip who goes first); each drawn state gets a fresh 35%–65% for the drawer, until their seat total from drawn states exceeds 100 (never past 130).</div>
+        </div>
+      </div>
+      <div class="example">
+        <p class="label">Why Uttar Pradesh's over-representation is a feature</p>
+        <p>10 of the 20 politicians call Uttar Pradesh home. That sounds like a balance problem, but it means the home-state-tie nullification rule triggers <i>often</i> — which is exactly what stops one player starting with a lopsided lead just by picking a UP-born politician and claiming the country's single biggest state (80 seats) uncontested.</p>
+      </div>
+      <p style="font-size:13px;color:var(--ink-soft);font-family:var(--sans)">Implemented as <code>generateStartingPosition()</code> in <code>mobile/engine.js:166-215</code>. The 2026-07-23 playtest bug where this occasionally produced a 200-seat starting position instead of the intended ~100–130 range was traced and fixed before this document was written — see <a href="#div-2">Divergence 2</a> for why the design doc still lists it as open.</p>
+    </section>
+
+    <!-- ======================================================== -->
+    <section id="economy">
+      <p class="kicker">Play — the three levers you spend resources on</p>
+      <h2>Money, rallies &amp; agendas</h2>
+      <p class="dek">Three ways to spend, each with a different shape of cost curve. All three ultimately just call the same redistribution rule above.</p>
+
+      <h3>Direct cash investment</h3>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Tap #</th><th>Boost</th><th>Note</th></tr></thead>
+        <tbody>
+          <tr><td class="num">1</td><td class="num">+5.00%</td><td>opening tap, best rate</td></tr>
+          <tr><td class="num">10</td><td class="num">+3.42%</td><td>linear glide</td></tr>
+          <tr><td class="num">20</td><td class="num">+2.00%</td><td>hits the floor</td></tr>
+          <tr><td class="num">21+</td><td class="num">+2.00%</td><td>floor forever after</td></tr>
+        </tbody>
+      </table></div>
+      <p>Cost per tap = <code>state.seats × 10 Cr</code>. Because cost scales with seats and the decay curve is identical everywhere, cost-per-seat-gained is the same in a 5-seat state as a 40-seat state — roughly ₹200 Cr/seat on a first tap, rising to ~₹500 Cr/seat once decayed out. Big states aren't a trap; repeatedly tapping the <i>same</i> state is what gets expensive.</p>
+      <pre class="code">costPerTap(state) = state.seats × 10                              // Cr
+boost_bps(tap) = tap ≤ 20 : round(500 − (tap−1) × 300/19)          // 500 → 200 bps, linear
+                 tap  > 20 : 200                                    // floor</pre>
+
+      <h3>Rally tokens</h3>
+      <div class="flow-grid">
+        <div class="flow-card"><h4>📢 Income</h4><div class="step">+2 tokens/phase/player, up to +8 more from completed agendas (max pool: 28 earned, but only 20 ever spendable at 2/phase × 10 phases).</div></div>
+        <div class="flow-card"><h4>🎯 Caps</h4><div class="step">Max 2 played per phase. Max 2 plays <i>total</i> per state — a shared lifetime pool across both players, not 2-each.</div></div>
+        <div class="flow-card"><h4>💥 Boost</h4><div class="step">+5% flat per play, no decay — same value as a completely fresh cash tap, minus the Cr cost.</div></div>
+      </div>
+      <div class="example">
+        <p class="label">Crafting: tokens become bigger plays</p>
+        <p>Spend <b>6 tokens</b> (earliest phase 3) → craft a <b>Special Powerup</b>, the one-time activation of your politician's unique power. Spend <b>12 tokens</b> (earliest phase 6) → craft a <b>Nationwide Rally</b>: +5% applied to <i>every</i> state at once, one use per game. 12 tokens spent individually could reach at most ~10 states before the per-state cap bites; the sweep is what makes Nationwide Rally worth 60% of a lifetime token budget.</p>
+      </div>
+      <div class="note">
+        <p class="label">The per-state cap is a shared pool — deliberately</p>
+        <p>Because the 2-play cap is shared, either player can burn both slots on a state early specifically to lock the other side out of it entirely — a denial play, not just a boosting one. Symmetric and confirmed intentional, same category as "sabotage is cheaper than conquest" under Regional Dominance below.</p>
+      </div>
+
+      <h3>Agenda commitment</h3>
+      <p>Each politician carries 4 agendas drawn from a shared 24-policy pool (<code>data/policy-tags.json</code>). Each agenda costs <b>500 Cr per tap, flat</b>, 4 taps to max (2,000 Cr/agenda, 8,000 Cr to max all 4 — <b>27% of the 30,000 Cr lifetime budget</b>, per the recomputed figure the design doc now also states (see Divergence 1). Agendas aren't a race — each player only ever funds their own 4; there's no way to contest a policy away from an opponent.</p>
+      <div class="example">
+        <p class="label">Net-first, apply-once — the rule every agenda tap follows</p>
+        <p>A state can carry several of a policy's region tags at once, some supporting, some opposing, each at its own signed strength. The engine sums every matching tag into <b>one net value</b> for that state <i>before</i> touching the redistribution engine — never applies each tag as a separate transaction. National Defense supports the border regions and used to also (accidentally) oppose Hindi Heartland; six of the largest states carried both tags and canceled to exactly zero, quietly zeroing out states that should have been the policy's strongest supporters. Fixed 2026-07-22 by dropping the stray oppose tag.</p>
+      </div>
+      <p>Completion isn't held back to the end either: each of the 4 taps immediately fires <b>¼ of the state's net effect</b> through the redistribution engine (<code>agendaTapDelta()</code> in <code>engine.js</code>, using the same round-cumulative-then-diff trick that keeps rounding exact across more than two shares). Completing an agenda also grants +2 rally tokens, up to +8 across all four.</p>
+
+      <h4>Full policy ranking (national seat-equivalent)</h4>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Rank</th><th>Policy</th><th>Seat-eq.</th></tr></thead>
+        <tbody>
+          <tr><td class="num">1</td><td class="feat">Education</td><td class="num">+33.0</td></tr>
+          <tr><td class="num">2</td><td class="feat">Economic Liberalization</td><td class="num">+26.2</td></tr>
+          <tr><td class="num">3–5</td><td class="feat">Women's Empowerment / Healthcare / Anti-Corruption <span style="color:var(--ink-soft)">(flat nationwide)</span></td><td class="num">+21.7</td></tr>
+          <tr><td class="num">…</td><td class="feat">— 15 more, mid-pack —</td><td class="num">…</td></tr>
+          <tr><td class="num">24</td><td class="feat">Secularism <span style="color:var(--ink-soft)">(worst pick, real polarization — Bengal/Kerala gains vs. UP/Bihar/MP/Rajasthan losses)</span></td><td class="num">−20.3</td></tr>
+        </tbody>
+      </table></div>
+      <p style="font-size:13px;color:var(--ink-soft);font-family:var(--sans)">Full 24-row table lives in the design doc's Agenda section; reproducible any time via <code>node recompute_policy_ranking.js</code>. 7 of 24 are net-negative nationally — five confirmed as real thematic polarization (Land Reforms, Public Sector, Caste Reservation, Agricultural Reforms, Secularism), two as partially-fixed accidental tag cancellations (Indigenous Rights). Public Sector's tag <i>direction</i> (opposing industrial regions instead of supporting them) is flagged in the design doc as possibly backwards from real PSU politics — a judgment call, not re-litigated here.</p>
+    </section>
+
+    <!-- ======================================================== -->
+    <section id="powers">
+      <p class="kicker">Play — one signature move per politician</p>
+      <h2>Special powers</h2>
+      <p class="dek">Every politician has exactly one unique power, activated once per game by crafting a 6-token Special Powerup. The rule that governs every one of them: resolve <b>instantly only</b>, and cost a <b>genuine resource</b> — never a timing gate ("only in the final phase") or an eligibility condition ("only while behind") — because either of those costs nothing whenever the power is actually usable.</p>
+
+      <div class="example">
+        <p class="label">All 20 now carry concrete numbers</p>
+        <p>Six powers were reworked 2026-07-22 after failing the matched-cost-and-benefit rule outright (see table below). The other 14, including Vajpayee's reviewed-and-kept Pokhran Test, all carry real numeric costs and benefits in <code>data/politicians-data.json</code> today — verified directly, entry by entry. This is a genuine first-pass assignment, <b>not</b> a balance/playtesting pass — several numbers were chosen by analogy to Vajpayee's +10% nationwide reference point rather than simulated. See <a href="#div-4">Divergence 4</a> for how this differs from what the design doc currently says.</p>
+      </div>
+
+      <h4>Six powers reworked 2026-07-22</h4>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Politician</th><th>Power</th><th>What was wrong</th><th>Fixed to</th></tr></thead>
+        <tbody>
+          <tr><td class="feat">Sachin Tendulkar</td><td>National Icon</td><td>free in the final phase</td><td>+3% nationwide; needs ≥1,000 Cr; costs 1,000 Cr</td></tr>
+          <tr><td class="feat">Hema Malini</td><td>Star Power Rally</td><td>free while behind</td><td>+5% nationwide; needs ≥500 Cr; costs 500 Cr</td></tr>
+          <tr><td class="feat">Rajinikanth</td><td>Thalaivar Announcement</td><td>undefined benefit, brutal permanent cost</td><td>+20% South India + Maharashtra; needs ≥2,000 Cr; costs 2,000 Cr</td></tr>
+          <tr><td class="feat">Arvind Kejriwal</td><td>Anti-Corruption Raid</td><td>free if no tokens held</td><td>steals 50% of opponent's cash; costs 15pt of <i>own</i> share in opponent's home state</td></tr>
+          <tr><td class="feat">Nitish Kumar</td><td>Alliance Switch</td><td>value depended on opponent's last move</td><td>+7% self / −7% opponent, nationwide; costs 1,000 Cr + 2 tokens</td></tr>
+          <tr><td class="feat">Jawaharlal Nehru</td><td>Non-Alignment</td><td>worthless if opponent already used their power</td><td>secretly nullifies opponent's power, or grants 2,000 Cr if too late — the gamble itself is the cost</td></tr>
+        </tbody>
+      </table></div>
+
+      <h4>Reference point</h4>
+      <p>Vajpayee's <b>Pokhran Test</b> (+10% nationwide, zero extra cost beyond the 6-token craft) is a deliberate outlier — exactly double Nationwide Rally's boost for half the token cost — kept on purpose as the roster's one standout "signature" play, and used to sanity-check every other power's magnitude during the rework pass.</p>
+
+      <h4>Verb variety at a glance</h4>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Verb</th><th>Politicians</th></tr></thead>
+        <tbody>
+          <tr><td class="feat">Damage opponent's funds</td><td>Modi (Demonetization), Kejriwal (steal 50%)</td></tr>
+          <tr><td class="feat">Convert own popularity → funds</td><td>Manmohan Singh, Rajiv Gandhi (Telecom Revolution)</td></tr>
+          <tr><td class="feat">Region-scoped popularity push</td><td>Rahul Gandhi, Mamata Banerjee, Ambedkar, Jayalalithaa, Shastri, Rajinikanth</td></tr>
+          <tr><td class="feat">Nationwide popularity push</td><td>Vajpayee, Nitish Kumar, Tendulkar, Hema Malini, Bachchan, Indira Gandhi</td></tr>
+          <tr><td class="feat">Meta / conditional effect</td><td>Nehru (nullify), P.V. Narasimha Rao (replay a completed agenda), Sardar Patel (push a small UT to 70%)</td></tr>
+        </tbody>
+      </table></div>
+      <p style="font-size:13px;color:var(--ink-soft);font-family:var(--sans)">Interpreter lives in <code>mobile/game.js:347-442</code> (<code>activatePower()</code>) — a small effect DSL (<code>funds</code>, <code>stealFundsPct</code>, <code>tokens</code>, <code>nullifyOpponentPower</code>, <code>replayAgenda</code>, <code>popularity</code> with a <code>scope</code>) reads each politician's <code>power.costs</code>/<code>power.benefits</code> arrays, so a new power is a data edit, not a code change.</p>
+    </section>
+
+    <!-- ======================================================== -->
+    <section id="dominance">
+      <p class="kicker">Play — an incidental kicker, not a target to chase</p>
+      <h2>Regional dominance</h2>
+      <p class="dek">15 groups of states (5 large / 5 mid / 5 small by seat count) pay a cash bonus the instant <b>every single member state</b> is simultaneously at 50%+ for one player — not a seat-weighted average.</p>
+      <pre class="code">dominanceActive(group, player) = every state in group: player's share ≥ 50%
+payout(group) = 5 Cr × (sum of seats across every state in the group)</pre>
+      <div class="example">
+        <p class="label">Worked example — the cheapest group in the game is still a bad standalone target</p>
+        <p>Agricultural Region (273 seats) pays <b>5 × 273 = 1,365 Cr</b>. Pushing every member state to 50% from a cold start costs roughly <b>12,480 Cr</b> at the real decay curve — about 11% ROI, the <i>best</i> case of all 15 groups. Every group costs more to fully dominate from scratch than a large fraction of a lifetime budget. It only pays off as a bonus on top of states you're already winning for the main seat race.</p>
+      </div>
+      <div class="note">
+        <p class="label">Sabotage beats conquest</p>
+        <p>One state slipping under 50% zeroes the whole group's qualified status immediately — no more payouts until every member re-crosses the line. That makes "knock one state back down" a cheaper counter-play than "out-invest the leader everywhere." Deliberate, not a bug.</p>
+      </div>
+      <p>Payout is <b>instant and event-based</b> (changed 2026-07-24) — it fires the moment the last member state crosses 50%, checked after every popularity-moving action, not deferred to the next phase boundary. Losing and re-earning dominance pays again in full each time. Implemented as <code>applyRegionalDominancePayouts()</code>, called from every action that can move a state's popularity.</p>
+    </section>
+
+    <!-- ======================================================== -->
+    <section id="roster">
+      <p class="kicker">Play — the cast</p>
+      <h2>Politicians &amp; agendas</h2>
+      <p class="dek">20 politicians (16 historical/current + 4 celebrities with real political ties), each with 4 agendas drawn from the shared 24-policy pool plus their 1 unique power. "Exclusive" just means only one politician's list happens to reference a given policy — there's no exclusivity flag in the data.</p>
+      <p>Source of truth is <code>data/politicians-data.json</code> + <code>data/policy-tags.json</code> directly — this wiki doesn't keep a second copy of the roster that could drift out of sync. Roughly half the roster (10 of 20) don't yet have a portrait image in <code>assets/images/</code>; the select screen falls back to a colored circle with the politician's initial.</p>
+    </section>
+
+    <!-- ======================================================== -->
+    <section id="architecture">
+      <p class="kicker">Build — where the code lives</p>
+      <h2>Architecture</h2>
+      <p class="dek">Vanilla HTML/CSS/JS, no build step, no framework. Three layers with a strict one-way dependency: pure math → mutable game state → DOM.</p>
+
+      <div class="tree">mobile/
+├── engine.js   <span class="dim">— pure functions: redistribution, apportionment, starting position.</span>
+│               <span class="dim">  No DOM access. Runs standalone under Node for its own self-check.</span>
+├── game.js     <span class="dim">— the mutable `game` object: phases, player actions, the AI (`runAI`* fns).</span>
+│               <span class="dim">  Built on top of engine.js's math; never touches the page.</span>
+├── main.js     <span class="dim">— the only file that touches the DOM. Reads `game`, calls game.js's actions.</span>
+├── simulate.js <span class="dim">— Node-only smoke test: 5 full games + all 20 power activations.</span>
+├── sw.js       <span class="dim">— service worker, explicit-filename precache (see note below).</span>
+├── manifest.json <span class="dim">— PWA manifest, standalone display, SVG icon.</span>
+└── index.html  <span class="hi">← the real, playable build</span>
+
+data/
+├── states_data.json      <span class="dim">— 36 states/UTs: seats, svgId, region-group tags. Leading BOM.</span>
+├── policy-tags.json      <span class="dim">— 24-policy pool: {tagEffects: {region: signedMagnitude}} or nationwideBonus.</span>
+├── politicians-data.json <span class="dim">— 20 politicians: homeState, 4 policies, 1 power (cost/benefit DSL).</span>
+└── game-config.json      <span class="dim">— mobileEconomy{} namespace = mobile's real, canonical constants.</span>
+
+index.html / styles.css / js/*.js  <span class="dim">← legacy desktop-ported skin, superseded, not touched by mobile work.</span>
+design/prototypes/pme-mobile-sheet.html  <span class="dim">← frozen design-reference prototype (demo logic only, don't edit).</span></div>
+
+      <div class="diagram">
+<pre class="mermaid">
+flowchart LR
+  subgraph Data["data/*.json"]
+    S[states_data.json]
+    P[policy-tags.json]
+    Pol[politicians-data.json]
+    C["game-config.json<br/>(mobileEconomy)"]
+  end
+  Data -- "fetch() in browser / fs.readFileSync in Node" --> N["normalizeGameData()<br/>strips BOM, unwraps keys"]
+  N --> Eng["engine.js<br/>pure math, no DOM"]
+  Eng --> Game["game.js<br/>mutable game state + actions + AI"]
+  Game --> Main["main.js<br/>DOM only"]
+  Main --> HTML["mobile/index.html"]
+</pre>
+      </div>
+
+      <div class="note">
+        <p class="label">Why not React Native / Flutter</p>
+        <p>The UI is DOM/CSS/SVG-heavy (an interactive map, CSS animations) and the game itself is turn/phase-based with no native-performance requirement — a native-framework rewrite buys nothing. Capacitor wraps this codebase almost unchanged for an iOS/Android store listing instead, if that's ever pursued.</p>
+      </div>
+      <div class="note">
+        <p class="label">Why there's no live human matchmaking</p>
+        <p>Player 2 is always the local AI in this build. Real matchmaking needs a Firebase/Supabase backend — an external service account nobody has asked to stand up (ADR-0001/0002). Out of scope until requested.</p>
+      </div>
+    </section>
+
+    <!-- ======================================================== -->
+    <section id="data-files">
+      <p class="kicker">Build — reading the JSON correctly</p>
+      <h2>Data files</h2>
+      <p class="dek">Three gotchas that only bite a script reading these files directly (Node, a one-off inspection) — the browser's <code>fetch().json()</code> is tolerant of all three, which is why they go unnoticed until someone reaches for <code>fs.readFileSync</code>.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>File</th><th>Gotcha</th></tr></thead>
+        <tbody>
+          <tr><td class="feat">states_data.json</td><td>Leading UTF-8 BOM breaks a raw <code>JSON.parse</code>. Strip it first (see <code>stripBOM()</code> in <code>game.js</code>).</td></tr>
+          <tr><td class="feat">policy-tags.json</td><td>Real content is nested under a top-level <code>policyTags</code> key, not the file root.</td></tr>
+          <tr><td class="feat">politicians-data.json</td><td>Real content is nested under a top-level <code>politicians</code> key.</td></tr>
+        </tbody>
+      </table></div>
+      <p><code>check_data_consistency.js</code> is the validation safety net after any hand-edit to these files — run it, don't build a CRUD tool around them (deliberately not wanted; edits happen via direct natural-language requests). It currently reports 3 pre-existing failures, all in the legacy <code>js/*.js</code> desktop build (stale <code>NortheastIndia</code>/<code>BorderLands</code> references), unrelated to <code>mobile/</code>.</p>
+    </section>
+
+    <!-- ======================================================== -->
+    <section id="ai">
+      <p class="kicker">Build — how Player 2 thinks</p>
+      <h2>The AI opponent</h2>
+      <p class="dek">A greedy heuristic, not an adversarially-tuned agent. It plays through <code>aiStep()</code> — one action per call — so the browser can pace it visually (~20 actions/min) while <code>runAIFull()</code> fast-forwards the same logic instantly for tests.</p>
+      <h3>Priority order, every tick</h3>
+      <div class="flow-grid">
+        <div class="flow-card"><h4>1. Rally</h4><div class="step">Play a token on whichever state has the largest P1-over-P2 lead, if under the spend cap.</div></div>
+        <div class="flow-card"><h4>2. Craft</h4><div class="step">If the profile crafts tokens: Special Powerup first, then Nationwide Rally.</div></div>
+        <div class="flow-card"><h4>3. Power</h4><div class="step">Activate the crafted power the moment it's affordable and its target requirements are met.</div></div>
+        <div class="flow-card"><h4>4. Nationwide Rally</h4><div class="step">Fire it the moment it's crafted.</div></div>
+        <div class="flow-card"><h4>5. Agenda</h4><div class="step">Tap whichever policy currently ranks best by <code>totalNetEffect()</code>, up to the profile's per-phase tap cap.</div></div>
+        <div class="flow-card"><h4>6. Invest</h4><div class="step">Otherwise, invest in one state-group at a time (round-robin, skipping groups already dominated) scored by effective headroom, not raw boost.</div></div>
+      </div>
+      <div class="example">
+        <p class="label">Four personalities, one engine</p>
+        <p>Picked randomly per match so games don't all play out the same shape: <b>aggressive-investor</b> (1 agenda tap/policy/phase, crafts tokens), <b>policy-rusher</b> (4 taps/policy/phase), <b>rally-spammer</b> (never crafts, just plays tokens), <b>group-bonus-rusher</b> (crafts tokens + scores investment with a bonus for states one step from completing a regional-dominance group). None are adversarially tuned against a human's actual play — a personality difference, not a difficulty ladder.</p>
+      </div>
+      <div class="example">
+        <p class="label">The headroom-scoring fix</p>
+        <p>Early versions scored an investment target by raw <code>boost/cost</code>, which kept favoring the cheapest state in a group regardless of how close it already was to 100% — the AI would dump funds into an already-maxed state forever instead of spreading across the group, so it could never actually clear a regional-dominance bar. Fixed by scoring on effective remaining headroom, <code>min(boost, 10000 − currentShare) / cost</code>, in <code>scoreInvestState()</code> (<code>mobile/game.js:501-515</code>).</p>
+      </div>
+    </section>
+
+    <!-- ======================================================== -->
+    <section id="testing">
+      <p class="kicker">Build — how correctness gets checked</p>
+      <h2>Testing &amp; invariants</h2>
+      <p class="dek"><code>npm test</code> runs two things in sequence, both plain-assert scripts, no framework:</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Script</th><th>What it checks</th></tr></thead>
+        <tbody>
+          <tr><td class="feat"><code>node mobile/engine.js</code></td><td>Self-check of the pure math: the design doc's own worked examples (the 20/30/50 tap, the 10/10/80 overdraw, the 3-seat apportionment) reproduced exactly, plus 2,000 randomized apportionment splits and the home-state-tie nullification.</td></tr>
+          <tr><td class="feat"><code>node mobile/simulate.js</code></td><td>5 full 10-phase games (a scripted P1 vs. the real AI) plus all 20 politicians' powers activated in isolation, asserting every state's three shares sum to exactly 10,000 bps and funds/tokens never go negative, throughout.</td></tr>
+        </tbody>
+      </table></div>
+      <div class="note">
+        <p class="label">Confirmed passing while writing this page</p>
+        <p>Both scripts ran clean: all assertions passed, all 20 powers activated cleanly, invariants held across every phase of all 5 simulated games. The project convention after touching AI aggressiveness specifically is to also stress-test cheap/tiny states directly, not just run the normal suite — a more aggressive AI can drive a state to exactly 100% for the first time, which is exactly how a real zero-denominator bug in <code>loseAt()</code> was caught before.</p>
+      </div>
+    </section>
+
+    <!-- ======================================================== -->
+    <section id="divergence-log">
+      <p class="kicker">Review — flagged for a human decision</p>
+      <h2>Divergence log</h2>
+      <p class="dek">Seven places where <code>design/economy-status-map.md</code> and the actual <code>mobile/</code> code disagreed, found while cross-checking every mechanic above against both sources directly. <b>All seven were reviewed and resolved on 2026-07-24</b> — six by direct decision, one (special-power balance wording) caught and fixed as a bonus find during the same pass. Each card below records what the doc said, what the code actually showed, and the decision that was locked in.</p>
+
+      <div class="divergence resolved" id="div-1">
+        <div class="dhead"><span class="dtitle">1 · Economy scale: design doc's numbers were half the real, current ones</span><span class="sev">✓ resolved 2026-07-24</span></div>
+        <p>The Core loop section states "start: 2,500 Cr · refresh: 1,000 Cr/phase/player" → 12,500 Cr lifetime. The actual, currently-canonical numbers (<code>game-config.json → mobileEconomy</code>, bumped 2026-07-24 in direct response to playtesting) are <b>5,000 / 2,500 → 30,000 Cr lifetime</b> — 2.4× the figure the doc's prose still states.</p>
+        <p>This isn't a code bug — CLAUDE.md records the bump as a deliberate, already-closed decision. But every number downstream of it in the design doc is now stale: the "8,000 Cr = 64% of budget" agenda-cost framing (it's actually ~27% of the real budget), and the entire <b>Plausibility check</b> section's seat-total table (~203/543 cash-only, ~291/543 combined, "~19-seat margin") — all computed against the old 12,500 Cr figure.</p>
+        <p class="verdict"><b>Decision locked in:</b> updated Core loop / Agenda prose to 5,000 / 2,500 / 30,000, and recomputed the Plausibility-check table against the real budget. Result: ~281/543 (51.8%) cash-only, ~371/543 (68.4%) combined, margin over 272 widened from ~19 to <b>~99 seats</b> — wide enough that the doc's old "cash alone can never win" claim is now false in the idealized model and was corrected. This makes the unmodeled two-active-player case (see <a href="#open-questions">Open questions</a>) more load-bearing than before, not less.</p>
+        <p class="cite">design/economy-status-map.md:191-193, 531, 795-830, 869-870 vs. data/game-config.json:55-56</p>
+      </div>
+
+      <div class="divergence resolved" id="div-2">
+        <div class="dhead"><span class="dtitle">2 · "Known bugs (2026-07-23)" section described bugs that were already fixed</span><span class="sev">✓ resolved 2026-07-24</span></div>
+        <p>The design doc's Known&nbsp;bugs card lists three open bugs as of 2026-07-23: the AI never spending funds despite the news ticker reporting activity, the starting-position generator occasionally landing on 200 seats instead of ~100-130, and P1+P2+Others sometimes not summing to exactly 100%.</p>
+        <p>All three read as already resolved in the current code: <code>aiStep()</code> (<code>game.js:559-617</code>) actively spends funds on rallies, agendas, powers, and investment every tick, and the news log only fires from real state-changing calls; <code>generateStartingPosition()</code>'s draw loop (<code>engine.js:196-213</code>) enforces the &gt;100-to-stop / ≤130-to-take-a-state guards exactly as specified; and <code>npm test</code>'s invariant checks (every state sums to exactly 10,000 bps, checked after every phase of 5 full simulated games) pass cleanly right now. CLAUDE.md independently confirms this: 5 of 13 items pulled from this exact section of the design doc "turned out already fixed in mobile/engine.js/mobile/game.js by the time they were checked."</p>
+        <p class="verdict"><b>Decision locked in:</b> struck through all three bullets with resolution notes and code citations, marked "resolved pending on-device confirm" rather than fully closed — code and the automated test suite are strong evidence, but neither replaces the phone playtest that originally caught these.</p>
+        <p class="cite">design/economy-status-map.md:166-176 vs. mobile/engine.js, mobile/game.js, npm test output</p>
+      </div>
+
+      <div class="divergence resolved" id="div-3">
+        <div class="dhead"><span class="dtitle">3 · Settings menu existed; design doc's "Still not built" list said it didn't</span><span class="sev">✓ resolved 2026-07-24</span></div>
+        <p>Build&nbsp;status → Still&nbsp;not&nbsp;built claims "no Sound/Music/Pause/Help/New-Game controls exist in mobile/main.js (checked 2026-07-23)." <code>main.js:799-823</code> now wires a working settings overlay with Sound toggle, Music toggle, Pause/Resume (stops the phase timer), and New Game (with a confirm guard) — all functional, not stubs.</p>
+        <p>Partial credit only: there's no <b>Help</b> control anywhere in the button list, so that specific piece of the original claim still holds.</p>
+        <p class="verdict"><b>Decision locked in:</b> removed the bullet from Still-not-built and filed a new, narrow one for just the Help/tutorial control — the only piece genuinely missing.</p>
+        <p class="cite">design/economy-status-map.md:851 vs. mobile/main.js:799-823</p>
+      </div>
+
+      <div class="divergence resolved" id="div-4">
+        <div class="dhead"><span class="dtitle">4 · Special-power numbers exist for all 20; design doc said 13 had none</span><span class="sev">✓ resolved 2026-07-24</span></div>
+        <p>The Special&nbsp;powers and Still&nbsp;open sections stated 13 of 20 politicians' powers "still need the same pass... several have benefits with no assigned magnitude at all (e.g. 'Large one-time funds boost')." Reading <code>data/politicians-data.json</code> directly showed every one of the 20 <code>power.costs</code>/<code>power.benefits</code> entries carries concrete numeric fields — no placeholder strings remain anywhere in the roster.</p>
+        <p>A real but narrower gap than the doc implied: the numbers exist, but per CLAUDE.md they're "a first-pass concrete assignment... not a substitute for a real balance/playtesting pass" — so the underlying concern (unbalanced powers) was still valid; only the literal "no number at all" claim was wrong.</p>
+        <p class="verdict"><b>Decision locked in:</b> reworded both sections to "all 20 have first-pass numbers; none have had a real balance/playtesting pass" — no politician described as missing a magnitude anymore.</p>
+        <p class="cite">design/economy-status-map.md:746, 769, 861 vs. data/politicians-data.json (all 20 entries)</p>
+      </div>
+
+      <div class="divergence resolved" id="div-5">
+        <div class="dhead"><span class="dtitle">5 · PWA infrastructure exists; design doc's "Still not built" list said it doesn't</span><span class="sev">✓ resolved 2026-07-24</span></div>
+        <p>Build&nbsp;status → Still&nbsp;not&nbsp;built claimed "no manifest.json, no service worker, no home-screen icon set exist yet (checked 2026-07-23)." <code>mobile/manifest.json</code>, <code>mobile/sw.js</code>, and <code>assets/icons/pme-icon.svg</code> all exist, and <code>main.js:825-827</code> registers the service worker. CLAUDE.md's own notes about a <code>caches.addAll</code> precache bug place this build as happening the same day (2026-07-23) — just later in the session than when this list was last checked.</p>
+        <p class="verdict"><b>Decision locked in:</b> struck the bullet from Still-not-built, with a citation of exactly which three files now exist.</p>
+        <p class="cite">design/economy-status-map.md:848 vs. mobile/manifest.json, mobile/sw.js, assets/icons/pme-icon.svg</p>
+      </div>
+
+      <div class="divergence resolved" id="div-7">
+        <div class="dhead"><span class="dtitle">7 · Bonus find: AI personality variety was also already shipped</span><span class="sev">✓ resolved 2026-07-24</span></div>
+        <p>Caught while fixing Divergence 5, not one of the six originally flagged. The same Still-not-built bullet as Divergence 5's neighbor claimed the AI was "a single greedy heuristic... not adversarially tuned. Original idea: 3–4 parameter profiles... Not built." <code>mobile/game.js</code>'s <code>AI_PROFILES</code> array already defines exactly the four proposed profiles (aggressive-investor, policy-rusher, rally-spammer, group-bonus-rusher), and <code>pickAIProfile()</code> assigns one at random per match.</p>
+        <p class="verdict"><b>Decision locked in:</b> struck the bullet, preserving the still-true distinction that this is personality variety on one greedy engine, not an adversarially-tuned difficulty ladder.</p>
+        <p class="cite">design/economy-status-map.md:853 (pre-edit) vs. mobile/game.js:85-91, 112-139</p>
+      </div>
+
+      <div class="divergence resolved" id="div-6">
+        <div class="dhead"><span class="dtitle">6 · Internal doc inconsistency: the Agenda flow-card's own status pill contradicted its later text</span><span class="sev">✓ resolved 2026-07-24</span></div>
+        <p>The Agenda section's "Effect" flow-card was marked with the <code>gap</code> pill — "decided, not yet migrated into data/policy-tags.json" — but the very same section's later prose said the <code>tagEffects</code> migration "was purely mechanical... migrated 2026-07-22," and <code>data/policy-tags.json</code> confirmed on direct read already used the <code>tagEffects</code>/<code>nationwideBonus</code> shape throughout, not the old <code>tier</code>/<code>baseMagnitude</code> shape.</p>
+        <p class="verdict"><b>Decision locked in:</b> flipped the pill from <code>gap</code> to <code>decided</code> — pure doc housekeeping, no code implication either way.</p>
+        <p class="cite">design/economy-status-map.md:517 vs. §553 ("migrated 2026-07-22") and data/policy-tags.json</p>
+      </div>
+    </section>
+
+    <!-- ======================================================== -->
+    <section id="open-questions">
+      <p class="kicker">Review — genuinely undecided, not a code/doc mismatch</p>
+      <h2>Open design questions</h2>
+      <p class="dek">Carried over from the design doc's own Still-open list — these aren't divergences, they're places the design itself hasn't landed yet.</p>
+      <div class="flow-grid">
+        <div class="flow-card"><h4>⚖️ Power balance pass</h4><div class="step">All 20 powers have numbers now (see Divergence 4), but none have been simulated/playtested for balance against each other.</div></div>
+        <div class="flow-card"><h4>🗺️ Per-region tuning</h4><div class="step">Every policy region still defaults to the old shared 12/8/4 tier magnitude; the redesign's actual point — different regions reacting at different strengths — hasn't had its hand-tuning pass.</div></div>
+        <div class="flow-card"><h4>🤝 Two-active-player ceiling</h4><div class="step">Every plausibility number (now further complicated by Divergence 1's budget change) assumes a passive opponent. Nobody has modeled two players actively contesting the same states.</div></div>
+        <div class="flow-card"><h4>🏛️ Public Sector's tag direction</h4><div class="step">Supports agricultural regions, opposes industrial ones — the reverse of where India's real PSU workforce actually concentrates. Flagged, not fixed; a judgment call outside a stray-tag audit's scope.</div></div>
+      </div>
+    </section>
+
+    <footer>
+      <p>Compiled 2026-07-24 by cross-referencing <code>design/economy-status-map.md</code> against <code>mobile/engine.js</code>, <code>mobile/game.js</code>, <code>mobile/main.js</code>, <code>data/*.json</code>, and a live <code>npm test</code> run — not from the design doc alone. Treat this page as a snapshot: re-verify code citations before relying on a specific line number, the same discipline this page applied to the design doc itself.</p>
+    </footer>
+  </main>
+</div>
+
+<script>
+(function(){
+  var links = Array.prototype.slice.call(document.querySelectorAll('.toc-group a'));
+  var sections = links.map(function(a){ return document.querySelector(a.getAttribute('href')); }).filter(Boolean);
+  function onScroll(){
+    var pos = window.scrollY + 120;
+    var current = sections[0];
+    sections.forEach(function(s){ if (s && s.offsetTop <= pos) current = s; });
+    links.forEach(function(a){
+      a.classList.toggle('current', current && a.getAttribute('href') === '#' + current.id);
+    });
+  }
+  document.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  links.forEach(function(a){
+    a.addEventListener('click', function(){
+      var toggle = document.getElementById('navToggle');
+      if (toggle && window.innerWidth <= 880) toggle.checked = false;
+    });
+  });
+})();
+</script>

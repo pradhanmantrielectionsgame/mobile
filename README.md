@@ -116,6 +116,17 @@ npm test              # Runs simulate.js regression suite
 | [ADR-0007: Single-Player vs. AI Scope](docs/adr/0007-single-player-ai-scope.md) | Accepted | Built single-player-vs-AI only this session; deferred human matchmaking backend to Phase 0. Prioritizes end-to-end design validation + playable game on day 1 |
 | [ADR-0008: Additive Config Schema Evolution](docs/adr/0008-additive-config-schema-evolution.md) | Accepted | Preserved backward compatibility with legacy desktop build via new `mobileEconomy` namespace, rather than restructuring entire `game-config.json` |
 
+## Project Documentation & References
+
+**Authoritative Design Reference:**
+- **`design/economy-status-map.md`** — single source of truth for all finalized game design decisions including: core loop structure, win condition (272/543 seats), starting-position randomization, redistribution rule with basis-point precision, investment/rally/agenda/dominance/special-power mechanics, full 20-politician roster with powers, and plausibility proofs showing ~99-seat idealized advantage vs. AI opponent.
+
+**Project Wiki & Discovery Log:**
+- **`docs/wiki.html`** — comprehensive project wiki (Claude Artifact) consolidating game mechanics reference for players, architecture/implementation guide for developers, and the full divergence/discovery log from game development sessions. Serves as an exploratory companion to the authoritative design doc.
+
+**Architecture Decisions:**
+See the "Key Architectural Decisions" table above for framework selection, multiplayer strategy, and tech stack choices.
+
 ## Current Status
 
 **Game Engine (Complete):** `mobile/engine.js` + `mobile/game.js` + `mobile/index.html` form a fully playable, single-player-vs-AI game. All 10-phase loop, economy mechanics (investment, rally, agenda, dominance), special powers, and AI opponent are functional and validated via regression tests (`mobile/simulate.js`).
@@ -146,7 +157,7 @@ See `design/economy-status-map.md`'s "Build status & roadmap" section for curren
 - **Single-player vs. AI only** — no live human multiplayer backend yet (Phase 0, planned for later); local hotseat available via pass-the-phone
 - **No session persistence** — game state lives only in memory during a single session; no save/resume or stats tracking across sessions
 - **No politician portrait images** — politician select screen uses placeholder styling; portrait images are out of scope for MVP
-- **Special-power balance provisional** — 13 of 20 politicians have powers with magnitude numbers assigned for the first time this session; these are first-pass numbers pending real playtesting and balance refinement
+- **Special-power balance provisional** — all 20 politicians have powers with magnitude numbers assigned; these are first-pass numbers pending real playtesting and balance refinement
 - **Small UTs require dedicated buttons** — Delhi, Chandigarh, Puducherry, Lakshadweep, Andaman & Nicobar, Dadra & Nagar Haveli/Daman & Diu are not directly tappable on the map (too small); they route through button-cluster pattern at bottom-left (confirmed production-ready)
 - **SVG map undersized** — `assets/icons/INDIA_V3_smaller_viewbox.svg` wastes ~27% of viewBox area; tightened viewBox would render 27% larger with zero crop risk (not performance-critical, deferred)
 

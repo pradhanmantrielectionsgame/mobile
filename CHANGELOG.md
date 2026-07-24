@@ -6,6 +6,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### 📚 Documentation Reconciliation & Comprehensive Project Wiki — 2026-07-24
+
+#### Project Wiki & Reference Documentation
+- **CREATED**: `docs/wiki.html` — comprehensive project wiki (Claude Artifact, 61 KB). Consolidates game mechanics reference for players, complete architecture/implementation guide for developers, and a full divergence/discovery log covering every significant finding from game development history. Intended as an exploratory companion reference to the authoritative `design/economy-status-map.md`.
+
+#### Design Documentation Synchronization
+- **UPDATED**: `design/economy-status-map.md` Core loop section — reconciled funds figures from outdated 2,500/1,000 Cr to actual shipped 5,000/2,500 Cr (starting/refresh per player), 30,000 Cr lifetime budget. Added new "decided 2026-07-24" example card documenting the funds bump rationale from user's multi-round playtesting feedback.
+- **RECOMPUTED**: `design/economy-status-map.md` Plausibility-check table — recalculated all margins and seat-equivalent values against the real 30,000 Cr budget (~281/543 seats cash-only, ~371/543 combined, ~99-seat margin vs. 272-seat threshold). Corrected the doc's previous "cash alone can never win" claim, which the recomputed budget reverses.
+- **RESOLVED**: `design/economy-status-map.md` Known bugs (2026-07-23) section — struck through three items as "resolved-pending-on-device-confirm" with code citations: AI fund-spend (now correctly spending ~0/phase via greedy heuristic), starting-position 200-seat ceiling (never exceeded 187 in stress test), bps-sum invariant violation (fixed in `mobile/engine.js`'s `loseAt()` degenerate case). All three verified working via `npm test` regression suite (5 full 10-phase games + all 20 politician powers).
+- **NARROWED**: `design/economy-status-map.md` Still-not-built section — removed "Options/settings menu" as overbroad (Sound/Music/Pause/New-Game controls confirmed working in `mobile/main.js:799-823`), replaced with granular "Help/tutorial control" item for the only actually missing element.
+- **REWORDED**: `design/economy-status-map.md` Special Powers sections — clarified all 20 politicians carry first-pass numeric costs/benefits (confirmed in `data/politicians-data.json` `power` field for every politician). Actual gap is an unrun balance/playtesting pass, not missing numbers.
+- **STRUCK**: `design/economy-status-map.md` Still-not-built list — removed "PWA infrastructure" (manifest.json/sw.js/icon all confirmed shipped and registered in `mobile/main.js`), and bonus find "AI difficulty/personality variety" (4 AI_PROFILES fully implemented in `mobile/game.js` via `pickAIProfile()` + `AI_PROFILES` array).
+- **FLIPPED**: `design/economy-status-map.md` Agenda section flow-card status pill — changed from `gap` ("not yet migrated into data/policy-tags.json") to `decided` (tagEffects migration confirmed complete in `data/policy-tags.json`, confirmed by direct file read contradicting the old pill status).
+
+#### Project Instructions & Rules
+- **UPDATED**: `CLAUDE.md` Game design principles section — added new durable rule: "When a numeric constant in `game-config.json` changes (e.g., economy scale), verify that `design/economy-status-map.md`'s prose sections and plausibility table are also updated — recording a decision in CLAUDE.md alone does not propagate to the design doc." This rule prevents repeat of the 1-day divergence (funds bump existed only in config + CLAUDE.md, never reached the design doc's Core loop or Plausibility-check sections).
+
+#### Context
+Full documentation reconciliation checkpoint. Cross-referenced `design/economy-status-map.md` against actual shipped code (`mobile/*.js`, `data/*.json`) and discovered a 1-day gap where the funds bump (2,500/1,000 → 5,000/2,500 Cr, decided 2026-07-24) was recorded only in config and CLAUDE.md, never reaching the design doc's prose or its derived plausibility table. Reconciled all eight divergent sections, recomputed the plausibility table against real budget, struck stale "known bugs" and "still not built" items with code citations, created comprehensive project wiki, and added preventative CLAUDE.md rule for future consistency.
+
+---
+
 ### 🎮 Regional Dominance Instant Payout & Mobile Economy Rebalancing — 2026-07-24
 
 #### Game Mechanics & Economy
