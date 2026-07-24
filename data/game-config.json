@@ -52,8 +52,8 @@
     "_comment": "Canonical constants for the mobile Booth Ink engine (mobile/engine.js), per design/economy-status-map.md. Namespaced separately from the sections above, which the legacy desktop build (index.html/js/*) reads directly with different key names/values — kept untouched so this doesn't regress that build.",
     "totalPhases": 10,
     "phaseDurationSeconds": 45,
-    "startingFundsCr": 2500,
-    "fundsRefreshPerPhaseCr": 1000,
+    "startingFundsCr": 5000,
+    "fundsRefreshPerPhaseCr": 2500,
     "totalSeats": 543,
     "seatsToWin": 272,
     "investment": {

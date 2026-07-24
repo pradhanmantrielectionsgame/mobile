@@ -12,6 +12,25 @@
     'JD(U)': '🏹', 'AIADMK': '🍃', 'Independent': '🗳️'
   };
   function partySymbol(party) { return PARTY_SYMBOLS[party] || '🗳️'; }
+
+  // Sets a politician portrait <img>, falling back to a colored initial
+  // circle (same className, so existing CSS sizing still applies) if the
+  // image file doesn't exist — 11 of 20 portraits don't yet (see CLAUDE.md).
+  function setPortrait(imgEl, p) {
+    imgEl.alt = p.name;
+    imgEl.style.background = p.primaryColor || '#ccc';
+    imgEl.src = '../' + p.image;
+    imgEl.onerror = function () {
+      var w = imgEl.clientWidth || 34;
+      var span = document.createElement('span');
+      span.className = imgEl.className;
+      span.textContent = p.name.trim().charAt(0);
+      span.style.cssText = 'display:flex;align-items:center;justify-content:center;' +
+        'font-weight:700;font-size:' + Math.round(w * 0.5) + 'px;color:#fff;' +
+        'background:' + (p.primaryColor || '#999') + ';border-radius:50%;';
+      imgEl.replaceWith(span);
+    };
+  }
   var AGENDA_ICONS = {
     'Education': '🎓', 'Rural Development': '🌾', "Women's Empowerment": '👩', 'Healthcare': '⚕️',
     'Land Reforms': '🗺️', 'Agricultural Reforms': '🚜', 'Water and Mineral Rights': '💧',
@@ -23,6 +42,8 @@
   };
 
   var data = null, game = null, selectedId = 'INUP', armed = null; // armed: null | 'stateRally' | 'powerTarget'
+  var activeAgenda = null; // agenda name currently shown in the info panel, or null
+  var activeAction = null; // 'rally' | 'nationwide' | 'special' currently shown in the info panel, or null
   var timerHandle = null, timeLeft = 0, lastLogShown = 0, timerPaused = false;
   var lastMapTapId = null, lastMapTapTime = 0, lastBtnTapId = null, lastBtnTapTime = 0;
   var DOUBLE_TAP_MS = 400;
@@ -126,15 +147,17 @@
     data.politicians.forEach(function (p) {
       var card = document.createElement('div');
       card.className = 'pol-card';
-      var initial = p.name.trim().charAt(0);
-      card.innerHTML =
-        '<img class="portrait" src="../' + p.image + '" alt="' + p.name + '" ' +
-        'style="background:' + (p.primaryColor || '#ccc') + '" ' +
-        'onerror="this.replaceWith(Object.assign(document.createElement(\'span\'),{className:\'portrait\',textContent:\'' + initial + '\',style:\'display:flex;align-items:center;justify-content:center;font-weight:700;font-size:22px;color:#fff;background:' + (p.primaryColor || '#999') + '\'}))">' +
-        '<span class="pol-name">' + p.name + '</span>' +
-        '<span class="pol-party">' + p.party + '</span>' +
-        '<button>Play</button>';
-      card.querySelector('button').addEventListener('click', function () { startGame(p.id); });
+      var img = document.createElement('img');
+      img.className = 'portrait';
+      setPortrait(img, p);
+      var nameEl = document.createElement('span');
+      nameEl.className = 'pol-name'; nameEl.textContent = p.name;
+      var partyEl = document.createElement('span');
+      partyEl.className = 'pol-party'; partyEl.textContent = p.party;
+      var btn = document.createElement('button');
+      btn.textContent = 'Play';
+      btn.addEventListener('click', function () { startGame(p.id); });
+      card.appendChild(img); card.appendChild(nameEl); card.appendChild(partyEl); card.appendChild(btn);
       grid.appendChild(card);
     });
   }
@@ -163,9 +186,13 @@
     $('p2PartySymbol').textContent = p2Symbol;
     $('cardP1Symbol').textContent = p1Symbol;
     $('cardP2Symbol').textContent = p2Symbol;
+    setPortrait($('p1Portrait'), game.players.p1.politician);
+    setPortrait($('p2Portrait'), game.players.p2.politician);
+    $('p1Name').textContent = game.players.p1.politician.name;
+    $('p2Name').textContent = game.players.p2.politician.name;
 
     lastLogShown = 0;
-    armed = null; activeGroup = null;
+    armed = null; activeGroup = null; activeAgenda = null; activeAction = null;
     lastMapTapId = null; lastBtnTapId = null; timerPaused = false;
     $('pauseToggleBtn').textContent = '⏸ Pause';
     G.pushLog(game, '🗳️ Your opponent this match: ' + game.players.p2.politician.name + ' (' + game.players.p2.politician.party + ')');
@@ -309,8 +336,75 @@
   }
 
   function updateCard() {
+    if (activeAction) { renderActionInfo(activeAction); return; }
+    if (activeAgenda) { renderAgendaCard(activeAgenda); return; }
     if (activeGroup) { renderGroupCard(activeGroup); return; }
     renderStateCard();
+  }
+
+  // Rally / nationwide / special-power info — same info-panel slot again,
+  // as a plain-text description instead of chips (see design doc's rally
+  // config for the numbers; special power's description already ships in
+  // politicians-data.json, so it's reused verbatim rather than re-authored).
+  function renderActionInfo(kind) {
+    $('cardVsBar').hidden = true;
+    var el = $('cardGroups');
+    el.className = 'info-groups desc';
+    var rc = game.cfg.rally;
+    if (kind === 'rally') {
+      $('cardName').textContent = '📢 State Rally';
+      $('cardSeats').textContent = game.players.p1.tokens.stateRally + ' tokens';
+      el.textContent = 'Free token, earned from investment milestones. Deploy on a state for +' +
+        (rc.tokenBoostBps / 100) + '% popularity there (max ' + rc.maxPlaysPerStateShared + ' plays/state, shared with your opponent).';
+    } else if (kind === 'nationwide') {
+      var nState = craftSlotState('nationwide');
+      $('cardName').textContent = '🇮🇳 Nationwide Rally';
+      $('cardSeats').textContent = nState === 'used' ? 'Used' : nState === 'ready' ? 'Ready' :
+        game.players.p1.tokens.stateRally + '/' + rc.nationwideRallyCraftCost + ' tokens';
+      el.textContent = 'Craft for ' + rc.nationwideRallyCraftCost + ' rally tokens (unlocks phase ' +
+        rc.nationwideRallyMinPhase + '+), one-time use. Activating gives +' + (rc.nationwideRallyBoostBps / 100) +
+        '% popularity in every state at once.';
+    } else if (kind === 'special') {
+      var power = game.players.p1.politician.power, sState = craftSlotState('special');
+      $('cardName').textContent = '⭐ ' + power.name;
+      $('cardSeats').textContent = sState === 'used' ? 'Used' : sState === 'ready' ? 'Ready' :
+        game.players.p1.tokens.stateRally + '/' + rc.specialPowerupCraftCost + ' tokens';
+      el.textContent = power.description || '';
+    }
+  }
+
+  // Agenda-info mode — takes over the same info-panel space as the state/
+  // group card to show which regions a tapped agenda helps or hurts, read
+  // straight from policy-tags.json's tagEffects (no separate authored
+  // description text to keep in sync).
+  function renderAgendaCard(name) {
+    var policy = game.policiesByName[name]; if (!policy) return;
+    $('cardVsBar').hidden = true;
+    $('cardName').textContent = (AGENDA_ICONS[name] || '📜') + ' ' + name;
+    var taps = game.players.p1.agendaProgress[name] || 0;
+    var done = taps >= game.cfg.agenda.tapsToComplete;
+    $('cardSeats').textContent = done ? 'Maxed' : taps + '/' + game.cfg.agenda.tapsToComplete + ' taps invested';
+    var el = $('cardGroups');
+    el.className = 'led-grid';
+    el.innerHTML = '';
+    if (policy.nationwideBonus) {
+      var chip = document.createElement('span');
+      chip.className = 'led-chip eff-pos';
+      chip.textContent = '🇮🇳 Nationwide +' + policy.nationwideBonus;
+      el.appendChild(chip);
+      return;
+    }
+    var effects = policy.tagEffects || {};
+    var keys = Object.keys(effects).sort(function (a, b) { return Math.abs(effects[b]) - Math.abs(effects[a]); });
+    if (!keys.length) { el.innerHTML = '<span class="none">No regional effect</span>'; return; }
+    keys.forEach(function (key) {
+      var g = game.groups.filter(function (x) { return x.key === key; })[0];
+      var val = effects[key];
+      var chip = document.createElement('span');
+      chip.className = 'led-chip ' + (val > 0 ? 'eff-pos' : 'eff-neg');
+      chip.textContent = (g ? g.icon + ' ' + g.label : key) + ' ' + (val > 0 ? '+' : '') + val;
+      el.appendChild(chip);
+    });
   }
 
   function renderStateCard() {
@@ -369,6 +463,7 @@
     document.querySelectorAll('.india-map path.selected, .india-map circle.selected').forEach(function (p) { p.classList.remove('selected'); });
     var el = document.getElementById(id); if (el) el.classList.add('selected');
     selectedId = id;
+    activeAgenda = null; activeAction = null; // picking a state drills out of agenda/action-info mode too
     if (activeGroup) exitGroupMode(); // picking a specific state drills out of group view
     updateCard();
   }
@@ -380,6 +475,7 @@
     applyGroupHighlight();
   }
   function setActiveGroup(key) {
+    activeAgenda = null; activeAction = null; // picking a group drills out of agenda/action-info mode too
     if (activeGroup === key) { exitGroupMode(); } else {
       activeGroup = key;
       document.querySelectorAll('.gchip').forEach(function (x) { x.classList.toggle('on', x.dataset.key === activeGroup); });
@@ -433,7 +529,7 @@
       btn.innerHTML = '<span class="action-btn-icon">' + (AGENDA_ICONS[name] || '📜') + '</span>' +
         '<span class="action-btn-label">' + name + '</span>' +
         '<span class="badge" id="' + safeId + 'Badge">0%</span>';
-      btn.addEventListener('click', function () { doTapAgenda(name); });
+      btn.addEventListener('click', function () { handleAgendaTap(name); });
       tray.appendChild(btn);
     });
   }
@@ -451,12 +547,29 @@
     });
   }
 
+  // Single tap shows what this agenda does in the info panel (no cost);
+  // double tap (within DOUBLE_TAP_MS on the same agenda) invests — same
+  // select/double-tap-invest gating as the map and small-UT buttons.
+  function handleAgendaTap(name) {
+    var now = Date.now();
+    if (lastBtnTapId === name && (now - lastBtnTapTime) < DOUBLE_TAP_MS) {
+      lastBtnTapId = null; lastBtnTapTime = 0;
+      doTapAgenda(name);
+    } else {
+      lastBtnTapId = name; lastBtnTapTime = now;
+      activeAgenda = name; activeAction = null;
+      updateCard();
+    }
+  }
+
   function doTapAgenda(name) {
     var safeId = 'agenda' + name.replace(/[^a-zA-Z0-9]/g, '');
+    activeAgenda = name; activeAction = null; // show what this agenda does in the info panel either way
     var r = G.tapAgenda(game, 'p1', name);
     if (!r.ok) {
       showToast(r.reason === 'insufficient_funds' ? 'Not enough funds' : 'Agenda already maxed');
       if (r.reason === 'insufficient_funds') shakeInvalid($(safeId));
+      updateCard();
       return;
     }
     var pt = viewportPoint($(safeId));
@@ -506,12 +619,14 @@
   }
 
   function onRallyBtn() {
+    activeAgenda = null; activeAction = 'rally'; updateCard();
     if (game.players.p1.tokens.stateRally <= 0) { showToast('No State Rally tokens'); shakeInvalid($('rallyBtn')); return; }
     setArmed('stateRally');
     if (armed) showToast('Tap a state to deploy');
   }
 
   function onSpecialBtn() {
+    activeAgenda = null; activeAction = 'special'; updateCard();
     var state = craftSlotState('special');
     if (state === 'locked') { showToast('Need ' + game.cfg.rally.specialPowerupCraftCost + ' tokens (have ' + game.players.p1.tokens.stateRally + ')'); shakeInvalid($('specialBtn')); return; }
     if (state === 'used') return;
@@ -543,6 +658,7 @@
   }
 
   function onNationwideBtn() {
+    activeAgenda = null; activeAction = 'nationwide'; updateCard();
     var state = craftSlotState('nationwide');
     if (state === 'locked') { showToast('Need ' + game.cfg.rally.nationwideRallyCraftCost + ' tokens (have ' + game.players.p1.tokens.stateRally + ')'); shakeInvalid($('nationwideBtn')); return; }
     if (state === 'used') return;

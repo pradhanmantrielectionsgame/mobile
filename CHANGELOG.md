@@ -6,6 +6,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### 🎮 Regional Dominance Instant Payout & Mobile Economy Rebalancing — 2026-07-24
+
+#### Game Mechanics & Economy
+- **RESTRUCTURED**: `mobile/game.js` — regional dominance bonus changed from recurring per-phase income (re-evaluated only at phase start) to instant, one-shot-per-qualifying-event payout via new `dominanceHeld` transition-tracking object (keyed `group.key+'|'+player`). Checked after every pop-changing action (investCash, playRallyToken, tapAgenda, activatePower, activateNationwideRally, startPhase), so calling while already qualified is a no-op but a false→true transition always pays. Supports repeatable payouts if dominance is lost and regained within same phase.
+- **UPDATED**: `data/game-config.json` — mobileEconomy economy scale increased: `startingFundsCr` 2500→5000, `fundsRefreshPerPhaseCr` 1000→2500. Rationale: user's multi-round playtesting found previous scale insufficient to reach a majority win against the AI in adversarial play (caveat: post-change simulate.js still shows hung parliaments, but with substantially shrunk "Others" share; simulate.js uses randomized p1 stand-in rather than skilled human).
+- **UPDATED**: `CLAUDE.md` — economy-scale exception bullet now cites new numbers (5,000 starting / 2,500 refresh) and documents the 2026-07-24 rationale for the increase.
+- **UPDATED**: `design/economy-status-map.md` Regional Dominance section — rewritten to document instant/event-based payout decision, superseding the old phase-boundary-recurring-income description.
+
+#### Mobile UI Polish & Interaction Refinement
+- **REVERTED**: `mobile/index.html` — rolled back an uncommitted viewport-meta-tag + CSS-shrink experiment to original scale. Root cause: total fixed chrome height didn't fit real ~660-700pt Safari-tab viewport; border-widths (3-4px) stayed fixed while button dimensions shrank 43-57%, breaking neubrutalist border-to-size ratio. Rationale: standalone/home-screen-install remains intended deployment, so original larger-scale, no-viewport-tag design is correct.
+- **REBUILT**: `mobile/index.html` — portrait-photo feature (pmini-portrait/pmini-id/pname/pmini-stats) rebuilt at original scale, preserving the UI improvement from the same uncommitted diff.
+- **ADDED**: `mobile/index.html` — new CSS classes `.led-chip.eff-pos`/`.eff-neg` and `.info-groups.desc` for agenda/action info-panel display modes.
+- **ADDED**: `mobile/main.js` — `renderAgendaCard()` and `renderActionInfo()` info-panel modes (activeAgenda/activeAction state), reusing bottom info bar to show regional effect breakdowns (tagEffects) and rally/power configuration details.
+- **CHANGED**: `mobile/main.js` — agenda tap interaction changed from single-tap-to-invest to double-tap-to-invest (single tap shows info, double tap invests), matching map/state double-tap pattern for consistency.
+
+#### Context
+Session focused on refining mobile UI polish from real-device Safari testing, rebalancing mobile economy scale per playtesting feedback, and restructuring regional dominance payout to trigger instantly on qualifying rather than deferring to next phase. All changes maintain MVP scope.
+
+---
+
 ### 🎨 Mobile UI Refinement: Dynamic Colors, AI Pacing, and Group Overview — 2026-07-23
 
 #### AI Execution & Pacing Refactor

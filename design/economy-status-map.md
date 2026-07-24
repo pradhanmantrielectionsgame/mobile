@@ -679,8 +679,12 @@ perTapEffect(state, policy) = netEffect(state, policy) / 4
     <p>Agricultural Region (273 seats): payout 5×273 = 1,365 Cr. Real cost to push every member state to 50% from a cold start, using the real decay curve and real starting positions: ~12,480 Cr — <b>~11% ROI</b>, and this is the best case among all 15 groups, not the worst. Every one of the 15 groups costs more to fully dominate from scratch than a player's entire 12,500 Cr lifetime budget. The bonus only makes sense as an incidental kicker on states a player is already winning for the main seat race — never as something to deliberately chase from zero.</p>
   </div>
   <div class="example">
-    <p class="label">Sabotage is cheaper than conquest — also deliberate</p>
-    <p>Payout is gated on a live re-check, not a one-time achievement — a single state dropping back under 50% instantly zeroes the whole group's ongoing bonus, even with every other member state still held. Direct consequence of the strict per-state rule above, not a separate bug: it makes a losing player's cheapest counter-play "knock down one state" rather than "out-conquer the leader," which is either a built-in rubber band or a source of real swinginess depending which side of it you're on.</p>
+    <p class="label">Instant, event-based payout — decided 2026-07-24 (supersedes the phase-boundary version below)</p>
+    <p>Originally paid as a recurring per-phase income stream, re-evaluated only at the start of each phase — a player who crossed the threshold mid-phase saw no reward until the next phase began, which read as "I qualified but got nothing" from a live playtest. Changed to an instant, event-based bonus: it pays the moment every member state is simultaneously ≥50%, checked right after every action that can move a state's popularity (investment, rally token, agenda tap, special power, Nationwide Rally) rather than waiting for the next phase boundary. It is a one-shot bonus per qualifying event, not a continuous income stream — holding the group across multiple actions in the same phase doesn't re-pay on every action, only on the transition into "qualified." Losing then regaining full dominance later pays the bonus again (see "sabotage" below), same amount each time.</p>
+  </div>
+  <div class="example">
+    <p class="label">Sabotage is cheaper than conquest — still deliberate</p>
+    <p>A single state dropping back under 50% immediately zeroes the group's qualified status (no more payouts until it's re-earned). Direct consequence of the strict per-state rule above, not a separate bug: it makes a losing player's cheapest counter-play "knock down one state" rather than "out-conquer the leader." Under the instant-payout model this also means the player who lost dominance gets nothing further from that group until they push all member states back to 50%+, at which point they collect the bonus again in full — regaining is exactly as expensive as first qualifying, so there's no cheap way to farm the payout by deliberately wobbling a state.</p>
   </div>
   <div class="example">
     <p class="label">Implementation notes</p>
@@ -689,8 +693,13 @@ perTapEffect(state, policy) = netEffect(state, policy) / 4
 
 payout(group) = 5 × sum(state.seats for state in group.members)     // Cr
 
-→ re-evaluate dominanceActive every phase, not once — payout stops the instant
-  any single member state drops below 5000 bps, even if it re-crosses later</pre></div>
+// game.dominanceHeld[group.key + '|' + player] tracks the last-seen active
+// state per (group, player). Re-checked after every pop-changing action
+// (mobile/game.js's applyRegionalDominancePayouts, called from investCash,
+// playRallyToken, tapAgenda, activatePower, activateNationwideRally, and
+// startPhase as a catch-all) — pays only on the false→true transition, and
+// resets to false the instant any member state drops below threshold so a
+// later re-cross pays again.</pre></div>
   </div>
 </section>
 

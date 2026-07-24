@@ -45,10 +45,16 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
 .iconbtn{ width:66px; height:66px; border-radius:17px; background:var(--surface); border:3px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:33px; color:var(--ink); box-shadow:4px 4px 0 var(--line); }
 .iconbtn:active{ transform:translate(4px,4px); box-shadow:none; }
 
-.players-mini{ display:flex; justify-content:space-between; gap:14px; margin-top:18px; font-size:31px; }
-.pmini{ display:flex; align-items:baseline; gap:5px; font-weight:700; font-family:var(--font-mono); }
-.pmini.p1{ color:var(--p1); } .pmini.p2{ color:var(--p2); }
+.players-mini{ display:flex; justify-content:space-between; gap:14px; margin-top:18px; }
+.pmini{ display:flex; flex-direction:column; gap:6px; font-weight:700; font-family:var(--font-mono); min-width:0; max-width:48%; }
+.pmini.p1{ color:var(--p1); align-items:flex-start; } .pmini.p2{ color:var(--p2); align-items:flex-end; }
 .pmini .sub{ color:var(--ink-faint); font-weight:600; }
+.pmini-id{ display:flex; align-items:center; gap:8px; font-size:24px; min-width:0; }
+.pmini.p2 .pmini-id{ flex-direction:row-reverse; }
+.pmini-portrait{ width:40px; height:40px; border-radius:50%; object-fit:cover; border:2px solid var(--line); background:var(--surface2); flex:0 0 auto; }
+.pmini .pname{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
+.pmini-stats{ display:flex; align-items:baseline; gap:6px; font-size:22px; white-space:nowrap; }
+.pmini.p2 .pmini-stats{ flex-direction:row-reverse; }
 
 /* ---- groups bar: all 15 group filters as one genuine honeycomb, ordered
    small-seat to large-seat (see design/plan.md "State-groups rebalance")
@@ -192,6 +198,17 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
 .led-dot{ width:14px; height:14px; border-radius:50%; background:var(--track); border:2px solid var(--ink-faint); flex:0 0 auto; }
 .led-chip.led-on{ border-color:var(--p1); color:var(--ink); }
 .led-chip.led-on .led-dot{ background:var(--p1); border-color:var(--p1); }
+
+/* Agenda-info mode — same info-panel real estate again, this time as a
+   region-effect breakdown (led-chip's pill shape, colored by support/oppose
+   instead of leading/trailing) so "what does this agenda do" reuses the
+   existing chip footprint rather than inventing a new one. */
+.led-chip.eff-pos{ border-color:#1C8A4B; color:#1C8A4B; }
+.led-chip.eff-neg{ border-color:var(--stamp); color:var(--stamp); }
+
+/* Action-info mode (rally / nationwide / special) — same info-panel slot
+   again, as one wrapping description line instead of chips. */
+.info-groups.desc{ display:block; width:100%; margin-left:0; font-size:24px; line-height:1.4; color:var(--ink-soft); }
 </style>
 <style>
 /* Pre-game / end-game overlays — added for the real build, not part of the
@@ -288,8 +305,14 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
       </div>
     </div>
     <div class="players-mini">
-      <span class="pmini p1"><span id="p1PartySymbol">🪷</span> <span id="p1Funds">₹2500Cr</span> <span class="sub" id="p1Seats">— seats</span></span>
-      <span class="pmini p2"><span id="p2PartySymbol">✋</span> <span id="p2Funds">₹2500Cr</span> <span class="sub" id="p2Seats">— seats</span></span>
+      <span class="pmini p1">
+        <span class="pmini-id"><img class="pmini-portrait" id="p1Portrait" alt=""><span class="pname" id="p1Name"></span></span>
+        <span class="pmini-stats"><span id="p1PartySymbol">🪷</span> <span id="p1Funds">₹2500Cr</span> <span class="sub" id="p1Seats">— seats</span></span>
+      </span>
+      <span class="pmini p2">
+        <span class="pmini-id"><img class="pmini-portrait" id="p2Portrait" alt=""><span class="pname" id="p2Name"></span></span>
+        <span class="pmini-stats"><span id="p2PartySymbol">✋</span> <span id="p2Funds">₹2500Cr</span> <span class="sub" id="p2Seats">— seats</span></span>
+      </span>
     </div>
   </div>
 

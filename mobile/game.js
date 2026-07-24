@@ -131,6 +131,7 @@
       rallyPlaysByState: {},
       bigActionsThisPhase: [],
       phaseStartSnapshot: null,
+      dominanceHeld: {},
       log: [],
       winner: null,
       hungParliament: false,
@@ -155,14 +156,23 @@
     return out;
   }
 
+  // Instant, event-based payout — decided 2026-07-24: pays the moment every
+  // member state first crosses the threshold (not deferred to the next
+  // phase boundary), and pays again each time it's lost and regained.
+  // game.dominanceHeld tracks the last-seen qualified/not state per
+  // (group, player) so a call here while nothing changed is a no-op instead
+  // of re-paying for a dominance the player already collected.
   function applyRegionalDominancePayouts(game) {
     game.groups.forEach(function (g) {
       ['p1', 'p2'].forEach(function (pk) {
-        if (E.dominanceActive(g, game.states, game.pop, pk, game.cfg.regionalDominance.thresholdBps)) {
+        var key = g.key + '|' + pk;
+        var active = E.dominanceActive(g, game.states, game.pop, pk, game.cfg.regionalDominance.thresholdBps);
+        if (active && !game.dominanceHeld[key]) {
           var payout = E.dominancePayoutCr(g, game.states, game.cfg.regionalDominance);
           game.players[pk].fundsCr += payout;
           pushLog(game, '💰 ' + (pk === 'p1' ? 'You' : 'Opponent') + ' hold ' + g.label + ' — +₹' + payout + 'Cr regional dominance');
         }
+        game.dominanceHeld[key] = active;
       });
     });
   }
@@ -239,6 +249,7 @@
     pl.investmentTaps[svgId] = tapNum;
     var boost = E.investmentBoostBps(tapNum, game.cfg.investment);
     var gained = E.gainAt(game.pop[svgId], playerKey, boost, 'both');
+    applyRegionalDominancePayouts(game);
     return { ok: true, gained: gained, cost: cost };
   }
 
@@ -257,6 +268,7 @@
     game.rallyPlaysByState[svgId] = plays.concat([playerKey]);
     var gained = E.gainAt(game.pop[svgId], playerKey, game.cfg.rally.tokenBoostBps, 'both');
     pushLog(game, '📢 ' + who(game, playerKey) + ' held a State Rally in ' + game.statesById[svgId].name);
+    applyRegionalDominancePayouts(game);
     return { ok: true, gained: gained };
   }
 
@@ -287,6 +299,7 @@
     var boost = game.cfg.rally.nationwideRallyBoostBps;
     game.states.forEach(function (s) { applyBigAction(game, playerKey, s.svgId, boost); });
     pushLog(game, '🇮🇳 BREAKING: ' + who(game, playerKey) + ' launched a Nationwide Rally — every state feels it');
+    applyRegionalDominancePayouts(game);
     return { ok: true };
   }
 
@@ -316,6 +329,7 @@
       }
       pushLog(game, '📜 BREAKING: ' + who(game, playerKey) + ' fully committed the ' + policyName + ' agenda');
     }
+    applyRegionalDominancePayouts(game);
     return { ok: true, completed: completed };
   }
 
@@ -423,6 +437,7 @@
     (power.costs || []).forEach(runEffect);
     (power.benefits || []).forEach(runEffect);
     pushLog(game, '⚡ BREAKING: ' + who(game, playerKey) + ' invoked ' + power.name);
+    applyRegionalDominancePayouts(game);
     return { ok: true };
   }
 
