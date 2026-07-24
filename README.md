@@ -64,10 +64,10 @@ npm test              # Runs simulate.js regression suite
 ### In-Game Controls
 
 - **Single-tap a state** → select it (shows detail panel) · **Double-tap to invest** your current funds into that state's popularity share
-- **Tap agenda pills** (top-right) → commit funds to that politician's signature policies (instant, per-tap scaling)
-- **Rally tokens tray** (bottom) → tap a state to deploy a token (one-time +5% boost); crafted Nationwide Rally affects all states
-- **Special power button** — activate your politician's unique power (one use per game, unlocked after token crafting prerequisites)
-- **Group filter bar** (under header) → tap a region to show/hide that state group
+- **Agenda buttons** (corner-right, always visible) → commit funds to that politician's signature policies (instant, per-tap scaling); color-coded per politician
+- **Rally tokens** (corner-right fixed grid) → tap state-specific rally or Nationwide Rally to deploy a token (one-time +5% boost per state); persistent colored markers show rally history on map
+- **Special power button** (corner-right, below rally tokens) — activate your politician's unique power (one use per game, unlocked after token crafting prerequisites)
+- **Group overview** (bottom info panel) — tap to toggle between single-state detail view and LED-indicator grid showing your leading states (50%+ threshold) in each region
 - **UT quick-invest buttons** (bottom-left) — invest in multiple small union territories at once
 
 **Local hotseat:** Hand the phone to Player 2 after each phase; the game handles turn rotation automatically.
@@ -81,9 +81,9 @@ npm test              # Runs simulate.js regression suite
 
 ### Board State
 
-- **Header** — player funds, seats held, current phase
-- **Map** — interactive SVG showing states, colored by current leader
-- **Info panel** — selected state details and group membership
+- **Header** — player politician names + party symbols, funds, seats held, current phase
+- **Map** — interactive SVG showing states, colored by current leader and margin intensity (|P1% − P2%|); persistent rally-token markers show where tokens were played
+- **Bottom info panel** — toggles between (1) single-state detail view (popularity breakdown, current leader) and (2) group LED-indicator grid (per-state leading indicators for all states in chosen region, with 2-letter state codes)
 - **Timer pill** — turn countdown and phase indicator
 
 ## Build Outputs
@@ -128,7 +128,7 @@ npm test              # Runs simulate.js regression suite
 - `data/states_data.json` — 28 states + 8 UTs, 15 regional groups, live-fetched by the game
 - `data/policy-tags.json` — 24 policies with per-region effect magnitudes (after tagEffects migration), consistency-checked via `check_data_consistency.js`
 
-**UI (Complete for MVP):** `mobile/index.html` (Booth Ink skin) wired to real engine; includes politician select, end-game overlay, dynamic agenda tray, group filter bar, rally token system, special power activation.
+**UI (Complete for MVP):** `mobile/index.html` (Booth Ink skin) wired to real engine; includes politician select (with dynamic player colors), end-game overlay, fixed corner-right action buttons (agenda/rally/special power), bottom info panel toggle (state detail ↔ group LED grid), persistent rally-token map markers, AI action animations.
 
 **Testing (Complete):** `mobile/simulate.js` regression suite validates 5 full 10-phase games + all 20 politicians' special-power activations, asserting bps/seat invariants throughout. Run via `npm test`.
 

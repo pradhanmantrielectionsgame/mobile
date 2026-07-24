@@ -6,6 +6,53 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### 🎨 Mobile UI Refinement: Dynamic Colors, AI Pacing, and Group Overview — 2026-07-23
+
+#### AI Execution & Pacing Refactor
+- **RESTRUCTURED**: `mobile/game.js` — split monolithic `runAI()` into `aiStep()` (single action, returns `{type, svgId, costCr}` descriptor) and `runAIFull()` (fast-forward all actions for tests), enabling granular action throttling and per-action UI animation.
+- **REFACTORED**: `mobile/game.js` — AI investment targeting now cycles through regional groups via `pl.aiGroupCursor` (round-robin) instead of always picking the cheapest state nationwide, creating more cohesive regional strategies.
+- **FIXED**: `mobile/game.js` — investment scoring now accounts for remaining headroom (`min(boost, 10000 - currentShare)/cost`) instead of raw boost, preventing endless reinvestment in maxed states (stress test: AI was stuck on group 0 for 2982+ actions, now reaches all 15 group dominances in 911 actions).
+- **ADDED**: `mobile/main.js` — `scheduleAITick()` paces AI actions to ~20/min via randomized 2–4s `setTimeout` delays, replacing synchronous lock-step that made AI appear frozen.
+- **UPDATED**: `mobile/simulate.js` — added explicit `Game.runAIFull()` calls after `createGame` and `endPhase` to replace removed implicit auto-run, fixing deterministic test behavior.
+
+#### Service Worker & Caching Strategy
+- **REFACTORED**: `mobile/sw.js` — switched from cache-first to network-first fetch strategy (`fetch preferred, cache fallback`) and bumped cache name to `pme-mobile-v2`, fixing persistent-stale-build issue where phones stuck on old cached code until service worker bytes changed.
+
+#### Dynamic Politician Styling & Party Symbols
+- **ADDED**: `mobile/main.js` — politician colors now pulled from each player's chosen politician's `primaryColor` field, set dynamically into `COLORS.p1`/`COLORS.p2` and CSS `--p1`/`--p2` variables (replacing fixed orange/green defaults).
+- **ADDED**: `mobile/main.js`, `mobile/index.html` — `PARTY_SYMBOLS` map and `partySymbol()` function display actual chosen politicians' party symbols in header and state card (replacing hardcoded lotus/hand emoji).
+
+#### AI Action Animation & Visual Feedback
+- **ENHANCED**: `mobile/main.js`, `mobile/index.html` — AI investment actions now animate with player 2's color via `.fx-flash.p2` and `.fx-money.p2` CSS classes, providing real-time visual feedback for every AI move (paired with new `aiStep()` descriptor return).
+- **ENHANCED**: `mobile/main.js` — same-party politician exclusion in `startGame()` AI opponent selection (Independent politicians remain eligible despite party affiliation).
+
+#### Rally Token Tracking & Display
+- **CHANGED**: `mobile/game.js` — `rallyPlaysByState[svgId]` now stores array of `playerKeys` instead of bare count, enabling per-player attribution.
+- **ADDED**: `mobile/main.js`, `mobile/index.html` — rally tokens leave persistent colored map markers (`.rally-token-layer`, colored per player) rendered via `renderRallyTokens()`, providing visual history of token plays.
+
+#### Bottom Info Panel Redesign
+- **ADDED**: `mobile/main.js`, `mobile/index.html` — bottom info panel now toggles between single-state detail card (`renderStateCard()`) and group LED-indicator grid (`renderGroupCard()`), showing per-state leading indicator (50% threshold matching regional-dominance bonus) and state-code abbreviation (SvgId with "IN" prefix stripped).
+- **FIXED**: `mobile/index.html` — added `.vs-bar[hidden]{display:none}` rule to prevent CSS specificity clash where `.vs-bar{display:flex}` was silently overriding browser's `[hidden]` UA-stylesheet rule.
+
+#### Corner-Right Action Button Redesign (3-Iteration Refinement)
+- **REMOVED**: `mobile/main.js`, `mobile/index.html` — collapsible agenda/token trays and toggle FABs entirely (removed `setTray()`, `setAgendaTray()`, `tokenToggleBtn`, `agendaToggleBtn`, badges, dots).
+- **REMOVED**: `mobile/index.html` — `.group-readout` bar above map entirely, replaced by richer bottom-panel group-overview card.
+- **REDESIGNED**: `mobile/index.html` — agenda (4) + rally/special/nationwide (3) buttons moved from hidden collapsible trays to fixed, always-visible corner-right grids. Initial attempt: combined fixed bar under map (too small, ate map flex height). Reverted to floating corner-right overlay after user review of real device (costs zero flex height, allows full-size buttons).
+- **SIZED**: `mobile/index.html` — corner-right buttons resized to 98×82px matching corner-left UT/Delhi/Goa buttons exactly.
+- **SPLIT**: `mobile/index.html` — buttons grouped into two labeled blocks ("AGENDA" / "RALLY") with real spacing between; group labels moved from below to above each block.
+- **POSITIONED**: `mobile/index.html` — special-power button is 2-column-wide (`.action-btn-wide`) below State Rally + Nationwide Rally top row.
+- **LABELED**: `mobile/index.html` — agenda buttons now display policy name wrapped under icon (`.action-btn-labeled`, `.action-btn-icon`, `.action-btn-label`); button height grown to 104px to accommodate label text.
+
+#### Design Decisions Documented
+- **[D1] Corner-right button placement/sizing** — 3-iteration refinement: (1) combined fixed bar under map (capped ~48px buttons before wrapping, reduced map height), (2) floating corner-right overlay (zero flex cost, full-size buttons), (3) sized to match corner-left UT buttons (98×82px). Rationale: floating overlay preserves map flex height while allowing readable button sizes; fixed bar created an unsolvable tradeoff between button size and map viewport.
+- **[D2] Group LED-indicator "leading" state definition** — uses 50% threshold (`regionalDominance.thresholdBps`) matching the actual regional-dominance bonus mechanic, not simpler p1 > p2 majority. Rationale: avoids introducing a second, different definition of "leading" within the same app; directly ties visualization to the real mechanic it's designed to help players pursue.
+- **[D3] State code abbreviation scheme** — reuses each state's `svgId` with "IN" prefix stripped (e.g., `INUP` → `UP`, `INMH` → `MH`) for LED grid labels, rather than maintaining a separate 36-entry abbreviation data file. Rationale: zero data-maintenance burden, already available on every state record, matches user's own example exactly.
+
+#### Context
+Session focused on finalizing mobile UI polish and interaction responsiveness through AI pacing improvements, service-worker cache strategy fix, dynamic politician styling, persistent rally-token visualization, and a 3-iteration refinement of corner-right button layout (trading off fixed-bar button size against map viewport, ultimately settling on floating overlay per device testing). All changes maintain MVP scope; no external infrastructure or breaking schema changes.
+
+---
+
 ### 🤖 AI Personalities, PWA Integration, and Redistribution Engine Fixes — 2026-07-23
 
 #### Engine & AI

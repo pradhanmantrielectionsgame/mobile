@@ -33,6 +33,7 @@ function mulberry32(a) {
 
 function runOneGame(data, p1Id, p2Id, seedFn) {
   const game = Game.createGame(data, p1Id, p2Id, seedFn);
+  Game.runAIFull(game);
   checkInvariants(game, 'phase 1 start (after AI)');
 
   const stateIds = game.states.map(s => s.svgId);
@@ -66,6 +67,7 @@ function runOneGame(data, p1Id, p2Id, seedFn) {
     if (game.players.p1.craftedNationwide && !game.players.p1.usedNationwide) Game.activateNationwideRally(game, 'p1');
     checkInvariants(game, `phase ${game.phase} pre-end`);
     Game.endPhase(game);
+    Game.runAIFull(game);
     checkInvariants(game, `phase ${game.phase} post-end`);
   }
   assert.ok(game.winner, 'game did not finalize after 10 phases');

@@ -74,10 +74,6 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
 .gchip .badge{ display:none; position:absolute; top:-3px; right:2px; width:13px; height:13px; border-radius:50%; background:var(--stamp); border:2px solid var(--surface); z-index:1; }
 .gchip.qualified .badge{ display:block; }
 
-.group-readout{ flex:0 0 auto; background:var(--surface2); padding:11px 16px; border-bottom:3px solid var(--line); font-size:25px; color:var(--ink-soft); line-height:1.5; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.group-readout[hidden]{ display:none; }
-.group-readout b{ color:var(--ink); }
-
 /* ---- map: the "table" the ballot sits on, pale and flat. Lakshadweep and
    A&N are dropped entirely — including a leftover red debug bounding box
    baked into the source SVG around Lakshadweep, unrelated to the island
@@ -93,65 +89,64 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
 @keyframes march{ to{ stroke-dashoffset:-8; } }
 .india-map path#INLD, .india-map path#INAN, .india-map rect#bbox-lakshadweep{ display:none; }
 
-/* ---- bottom corners: a single UTs button (left) and rally/special action
-   buttons (right, where Andaman & Nicobar used to sit). Positioned inside
-   map-wrap, so they sit a fixed distance above the map's own bottom edge —
+/* ---- bottom-left corner: small-UT quick-invest buttons. Positioned inside
+   map-wrap, so it sits a fixed distance above the map's own bottom edge —
    never dependent on the info panel below, which never changes size. ---- */
-.corner-left, .corner-right{ position:absolute; bottom:27px; z-index:7; }
-.corner-left{ left:27px; display:flex; flex-direction:column; gap:14px; }
-.corner-right{ right:27px; display:flex; flex-direction:row; align-items:flex-end; gap:14px; }
-.fab-stack{ position:relative; }
+.corner-left{ position:absolute; bottom:27px; z-index:7; left:27px; display:flex; flex-direction:column; gap:14px; }
 
 .uts-btn{ display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; width:98px; height:82px; border-radius:19px; background:var(--surface); border:3px solid var(--line); box-shadow:4px 4px 0 var(--line); font-size:36px; }
 .uts-btn .lb{ font-size:15px; font-weight:800; letter-spacing:.02em; color:var(--ink-soft); }
 .uts-btn:active{ transform:translate(4px,4px); box-shadow:none; }
 
-.fab{ position:relative; width:123px; height:123px; border-radius:27px;
-  background:var(--surface); border:3px solid var(--line); box-shadow:6px 6px 0 var(--line);
-  display:flex; align-items:center; justify-content:center; font-size:59px;
-  transition:transform .12s ease, box-shadow .12s ease; }
-.fab.armed{ background:var(--accent); border-color:var(--accent); color:#fff; }
-.fab.depleted{ opacity:.4; }
-.fab:active{ transform:translate(6px,6px); box-shadow:none; }
-.fab .badge{ position:absolute; top:-13px; right:-13px; min-width:39px; height:39px; padding:0 8px; border-radius:20px; background:var(--ink); color:var(--page); font-family:var(--font-mono); font-size:24px; font-weight:700; display:flex; align-items:center; justify-content:center; }
-.fab .dot{ position:absolute; top:-4px; left:-4px; width:22px; height:22px; border-radius:50%; background:var(--stamp); border:3px solid var(--page); display:none; }
-.fab .dot.show{ display:block; }
-
-/* ---- token tray: the FAB is the single always-visible entry point; tapping
-   it expands a stack of token rows above it. Anchored to corner-right's
-   bottom edge so the toggle button never moves when the tray opens. ---- */
-.token-tray{ position:absolute; right:0; bottom:calc(100% + 15px); display:flex; flex-direction:column; gap:12px;
-  max-height:0; opacity:0; overflow:hidden; pointer-events:none;
-  transition:max-height .22s ease, opacity .18s ease; }
-.token-tray.open{ max-height:420px; opacity:1; pointer-events:auto; }
-.tray-item{ display:flex; align-items:center; gap:14px; width:294px; padding:14px 20px; border-radius:20px;
-  background:var(--surface); border:3px solid var(--line); box-shadow:5px 5px 0 var(--line);
+/* ---- corner-right: agenda (4) + rally/special/nationwide (3) as fixed,
+   always-visible button grids floating over the map's bottom-right corner —
+   no expand/collapse tray, no toggle FAB, and critically no dedicated flex
+   row eating into the map's height. One tap arms the action, one tap on the
+   map deploys it. Each group is its own labeled block (same button size as
+   corner-left's uts-btn, for a consistent feel) with real separation between
+   them so agenda vs rally reads as two distinct clusters, not one grid. ---- */
+.corner-right{ position:absolute; right:27px; bottom:27px; z-index:7; display:flex; flex-direction:column; align-items:flex-end; gap:22px; }
+.action-block{ display:flex; flex-direction:column; align-items:center; gap:6px; }
+.action-block-label{ font-size:15px; font-weight:800; letter-spacing:.02em; color:var(--ink-soft); }
+.action-group{ display:grid; grid-template-columns:repeat(2, 98px); gap:10px; }
+.action-btn{ position:relative; width:98px; height:82px; border-radius:19px;
+  background:var(--surface); border:3px solid var(--line); box-shadow:4px 4px 0 var(--line);
+  display:flex; align-items:center; justify-content:center; font-size:36px;
   transition:transform .1s ease, box-shadow .1s ease; }
-.tray-item:active{ transform:translate(5px,5px); box-shadow:none; }
-.tray-item .ti-icon{ font-size:36px; width:42px; text-align:center; flex:0 0 auto; }
-.tray-item .ti-label{ flex:1 1 auto; text-align:left; font-family:var(--font-mono); font-size:22px; font-weight:700; letter-spacing:.01em; color:var(--ink); }
-.tray-item .ti-badge{ font-family:var(--font-mono); font-size:20px; font-weight:800; padding:5px 11px; border-radius:12px; background:var(--ink); color:var(--page); min-width:48px; text-align:center; flex:0 0 auto; }
-.tray-item.armed{ background:var(--accent); border-color:var(--accent); }
-.tray-item.armed .ti-label{ color:#fff; }
-.tray-item.depleted, .tray-item.locked{ opacity:.5; }
-.tray-item.locked .ti-badge{ background:var(--ink-faint); }
-.tray-item.craftable{ animation:craft-pulse 1.4s ease-in-out infinite; }
-.tray-item.craftable .ti-badge{ background:var(--stamp); }
-.tray-item.used{ opacity:.35; }
-.tray-item.used .ti-badge{ background:var(--ink-faint); }
+.action-btn:active{ transform:translate(4px,4px); box-shadow:none; }
+.action-btn-wide{ grid-column:span 2; width:100%; }
+/* agenda buttons get the policy name under the icon, wrapping as needed,
+   instead of making the player memorize/hover an icon — there's headroom
+   for it now that these match the uts-btn footprint. */
+.action-btn-labeled{ flex-direction:column; gap:2px; height:104px; padding:8px 4px; }
+.action-btn-icon{ font-size:26px; line-height:1; }
+.action-btn-label{ font-size:10.5px; font-weight:800; line-height:1.15; letter-spacing:.01em;
+  color:var(--ink-soft); text-align:center; white-space:normal; overflow-wrap:break-word; }
+.action-btn-labeled.agenda-done .action-btn-label{ color:var(--stamp); }
+.action-btn .badge{ position:absolute; top:-11px; right:-11px; min-width:28px; height:28px; padding:0 5px;
+  border-radius:14px; background:var(--ink); color:var(--page); font-family:var(--font-mono); font-size:13px;
+  font-weight:800; display:flex; align-items:center; justify-content:center; line-height:1; }
+.action-btn.armed{ background:var(--accent); border-color:var(--accent); color:#fff; }
+.action-btn.depleted, .action-btn.locked{ opacity:.45; }
+.action-btn.locked .badge{ background:var(--ink-faint); }
+.action-btn.craftable{ animation:craft-pulse 1.4s ease-in-out infinite; }
+.action-btn.craftable .badge{ background:var(--stamp); }
+.action-btn.used{ opacity:.3; }
+.action-btn.used .badge{ background:var(--ink-faint); }
+.action-btn.agenda-done{ opacity:.5; }
+.action-btn.agenda-done .badge{ background:var(--stamp); }
 @keyframes craft-pulse{
-  0%,100%{ box-shadow:5px 5px 0 var(--line); }
-  50%{ box-shadow:5px 5px 0 var(--line), 0 0 0 5px rgba(179,49,29,.35); }
+  0%,100%{ box-shadow:3px 3px 0 var(--line); }
+  50%{ box-shadow:3px 3px 0 var(--line), 0 0 0 4px rgba(179,49,29,.35); }
 }
 
-/* ---- agenda tray: same tray-item shell, but each row tracks continuous
-   0-100% commitment progress instead of a token count, so it gets a fill
-   bar under the label instead of just a badge number. ---- */
-.tray-item .ti-col{ flex:1 1 auto; display:flex; flex-direction:column; gap:6px; min-width:0; }
-.tray-item .ti-progress-track{ height:8px; border-radius:5px; background:var(--track); overflow:hidden; }
-.tray-item .ti-progress-fill{ height:100%; background:var(--accent); border-radius:5px; transition:width .25s ease; }
-.tray-item.agenda-done .ti-progress-fill{ background:var(--stamp); }
-.tray-item.agenda-done{ opacity:.55; }
+/* ---- rally token markers: a small colored dot per player left on the map
+   at every state that's had a rally played on it, so it's visible at a
+   glance which states are capped out (maxPlaysPerStateShared) and which
+   still have room. Viewport-fixed, same coordinate space as .fx-layer. ---- */
+.rally-token-layer{ position:fixed; inset:0; z-index:6; pointer-events:none; }
+.rally-token{ position:absolute; width:15px; height:15px; margin:-8px 0 0 -8px; border-radius:50%;
+  border:2px solid var(--surface); box-shadow:0 1px 2px rgba(0,0,0,.35); }
 
 /* ---- news ticker: a chyron in normal document flow at the very top of the
    stage (breaking news, then state groups, then the group info readout),
@@ -182,10 +177,21 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
 .info-groups .none{ font-size:24px; color:var(--ink-faint); line-height:48px; }
 
 .vs-bar{ display:flex; align-items:center; gap:16px; margin-top:21px; }
+.vs-bar[hidden]{ display:none; }
 .vs-label{ font-family:var(--font-mono); font-size:31px; font-weight:800; white-space:nowrap; }
 .vs-label.p1{ color:var(--p1); } .vs-label.p2{ color:var(--p2); }
 .vs-track{ flex:1 1 auto; display:flex; height:27px; border:3px solid var(--line); border-radius:9px; overflow:hidden; background:var(--track); }
 .vs-seg.p1{ background:var(--p1); } .vs-seg.p2{ background:var(--p2); } .vs-seg.oth{ background:transparent; }
+
+/* Group overview mode — takes over the same info-panel real estate as the
+   single-state card (cardGroups + vs-bar) when a group chip is active. */
+.led-grid{ display:flex; flex-wrap:wrap; gap:8px; margin-top:21px; width:100%; }
+.led-chip{ display:flex; align-items:center; gap:7px; padding:8px 12px; border-radius:100px;
+  background:var(--surface2); border:2px solid var(--line); font-family:var(--font-mono);
+  font-weight:700; font-size:17px; color:var(--ink-soft); }
+.led-dot{ width:14px; height:14px; border-radius:50%; background:var(--track); border:2px solid var(--ink-faint); flex:0 0 auto; }
+.led-chip.led-on{ border-color:var(--p1); color:var(--ink); }
+.led-chip.led-on .led-dot{ background:var(--p1); border-color:var(--p1); }
 </style>
 <style>
 /* Pre-game / end-game overlays — added for the real build, not part of the
@@ -222,11 +228,13 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
 .fx-layer{ position:fixed; inset:0; z-index:80; pointer-events:none; overflow:hidden; }
 .fx-flash{ position:absolute; width:16px; height:16px; margin:-8px 0 0 -8px; border-radius:50%;
   background:var(--accent); opacity:.55; animation:fx-flash-anim .45s ease-out forwards; }
+.fx-flash.p2{ background:var(--p2); }
 @keyframes fx-flash-anim{ to{ width:110px; height:110px; margin:-55px 0 0 -55px; opacity:0; } }
 .fx-money{ position:absolute; transform:translate(-50%,-50%); font-family:var(--font-mono); font-weight:800; font-size:22px;
   animation:fx-money-anim .7s ease-out forwards; white-space:nowrap; }
 .fx-money.spend{ color:var(--stamp); }
 .fx-money.gain{ color:#1C8A4B; }
+.fx-money.p2{ color:var(--p2); }
 @keyframes fx-money-anim{ from{ opacity:1; transform:translate(-50%,-50%); } to{ opacity:0; transform:translate(-50%,-130%); } }
 @keyframes fx-shake{ 10%,90%{ transform:translate(-1px,0); } 20%,80%{ transform:translate(2px,0); }
   30%,50%,70%{ transform:translate(-4px,0); } 40%,60%{ transform:translate(4px,0); } }
@@ -251,6 +259,7 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
 </div>
 
 <div class="target-banner" id="targetBanner" hidden>Tap a state to target</div>
+<div class="rally-token-layer" id="rallyTokenLayer"></div>
 <div class="fx-layer" id="fxLayer"></div>
 
 <div class="overlay settings-overlay" id="settingsOverlay" hidden>
@@ -279,8 +288,8 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
       </div>
     </div>
     <div class="players-mini">
-      <span class="pmini p1">🪷 <span id="p1Funds">₹2500Cr</span> <span class="sub" id="p1Seats">— seats</span></span>
-      <span class="pmini p2">✋ <span id="p2Funds">₹2500Cr</span> <span class="sub" id="p2Seats">— seats</span></span>
+      <span class="pmini p1"><span id="p1PartySymbol">🪷</span> <span id="p1Funds">₹2500Cr</span> <span class="sub" id="p1Seats">— seats</span></span>
+      <span class="pmini p2"><span id="p2PartySymbol">✋</span> <span id="p2Funds">₹2500Cr</span> <span class="sub" id="p2Seats">— seats</span></span>
     </div>
   </div>
 
@@ -290,7 +299,6 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
   </div>
 
   <div class="groups-bar" id="groupsBox"></div>
-  <div class="group-readout" id="groupReadout" hidden></div>
 
   <div class="map-wrap">
     <svg class="india-map" id="map" viewBox="84 27 833 946" preserveAspectRatio="xMidYMid meet">
@@ -462,24 +470,18 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
       <button class="uts-btn" id="utsBtn" title="Invest in all Union Territories at once">🏛️<span class="lb">ALL UTS</span></button>
     </div>
     <div class="corner-right">
-     <div class="fab-stack">
-      <div class="token-tray" id="agendaTray"><!-- populated per politician by main.js --></div>
-      <button class="fab" id="agendaToggleBtn" title="Agenda">📜<span class="badge" id="agendaToggleBadge">4</span><span class="dot" id="agendaToggleDot"></span></button>
-     </div>
-     <div class="fab-stack">
-      <div class="token-tray" id="tokenTray">
-        <button class="tray-item" id="rallyBtn" title="State Rally">
-          <span class="ti-icon">📢</span><span class="ti-label">State Rally</span><span class="ti-badge" id="rallyBadge">5</span>
-        </button>
-        <button class="tray-item" id="specialBtn" title="Special Powerup">
-          <span class="ti-icon">⭐</span><span class="ti-label">Special Powerup</span><span class="ti-badge" id="specialBadge">5/6</span>
-        </button>
-        <button class="tray-item" id="nationwideBtn" title="Nationwide Rally">
-          <span class="ti-icon">🇮🇳</span><span class="ti-label">Nationwide Rally</span><span class="ti-badge" id="nationwideBadge">5/12</span>
-        </button>
+      <div class="action-block">
+        <span class="action-block-label">AGENDA</span>
+        <div class="action-group" id="agendaTray"><!-- 4 buttons, populated per politician by main.js --></div>
       </div>
-      <button class="fab" id="tokenToggleBtn" title="Tokens">🎟️<span class="badge" id="tokenToggleBadge">5</span><span class="dot" id="tokenToggleDot"></span></button>
-     </div>
+      <div class="action-block">
+        <span class="action-block-label">RALLY</span>
+        <div class="action-group" id="tokenTray">
+          <button class="action-btn" id="rallyBtn" title="State Rally">📢<span class="badge" id="rallyBadge">5</span></button>
+          <button class="action-btn" id="nationwideBtn" title="Nationwide Rally">🇮🇳<span class="badge" id="nationwideBadge">5/12</span></button>
+          <button class="action-btn action-btn-wide" id="specialBtn" title="Special Powerup">⭐<span class="badge" id="specialBadge">5/6</span></button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -488,10 +490,10 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
       <h3 id="cardName">Uttar Pradesh</h3><span class="seats" id="cardSeats">80 seats</span>
       <div class="info-groups" id="cardGroups"></div>
     </div>
-    <div class="vs-bar">
-      <span class="vs-label p1">🪷 <span id="cardP1Pct">—</span></span>
+    <div class="vs-bar" id="cardVsBar">
+      <span class="vs-label p1"><span id="cardP1Symbol">🪷</span> <span id="cardP1Pct">—</span></span>
       <div class="vs-track"><div class="vs-seg p1" id="cardP1Fill"></div><div class="vs-seg oth" id="cardOthFill"></div><div class="vs-seg p2" id="cardP2Fill"></div></div>
-      <span class="vs-label p2"><span id="cardP2Pct">—</span> ✋</span>
+      <span class="vs-label p2"><span id="cardP2Pct">—</span> <span id="cardP2Symbol">✋</span></span>
     </div>
   </div>
 </div>

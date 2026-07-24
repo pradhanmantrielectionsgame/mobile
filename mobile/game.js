@@ -103,7 +103,9 @@
       powerNullified: false,
       agendaProgress: {},
       agendaTokenBonusEarned: 0,
-      investmentTaps: {}
+      investmentTaps: {},
+      aiGroupCursor: null,
+      aiAgendaTapsThisPhase: {}
     };
   }
 
@@ -173,9 +175,12 @@
       pl.fundsCr += game.cfg.fundsRefreshPerPhaseCr;
       pl.tokens.stateRally += game.cfg.rally.tokenIncomePerPhase;
       pl.tokensSpentThisPhase = 0;
+      if (pl.isAI) pl.aiAgendaTapsThisPhase = {};
     });
     applyRegionalDominancePayouts(game);
-    if (game.players.p2.isAI) runAI(game);
+    // AI no longer auto-resolves its whole turn here — it acts one move at a
+    // time via aiStep(), paced by the caller (main.js throttles to ~20/min;
+    // runAIFull() fast-forwards it for Node tests/simulation).
   }
 
   function endPhase(game) {
@@ -237,15 +242,19 @@
     return { ok: true, gained: gained, cost: cost };
   }
 
+  // rallyPlaysByState[svgId] is an array of the playerKeys that deployed a
+  // rally token there (in order), not just a count — main.js reads it to
+  // draw a colored marker per token so players can see whose it is, not
+  // just that the state is capped out.
   function playRallyToken(game, playerKey, svgId) {
     var pl = game.players[playerKey];
     if (pl.tokens.stateRally <= 0) return { ok: false, reason: 'no_tokens' };
     if (pl.tokensSpentThisPhase >= game.cfg.rally.maxTokenSpendPerPhase) return { ok: false, reason: 'spend_cap' };
-    var plays = game.rallyPlaysByState[svgId] || 0;
-    if (plays >= game.cfg.rally.maxPlaysPerStateShared) return { ok: false, reason: 'state_cap' };
+    var plays = game.rallyPlaysByState[svgId] || [];
+    if (plays.length >= game.cfg.rally.maxPlaysPerStateShared) return { ok: false, reason: 'state_cap' };
     pl.tokens.stateRally -= 1;
     pl.tokensSpentThisPhase += 1;
-    game.rallyPlaysByState[svgId] = plays + 1;
+    game.rallyPlaysByState[svgId] = plays.concat([playerKey]);
     var gained = E.gainAt(game.pop[svgId], playerKey, game.cfg.rally.tokenBoostBps, 'both');
     pushLog(game, '📢 ' + who(game, playerKey) + ' held a State Rally in ' + game.statesById[svgId].name);
     return { ok: true, gained: gained };
@@ -425,7 +434,7 @@
   // that needs no infrastructure.
   // ---------------------------------------------------------------------
   function pickAIRallyTarget(game) {
-    var candidates = game.states.filter(function (s) { return (game.rallyPlaysByState[s.svgId] || 0) < game.cfg.rally.maxPlaysPerStateShared; });
+    var candidates = game.states.filter(function (s) { return (game.rallyPlaysByState[s.svgId] || []).length < game.cfg.rally.maxPlaysPerStateShared; });
     if (!candidates.length) return null;
     candidates.sort(function (a, b) {
       return (game.pop[b.svgId].p1 - game.pop[b.svgId].p2) - (game.pop[a.svgId].p1 - game.pop[a.svgId].p2);
@@ -468,66 +477,136 @@
     return bonus;
   }
 
-  function aiInvestRemainingFunds(game, profile) {
-    var pl = game.players.p2;
-    var guard = 0;
-    while (pl.fundsCr >= game.cfg.investment.costPerSeatCr && guard++ < 2000) {
-      var best = null, bestScore = -Infinity;
-      game.states.forEach(function (s) {
-        var cost = E.investmentCostCr(s.seats, game.cfg.investment);
-        if (cost > pl.fundsCr) return;
-        var tapNum = (pl.investmentTaps[s.svgId] || 0) + 1;
-        var boost = E.investmentBoostBps(tapNum, game.cfg.investment);
-        var score = boost / cost + (game.pop[s.svgId].p1 - game.pop[s.svgId].p2) / 100000;
-        if (profile && profile.groupFocus) score += groupFocusBonus(game, s);
-        if (score > bestScore) { bestScore = score; best = s; }
-      });
-      if (!best) break;
-      investCash(game, 'p2', best.svgId);
-    }
+  // Investment target: the AI commits to one state group at a time (round-
+  // robin over game.groups, skipping groups it already holds dominance in)
+  // instead of chasing whatever single state scores best nationwide — that
+  // scattered spend never concentrated enough in one place to clear the 50%
+  // regional-dominance bar. pl.aiGroupCursor persists across phases so the
+  // campaign keeps progressing group-to-group over the course of the game.
+  function scoreInvestState(game, pl, profile, s) {
+    var cost = E.investmentCostCr(s.seats, game.cfg.investment);
+    if (cost > pl.fundsCr) return null;
+    var tapNum = (pl.investmentTaps[s.svgId] || 0) + 1;
+    var boost = E.investmentBoostBps(tapNum, game.cfg.investment);
+    // Use actual remaining headroom, not the raw boost — otherwise the AI
+    // keeps dumping funds into an already-near-100% state forever (0 real
+    // gain) instead of moving on to the next state in its target group,
+    // which meant a group could never actually clear regional dominance.
+    var effectiveGain = Math.min(boost, 10000 - game.pop[s.svgId].p2);
+    if (effectiveGain <= 0) return null;
+    var score = effectiveGain / cost + (game.pop[s.svgId].p1 - game.pop[s.svgId].p2) / 100000;
+    if (profile && profile.groupFocus) score += groupFocusBonus(game, s);
+    return score;
   }
 
-  function runAI(game) {
+  function bestInPool(game, pl, profile, pool) {
+    var best = null, bestScore = -Infinity;
+    pool.forEach(function (s) {
+      var score = scoreInvestState(game, pl, profile, s);
+      if (score !== null && score > bestScore) { bestScore = score; best = s; }
+    });
+    return best;
+  }
+
+  function pickAIInvestmentTarget(game, profile) {
     var pl = game.players.p2;
+    var groups = game.groups;
+    if (!groups.length) return bestInPool(game, pl, profile, game.states);
+
+    if (pl.aiGroupCursor == null) pl.aiGroupCursor = 0;
+    var group = null;
+    for (var i = 0; i < groups.length; i++) {
+      var idx = (pl.aiGroupCursor + i) % groups.length;
+      if (!E.dominanceActive(groups[idx], game.states, game.pop, 'p2', game.cfg.regionalDominance.thresholdBps)) {
+        pl.aiGroupCursor = idx;
+        group = groups[idx];
+        break;
+      }
+    }
+    if (!group) return bestInPool(game, pl, profile, game.states); // dominant everywhere already
+
+    var pool = game.states.filter(function (s) { return s.tags.indexOf(group.key) !== -1; });
+    var best = bestInPool(game, pl, profile, pool);
+    if (best) return best;
+    // nothing affordable left in the target group this tick — move on to
+    // the next group and fall back to the whole map so funds don't stall
+    pl.aiGroupCursor = (pl.aiGroupCursor + 1) % groups.length;
+    return bestInPool(game, pl, profile, game.states);
+  }
+
+  // Performs exactly one AI action (rally play, token craft, power/nationwide
+  // activation, agenda tap, or a single investment tap) and returns a
+  // descriptor of what it did ({ type, svgId, costCr }, svgId/costCr null
+  // when not applicable) so the caller can animate it, or null if it had
+  // nothing to do. Called repeatedly — once per tick in the browser
+  // (main.js paces ticks to ~20/min), or in a tight loop by runAIFull() for
+  // Node tests, which don't care about real-time pacing.
+  function aiStep(game) {
+    var pl = game.players.p2;
+    if (!pl.isAI || game.winner) return null;
     var profile = pl.aiProfile || AI_PROFILES[0];
 
-    while (pl.tokensSpentThisPhase < game.cfg.rally.maxTokenSpendPerPhase && pl.tokens.stateRally > 0) {
-      var target = pickAIRallyTarget(game);
-      if (!target) break;
-      if (!playRallyToken(game, 'p2', target).ok) break;
+    if (pl.tokensSpentThisPhase < game.cfg.rally.maxTokenSpendPerPhase && pl.tokens.stateRally > 0) {
+      var rallyTarget = pickAIRallyTarget(game);
+      if (rallyTarget && playRallyToken(game, 'p2', rallyTarget).ok) {
+        return { type: 'rally', svgId: rallyTarget, costCr: null };
+      }
     }
 
     if (profile.craftsTokens) {
-      craftToken(game, 'p2', 'special');
-      craftToken(game, 'p2', 'nationwide');
+      if (craftToken(game, 'p2', 'special').ok) return { type: 'craftSpecial', svgId: null, costCr: null };
+      if (craftToken(game, 'p2', 'nationwide').ok) return { type: 'craftNationwide', svgId: null, costCr: null };
     }
 
     if (pl.craftedSpecial && !pl.usedSpecial) {
       var power = pl.politician.power;
-      var canPay = !power.requiresMinFundsCr || pl.fundsCr >= power.requiresMinFundsCr;
-      canPay = canPay && pl.fundsCr >= powerFundsCost(power);
+      var canPay = (!power.requiresMinFundsCr || pl.fundsCr >= power.requiresMinFundsCr) &&
+        pl.fundsCr >= powerFundsCost(power);
       if (canPay) {
         var opts = {};
         if (power.requiresTargetState) opts.targetStateSvgId = pickAIPowerTarget(game, power);
         if (power.requiresCompletedAgenda) opts.targetAgendaName = pickAICompletedAgenda(game);
-        if (!power.requiresTargetState || opts.targetStateSvgId) {
-          if (!power.requiresCompletedAgenda || opts.targetAgendaName) activatePower(game, 'p2', opts);
+        var targetsOk = (!power.requiresTargetState || opts.targetStateSvgId) &&
+          (!power.requiresCompletedAgenda || opts.targetAgendaName);
+        if (targetsOk && activatePower(game, 'p2', opts).ok) {
+          return { type: 'power', svgId: opts.targetStateSvgId || null, costCr: null };
         }
       }
     }
-    if (pl.craftedNationwide && !pl.usedNationwide) activateNationwideRally(game, 'p2');
+
+    if (pl.craftedNationwide && !pl.usedNationwide) {
+      if (activateNationwideRally(game, 'p2').ok) return { type: 'nationwide', svgId: null, costCr: null };
+    }
 
     var ranked = pl.politician.policies.map(function (p) { return p.name; })
       .sort(function (a, b) { return totalNetEffect(game, b) - totalNetEffect(game, a); });
-    ranked.forEach(function (name) {
-      var guard = 0;
-      while (pl.fundsCr >= game.cfg.agenda.costPerTapCr &&
-        (pl.agendaProgress[name] || 0) < game.cfg.agenda.tapsToComplete && guard++ < profile.agendaTapCapPerPolicyPerPhase) {
-        if (!tapAgenda(game, 'p2', name).ok) break;
+    for (var i = 0; i < ranked.length; i++) {
+      var name = ranked[i];
+      var tapsThisPhase = pl.aiAgendaTapsThisPhase[name] || 0;
+      if (tapsThisPhase >= profile.agendaTapCapPerPolicyPerPhase) continue;
+      if ((pl.agendaProgress[name] || 0) >= game.cfg.agenda.tapsToComplete) continue;
+      if (pl.fundsCr < game.cfg.agenda.costPerTapCr) continue;
+      if (tapAgenda(game, 'p2', name).ok) {
+        pl.aiAgendaTapsThisPhase[name] = tapsThisPhase + 1;
+        return { type: 'agenda', svgId: null, costCr: game.cfg.agenda.costPerTapCr };
       }
-    });
+    }
 
-    aiInvestRemainingFunds(game, profile);
+    var investTarget = pl.fundsCr >= game.cfg.investment.costPerSeatCr ? pickAIInvestmentTarget(game, profile) : null;
+    if (investTarget) {
+      var investResult = investCash(game, 'p2', investTarget.svgId);
+      if (investResult.ok) return { type: 'invest', svgId: investTarget.svgId, costCr: investResult.cost };
+    }
+
+    return null;
+  }
+
+  // Fast-forwards the AI's whole turn in one call — for Node tests/
+  // simulation only, which don't need real-time pacing. The browser never
+  // calls this; it ticks aiStep() on a timer instead (see main.js).
+  function runAIFull(game) {
+    var guard = 0;
+    while (aiStep(game) && guard++ < 2000) {}
   }
 
   var API = {
@@ -548,7 +627,9 @@
     activatePower: activatePower,
     canActivatePower: canActivatePower,
     totalNetEffect: totalNetEffect,
-    pushLog: pushLog
+    pushLog: pushLog,
+    aiStep: aiStep,
+    runAIFull: runAIFull
   };
   root.PMEGame = API;
   if (typeof module !== 'undefined') module.exports = API;

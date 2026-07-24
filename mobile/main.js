@@ -4,7 +4,14 @@
   'use strict';
   var E = window.PMEEngine, G = window.PMEGame;
 
+  // p1/p2 default to placeholder colors here but are overwritten in
+  // startGame() with each politician's real party color (primaryColor).
   var COLORS = { p1: '#E8871C', p2: '#1C8A4B', others: '#AEB4C0' };
+  var PARTY_SYMBOLS = {
+    'BJP': '🪷', 'INC': '✋', 'AAP': '🧹', 'AITC': '💐',
+    'JD(U)': '🏹', 'AIADMK': '🍃', 'Independent': '🗳️'
+  };
+  function partySymbol(party) { return PARTY_SYMBOLS[party] || '🗳️'; }
   var AGENDA_ICONS = {
     'Education': '🎓', 'Rural Development': '🌾', "Women's Empowerment": '👩', 'Healthcare': '⚕️',
     'Land Reforms': '🗺️', 'Agricultural Reforms': '🚜', 'Water and Mineral Rights': '💧',
@@ -47,16 +54,17 @@
     var r = el.getBoundingClientRect();
     return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
   }
-  function spawnFlash(x, y) {
+  function spawnFlash(x, y, colorClass) {
     var el = document.createElement('div');
-    el.className = 'fx-flash'; el.style.left = x + 'px'; el.style.top = y + 'px';
+    el.className = 'fx-flash' + (colorClass ? ' ' + colorClass : '');
+    el.style.left = x + 'px'; el.style.top = y + 'px';
     $('fxLayer').appendChild(el);
     setTimeout(function () { el.remove(); }, 500);
   }
-  function spawnMoneyText(x, y, amountCr, sign) {
+  function spawnMoneyText(x, y, amountCr, sign, colorClass) {
     if (!amountCr) return;
     var el = document.createElement('div');
-    el.className = 'fx-money ' + (sign > 0 ? 'gain' : 'spend');
+    el.className = 'fx-money ' + (colorClass || (sign > 0 ? 'gain' : 'spend'));
     el.textContent = (sign > 0 ? '+₹' : '-₹') + Math.round(Math.abs(amountCr)) + 'Cr';
     el.style.left = x + 'px'; el.style.top = y + 'px';
     $('fxLayer').appendChild(el);
@@ -132,12 +140,32 @@
   }
 
   function startGame(p1Id) {
-    var others = data.politicians.filter(function (p) { return p.id !== p1Id; });
+    var p1Pol = data.politicians.filter(function (p) { return p.id === p1Id; })[0];
+    // Same-party matchups don't make sense (e.g. two BJP candidates running
+    // against each other) — "Independent" isn't a real shared affiliation,
+    // so independents are exempt from this exclusion.
+    var others = data.politicians.filter(function (p) {
+      return p.id !== p1Id && (p1Pol.party === 'Independent' || p.party !== p1Pol.party);
+    });
     var p2Id = others[Math.floor(Math.random() * others.length)].id;
     game = G.createGame(data, p1Id, p2Id, Math.random);
     window.__game = game; // debug/test hook — inspect live state from devtools
+
+    // Map/UI colors and party symbols follow whichever politicians were
+    // actually picked, not a fixed p1=orange/p2=green default.
+    COLORS.p1 = game.players.p1.politician.primaryColor || '#E8871C';
+    COLORS.p2 = game.players.p2.politician.primaryColor || '#1C8A4B';
+    document.documentElement.style.setProperty('--p1', COLORS.p1);
+    document.documentElement.style.setProperty('--p2', COLORS.p2);
+    var p1Symbol = partySymbol(game.players.p1.politician.party);
+    var p2Symbol = partySymbol(game.players.p2.politician.party);
+    $('p1PartySymbol').textContent = p1Symbol;
+    $('p2PartySymbol').textContent = p2Symbol;
+    $('cardP1Symbol').textContent = p1Symbol;
+    $('cardP2Symbol').textContent = p2Symbol;
+
     lastLogShown = 0;
-    armed = null; activeGroup = null; trayOpen = false; agendaTrayOpen = false;
+    armed = null; activeGroup = null;
     lastMapTapId = null; lastBtnTapId = null; timerPaused = false;
     $('pauseToggleBtn').textContent = '⏸ Pause';
     G.pushLog(game, '🗳️ Your opponent this match: ' + game.players.p2.politician.name + ' (' + game.players.p2.politician.party + ')');
@@ -160,6 +188,32 @@
     var name = game.players[pk].politician.homeState;
     var s = game.states.filter(function (st) { return st.name === name; })[0];
     return s ? s.svgId : 'INUP';
+  }
+
+  // ---------------------------------------------------------------------
+  // AI pacing — the AI no longer resolves its whole turn instantly; it acts
+  // one move at a time via G.aiStep(), throttled to ~20 actions/min (a
+  // randomized 2-4s cooldown between ticks, mean 3s) so it plays out visibly
+  // instead of dumping all its funds/taps the instant a phase starts.
+  // ---------------------------------------------------------------------
+  function animateAITap(action) {
+    if (!action.svgId) return;
+    var el = document.getElementById(action.svgId);
+    var pt = viewportPoint(el);
+    if (el && el.animate) el.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.03)' }, { transform: 'scale(1)' }], { duration: 220 });
+    spawnFlash(pt.x, pt.y, 'p2');
+    if (action.costCr) spawnMoneyText(pt.x, pt.y, action.costCr, -1, 'p2');
+  }
+
+  function scheduleAITick() {
+    var delay = 2000 + Math.random() * 2000;
+    setTimeout(function () {
+      if (game && !timerPaused && !game.winner) {
+        var action = G.aiStep(game);
+        if (action) { renderAll(); animateAITap(action); }
+      }
+      scheduleAITick();
+    }, delay);
   }
 
   // ---------------------------------------------------------------------
@@ -229,9 +283,40 @@
     });
   }
 
+  // Persistent colored dot per rally token played on a state (as opposed to
+  // the transient fx-flash/money-text effects), so it stays visible as a
+  // reminder of which states are capped out vs still open for a rally.
+  function renderRallyTokens() {
+    var layer = $('rallyTokenLayer');
+    layer.innerHTML = '';
+    Object.keys(game.rallyPlaysByState).forEach(function (svgId) {
+      var plays = game.rallyPlaysByState[svgId];
+      if (!plays || !plays.length) return;
+      var el = document.getElementById(svgId);
+      if (!el) return;
+      var r = el.getBoundingClientRect();
+      if (!r.width || !r.height) return; // hidden map element (e.g. a dropped small UT)
+      var cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+      plays.forEach(function (pk, i) {
+        var dot = document.createElement('div');
+        dot.className = 'rally-token';
+        dot.style.left = (cx + (i - (plays.length - 1) / 2) * 16) + 'px';
+        dot.style.top = cy + 'px';
+        dot.style.background = COLORS[pk];
+        layer.appendChild(dot);
+      });
+    });
+  }
+
   function updateCard() {
+    if (activeGroup) { renderGroupCard(activeGroup); return; }
+    renderStateCard();
+  }
+
+  function renderStateCard() {
     var s = game.statesById[selectedId], p = game.pop[selectedId];
     if (!s || !p) return;
+    $('cardVsBar').hidden = false;
     $('cardName').textContent = s.name;
     $('cardSeats').textContent = s.seats + ' seats';
     $('cardP1Fill').style.width = (p.p1 / 100) + '%';
@@ -240,6 +325,7 @@
     $('cardP1Pct').textContent = fmtPct(p.p1);
     $('cardP2Pct').textContent = fmtPct(p.p2);
     var groupsEl = $('cardGroups');
+    groupsEl.className = 'info-groups';
     groupsEl.innerHTML = '';
     if (!s.tags.length) { groupsEl.innerHTML = '<span class="none">No group affiliations</span>'; }
     else s.tags.forEach(function (key) {
@@ -250,29 +336,69 @@
     });
   }
 
+  // Group overview — takes over the same info-panel space as the single-
+  // state card. Shows every member state as an LED chip (2-letter code +
+  // dot) so the player can see at a glance which states they already lead
+  // (>= the regional-dominance threshold, same bar the group bonus uses)
+  // and which ones are still worth investing in to clear the group.
+  function renderGroupCard(key) {
+    var g = game.groups.filter(function (x) { return x.key === key; })[0];
+    if (!g) return;
+    var threshold = game.cfg.regionalDominance.thresholdBps;
+    var members = game.states.filter(function (s) { return s.tags.indexOf(key) !== -1; });
+    var leadingCount = members.filter(function (s) { return game.pop[s.svgId].p1 >= threshold; }).length;
+    $('cardName').textContent = g.icon + ' ' + g.label;
+    $('cardSeats').textContent = g.seats + ' seats · leading ' + leadingCount + '/' + members.length +
+      (leadingCount === members.length ? ' — bonus qualified!' : '');
+    $('cardVsBar').hidden = true;
+    var ledEl = $('cardGroups');
+    ledEl.className = 'led-grid';
+    ledEl.innerHTML = '';
+    members.slice().sort(function (a, b) { return b.seats - a.seats; }).forEach(function (s) {
+      var isLeading = game.pop[s.svgId].p1 >= threshold;
+      var chip = document.createElement('button');
+      chip.className = 'led-chip' + (isLeading ? ' led-on' : '');
+      chip.title = s.name;
+      chip.innerHTML = '<span class="led-dot"></span><span>' + s.svgId.slice(2) + '</span>';
+      chip.addEventListener('click', function () { selectState(s.svgId); });
+      ledEl.appendChild(chip);
+    });
+  }
+
   function selectState(id) {
     document.querySelectorAll('.india-map path.selected, .india-map circle.selected').forEach(function (p) { p.classList.remove('selected'); });
     var el = document.getElementById(id); if (el) el.classList.add('selected');
-    selectedId = id; updateCard();
+    selectedId = id;
+    if (activeGroup) exitGroupMode(); // picking a specific state drills out of group view
+    updateCard();
   }
 
   var activeGroup = null;
+  function exitGroupMode() {
+    activeGroup = null;
+    document.querySelectorAll('.gchip').forEach(function (x) { x.classList.remove('on'); });
+    applyGroupHighlight();
+  }
+  function setActiveGroup(key) {
+    if (activeGroup === key) { exitGroupMode(); } else {
+      activeGroup = key;
+      document.querySelectorAll('.gchip').forEach(function (x) { x.classList.toggle('on', x.dataset.key === activeGroup); });
+      applyGroupHighlight();
+    }
+    updateCard();
+  }
   function applyGroupHighlight() {
     var members = !activeGroup ? null : game.states.filter(function (s) { return s.tags.indexOf(activeGroup) !== -1; }).map(function (s) { return s.svgId; });
     document.querySelectorAll('.india-map path[id], .india-map circle[id]').forEach(function (p) {
       p.style.fillOpacity = (!members || members.indexOf(p.id) !== -1) ? '1' : '0';
     });
     document.querySelectorAll('.gchip').forEach(function (c) { c.classList.remove('qualified'); });
-    var readout = $('groupReadout');
-    if (!members) { readout.hidden = true; return; }
+    if (!members) return;
     var set = game.states.filter(function (s) { return members.indexOf(s.svgId) !== -1; });
-    var seats = set.reduce(function (a, s) { return a + s.seats; }, 0);
     var qualifying = set.filter(function (s) { return game.pop[s.svgId].p1 >= game.cfg.regionalDominance.thresholdBps; }).length;
-    var gdef = game.groups.filter(function (g) { return g.key === activeGroup; })[0];
-    var qualified = qualifying === set.length;
-    if (qualified) { var chip = document.querySelector('.gchip[data-key="' + activeGroup + '"]'); if (chip) chip.classList.add('qualified'); }
-    readout.hidden = false;
-    readout.innerHTML = '<b>' + gdef.icon + ' ' + gdef.label + '</b> &middot; ' + seats + ' seats &middot; leading ' + qualifying + '/' + set.length + (qualified ? ' — bonus qualified!' : '');
+    if (qualifying === set.length) {
+      var chip = document.querySelector('.gchip[data-key="' + activeGroup + '"]'); if (chip) chip.classList.add('qualified');
+    }
   }
 
   function buildGroupsBox() {
@@ -286,11 +412,7 @@
         var b = document.createElement('button');
         b.className = 'gchip'; b.dataset.key = g.key; b.title = g.label + ' — ' + g.seats + ' seats';
         b.innerHTML = '<span class="hex">' + g.icon + '</span><span class="badge"></span>';
-        b.addEventListener('click', function () {
-          activeGroup = (activeGroup === g.key) ? null : g.key;
-          document.querySelectorAll('.gchip').forEach(function (x) { x.classList.toggle('on', x.dataset.key === activeGroup); });
-          applyGroupHighlight();
-        });
+        b.addEventListener('click', function () { setActiveGroup(g.key); });
         row.appendChild(b);
       });
       box.appendChild(row);
@@ -307,12 +429,10 @@
     game.players.p1.politician.policies.forEach(function (policy) {
       var name = policy.name, safeId = 'agenda' + name.replace(/[^a-zA-Z0-9]/g, '');
       var btn = document.createElement('button');
-      btn.className = 'tray-item'; btn.id = safeId; btn.title = name;
-      btn.innerHTML =
-        '<span class="ti-icon">' + (AGENDA_ICONS[name] || '📜') + '</span>' +
-        '<span class="ti-col"><span class="ti-label">' + name + '</span>' +
-        '<div class="ti-progress-track"><div class="ti-progress-fill" id="' + safeId + 'Fill" style="width:0%"></div></div></span>' +
-        '<span class="ti-badge" id="' + safeId + 'Badge">0%</span>';
+      btn.className = 'action-btn action-btn-labeled'; btn.id = safeId; btn.title = name;
+      btn.innerHTML = '<span class="action-btn-icon">' + (AGENDA_ICONS[name] || '📜') + '</span>' +
+        '<span class="action-btn-label">' + name + '</span>' +
+        '<span class="badge" id="' + safeId + 'Badge">0%</span>';
       btn.addEventListener('click', function () { doTapAgenda(name); });
       tray.appendChild(btn);
     });
@@ -320,20 +440,15 @@
 
   function renderAgendas() {
     var policies = game.players.p1.politician.policies;
-    var doneCount = 0;
     policies.forEach(function (policy) {
       var name = policy.name, safeId = 'agenda' + name.replace(/[^a-zA-Z0-9]/g, '');
       var taps = game.players.p1.agendaProgress[name] || 0;
       var pct = Math.round(taps / game.cfg.agenda.tapsToComplete * 100);
       var done = taps >= game.cfg.agenda.tapsToComplete;
-      if (done) doneCount++;
-      var fillEl = $(safeId + 'Fill'), badgeEl = $(safeId + 'Badge'), btnEl = $(safeId);
-      if (fillEl) fillEl.style.width = pct + '%';
+      var badgeEl = $(safeId + 'Badge'), btnEl = $(safeId);
       if (badgeEl) badgeEl.textContent = done ? '✓' : pct + '%';
       if (btnEl) btnEl.classList.toggle('agenda-done', done);
     });
-    $('agendaToggleBadge').textContent = policies.length - doneCount;
-    $('agendaToggleDot').classList.toggle('show', doneCount > 0 && doneCount < policies.length);
   }
 
   function doTapAgenda(name) {
@@ -371,7 +486,6 @@
     $('rallyBtn').classList.toggle('depleted', pl.tokens.stateRally <= 0);
     $('rallyBtn').classList.toggle('armed', armed === 'stateRally');
 
-    var readyCount = 0;
     [['special', 'specialBtn', 'specialBadge', game.cfg.rally.specialPowerupCraftCost],
     ['nationwide', 'nationwideBtn', 'nationwideBadge', game.cfg.rally.nationwideRallyCraftCost]]
       .forEach(function (row) {
@@ -379,14 +493,10 @@
         var state = craftSlotState(flavor);
         btn.classList.remove('locked', 'craftable', 'used', 'armed');
         if (state === 'locked') { btn.classList.add('locked'); badge.textContent = pl.tokens.stateRally + '/' + cost; }
-        else if (state === 'craftable') { btn.classList.add('craftable'); badge.textContent = pl.tokens.stateRally + '/' + cost; readyCount++; }
-        else if (state === 'ready') { btn.classList.toggle('armed', armed === flavor); badge.textContent = 'READY'; readyCount++; }
+        else if (state === 'craftable') { btn.classList.add('craftable'); badge.textContent = pl.tokens.stateRally + '/' + cost; }
+        else if (state === 'ready') { btn.classList.toggle('armed', armed === flavor); badge.textContent = 'READY'; }
         else { btn.classList.add('used'); badge.textContent = '✓'; }
       });
-
-    $('tokenToggleBadge').textContent = pl.tokens.stateRally;
-    $('tokenToggleDot').classList.toggle('show', readyCount > 0);
-    $('tokenToggleBtn').classList.toggle('armed', !!armed);
   }
 
   function setArmed(next) {
@@ -398,7 +508,6 @@
   function onRallyBtn() {
     if (game.players.p1.tokens.stateRally <= 0) { showToast('No State Rally tokens'); shakeInvalid($('rallyBtn')); return; }
     setArmed('stateRally');
-    setTray(false);
     if (armed) showToast('Tap a state to deploy');
   }
 
@@ -414,7 +523,7 @@
     }
     // ready — resolve target requirements before activating
     var power = game.players.p1.politician.power;
-    if (power.requiresTargetState) { setArmed('powerTarget'); setTray(false); showToast('Tap a state to target'); return; }
+    if (power.requiresTargetState) { setArmed('powerTarget'); showToast('Tap a state to target'); return; }
     var opts = {};
     if (power.requiresCompletedAgenda) {
       var done = Object.keys(game.players.p1.agendaProgress).filter(function (k) { return game.players.p1.agendaProgress[k] >= game.cfg.agenda.tapsToComplete; });
@@ -448,10 +557,6 @@
     playSound('fanfare');
     showToast('🇮🇳 Nationwide Rally activated');
   }
-
-  var trayOpen = false, agendaTrayOpen = false;
-  function setTray(open) { trayOpen = open; $('tokenTray').classList.toggle('open', trayOpen); if (open) setAgendaTray(false); }
-  function setAgendaTray(open) { agendaTrayOpen = open; $('agendaTray').classList.toggle('open', agendaTrayOpen); if (open) setTray(false); }
 
   // ---------------------------------------------------------------------
   // Investment (map tap / UT quick-invest buttons)
@@ -529,6 +634,7 @@
 
   function renderAll() {
     paintMap();
+    renderRallyTokens();
     updateCard();
     if (activeGroup) applyGroupHighlight();
     renderHeader();
@@ -568,8 +674,6 @@
   $('rallyBtn').addEventListener('click', onRallyBtn);
   $('specialBtn').addEventListener('click', onSpecialBtn);
   $('nationwideBtn').addEventListener('click', onNationwideBtn);
-  $('tokenToggleBtn').addEventListener('click', function () { setTray(!trayOpen); });
-  $('agendaToggleBtn').addEventListener('click', function () { setAgendaTray(!agendaTrayOpen); });
   $('endPhaseBtn').addEventListener('click', doEndPhase);
   $('playAgainBtn').addEventListener('click', function () {
     $('endOverlay').hidden = true;
@@ -605,6 +709,8 @@
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(function () {});
   }
+
+  scheduleAITick();
 
   G.loadGameData('../data/').then(function (d) {
     data = d;
