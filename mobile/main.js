@@ -205,7 +205,7 @@
     return '<svg viewBox="0 0 ' + w + ' 10" preserveAspectRatio="none"><path d="' + path + 'L' + w + ',10 Z" fill="var(--paper)"/></svg>';
   }
 
-  function buildPolCard(p, idx, total) {
+  function buildPolCard(p) {
     var color = p.primaryColor || '#999';
     var card = document.createElement('div');
     card.className = 'pol-card';
@@ -215,14 +215,9 @@
     ballot.style.setProperty('--acc', color);
 
     ballot.innerHTML = '<div class="tricolor"><span class="saffron"></span><span class="white"></span><span class="green"></span></div>' +
-      '<div class="pol-masthead">' +
-        '<div class="pol-masthead-seal-slot"></div>' +
-        '<div class="pol-masthead-text"><div class="pol-eyebrow">Candidate</div><div class="pol-index">No. ' + idx + ' / ' + total + '</div></div>' +
-        '<div class="pol-archetype">' + (p.archetype || '') + '</div>' +
-      '</div>' +
       '<div class="pol-art"><div class="pol-art-img-slot"></div><div class="pol-stub">' + stubEdgeSvg(336) + '</div></div>' +
       '<div class="pol-bio">' +
-        '<div class="pol-name">' + p.name + '</div>' +
+        '<div class="pol-name-row"><div class="pol-name">' + p.name + '</div><div class="pol-seal-slot"></div></div>' +
         '<div class="pol-meta"><span class="pol-party-pill">' + p.party + '</span><span>🏠 ' + p.homeState + '</span></div>' +
         '<div class="pol-section-label">Manifesto</div>' +
         '<div class="pol-agendas"></div>' +
@@ -231,12 +226,12 @@
           '<div class="pow-desc">' + p.power.description + '</div>' +
           '<div class="pow-cost">Cost: ' + p.specialPower.cost + '</div></div>' +
       '</div>' +
-      '<div class="pol-footer"><span class="pol-set-info">Booth Ink · <b>' + p.party + '</b></span></div>';
+      '<div class="pol-footer"></div>';
 
     var img = document.createElement('img');
     setArtPortrait(img, p);
     ballot.querySelector('.pol-art-img-slot').replaceWith(img);
-    ballot.querySelector('.pol-masthead-seal-slot').replaceWith(partyBadge(p));
+    ballot.querySelector('.pol-seal-slot').replaceWith(partyBadge(p));
 
     var agList = ballot.querySelector('.pol-agendas');
     var openChip = null;
@@ -302,7 +297,7 @@
     var track = $('polCarousel'), dots = $('polDots');
     track.innerHTML = ''; dots.innerHTML = '';
     data.politicians.forEach(function (p, i) {
-      track.appendChild(buildPolCard(p, i + 1, data.politicians.length));
+      track.appendChild(buildPolCard(p));
       var dot = document.createElement('button');
       dot.className = 'pol-dot' + (i === 0 ? ' on' : '');
       dot.setAttribute('aria-label', p.name);

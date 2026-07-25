@@ -226,9 +226,8 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
    rest of Booth Ink's paper/ballot styling rather than introducing a new look. */
 .overlay{ position:fixed; inset:0; background:var(--page); z-index:50; display:flex; flex-direction:column; overflow-y:auto; -webkit-overflow-scrolling:touch; }
 .overlay[hidden]{ display:none; }
-.overlay-header{ flex:0 0 auto; padding:calc(env(safe-area-inset-top,0px) + 16px) 18px 6px; text-align:center; }
-.overlay-header h1{ font-size:20px; margin:0 0 4px; }
-.overlay-header p{ color:var(--ink-soft); font-size:12px; margin:0; }
+.overlay-header{ flex:0 0 auto; padding:calc(env(safe-area-inset-top,0px) + 20px) 45px 14px; text-align:center; zoom:.95; }
+.overlay-header h1{ font-size:64px; margin:0; }
 
 /* ---- politician carousel: a "ballot card" per candidate (trading-card
    structure — art window, stat masthead, attack box — built from Booth
@@ -236,84 +235,78 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
    look; see design/prototypes/pol-card-mockup.html for the approved mock
    and rationale). Swipe/scroll-snap between them (native CSS, no drag JS). */
 #polCarousel{ flex:1 1 auto; min-height:0; display:flex; overflow-x:auto; overflow-y:hidden; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; }
-.pol-card{ flex:0 0 100%; scroll-snap-align:center; scroll-snap-stop:always; display:flex; flex-direction:column; justify-content:safe center; overflow-y:auto; padding:14px 14px 10px; }
-.ballot-card{ --acc:#999; background:var(--paper); color:var(--ink); border-radius:18px; border:3px solid var(--ink);
+.pol-card{ flex:0 0 100%; scroll-snap-align:center; scroll-snap-stop:always; display:flex; flex-direction:column; overflow-y:auto; padding:18px 18px 12px; }
+.ballot-card{ --acc:#999; flex:0 0 auto; zoom:.95; background:var(--paper); color:var(--ink); border-radius:45px; border:3px solid var(--ink);
   box-shadow:5px 5px 0 var(--ink); overflow:hidden; display:flex; flex-direction:column; }
 
-.tricolor{ width:100%; height:4px; display:flex; flex:0 0 auto; }
+.tricolor{ width:100%; height:10px; display:flex; flex:0 0 auto; }
 .tricolor span{ flex:1; }
 .tricolor .saffron{ background:#FF9933; } .tricolor .white{ background:#F5F1E4; } .tricolor .green{ background:#128807; }
 
-.pol-masthead{ background:var(--acc); padding:10px 12px; display:flex; align-items:center; gap:10px; flex:0 0 auto; }
-.pol-seal{ width:40px; height:40px; border-radius:50%; flex:0 0 auto; background:var(--ink); border:2.5px solid #C9A227;
-  display:flex; align-items:center; justify-content:center; font-size:18px; overflow:hidden; box-shadow:0 0 0 2.5px rgba(0,0,0,.15); }
-.pol-seal img{ width:24px; height:24px; object-fit:contain; }
-.pol-masthead-text{ min-width:0; }
-.pol-eyebrow{ font-family:var(--font-mono); font-size:9.5px; letter-spacing:.13em; text-transform:uppercase; color:rgba(0,0,0,.55); font-weight:700; }
-.pol-index{ font-family:var(--font-mono); font-size:11.5px; color:rgba(0,0,0,.75); font-weight:700; margin-top:1px; }
-.pol-archetype{ margin-left:auto; text-align:right; font-family:var(--font-display); font-size:11px; font-weight:700; color:rgba(0,0,0,.8); letter-spacing:.01em; max-width:118px; line-height:1.15; }
-
-.pol-art{ position:relative; height:20vh; min-height:130px; flex:0 0 auto; background:linear-gradient(160deg, var(--acc), var(--paper) 92%); }
-.pol-art img{ width:100%; height:100%; object-fit:cover; display:block; }
-.pol-art-fallback{ width:100%; height:100%; display:flex; align-items:center; justify-content:center;
-  font-family:var(--font-display); font-weight:700; font-size:64px; color:#fff; text-shadow:0 2px 10px rgba(0,0,0,.25); }
-.pol-stub{ position:absolute; left:0; right:0; bottom:0; height:10px; line-height:0; }
+.pol-art{ position:relative; width:100%; height:820px; flex:0 0 auto; display:flex; align-items:center; justify-content:center;
+  background:linear-gradient(160deg, var(--acc), var(--paper) 92%); }
+.pol-art img{ width:820px; height:820px; object-fit:cover; display:block; }
+.pol-art-fallback{ width:820px; height:820px; display:flex; align-items:center; justify-content:center;
+  font-family:var(--font-display); font-weight:700; font-size:200px; color:#fff; text-shadow:0 2px 10px rgba(0,0,0,.25); }
+.pol-stub{ position:absolute; left:0; right:0; bottom:0; height:25px; line-height:0; }
 .pol-stub svg{ display:block; width:100%; height:100%; }
 
-.pol-bio{ padding:14px 16px 0; }
-.pol-name{ font-family:var(--font-display); font-weight:700; font-size:19px; margin:0 0 3px; text-align:left; }
-.pol-meta{ display:flex; justify-content:flex-start; align-items:center; gap:8px; margin-bottom:4px; font-size:12px; font-family:var(--font-mono); color:var(--brass); }
-.pol-party-pill{ color:var(--ink); background:var(--paper-dim); font-weight:700; padding:1px 8px; border-radius:4px; font-size:11px; }
-.pol-section-label{ font-family:var(--font-mono); font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.12em; color:var(--brass); margin:14px 0 6px; padding-bottom:5px; border-bottom:1px solid rgba(20,22,28,.15); }
+.pol-bio{ padding:20px 40px 0; }
+.pol-name-row{ display:flex; align-items:center; justify-content:space-between; gap:20px; margin-bottom:10px; }
+.pol-name{ font-family:var(--font-display); font-weight:700; font-size:48px; margin:0; text-align:left; min-width:0; }
+.pol-seal{ width:100px; height:100px; border-radius:50%; flex:0 0 auto; background:var(--ink); border:2.5px solid #C9A227;
+  display:flex; align-items:center; justify-content:center; font-size:42px; overflow:hidden; box-shadow:0 0 0 2.5px rgba(0,0,0,.15); }
+.pol-seal img{ width:62px; height:62px; object-fit:contain; }
+.pol-meta{ display:flex; justify-content:flex-start; align-items:center; gap:20px; margin-bottom:6px; font-size:30px; font-family:var(--font-mono); color:var(--brass); }
+.pol-party-pill{ color:var(--ink); background:var(--paper-dim); font-weight:700; padding:3px 20px; border-radius:10px; font-size:28px; }
+.pol-section-label{ font-family:var(--font-mono); font-size:25px; font-weight:700; text-transform:uppercase; letter-spacing:.12em; color:var(--brass); margin:18px 0 8px; padding-bottom:10px; border-bottom:1px solid rgba(20,22,28,.15); }
 .pol-agendas{ display:flex; flex-direction:column; }
-.pol-agenda-chip{ width:100%; text-align:left; background:none; border-radius:0; padding:8px 2px; display:flex; align-items:center; gap:9px; font-size:13.5px; font-weight:600; min-width:0; border-bottom:1px dashed rgba(20,22,28,.16); }
+.pol-agenda-chip{ width:100%; text-align:left; background:none; border-radius:0; padding:13px 5px; display:flex; align-items:center; gap:23px; font-size:34px; font-weight:600; min-width:0; border-bottom:1px dashed rgba(20,22,28,.16); }
 .pol-agenda-chip:nth-last-child(2){ border-bottom:none; }
-.pol-agenda-chip .ic{ width:26px; height:26px; border-radius:50%; background:var(--paper-dim); display:flex; align-items:center; justify-content:center; font-size:14px; flex:0 0 auto; }
+.pol-agenda-chip .ic{ width:65px; height:65px; border-radius:50%; background:var(--paper-dim); display:flex; align-items:center; justify-content:center; font-size:35px; flex:0 0 auto; }
 .pol-agenda-chip .nm{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.pol-agenda-chip .chev{ flex:0 0 auto; font-size:12px; color:var(--brass); transition:transform .15s; }
+.pol-agenda-chip .chev{ flex:0 0 auto; font-size:30px; color:var(--brass); transition:transform .15s; }
 .pol-agenda-chip.active .chev{ transform:rotate(90deg); color:var(--stamp); }
-.pol-agenda-detail{ display:none; flex-wrap:wrap; gap:6px; padding:2px 2px 10px 35px; }
+.pol-agenda-detail{ display:none; flex-wrap:wrap; gap:15px; padding:5px 5px 25px 88px; }
 .pol-agenda-detail.show{ display:flex; }
-.pol-eff-chip{ padding:3px 8px; border-radius:100px; background:var(--paper-dim); border:1.3px solid var(--rule); font-family:var(--font-mono); font-weight:700; font-size:10px; }
+.pol-eff-chip{ padding:8px 20px; border-radius:100px; background:var(--paper-dim); border:1.3px solid var(--rule); font-family:var(--font-mono); font-weight:700; font-size:25px; }
 .pol-eff-chip.eff-pos{ border-color:#1C8A4B; color:#1C8A4B; }
 .pol-eff-chip.eff-neg{ border-color:var(--stamp); color:var(--stamp); }
-.pol-power{ position:relative; background:rgba(179,49,29,.06); border:1.3px solid rgba(179,49,29,.4); border-radius:10px; padding:12px 14px 12px 42px; margin-bottom:14px; }
-.pow-seal{ position:absolute; left:10px; top:12px; width:22px; height:22px; border-radius:50%; background:var(--stamp); display:flex; align-items:center; justify-content:center; font-size:11px; transform:rotate(-8deg); box-shadow:0 2px 4px rgba(20,22,28,.3); }
-.pow-name{ font-family:var(--font-display); font-weight:700; font-size:13.5px; margin-bottom:4px; }
-.pow-desc{ font-size:11.5px; color:rgba(20,22,28,.72); line-height:1.4; margin-bottom:6px; }
-.pow-cost{ font-family:var(--font-mono); font-size:10px; color:var(--stamp); font-weight:700; text-transform:uppercase; letter-spacing:.02em; }
-.pol-footer{ flex:0 0 auto; border-top:1px solid rgba(20,22,28,.18); padding:10px 14px 14px; display:flex; align-items:center; gap:10px; }
-.pol-footer .pol-set-info{ font-family:var(--font-mono); font-size:10.5px; color:rgba(20,22,28,.55); }
-.pol-footer .pol-set-info b{ color:var(--brass); }
-.pol-play-btn{ margin-left:auto; flex:0 0 auto; font-family:var(--font-display); color:#fff; font-weight:700; font-size:13.5px; padding:10px 18px;
+.pol-power{ position:relative; background:rgba(179,49,29,.06); border:1.3px solid rgba(179,49,29,.4); border-radius:25px; padding:18px 30px 18px 100px; margin-bottom:18px; }
+.pow-seal{ position:absolute; left:22px; top:18px; width:55px; height:55px; border-radius:50%; background:var(--stamp); display:flex; align-items:center; justify-content:center; font-size:28px; transform:rotate(-8deg); box-shadow:0 2px 4px rgba(20,22,28,.3); }
+.pow-name{ font-family:var(--font-display); font-weight:700; font-size:34px; margin-bottom:6px; }
+.pow-desc{ font-size:29px; color:rgba(20,22,28,.72); line-height:1.35; margin-bottom:10px; }
+.pow-cost{ font-family:var(--font-mono); font-size:25px; color:var(--stamp); font-weight:700; text-transform:uppercase; letter-spacing:.02em; }
+.pol-footer{ flex:0 0 auto; border-top:1px solid rgba(20,22,28,.18); padding:20px 35px 24px; display:flex; align-items:center; justify-content:center; }
+.pol-play-btn{ width:100%; max-width:520px; text-align:center; flex:0 0 auto; font-family:var(--font-display); color:#fff; font-weight:700; font-size:42px; padding:28px 45px;
   border-radius:100px; border:2px solid var(--ink); box-shadow:3px 3px 0 var(--ink); }
 .pol-play-btn:active{ transform:translate(3px,3px); box-shadow:none; }
-.pol-dots{ flex:0 0 auto; display:flex; justify-content:center; flex-wrap:wrap; gap:5px; padding:8px 16px calc(env(safe-area-inset-bottom,0px) + 10px); }
-.pol-dot{ width:6px; height:6px; border-radius:50%; background:var(--rule); padding:0; }
-.pol-dot.on{ background:var(--accent); width:16px; border-radius:3px; }
+.pol-dots{ flex:0 0 auto; zoom:.95; display:flex; justify-content:center; flex-wrap:wrap; gap:13px; padding:10px 40px calc(env(safe-area-inset-bottom,0px) + 14px); }
+.pol-dot{ width:15px; height:15px; border-radius:50%; background:var(--rule); padding:0; }
+.pol-dot.on{ background:var(--accent); width:40px; border-radius:8px; }
 
 /* ---- end-of-game "declaration" card — same ballot-card materials as the
    select screen's, so the game opens and closes inside one visual world. ---- */
-.end-overlay{ align-items:center; justify-content:center; text-align:center; gap:0; padding:20px; }
-.declare-card{ width:100%; max-width:380px; background:var(--paper); color:var(--ink); border-radius:18px; border:3px solid var(--ink);
+.end-overlay{ align-items:center; justify-content:center; text-align:center; gap:0; padding:50px; }
+.declare-card{ width:100%; max-width:950px; background:var(--paper); color:var(--ink); border-radius:45px; border:3px solid var(--ink);
   box-shadow:6px 6px 0 var(--ink); overflow:hidden; display:flex; flex-direction:column; align-items:center; }
-.declare-seal{ margin-top:18px; width:64px; height:64px; border-radius:50%; background:var(--ink); border:3px solid #C9A227;
-  display:flex; align-items:center; justify-content:center; font-size:30px; box-shadow:0 0 0 3px rgba(0,0,0,.12); }
-.end-overlay .headline{ font-family:var(--font-display); font-size:21px; font-weight:700; margin:14px 20px 4px; }
-.end-overlay .sub{ color:rgba(20,22,28,.65); font-size:13.5px; max-width:30ch; margin:0 20px 16px; }
-.end-parliament{ width:100%; max-width:340px; padding:0 16px; }
+.declare-seal{ margin-top:45px; width:160px; height:160px; border-radius:50%; background:var(--ink); border:3px solid #C9A227;
+  display:flex; align-items:center; justify-content:center; font-size:75px; box-shadow:0 0 0 3px rgba(0,0,0,.12); }
+.end-overlay .headline{ font-family:var(--font-display); font-size:53px; font-weight:700; margin:35px 50px 10px; }
+.end-overlay .sub{ color:rgba(20,22,28,.65); font-size:34px; max-width:30ch; margin:0 50px 40px; }
+.end-parliament{ width:100%; max-width:850px; padding:0 40px; }
 .end-parliament svg{ width:100%; height:auto; display:block; }
 .end-parliament circle{ transition:fill .4s ease; }
-.declare-ledger{ width:100%; padding:14px 22px 4px; }
-.ledger-row{ display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px dashed rgba(20,22,28,.16); font-family:var(--font-mono); font-size:13.5px; }
+.declare-ledger{ width:100%; padding:35px 55px 10px; }
+.ledger-row{ display:flex; align-items:center; gap:25px; padding:18px 0; border-bottom:1px dashed rgba(20,22,28,.16); font-family:var(--font-mono); font-size:34px; }
 .ledger-row:last-child{ border-bottom:none; }
 .ledger-row.winner{ font-weight:700; }
-.ledger-dot{ width:10px; height:10px; border-radius:50%; flex:0 0 auto; }
+.ledger-dot{ width:25px; height:25px; border-radius:50%; flex:0 0 auto; }
 .ledger-name{ flex:1; text-align:left; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .ledger-seats{ font-weight:700; font-variant-numeric:tabular-nums; }
-.declare-footer{ width:100%; border-top:1px solid rgba(20,22,28,.18); margin-top:14px; padding:14px 20px 20px; }
+.declare-footer{ width:100%; border-top:1px solid rgba(20,22,28,.18); margin-top:35px; padding:35px 50px 50px; }
 .end-overlay button{ width:100%; font-family:var(--font-display); background:var(--accent); color:#fff; font-weight:700;
-  padding:13px 22px; border-radius:100px; font-size:14.5px; border:2px solid var(--ink); box-shadow:3px 3px 0 var(--ink); }
+  padding:33px 55px; border-radius:100px; font-size:36px; border:2px solid var(--ink); box-shadow:3px 3px 0 var(--ink); }
 .end-overlay button:active{ transform:translate(3px,3px); box-shadow:none; }
 .target-banner{ position:fixed; top:0; left:0; right:0; z-index:60; background:var(--stamp); color:#fff; text-align:center; font-size:12.5px; font-weight:700; padding:8px; }
 .target-banner[hidden]{ display:none; }
@@ -348,7 +341,6 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
 <div class="overlay" id="selectOverlay">
   <div class="overlay-header">
     <h1>Pradhan Mantri Elections</h1>
-    <p>Pick your politician. You'll face an AI opponent — always a match ready, no waiting.</p>
   </div>
   <div class="pol-carousel" id="polCarousel"></div>
   <div class="pol-dots" id="polDots"></div>

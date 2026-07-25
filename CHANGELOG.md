@@ -6,6 +6,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### 🎨 Mobile UI Polish: Ballot-Card Readability, Layout Fit & Scale Convention — 2026-07-24
+
+#### Real-Device Testing & Layout Optimization
+- **FIXED**: `mobile/index.html` — removed errant `justify-content:safe center` from `.pol-card` that broke carousel centering (CSS whitespace bug) [C1]
+- **RESIZED**: `mobile/index.html` — politician portrait now a fixed-size centered square (820×820px, `object-fit:cover`, no cropping) inside a full-width gradient band [C2]
+- **SCALED**: `mobile/index.html` — ballot-card and declare-card CSS (~2.5x fonts, padding, gaps) to match app's no-viewport-tag 980px virtual-canvas rendering convention; inline border-widths and shadows intentionally remain unscaled [C3]
+- **REMOVED**: `mobile/index.html`, `mobile/main.js` — "Booth Ink · Party" footer text; Play button now full-width, enlarged, and centered [C4]
+- **POLISHED**: `mobile/index.html` — applied `zoom:.95` to overlay-header, ballot-card, and pol-dots for uniform 5% visual shrink after card was "almost-but-not-quite" fitting one screen [C5]
+- **RESTYLED**: `mobile/index.html` — overlay header title (44px→64px font-size), removed subheadline paragraph and its dead CSS rule [C6]
+- **REMOVED**: `mobile/index.html`, `mobile/main.js` — entire pol-masthead banner (candidate index + archetype text) after polish pass [C7]
+- **REPOSITIONED**: `mobile/index.html`, `mobile/main.js` — party seal moved next to politician name in new `.pol-name-row` flex container, enlarged 76px→100px [C8]
+- **SIMPLIFIED**: `mobile/main.js` — `buildPolCard(p, idx, total)` → `buildPolCard(p)`, dropped now-unused `idx` and `total` params [C9]
+
+#### Design Decisions Documented
+- **[D1] CSS zoom vs. hand-rescaling:** Used `zoom:.95` on flex children to apply uniform 5% shrink instead of manually adjusting ~40 individual font/padding/gap values. **Rationale**: zoom is Safari/WebKit-friendly (this project's deployment target), and applying it to content-sized flex items avoids fighting outer layout positioning.
+- **[D2] Portrait sizing trade-off:** Capped portrait to a smaller centered square (not full-width) inside a gradient band, rather than full-bleed image. **Rationale**: full-width square (~900 real px) exceeded total available vertical budget (~770–792 real px) on real device; smaller square preserves "no cropping" requirement while fitting the layout.
+- **[D3] 2.5x scale convention:** Scaled ballot-card CSS ~2.5x instead of adding `<meta viewport>` tag to fix "text too small and unreadable." **Rationale**: app renders on virtual ~980px canvas (no viewport tag) zoomed out ~0.4x; in-game HUD already uses 2.5x authoring scale, ballot-card didn't initially — matching app-wide convention was zero-risk to shared chrome.
+- **[D4] Playwright verification:** Verified all layout fixes with custom Playwright harness (393×852 viewport, 3× device scale factor matching user's real device) rather than trusting `devices['iPhone 14']` preset (390×664 ≠ real). Computed real-zoom conversion factor to convert layout-space DOM measurements to true CSS px for exact overflow/margin math. **Rationale**: precise numbers needed for tightest case (Nehru's 266-char power description), not just "looks about right" from screenshots.
+
+#### Context
+Multi-turn session iterating on politician-select ballot-card UI based on real iPhone testing, fixing whitespace/cropping/readability bugs, and applying two rounds of polish (5% uniform shrink; bigger title, banner removed, seal relocated and enlarged). All changes CSS/DOM-only — no data files, engine, or game logic touched.
+
+---
+
 ### 🎨 Mobile UI Redesign: Ballot-Card Select/End Screens & Region-Effect Agenda Chips — 2026-07-24
 
 #### Visual Design Overhaul
