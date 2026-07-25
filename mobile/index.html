@@ -21,6 +21,11 @@
   --p1:#E8871C; --p2:#1C8A4B; --map-base:#AEB4C0; --map-stroke:#14161C;
   --font: -apple-system, "SF Pro Text", "Segoe UI", sans-serif;
   --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
+  --font-display: Rockwell, "Roboto Slab", Georgia, "Noto Serif", serif;
+  /* Ballot-card motif (politician select, end-of-game results) — a warm
+     paper/brass/stamp world layered on top of the app's own ink/surface
+     tokens above, not a separate theme: see design/prototypes/pol-card-mockup.html. */
+  --paper:#FBF8EF; --paper-dim:#F1EAD6; --brass:#9C7A1E;
 }
 *{box-sizing:border-box; -webkit-tap-highlight-color:transparent; touch-action:manipulation;}
 html,body{height:100%; margin:0; overscroll-behavior:none;}
@@ -178,6 +183,11 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
 .info-row h3{ margin:0; font-size:45px; font-weight:800; letter-spacing:-.01em; }
 .info-row .seats{ font-family:var(--font-mono); font-size:28px; color:var(--ink-soft); font-weight:600; white-space:nowrap; }
 
+.pin-btn{ width:48px; height:48px; flex:0 0 auto; display:flex; align-items:center; justify-content:center;
+  font-size:26px; background:var(--surface2); border-radius:11px; opacity:.5; }
+.pin-btn.on{ background:var(--accent); opacity:1; }
+.pin-btn[hidden]{ display:none; }
+
 .info-groups{ display:flex; flex-wrap:wrap; gap:10px; margin-left:auto; }
 .info-groups .chip{ width:48px; height:48px; display:flex; align-items:center; justify-content:center; font-size:31px; background:var(--surface2); border-radius:11px; }
 .info-groups .none{ font-size:24px; color:var(--ink-faint); line-height:48px; }
@@ -216,20 +226,95 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
    rest of Booth Ink's paper/ballot styling rather than introducing a new look. */
 .overlay{ position:fixed; inset:0; background:var(--page); z-index:50; display:flex; flex-direction:column; overflow-y:auto; -webkit-overflow-scrolling:touch; }
 .overlay[hidden]{ display:none; }
-.overlay-header{ padding:20px 18px 8px; text-align:center; }
-.overlay-header h1{ font-size:22px; margin:0 0 4px; }
-.overlay-header p{ color:var(--ink-soft); font-size:13px; margin:0; }
-.pol-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:10px; padding:14px; }
-.pol-card{ background:var(--surface); border:1px solid var(--rule); border-radius:12px; padding:10px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:6px; }
-.pol-card img.portrait{ width:56px; height:56px; border-radius:50%; object-fit:cover; background:var(--surface2); }
-.pol-card .pol-name{ font-size:12.5px; font-weight:700; line-height:1.2; }
-.pol-card .pol-party{ font-size:10.5px; color:var(--ink-soft); }
-.pol-card button{ margin-top:4px; background:var(--accent); color:var(--accent-ink); font-size:11.5px; font-weight:700; padding:6px 10px; border-radius:100px; width:100%; }
-.end-overlay{ align-items:center; justify-content:center; text-align:center; gap:14px; padding:24px; }
-.end-overlay .headline{ font-size:24px; font-weight:700; }
-.end-overlay .sub{ color:var(--ink-soft); font-size:14px; max-width:32ch; }
-.end-overlay .final-seats{ font-family:var(--font-mono); font-size:15px; }
-.end-overlay button{ background:var(--accent); color:var(--accent-ink); font-weight:700; padding:12px 22px; border-radius:100px; font-size:14px; }
+.overlay-header{ flex:0 0 auto; padding:calc(env(safe-area-inset-top,0px) + 16px) 18px 6px; text-align:center; }
+.overlay-header h1{ font-size:20px; margin:0 0 4px; }
+.overlay-header p{ color:var(--ink-soft); font-size:12px; margin:0; }
+
+/* ---- politician carousel: a "ballot card" per candidate (trading-card
+   structure — art window, stat masthead, attack box — built from Booth
+   Ink's own ink/brass/stamp/paper materials instead of a literal holo-foil
+   look; see design/prototypes/pol-card-mockup.html for the approved mock
+   and rationale). Swipe/scroll-snap between them (native CSS, no drag JS). */
+#polCarousel{ flex:1 1 auto; min-height:0; display:flex; overflow-x:auto; overflow-y:hidden; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; }
+.pol-card{ flex:0 0 100%; scroll-snap-align:center; scroll-snap-stop:always; display:flex; flex-direction:column; justify-content:safe center; overflow-y:auto; padding:14px 14px 10px; }
+.ballot-card{ --acc:#999; background:var(--paper); color:var(--ink); border-radius:18px; border:3px solid var(--ink);
+  box-shadow:5px 5px 0 var(--ink); overflow:hidden; display:flex; flex-direction:column; }
+
+.tricolor{ width:100%; height:4px; display:flex; flex:0 0 auto; }
+.tricolor span{ flex:1; }
+.tricolor .saffron{ background:#FF9933; } .tricolor .white{ background:#F5F1E4; } .tricolor .green{ background:#128807; }
+
+.pol-masthead{ background:var(--acc); padding:10px 12px; display:flex; align-items:center; gap:10px; flex:0 0 auto; }
+.pol-seal{ width:40px; height:40px; border-radius:50%; flex:0 0 auto; background:var(--ink); border:2.5px solid #C9A227;
+  display:flex; align-items:center; justify-content:center; font-size:18px; overflow:hidden; box-shadow:0 0 0 2.5px rgba(0,0,0,.15); }
+.pol-seal img{ width:24px; height:24px; object-fit:contain; }
+.pol-masthead-text{ min-width:0; }
+.pol-eyebrow{ font-family:var(--font-mono); font-size:9.5px; letter-spacing:.13em; text-transform:uppercase; color:rgba(0,0,0,.55); font-weight:700; }
+.pol-index{ font-family:var(--font-mono); font-size:11.5px; color:rgba(0,0,0,.75); font-weight:700; margin-top:1px; }
+.pol-archetype{ margin-left:auto; text-align:right; font-family:var(--font-display); font-size:11px; font-weight:700; color:rgba(0,0,0,.8); letter-spacing:.01em; max-width:118px; line-height:1.15; }
+
+.pol-art{ position:relative; height:20vh; min-height:130px; flex:0 0 auto; background:linear-gradient(160deg, var(--acc), var(--paper) 92%); }
+.pol-art img{ width:100%; height:100%; object-fit:cover; display:block; }
+.pol-art-fallback{ width:100%; height:100%; display:flex; align-items:center; justify-content:center;
+  font-family:var(--font-display); font-weight:700; font-size:64px; color:#fff; text-shadow:0 2px 10px rgba(0,0,0,.25); }
+.pol-stub{ position:absolute; left:0; right:0; bottom:0; height:10px; line-height:0; }
+.pol-stub svg{ display:block; width:100%; height:100%; }
+
+.pol-bio{ padding:14px 16px 0; }
+.pol-name{ font-family:var(--font-display); font-weight:700; font-size:19px; margin:0 0 3px; text-align:left; }
+.pol-meta{ display:flex; justify-content:flex-start; align-items:center; gap:8px; margin-bottom:4px; font-size:12px; font-family:var(--font-mono); color:var(--brass); }
+.pol-party-pill{ color:var(--ink); background:var(--paper-dim); font-weight:700; padding:1px 8px; border-radius:4px; font-size:11px; }
+.pol-section-label{ font-family:var(--font-mono); font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.12em; color:var(--brass); margin:14px 0 6px; padding-bottom:5px; border-bottom:1px solid rgba(20,22,28,.15); }
+.pol-agendas{ display:flex; flex-direction:column; }
+.pol-agenda-chip{ width:100%; text-align:left; background:none; border-radius:0; padding:8px 2px; display:flex; align-items:center; gap:9px; font-size:13.5px; font-weight:600; min-width:0; border-bottom:1px dashed rgba(20,22,28,.16); }
+.pol-agenda-chip:nth-last-child(2){ border-bottom:none; }
+.pol-agenda-chip .ic{ width:26px; height:26px; border-radius:50%; background:var(--paper-dim); display:flex; align-items:center; justify-content:center; font-size:14px; flex:0 0 auto; }
+.pol-agenda-chip .nm{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.pol-agenda-chip .chev{ flex:0 0 auto; font-size:12px; color:var(--brass); transition:transform .15s; }
+.pol-agenda-chip.active .chev{ transform:rotate(90deg); color:var(--stamp); }
+.pol-agenda-detail{ display:none; flex-wrap:wrap; gap:6px; padding:2px 2px 10px 35px; }
+.pol-agenda-detail.show{ display:flex; }
+.pol-eff-chip{ padding:3px 8px; border-radius:100px; background:var(--paper-dim); border:1.3px solid var(--rule); font-family:var(--font-mono); font-weight:700; font-size:10px; }
+.pol-eff-chip.eff-pos{ border-color:#1C8A4B; color:#1C8A4B; }
+.pol-eff-chip.eff-neg{ border-color:var(--stamp); color:var(--stamp); }
+.pol-power{ position:relative; background:rgba(179,49,29,.06); border:1.3px solid rgba(179,49,29,.4); border-radius:10px; padding:12px 14px 12px 42px; margin-bottom:14px; }
+.pow-seal{ position:absolute; left:10px; top:12px; width:22px; height:22px; border-radius:50%; background:var(--stamp); display:flex; align-items:center; justify-content:center; font-size:11px; transform:rotate(-8deg); box-shadow:0 2px 4px rgba(20,22,28,.3); }
+.pow-name{ font-family:var(--font-display); font-weight:700; font-size:13.5px; margin-bottom:4px; }
+.pow-desc{ font-size:11.5px; color:rgba(20,22,28,.72); line-height:1.4; margin-bottom:6px; }
+.pow-cost{ font-family:var(--font-mono); font-size:10px; color:var(--stamp); font-weight:700; text-transform:uppercase; letter-spacing:.02em; }
+.pol-footer{ flex:0 0 auto; border-top:1px solid rgba(20,22,28,.18); padding:10px 14px 14px; display:flex; align-items:center; gap:10px; }
+.pol-footer .pol-set-info{ font-family:var(--font-mono); font-size:10.5px; color:rgba(20,22,28,.55); }
+.pol-footer .pol-set-info b{ color:var(--brass); }
+.pol-play-btn{ margin-left:auto; flex:0 0 auto; font-family:var(--font-display); color:#fff; font-weight:700; font-size:13.5px; padding:10px 18px;
+  border-radius:100px; border:2px solid var(--ink); box-shadow:3px 3px 0 var(--ink); }
+.pol-play-btn:active{ transform:translate(3px,3px); box-shadow:none; }
+.pol-dots{ flex:0 0 auto; display:flex; justify-content:center; flex-wrap:wrap; gap:5px; padding:8px 16px calc(env(safe-area-inset-bottom,0px) + 10px); }
+.pol-dot{ width:6px; height:6px; border-radius:50%; background:var(--rule); padding:0; }
+.pol-dot.on{ background:var(--accent); width:16px; border-radius:3px; }
+
+/* ---- end-of-game "declaration" card — same ballot-card materials as the
+   select screen's, so the game opens and closes inside one visual world. ---- */
+.end-overlay{ align-items:center; justify-content:center; text-align:center; gap:0; padding:20px; }
+.declare-card{ width:100%; max-width:380px; background:var(--paper); color:var(--ink); border-radius:18px; border:3px solid var(--ink);
+  box-shadow:6px 6px 0 var(--ink); overflow:hidden; display:flex; flex-direction:column; align-items:center; }
+.declare-seal{ margin-top:18px; width:64px; height:64px; border-radius:50%; background:var(--ink); border:3px solid #C9A227;
+  display:flex; align-items:center; justify-content:center; font-size:30px; box-shadow:0 0 0 3px rgba(0,0,0,.12); }
+.end-overlay .headline{ font-family:var(--font-display); font-size:21px; font-weight:700; margin:14px 20px 4px; }
+.end-overlay .sub{ color:rgba(20,22,28,.65); font-size:13.5px; max-width:30ch; margin:0 20px 16px; }
+.end-parliament{ width:100%; max-width:340px; padding:0 16px; }
+.end-parliament svg{ width:100%; height:auto; display:block; }
+.end-parliament circle{ transition:fill .4s ease; }
+.declare-ledger{ width:100%; padding:14px 22px 4px; }
+.ledger-row{ display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px dashed rgba(20,22,28,.16); font-family:var(--font-mono); font-size:13.5px; }
+.ledger-row:last-child{ border-bottom:none; }
+.ledger-row.winner{ font-weight:700; }
+.ledger-dot{ width:10px; height:10px; border-radius:50%; flex:0 0 auto; }
+.ledger-name{ flex:1; text-align:left; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ledger-seats{ font-weight:700; font-variant-numeric:tabular-nums; }
+.declare-footer{ width:100%; border-top:1px solid rgba(20,22,28,.18); margin-top:14px; padding:14px 20px 20px; }
+.end-overlay button{ width:100%; font-family:var(--font-display); background:var(--accent); color:#fff; font-weight:700;
+  padding:13px 22px; border-radius:100px; font-size:14.5px; border:2px solid var(--ink); box-shadow:3px 3px 0 var(--ink); }
+.end-overlay button:active{ transform:translate(3px,3px); box-shadow:none; }
 .target-banner{ position:fixed; top:0; left:0; right:0; z-index:60; background:var(--stamp); color:#fff; text-align:center; font-size:12.5px; font-weight:700; padding:8px; }
 .target-banner[hidden]{ display:none; }
 
@@ -265,14 +350,20 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
     <h1>Pradhan Mantri Elections</h1>
     <p>Pick your politician. You'll face an AI opponent — always a match ready, no waiting.</p>
   </div>
-  <div class="pol-grid" id="polGrid"></div>
+  <div class="pol-carousel" id="polCarousel"></div>
+  <div class="pol-dots" id="polDots"></div>
 </div>
 
 <div class="overlay end-overlay" id="endOverlay" hidden>
-  <div class="headline" id="endHeadline">—</div>
-  <div class="sub" id="endSub">—</div>
-  <div class="final-seats" id="endSeats">—</div>
-  <button id="playAgainBtn">Play again</button>
+  <div class="declare-card">
+    <div class="tricolor"><span class="saffron"></span><span class="white"></span><span class="green"></span></div>
+    <div class="declare-seal" id="declareSeal">🏆</div>
+    <div class="headline" id="endHeadline">—</div>
+    <div class="sub" id="endSub">—</div>
+    <div class="end-parliament" id="endParliamentChart"></div>
+    <div class="declare-ledger" id="endSeats"></div>
+    <div class="declare-footer"><button id="playAgainBtn">Play again</button></div>
+  </div>
 </div>
 
 <div class="target-banner" id="targetBanner" hidden>Tap a state to target</div>
@@ -511,6 +602,7 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
   <div class="info-panel">
     <div class="info-row">
       <h3 id="cardName">Uttar Pradesh</h3><span class="seats" id="cardSeats">80 seats</span>
+      <button class="pin-btn" id="cardPinBtn" title="Pin this group's view open" hidden>📌</button>
       <div class="info-groups" id="cardGroups"></div>
     </div>
     <div class="vs-bar" id="cardVsBar">

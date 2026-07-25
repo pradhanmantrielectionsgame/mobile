@@ -13,6 +13,23 @@
   };
   function partySymbol(party) { return PARTY_SYMBOLS[party] || '🗳️'; }
 
+  // Real party logo (data/politicians-data.json's partyLogo) where one
+  // exists, falling back to the PARTY_SYMBOLS emoji otherwise/on load error.
+  function partyBadge(p) {
+    var wrap = document.createElement('span');
+    wrap.className = 'pol-seal';
+    if (p.partyLogo) {
+      var img = document.createElement('img');
+      img.alt = p.party;
+      img.src = '../' + p.partyLogo;
+      img.onerror = function () { wrap.textContent = partySymbol(p.party); };
+      wrap.appendChild(img);
+    } else {
+      wrap.textContent = partySymbol(p.party);
+    }
+    return wrap;
+  }
+
   // Sets a politician portrait <img>, falling back to a colored initial
   // circle (same className, so existing CSS sizing still applies) if the
   // image file doesn't exist — 11 of 20 portraits don't yet (see CLAUDE.md).
@@ -141,25 +158,160 @@
   // ---------------------------------------------------------------------
   // Pre-game: politician select
   // ---------------------------------------------------------------------
-  function renderPolGrid() {
-    var grid = $('polGrid');
-    grid.innerHTML = '';
-    data.politicians.forEach(function (p) {
-      var card = document.createElement('div');
-      card.className = 'pol-card';
-      var img = document.createElement('img');
-      img.className = 'portrait';
-      setPortrait(img, p);
-      var nameEl = document.createElement('span');
-      nameEl.className = 'pol-name'; nameEl.textContent = p.name;
-      var partyEl = document.createElement('span');
-      partyEl.className = 'pol-party'; partyEl.textContent = p.party;
-      var btn = document.createElement('button');
-      btn.textContent = 'Play';
-      btn.addEventListener('click', function () { startGame(p.id); });
-      card.appendChild(img); card.appendChild(nameEl); card.appendChild(partyEl); card.appendChild(btn);
-      grid.appendChild(card);
+  // What an agenda actually does, read straight from policy-tags.json's
+  // tagEffects (or nationwideBonus) — shared by the in-game agenda-info
+  // panel (renderAgendaCard) and the pre-game politician carousel, so
+  // there's one place that knows how to turn a policy into chips.
+  function agendaEffectChips(name) {
+    var policy = data.policyTags[name];
+    var chips = [];
+    if (!policy) return chips;
+    if (policy.nationwideBonus) {
+      chips.push({ cls: 'eff-pos', text: '🇮🇳 Nationwide +' + policy.nationwideBonus });
+      return chips;
+    }
+    var effects = policy.tagEffects || {};
+    Object.keys(effects).sort(function (a, b) { return Math.abs(effects[b]) - Math.abs(effects[a]); })
+      .forEach(function (key) {
+        var g = data.groups.filter(function (x) { return x.key === key; })[0];
+        var val = effects[key];
+        chips.push({ cls: val > 0 ? 'eff-pos' : 'eff-neg', text: (g ? g.icon + ' ' + g.label : key) + ' ' + (val > 0 ? '+' : '') + val });
+      });
+    return chips;
+  }
+
+  // Rectangular art-window portrait — a dedicated fallback (not setPortrait's
+  // circular-avatar one) since a bare initial-on-gradient reads right inside
+  // the ballot card's photo window, where a small circular avatar wouldn't.
+  function setArtPortrait(imgEl, p) {
+    imgEl.alt = p.name;
+    imgEl.src = '../' + p.image;
+    imgEl.onerror = function () {
+      var fallback = document.createElement('div');
+      fallback.className = 'pol-art-fallback';
+      fallback.textContent = p.name.trim().charAt(0);
+      imgEl.replaceWith(fallback);
+    };
+  }
+
+  // Ticket-stub die-cut edge between the art window and the bio panel —
+  // matches design/prototypes/pol-card-mockup.html's approved look.
+  function stubEdgeSvg(w) {
+    var teeth = 14, path = 'M0,10 ';
+    for (var i = 0; i <= teeth; i++) {
+      var x = (w / teeth) * i;
+      path += 'L' + x + ',' + (i % 2 === 0 ? 10 : 3) + ' ';
+    }
+    return '<svg viewBox="0 0 ' + w + ' 10" preserveAspectRatio="none"><path d="' + path + 'L' + w + ',10 Z" fill="var(--paper)"/></svg>';
+  }
+
+  function buildPolCard(p, idx, total) {
+    var color = p.primaryColor || '#999';
+    var card = document.createElement('div');
+    card.className = 'pol-card';
+
+    var ballot = document.createElement('div');
+    ballot.className = 'ballot-card';
+    ballot.style.setProperty('--acc', color);
+
+    ballot.innerHTML = '<div class="tricolor"><span class="saffron"></span><span class="white"></span><span class="green"></span></div>' +
+      '<div class="pol-masthead">' +
+        '<div class="pol-masthead-seal-slot"></div>' +
+        '<div class="pol-masthead-text"><div class="pol-eyebrow">Candidate</div><div class="pol-index">No. ' + idx + ' / ' + total + '</div></div>' +
+        '<div class="pol-archetype">' + (p.archetype || '') + '</div>' +
+      '</div>' +
+      '<div class="pol-art"><div class="pol-art-img-slot"></div><div class="pol-stub">' + stubEdgeSvg(336) + '</div></div>' +
+      '<div class="pol-bio">' +
+        '<div class="pol-name">' + p.name + '</div>' +
+        '<div class="pol-meta"><span class="pol-party-pill">' + p.party + '</span><span>🏠 ' + p.homeState + '</span></div>' +
+        '<div class="pol-section-label">Manifesto</div>' +
+        '<div class="pol-agendas"></div>' +
+        '<div class="pol-section-label">Special Power</div>' +
+        '<div class="pol-power"><div class="pow-seal">⚡</div><div class="pow-name">' + p.power.name + '</div>' +
+          '<div class="pow-desc">' + p.power.description + '</div>' +
+          '<div class="pow-cost">Cost: ' + p.specialPower.cost + '</div></div>' +
+      '</div>' +
+      '<div class="pol-footer"><span class="pol-set-info">Booth Ink · <b>' + p.party + '</b></span></div>';
+
+    var img = document.createElement('img');
+    setArtPortrait(img, p);
+    ballot.querySelector('.pol-art-img-slot').replaceWith(img);
+    ballot.querySelector('.pol-masthead-seal-slot').replaceWith(partyBadge(p));
+
+    var agList = ballot.querySelector('.pol-agendas');
+    var openChip = null;
+    p.policies.forEach(function (pl) {
+      var chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'pol-agenda-chip';
+      chip.innerHTML = '<span class="ic">' + (AGENDA_ICONS[pl.name] || '📌') + '</span>' +
+        '<span class="nm">' + pl.name + '</span>' +
+        '<span class="chev">›</span>';
+      // Each plank gets its own adjacent detail row (CSS ".active + .show"
+      // sibling selector) so the breakdown opens directly under the plank
+      // that was tapped, not fixed at the bottom of the whole list.
+      var detail = document.createElement('div');
+      detail.className = 'pol-agenda-detail';
+      agendaEffectChips(pl.name).forEach(function (c) {
+        var pill = document.createElement('span');
+        pill.className = 'pol-eff-chip ' + c.cls;
+        pill.textContent = c.text;
+        detail.appendChild(pill);
+      });
+      chip.addEventListener('click', function () {
+        if (openChip && openChip.chip === chip) {
+          chip.classList.remove('active');
+          detail.classList.remove('show');
+          openChip = null;
+          return;
+        }
+        if (openChip) { openChip.chip.classList.remove('active'); openChip.detail.classList.remove('show'); }
+        chip.classList.add('active');
+        detail.classList.add('show');
+        openChip = { chip: chip, detail: detail };
+      });
+      agList.appendChild(chip);
+      agList.appendChild(detail);
     });
+
+    var btn = document.createElement('button');
+    btn.className = 'pol-play-btn';
+    btn.style.background = color;
+    btn.textContent = 'Play as ' + p.name.split(' ').slice(-1)[0];
+    btn.addEventListener('click', function () { startGame(p.id); });
+    ballot.querySelector('.pol-footer').appendChild(btn);
+
+    card.appendChild(ballot);
+    return card;
+  }
+
+  var polScrollTimer = null;
+  function updateActiveDot(idx) {
+    var dots = $('polDots').children;
+    for (var i = 0; i < dots.length; i++) dots[i].classList.toggle('on', i === idx);
+  }
+  function onCarouselScroll() {
+    clearTimeout(polScrollTimer);
+    polScrollTimer = setTimeout(function () {
+      var track = $('polCarousel');
+      updateActiveDot(Math.round(track.scrollLeft / track.clientWidth));
+    }, 60);
+  }
+
+  function renderPolGrid() {
+    var track = $('polCarousel'), dots = $('polDots');
+    track.innerHTML = ''; dots.innerHTML = '';
+    data.politicians.forEach(function (p, i) {
+      track.appendChild(buildPolCard(p, i + 1, data.politicians.length));
+      var dot = document.createElement('button');
+      dot.className = 'pol-dot' + (i === 0 ? ' on' : '');
+      dot.setAttribute('aria-label', p.name);
+      dot.addEventListener('click', function () {
+        track.scrollTo({ left: i * track.clientWidth, behavior: 'smooth' });
+      });
+      dots.appendChild(dot);
+    });
+    track.addEventListener('scroll', onCarouselScroll);
   }
 
   function startGame(p1Id) {
@@ -192,7 +344,7 @@
     $('p2Name').textContent = game.players.p2.politician.name;
 
     lastLogShown = 0;
-    armed = null; activeGroup = null; activeAgenda = null; activeAction = null;
+    armed = null; activeGroup = null; groupPinned = false; activeAgenda = null; activeAction = null;
     lastMapTapId = null; lastBtnTapId = null; timerPaused = false;
     $('pauseToggleBtn').textContent = '⏸ Pause';
     G.pushLog(game, '🗳️ Your opponent this match: ' + game.players.p2.politician.name + ' (' + game.players.p2.politician.party + ')');
@@ -282,15 +434,70 @@
 
   function showEndOverlay() {
     var seats = game.finalSeats;
-    var headline, sub;
-    if (game.winner === 'p1') { headline = '🏆 You won the election'; sub = 'You crossed 272 seats.'; }
-    else if (game.hungParliament) { headline = '⚖️ Hung parliament'; sub = 'Neither side reached 272 — against an AI opponent, that’s a loss, not a draw.'; }
-    else { headline = '💔 You lost the election'; sub = game.players.p2.politician.name + ' crossed 272 seats.'; }
+    var seal, headline, sub;
+    if (game.winner === 'p1') { seal = '🏆'; headline = 'You won the election'; sub = 'You crossed 272 seats.'; }
+    else if (game.hungParliament) { seal = '⚖️'; headline = 'Hung parliament'; sub = 'Neither side reached 272 — against an AI opponent, that’s a loss, not a draw.'; }
+    else { seal = '💔'; headline = 'You lost the election'; sub = game.players.p2.politician.name + ' crossed 272 seats.'; }
+    $('declareSeal').textContent = seal;
     $('endHeadline').textContent = headline;
     $('endSub').textContent = sub;
-    $('endSeats').textContent = 'Final: You ' + seats.p1 + ' · ' + game.players.p2.politician.name + ' ' + seats.p2 + ' · Others ' + seats.others;
+    renderEndLedger(seats);
+    renderParliamentChart(seats);
+    $('playAgainBtn').style.background = COLORS.p1;
     $('endOverlay').hidden = false;
     sounds.bg_music.pause();
+  }
+
+  function renderEndLedger(seats) {
+    var rows = [
+      { name: 'You', n: seats.p1, color: COLORS.p1, win: game.winner === 'p1' },
+      { name: game.players.p2.politician.name, n: seats.p2, color: COLORS.p2, win: game.winner === 'p2' },
+      { name: 'Others', n: seats.others, color: COLORS.others, win: false }
+    ];
+    $('endSeats').innerHTML = rows.map(function (r) {
+      return '<div class="ledger-row' + (r.win ? ' winner' : '') + '">' +
+        '<span class="ledger-dot" style="background:' + r.color + '"></span>' +
+        '<span class="ledger-name">' + r.name + '</span>' +
+        '<span class="ledger-seats">' + r.n + '</span></div>';
+    }).join('');
+  }
+
+  // Desktop's end-game hemicycle, ported as-is: fetch the real 543-seat
+  // parliamentarch SVG (assets/icons/Parliament_diagram.svg, unused until
+  // now), strip its real-world party colors, and recolor circles in
+  // document order — a contiguous P1 block, then Others, then P2 — which
+  // approximates a clean left/center/right hemicycle split because that
+  // SVG's seats are emitted in the same angular sweep order.
+  var parliamentSvgText = null;
+  function renderParliamentChart(seats) {
+    var container = $('endParliamentChart');
+    function paint(svgText) {
+      parliamentSvgText = svgText;
+      container.innerHTML = svgText;
+      var svg = container.querySelector('svg');
+      if (!svg) return;
+      if (!svg.getAttribute('viewBox')) {
+        var w = parseFloat(svg.getAttribute('width') || '360');
+        var h = parseFloat(svg.getAttribute('height') || '185');
+        svg.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
+      }
+      svg.removeAttribute('width'); svg.removeAttribute('height');
+      var circles = svg.querySelectorAll('circle');
+      var blocks = [
+        { n: seats.p1, color: COLORS.p1 },
+        { n: seats.others, color: COLORS.others },
+        { n: seats.p2, color: COLORS.p2 }
+      ];
+      var i = 0;
+      blocks.forEach(function (b) {
+        for (var k = 0; k < b.n && i < circles.length; k++, i++) circles[i].style.fill = b.color;
+      });
+    }
+    if (parliamentSvgText) { paint(parliamentSvgText); return; }
+    fetch('../assets/icons/Parliament_diagram.svg')
+      .then(function (r) { return r.text(); })
+      .then(paint)
+      .catch(function () { container.innerHTML = ''; });
   }
 
   // ---------------------------------------------------------------------
@@ -348,6 +555,7 @@
   // politicians-data.json, so it's reused verbatim rather than re-authored).
   function renderActionInfo(kind) {
     $('cardVsBar').hidden = true;
+    $('cardPinBtn').hidden = true;
     var el = $('cardGroups');
     el.className = 'info-groups desc';
     var rc = game.cfg.rally;
@@ -380,6 +588,7 @@
   function renderAgendaCard(name) {
     var policy = game.policiesByName[name]; if (!policy) return;
     $('cardVsBar').hidden = true;
+    $('cardPinBtn').hidden = true;
     $('cardName').textContent = (AGENDA_ICONS[name] || '📜') + ' ' + name;
     var taps = game.players.p1.agendaProgress[name] || 0;
     var done = taps >= game.cfg.agenda.tapsToComplete;
@@ -387,22 +596,12 @@
     var el = $('cardGroups');
     el.className = 'led-grid';
     el.innerHTML = '';
-    if (policy.nationwideBonus) {
+    var chips = agendaEffectChips(name);
+    if (!chips.length) { el.innerHTML = '<span class="none">No regional effect</span>'; return; }
+    chips.forEach(function (c) {
       var chip = document.createElement('span');
-      chip.className = 'led-chip eff-pos';
-      chip.textContent = '🇮🇳 Nationwide +' + policy.nationwideBonus;
-      el.appendChild(chip);
-      return;
-    }
-    var effects = policy.tagEffects || {};
-    var keys = Object.keys(effects).sort(function (a, b) { return Math.abs(effects[b]) - Math.abs(effects[a]); });
-    if (!keys.length) { el.innerHTML = '<span class="none">No regional effect</span>'; return; }
-    keys.forEach(function (key) {
-      var g = game.groups.filter(function (x) { return x.key === key; })[0];
-      var val = effects[key];
-      var chip = document.createElement('span');
-      chip.className = 'led-chip ' + (val > 0 ? 'eff-pos' : 'eff-neg');
-      chip.textContent = (g ? g.icon + ' ' + g.label : key) + ' ' + (val > 0 ? '+' : '') + val;
+      chip.className = 'led-chip ' + c.cls;
+      chip.textContent = c.text;
       el.appendChild(chip);
     });
   }
@@ -410,6 +609,7 @@
   function renderStateCard() {
     var s = game.statesById[selectedId], p = game.pop[selectedId];
     if (!s || !p) return;
+    $('cardPinBtn').hidden = true;
     $('cardVsBar').hidden = false;
     $('cardName').textContent = s.name;
     $('cardSeats').textContent = s.seats + ' seats';
@@ -445,6 +645,8 @@
     $('cardSeats').textContent = g.seats + ' seats · leading ' + leadingCount + '/' + members.length +
       (leadingCount === members.length ? ' — bonus qualified!' : '');
     $('cardVsBar').hidden = true;
+    $('cardPinBtn').hidden = false;
+    $('cardPinBtn').classList.toggle('on', groupPinned);
     var ledEl = $('cardGroups');
     ledEl.className = 'led-grid';
     ledEl.innerHTML = '';
@@ -464,15 +666,25 @@
     var el = document.getElementById(id); if (el) el.classList.add('selected');
     selectedId = id;
     activeAgenda = null; activeAction = null; // picking a state drills out of agenda/action-info mode too
-    if (activeGroup) exitGroupMode(); // picking a specific state drills out of group view
+    // Picking a specific state normally drills out of group view too — unless
+    // the group card is pinned, in which case it's meant to survive exactly
+    // this (checking leads, investing in a state, rechecking) without having
+    // to re-tap the group chip every time.
+    if (activeGroup && !groupPinned) exitGroupMode();
     updateCard();
   }
 
-  var activeGroup = null;
+  var activeGroup = null, groupPinned = false;
   function exitGroupMode() {
     activeGroup = null;
+    groupPinned = false;
     document.querySelectorAll('.gchip').forEach(function (x) { x.classList.remove('on'); });
     applyGroupHighlight();
+  }
+  function toggleGroupPin() {
+    if (!activeGroup) return;
+    groupPinned = !groupPinned;
+    updateCard();
   }
   function setActiveGroup(key) {
     activeAgenda = null; activeAction = null; // picking a group drills out of agenda/action-info mode too
@@ -766,6 +978,7 @@
     var path = e.target.closest('path[id], circle[id]'); if (!path) return;
     handleMapTap(path.id, { x: e.clientX, y: e.clientY });
   });
+  $('cardPinBtn').addEventListener('click', toggleGroupPin);
   $('utsBtn').addEventListener('click', function () {
     handleButtonTap('ALL_UTS', function () {
       var pt = viewportPoint($('utsBtn')), any = false, totalCost = 0;

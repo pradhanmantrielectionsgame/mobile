@@ -6,6 +6,41 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### 🎨 Mobile UI Redesign: Ballot-Card Select/End Screens & Region-Effect Agenda Chips — 2026-07-24
+
+#### Visual Design Overhaul
+- **REDESIGNED**: Politician-select carousel (was 2-column grid, now full-screen swipeable cards) and end-of-game parliament declaration screen as "ballot cards" — Booth Ink's own light-theme ink/brass/stamp/paper aesthetic (tricolor stripe, brass-ringed seal, ticket-stub die-cut, decree box) instead of a literal Pokémon-style holo-foil card.
+  - **Rationale for ballot-card aesthetic [D1]**: Builds trading-card structure from the game's existing Booth Ink materials instead of an unrelated aesthetic; ties every card together as one unified set since only the party color varies.
+  - **Rationale for light-only theme [D2]**: The main app has no dark mode anywhere else, so inventing one only for this screen would clash — confirmed 2026-07-24 after rejecting a first dark-card-stock draft specifically for inconsistency.
+
+#### UI Implementation & Components
+- **REPLACED**: `mobile/index.html` — 2-column politician grid replaced with full-screen swipeable card carousel; all select-screen layout wired to new ballot-card visual identity [C1]
+- **UPDATED**: `mobile/main.js` — agenda chips now tap-to-expand real region-effect breakdown (`agendaEffectChips` shared helper) instead of showing raw bonus numbers [C2]
+- **ENHANCED**: `mobile/main.js` — real party-logo images in seal/badge (`partyBadge()`), falling back to emoji if not available [C3]
+- **FIXED**: `mobile/index.html` — carousel whitespace bug (dropped margin-top:auto, added justify-content:safe center) [C4]
+- **ADDED**: `mobile/index.html`, `mobile/main.js` — pin toggle to state-group info card so it survives state taps while pinned [C5]
+- **PORTED**: `mobile/main.js` — desktop's parliamentarch hemicycle SVG into mobile end-game screen [C6]
+
+#### Design Artifacts & Data
+- **CREATED**: `design/prototypes/pol-card-mockup.html` — frozen "ballot card" trading-card mockup, approved by user [C7]
+- **UPDATED**: `data/politicians-data.json` — added "archetype" flavor field (e.g. "MASS MOBILIZER") to all 20 politicians [C8]
+- **WIRED**: `mobile/index.html`, `mobile/main.js` — approved ballot-card design into real select carousel (tricolor stripe, brass seal, art window w/ ticket-stub die-cut, manifesto planks, decree box) [C9]
+- **WIRED**: `mobile/index.html`, `mobile/main.js` — matching ballot-card treatment for end-of-game parliament screen (declare-card, seal icon, seat ledger) [C10]
+
+#### Bug Fixes
+- **FIXED**: Manifesto-plank accordion — detail now opens under the tapped row, not always the last row [C11]
+- **FIXED**: Invisible tricolor stripe on parliament card (zero-width flex-item bug caused by `align-items:center` on parent) [C12]
+
+#### Agenda Information Display Redesign
+- **REMOVED**: Raw per-politician agenda bonus numbers from select screen (were meaningless after agenda-effect-system revamp)
+- **REPLACED [D3]**: With tap-to-expand real region-effect breakdown (`agendaEffectChips()` shared helper in `mobile/main.js`) showing per-region magnitude impact instead of raw numbers
+  - **Rationale**: Reuses the same region-effect data the live in-game agenda-info panel already shows, refactored into one shared helper instead of duplicated logic
+
+#### Context
+Session focused on redesigning the politician-select and end-of-game screens as a cohesive visual identity using Booth Ink's light-theme ballot-card aesthetic, refactoring agenda display to show real regional effects instead of raw numbers, wiring the approved mockup into production code, and fixing related UI layout bugs. All changes maintain MVP scope and light-only theme consistency with the rest of the app.
+
+---
+
 ### 📚 Documentation Reconciliation & Comprehensive Project Wiki — 2026-07-24
 
 #### Project Wiki & Reference Documentation
