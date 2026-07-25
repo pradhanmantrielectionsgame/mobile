@@ -6,6 +6,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### 🎨 Mobile UI Refinements: Welcome Screen & Politician-Select Ballot-Card Details — 2026-07-25
+
+#### UI Enhancements
+- **ADDED**: `mobile/index.html` — new full-bleed `#welcomeOverlay` welcome/entry screen displayed before the politician-select carousel, reusing `assets/images/PradhanMantriBg.png` (poster-collage illustration) as an `object-fit:contain` background with a semi-transparent dark-gradient scrim (hiding the image's own baked-in Hindi title text) and a "Begin Campaign" button that hides the welcome screen and reveals `#selectOverlay` [C3]
+- **UPDATED**: `mobile/index.html` — politician-select screen's manifesto list (`.pol-agenda-chip` rows) now displays a standalone hollow "punched ballot-stub" circle bullet (`.punched-circle`) before each row's policy icon, and the row divider changed from a dashed horizontal line to a solid ruled line [C2]
+- **UPDATED**: `mobile/main.js` — welcome screen and manifesto-list styling wired to real DOM; `#selectOverlay` now starts with `hidden` attribute (revealed by welcome screen's "Begin Campaign" button click) [C2]
+
+#### Design & Planning Documentation
+- **CREATED**: `design/viewport-migration-plan.md` — phased roadmap (not yet started) for eventually achieving full responsive design across phone/tablet/desktop screen sizes. Documents the current fixed-viewport fragility root cause, phases 0–4 with risk assessments (Phase 0 safety baseline, Phase 1 real viewport meta tag, Phase 2 flexible-height stack, Phase 3 magic-px-to-relative-units, Phase 4 honeycomb/map redesign), and open decisions (prototype handling, min/max height bounds, tablet layout scope). Scope explicitly excludes game-logic or map visual redesign — purely CSS/layout infrastructure planning. [C1]
+
+#### Project Documentation Updates
+- **UPDATED**: `CLAUDE.md` — added new UI conventions bullet documenting the welcome screen as the app's real entry point (`#welcomeOverlay`, poster background with dark scrim, "Begin Campaign" button flow). Extended existing "Playwright testing notes for this project" bullet with 6th sub-point warning: `object-fit:cover` on full-bleed background images can crop noticeably tighter on real phones than Playwright screenshots predict — don't trust emulated screenshots alone for crop tightness on images where edge cropping would cut meaningful content; verify on real device or use `object-fit:contain` instead. [C4]
+- **UPDATED**: `findings.md` — 3 new dated 2026-07-25 entries (see Findings.md status in sync report) covering object-fit crop behavior differences vs. Playwright, Gemini image-gen nickname handling, and Gemini MCP tool model unavailability [C5]
+
+#### Design Decisions
+- **[D1] Separate Full-Screen Welcome Entry Point**: Added a separate full-bleed welcome overlay (`#welcomeOverlay`) before the politician-select carousel, rather than embedding poster art as a small banner inside the select screen itself. Rationale: user explicitly requested a separate screen with the poster as the full background (reusing existing `PradhanMantriBg.png` asset now rather than commissioning new art immediately).
+  - Alternatives considered: (a) small bordered banner embedded in select-screen header above carousel (built first, functional, but user then explicitly asked for separate full-screen instead); (b) generate brand-new flat-vector-style hero art matching Booth Ink's illustration style (offered as future option, not used this session).
+  
+- **[D2] Punched-Stub Bullet Scope Limited to Select Screen**: Checklist-style punched-stub-circle agenda-list bullet applied only to politician-select screen's manifesto list, not the in-game HUD agenda tray. Rationale: an earlier idea converted the in-game tray from a 2×2 grid to single-column with punched-stub dividers; user explicitly said "scrap this idea" for the in-game tray specifically. The select-screen bullet (hollow circle, standalone marker before icon, solid ruled dividers between rows) is what the user confirmed as correct.
+  - Alternatives considered for bullet style: (a) checkmark seal overlapping icon corner (rejected — user wanted icon kept round); (b) icon reshaped to rounded square with seal (rejected — user wanted round icon kept); (c) hollow punched-stub circle as standalone marker (approved).
+
+#### Context
+Session focused on welcome-screen art integration and politician-select ballot-card detail polish. The viewport migration plan was drafted as a reference doc before committing to an approach; it captures the design work needed to eventually achieve full responsiveness without making any code changes this session. All UI changes are CSS/DOM additions only — no game logic or engine modifications.
+
+---
+
 ### 🤖 AI Targeting & Pacing Improvements, Geography Data Fix — 2026-07-25
 
 #### AI Behavior Fixes

@@ -239,7 +239,8 @@
       var chip = document.createElement('button');
       chip.type = 'button';
       chip.className = 'pol-agenda-chip';
-      chip.innerHTML = '<span class="ic">' + (AGENDA_ICONS[pl.name] || '📌') + '</span>' +
+      chip.innerHTML = '<span class="bullet"></span>' +
+        '<span class="ic">' + (AGENDA_ICONS[pl.name] || '📌') + '</span>' +
         '<span class="nm">' + pl.name + '</span>' +
         '<span class="chev">›</span>';
       // Each plank gets its own adjacent detail row (CSS ".active + .show"
@@ -1058,6 +1059,11 @@
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(function () {});
   }
+
+  $('welcomeStartBtn').addEventListener('click', function () {
+    $('welcomeOverlay').hidden = true;
+    $('selectOverlay').hidden = false;
+  });
 
   scheduleAITick();
 

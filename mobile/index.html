@@ -229,6 +229,18 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
 .overlay-header{ flex:0 0 auto; padding:calc(env(safe-area-inset-top,0px) + 20px) 45px 14px; text-align:center; zoom:.95; }
 .overlay-header h1{ font-size:64px; margin:0; }
 
+/* ---- welcome screen: a separate full-bleed poster screen shown before the
+   politician-select carousel, not a banner embedded inside it. ---- */
+.welcome-overlay{ position:fixed; inset:0; z-index:55; display:flex; flex-direction:column; justify-content:flex-end; overflow:hidden; }
+.welcome-overlay[hidden]{ display:none; }
+.welcome-bg{ position:absolute; inset:0; width:100%; height:100%; object-fit:contain; object-position:top center; background:var(--ink); }
+.welcome-scrim{ position:absolute; inset:0; background:linear-gradient(to bottom, rgba(20,22,28,0) 30%, rgba(20,22,28,.75) 55%, rgba(20,22,28,.98) 68%, var(--ink) 78%); }
+.welcome-content{ position:relative; z-index:1; padding:0 28px calc(env(safe-area-inset-bottom,0px) + 40px); text-align:center; }
+.welcome-content h1{ color:#fff; font-size:48px; margin:16px 0 26px; text-shadow:0 3px 14px rgba(0,0,0,.55); }
+.welcome-start-btn{ width:100%; max-width:440px; font-family:var(--font-display); color:#fff; font-weight:700; font-size:32px; padding:20px 32px;
+  background:var(--accent); border-radius:100px; border:2px solid var(--ink); box-shadow:3px 3px 0 var(--ink); }
+.welcome-start-btn:active{ transform:translate(3px,3px); box-shadow:none; }
+
 /* ---- politician carousel: a "ballot card" per candidate (trading-card
    structure — art window, stat masthead, attack box — built from Booth
    Ink's own ink/brass/stamp/paper materials instead of a literal holo-foil
@@ -261,8 +273,12 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
 .pol-party-pill{ color:var(--ink); background:var(--paper-dim); font-weight:700; padding:3px 20px; border-radius:10px; font-size:28px; }
 .pol-section-label{ font-family:var(--font-mono); font-size:25px; font-weight:700; text-transform:uppercase; letter-spacing:.12em; color:var(--brass); margin:18px 0 8px; padding-bottom:10px; border-bottom:1px solid rgba(20,22,28,.15); }
 .pol-agendas{ display:flex; flex-direction:column; }
-.pol-agenda-chip{ width:100%; text-align:left; background:none; border-radius:0; padding:13px 5px; display:flex; align-items:center; gap:23px; font-size:34px; font-weight:600; min-width:0; border-bottom:1px dashed rgba(20,22,28,.16); }
+.pol-agenda-chip{ width:100%; text-align:left; background:none; border-radius:0; padding:13px 5px; display:flex; align-items:center; gap:23px; font-size:34px; font-weight:600; min-width:0; border-bottom:1px solid rgba(20,22,28,.15); }
 .pol-agenda-chip:nth-last-child(2){ border-bottom:none; }
+/* checklist look — the bullet is its own marker (a hollow punched
+   ballot-stub circle, die-cut through the card stock) leading each row,
+   ahead of the icon, not overlapping it. */
+.pol-agenda-chip .bullet{ width:26px; height:26px; border-radius:50%; background:var(--paper); border:2.5px solid rgba(20,22,28,.35); flex:0 0 auto; }
 .pol-agenda-chip .ic{ width:65px; height:65px; border-radius:50%; background:var(--paper-dim); display:flex; align-items:center; justify-content:center; font-size:35px; flex:0 0 auto; }
 .pol-agenda-chip .nm{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .pol-agenda-chip .chev{ flex:0 0 auto; font-size:30px; color:var(--brass); transition:transform .15s; }
@@ -338,7 +354,17 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
 
 </head>
 <body>
-<div class="overlay" id="selectOverlay">
+<div class="welcome-overlay" id="welcomeOverlay">
+  <img class="welcome-bg" src="../assets/images/PradhanMantriBg.png" alt="">
+  <div class="welcome-scrim"></div>
+  <div class="welcome-content">
+    <div class="tricolor"><span class="saffron"></span><span class="white"></span><span class="green"></span></div>
+    <h1>Pradhan Mantri Elections</h1>
+    <button class="welcome-start-btn" id="welcomeStartBtn">Begin Campaign</button>
+  </div>
+</div>
+
+<div class="overlay" id="selectOverlay" hidden>
   <div class="overlay-header">
     <h1>Pradhan Mantri Elections</h1>
   </div>

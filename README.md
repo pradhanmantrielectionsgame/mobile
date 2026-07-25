@@ -20,7 +20,7 @@ A turn-based election simulation game on a mobile-first interactive India map. P
 3. **Play the game:**
    - Open `http://localhost:8000` in your browser, or add to iPhone home screen via `http://<your-machine-ip>:8000`
    - Game runs entirely in `mobile/index.html` (Booth Ink UI) wired to the real engine in `mobile/engine.js` and `mobile/game.js`
-   - Select a politician, then play vs. AI or hand the phone to Player 2 for local hotseat mode
+   - Start from the welcome screen (full-bleed poster background, "Begin Campaign" button), then select your politician, then play vs. AI or hand the phone to Player 2 for local hotseat mode
    - Tap states to invest funds, use rally tokens for regional boosts, activate special powers, and pursue regional dominance bonuses
    - First player to 272/543 seats wins
 
@@ -57,9 +57,10 @@ npm test              # Runs simulate.js regression suite
 
 ### Game Setup
 
-1. **Start screen** — select your politician (defines your 4 agenda commitments + unique special power)
-2. **Choose opponent** — play solo vs. AI, or select "local hotseat" for 2-player on one device
-3. **Game begins** — 10 phases of investment and power deployment
+1. **Welcome screen** — see the campaign poster (PradhanMantri Elections branding), then tap "Begin Campaign" to proceed
+2. **Politician select** — choose your politician (defines your 4 agenda commitments + unique special power)
+3. **Choose opponent** — play solo vs. AI, or select "local hotseat" for 2-player on one device
+4. **Game begins** — 10 phases of investment and power deployment
 
 ### In-Game Controls
 
