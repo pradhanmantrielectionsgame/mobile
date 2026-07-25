@@ -6,6 +6,44 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### 🤖 AI Targeting & Pacing Improvements, Geography Data Fix — 2026-07-25
+
+#### AI Behavior Fixes
+- **SIMPLIFIED**: `mobile/game.js` — AI investment targeting now commits to a single randomly-chosen state group for the entire match (`pl.aiTargetGroup`), replacing round-robin cycling across all groups. [C1]
+- **REFACTORED**: `mobile/game.js` — rally token targeting changed to one random pick per phase among the 10 largest-seat states (`pickAIRallyTarget`); rejected placements (state at shared 2-play cap) are left unspent, banking toward the auto-craft threshold. [C2]
+- **UNCONDITIONAL**: `mobile/game.js` — AI now auto-crafts and deploys its Special Power the instant 6 rally tokens accumulate (`specialPowerupCraftCost`), no longer gated by AI personality profile's `craftsTokens` flag. [C3]
+- **REMOVED**: `mobile/game.js` — round-robin `pl.aiGroupCursor` cursor and its cycling logic, superseded by single-group commitment strategy. [C4]
+- **ADDED**: `mobile/game.js` — `game.rng` now stored on the game object to support ongoing random draws during `aiStep()`, not just at game creation. [C5]
+
+#### AI Phase-Pacing Fix
+- **ADDED**: `mobile/main.js` — `planAITickPacing(game)` now runs at the start of every phase, dry-running the AI's remaining turn on a `structuredClone` with independent RNG to count exactly how many actions are needed, then paces `scheduleAITick()`'s interval (clamped 300–4000ms) to spread exactly that many ticks evenly across the phase's real duration. [C7]
+- **CHANGED**: `mobile/main.js` — `scheduleAITick()` now uses the planned `aiTickIntervalMs` (with ±20% jitter) instead of a fixed 2000+random×2000ms cooldown, eliminating budget waste from action throttling that couldn't keep up with phase spend demand. [C8]
+
+#### Data Corrections
+- **FIXED**: `data/states_data.json` — Himachal Pradesh's `WesternBorder` group tag removed (`FALSE`), `EasternBorder` retained (`TRUE`). Rationale: HP borders Tibet/China, not Pakistan; straightforward geography correction. [C6]
+
+#### Documentation
+- **UPDATED**: `findings.md` — 3 new dated 2026-07-25 entries covering the real in-browser AI pacing throttle and its budget-waste impact, investment-scoring size-bias formula, and never-crafting-Nationwide-Rally bug. [C9]
+- **UPDATED**: `CLAUDE.md` — 3 new bullets under "Game design principles" and "Local development & testing" documenting headless-vs-real AI strength mismatch and AI greedy-scoring size-invariance requirement. [C10]
+
+#### Design Decisions
+- **[D1] Bug-First over Balance**: Fixed two real AI implementation bugs (investment-scoring size bias, token-hoarding preventing power crafting) directly in shipped code rather than treating as a politician-balance issue. Rationale: 120-game bulk simulation showed no politician-specific outlier; exploit worked broadly regardless of player selection, proving it was AI-code-level bugs.
+  
+- **[D2] Single-Group Commitment**: Simplified investment targeting from round-robin-across-groups to one randomly-chosen group for the whole match. Rationale: more cohesive regional focus, direct regional-dominance bonus pursuit; mirrors what a focused human player does.
+  
+- **[D3] Simple Rally Targeting**: Random pick among top-10 largest states, rejected placements bank toward 6-token Special Power auto-craft. Rationale: matches user's explicit "super simple fix" spec; ensures tokens reliably accumulate instead of always being spent immediately (which was the root cause of AI never reaching Nationwide Rally).
+  
+- **[D4] Unconditional Crafting**: 6-token Special Power threshold, no personality profile gate. Rationale: ensures AI reliably uses its own kit every match regardless of randomly-drawn profile; profiles now affect investment/pacing strategy, not power usage.
+  
+- **[D5] Even Pacing, Not Instant Burst**: Dry-run per-phase action count, space ticks across real phase duration. Rationale: user rejected instant catch-up burst (`G.runAIFull()` at phase end) as "cheating" since humans can't compete with machine-speed instant spending. Even pacing preserves original "visibly move, one at a time" design intent while achieving near-full budget utilization.
+  
+- **[D6] Geography Correction**: Himachal Pradesh borders only China/Tibet, not Pakistan. Rationale: straightforward cartographic fix.
+
+#### Context
+Multi-turn session focused on diagnosing why AI felt "too hard then too easy" after earlier player-strategy testing. Isolated three distinct bugs: (1) investment scoring favored tiny states 30–80x over large ones, (2) rally token hoarding prevented Special Power crafting entirely, (3) real-browser action pacing (~20/min) left up to 68% of lifetime budget unspent, while headless tests saw no throttle. Fixed all three per user feedback. Key insight: `G.runAIFull()` headless testing masks real-browser pacing constraints entirely — prior simulation results were an upper bound on AI strength, not a match for the deployed opponent.
+
+---
+
 ### 🎨 Mobile UI Polish: Ballot-Card Readability, Layout Fit & Scale Convention — 2026-07-24
 
 #### Real-Device Testing & Layout Optimization

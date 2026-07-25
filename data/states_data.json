@@ -268,7 +268,7 @@
     "MinorityAreas": "FALSE",
     "NationalParksWildlife": "FALSE",
     "EasternBorder": "TRUE",
-    "WesternBorder": "TRUE",
+    "WesternBorder": "FALSE",
     "LokSabhaSeats": "4",
     "SvgId": "INHP"
   },

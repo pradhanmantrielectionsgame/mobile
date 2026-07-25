@@ -365,11 +365,35 @@
   }
 
   // ---------------------------------------------------------------------
-  // AI pacing — the AI no longer resolves its whole turn instantly; it acts
-  // one move at a time via G.aiStep(), throttled to ~20 actions/min (a
-  // randomized 2-4s cooldown between ticks, mean 3s) so it plays out visibly
-  // instead of dumping all its funds/taps the instant a phase starts.
+  // AI pacing — the AI acts one move at a time via G.aiStep() so it plays
+  // out visibly instead of dumping all its funds/taps instantly. A fixed
+  // 2-4s cooldown only gives it ~15 ticks in a 45s phase, which isn't
+  // enough to spend a phase's funds once agenda taps and rally compete for
+  // those same ticks — funds were quietly piling up unspent all game. So
+  // the interval is planned per phase instead of fixed: dry-run the AI's
+  // remaining turn on a throwaway clone of the game to count how many
+  // actions it actually needs this phase, then spread exactly that many
+  // ticks evenly across the phase's real duration (clamped so it never
+  // looks instant or dead) — same total spend as before, evenly paced
+  // rather than fixed-interval-and-often-incomplete.
   // ---------------------------------------------------------------------
+  var AI_MIN_TICK_MS = 300, AI_MAX_TICK_MS = 4000;
+  var aiTickIntervalMs = 3000;
+
+  function planAITickPacing(game) {
+    if (typeof structuredClone !== 'function') return; // keep prior default
+    var rng = game.rng;
+    game.rng = null; // functions aren't structured-cloneable
+    var clone = structuredClone(game);
+    game.rng = rng;
+    clone.rng = Math.random; // dry run only needs *a* count, not the real sequence
+    var count = 0;
+    while (G.aiStep(clone) && count < 500) count++;
+    var phaseMs = game.cfg.phaseDurationSeconds * 1000;
+    var interval = count > 0 ? phaseMs / count : AI_MAX_TICK_MS;
+    aiTickIntervalMs = Math.max(AI_MIN_TICK_MS, Math.min(AI_MAX_TICK_MS, interval));
+  }
+
   function animateAITap(action) {
     if (!action.svgId) return;
     var el = document.getElementById(action.svgId);
@@ -380,7 +404,7 @@
   }
 
   function scheduleAITick() {
-    var delay = 2000 + Math.random() * 2000;
+    var delay = aiTickIntervalMs * (0.8 + Math.random() * 0.4); // +-20% jitter, stays organic
     setTimeout(function () {
       if (game && !timerPaused && !game.winner) {
         var action = G.aiStep(game);
@@ -397,6 +421,7 @@
     clearInterval(timerHandle);
     timeLeft = game.cfg.phaseDurationSeconds;
     $('phaseTimer').textContent = fmtClock(timeLeft);
+    planAITickPacing(game);
     resumePhaseTimer();
   }
 

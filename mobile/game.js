@@ -104,7 +104,8 @@
       agendaProgress: {},
       agendaTokenBonusEarned: 0,
       investmentTaps: {},
-      aiGroupCursor: null,
+      aiTargetGroup: null,
+      aiRalliedThisPhase: false,
       aiAgendaTapsThisPhase: {}
     };
   }
@@ -122,6 +123,7 @@
 
     var game = {
       cfg: data.cfg,
+      rng: rng,
       states: data.states,
       statesById: statesById,
       groups: data.groups,
@@ -138,6 +140,13 @@
       finalSeats: null,
       players: { p1: makePlayer(p1Pol, data.cfg, false), p2: makePlayer(p2Pol, data.cfg, true, pickAIProfile(rng)) }
     };
+    // AI commits to one randomly-chosen state group for the whole match and
+    // hammers every state in it toward regional dominance, instead of
+    // round-robining across all groups — a simpler, harder-to-read-around
+    // opponent than cycling through the full group list.
+    if (game.groups.length) {
+      game.players.p2.aiTargetGroup = game.groups[Math.floor(rng() * game.groups.length)];
+    }
     startPhase(game);
     return game;
   }
@@ -185,7 +194,7 @@
       pl.fundsCr += game.cfg.fundsRefreshPerPhaseCr;
       pl.tokens.stateRally += game.cfg.rally.tokenIncomePerPhase;
       pl.tokensSpentThisPhase = 0;
-      if (pl.isAI) pl.aiAgendaTapsThisPhase = {};
+      if (pl.isAI) { pl.aiAgendaTapsThisPhase = {}; pl.aiRalliedThisPhase = false; }
     });
     applyRegionalDominancePayouts(game);
     // AI no longer auto-resolves its whole turn here — it acts one move at a
@@ -448,13 +457,16 @@
   // asked to stand up); this is the "always have a match available" path
   // that needs no infrastructure.
   // ---------------------------------------------------------------------
+  // Random pick among the 10 largest-seat states, once per phase — not the
+  // best-scoring target. A fixed "biggest states" pool with a random draw
+  // each round is simple to read around defensively, on purpose. If the
+  // draw lands on a state that's already capped (playRallyToken rejects
+  // it), the token is just left unspent for that phase rather than retried
+  // elsewhere — it banks toward the auto-craft threshold in aiStep instead.
   function pickAIRallyTarget(game) {
-    var candidates = game.states.filter(function (s) { return (game.rallyPlaysByState[s.svgId] || []).length < game.cfg.rally.maxPlaysPerStateShared; });
-    if (!candidates.length) return null;
-    candidates.sort(function (a, b) {
-      return (game.pop[b.svgId].p1 - game.pop[b.svgId].p2) - (game.pop[a.svgId].p1 - game.pop[a.svgId].p2);
-    });
-    return candidates[0].svgId;
+    var top10 = game.states.slice().sort(function (a, b) { return b.seats - a.seats; }).slice(0, 10);
+    if (!top10.length) return null;
+    return top10[Math.floor(game.rng() * top10.length)].svgId;
   }
 
   function pickAIPowerTarget(game, power) {
@@ -492,12 +504,11 @@
     return bonus;
   }
 
-  // Investment target: the AI commits to one state group at a time (round-
-  // robin over game.groups, skipping groups it already holds dominance in)
-  // instead of chasing whatever single state scores best nationwide — that
-  // scattered spend never concentrated enough in one place to clear the 50%
-  // regional-dominance bar. pl.aiGroupCursor persists across phases so the
-  // campaign keeps progressing group-to-group over the course of the game.
+  // Investment target: the AI commits to a single state group, chosen once
+  // at game start (pl.aiTargetGroup, set in createGame) and hammered for
+  // the whole match, instead of chasing whatever single state scores best
+  // nationwide — that scattered spend never concentrated enough in one
+  // place to clear the 50% regional-dominance bar.
   function scoreInvestState(game, pl, profile, s) {
     var cost = E.investmentCostCr(s.seats, game.cfg.investment);
     if (cost > pl.fundsCr) return null;
@@ -525,27 +536,15 @@
 
   function pickAIInvestmentTarget(game, profile) {
     var pl = game.players.p2;
-    var groups = game.groups;
-    if (!groups.length) return bestInPool(game, pl, profile, game.states);
-
-    if (pl.aiGroupCursor == null) pl.aiGroupCursor = 0;
-    var group = null;
-    for (var i = 0; i < groups.length; i++) {
-      var idx = (pl.aiGroupCursor + i) % groups.length;
-      if (!E.dominanceActive(groups[idx], game.states, game.pop, 'p2', game.cfg.regionalDominance.thresholdBps)) {
-        pl.aiGroupCursor = idx;
-        group = groups[idx];
-        break;
-      }
-    }
-    if (!group) return bestInPool(game, pl, profile, game.states); // dominant everywhere already
+    var group = pl.aiTargetGroup;
+    if (!group) return bestInPool(game, pl, profile, game.states);
 
     var pool = game.states.filter(function (s) { return s.tags.indexOf(group.key) !== -1; });
     var best = bestInPool(game, pl, profile, pool);
     if (best) return best;
-    // nothing affordable left in the target group this tick — move on to
-    // the next group and fall back to the whole map so funds don't stall
-    pl.aiGroupCursor = (pl.aiGroupCursor + 1) % groups.length;
+    // nothing affordable/left with headroom in the target group right now
+    // (fully dominant, or momentarily unaffordable) — spend elsewhere
+    // rather than stall; next tick re-checks the target group first
     return bestInPool(game, pl, profile, game.states);
   }
 
@@ -561,16 +560,27 @@
     if (!pl.isAI || game.winner) return null;
     var profile = pl.aiProfile || AI_PROFILES[0];
 
-    if (pl.tokensSpentThisPhase < game.cfg.rally.maxTokenSpendPerPhase && pl.tokens.stateRally > 0) {
+    // One rally attempt per phase, at a random top-10-largest state — not a
+    // retry loop. A rejected placement (state already at its shared 2-play
+    // cap) just leaves the token unspent for this phase, banking it toward
+    // the auto-craft check below instead of hunting for another target.
+    if (!pl.aiRalliedThisPhase && pl.tokensSpentThisPhase < game.cfg.rally.maxTokenSpendPerPhase && pl.tokens.stateRally > 0) {
+      pl.aiRalliedThisPhase = true;
       var rallyTarget = pickAIRallyTarget(game);
       if (rallyTarget && playRallyToken(game, 'p2', rallyTarget).ok) {
         return { type: 'rally', svgId: rallyTarget, costCr: null };
       }
     }
 
-    if (profile.craftsTokens) {
+    // Auto-craft + deploy the special power the moment 6 tokens are banked
+    // — unconditional, not gated by AI personality, so every match the AI
+    // reliably gets its own power online instead of draining tokens on
+    // individual rally plays and never reaching the threshold.
+    if (!pl.craftedSpecial && !pl.usedSpecial && pl.tokens.stateRally >= game.cfg.rally.specialPowerupCraftCost) {
       if (craftToken(game, 'p2', 'special').ok) return { type: 'craftSpecial', svgId: null, costCr: null };
-      if (craftToken(game, 'p2', 'nationwide').ok) return { type: 'craftNationwide', svgId: null, costCr: null };
+    }
+    if (profile.craftsTokens && craftToken(game, 'p2', 'nationwide').ok) {
+      return { type: 'craftNationwide', svgId: null, costCr: null };
     }
 
     if (pl.craftedSpecial && !pl.usedSpecial) {
