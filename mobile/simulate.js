@@ -116,5 +116,5 @@ if (powerFailures.length) {
   console.error('Power activation failures:\n' + powerFailures.join('\n'));
   process.exit(1);
 }
-console.log('All 20 politician powers activate cleanly.');
-console.log('mobile/simulate.js: all invariants held across 5 full games + 20 isolated power activations.');
+console.log(`All ${data.politicians.length} politician powers activate cleanly.`);
+console.log(`mobile/simulate.js: all invariants held across 5 full games + ${data.politicians.length} isolated power activations.`);

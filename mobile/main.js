@@ -218,12 +218,12 @@
       '<div class="pol-art"><div class="pol-art-img-slot"></div><div class="pol-stub">' + stubEdgeSvg(336) + '</div></div>' +
       '<div class="pol-bio">' +
         '<div class="pol-name-row"><div class="pol-name">' + p.name + '</div><div class="pol-seal-slot"></div></div>' +
-        '<div class="pol-meta"><span class="pol-party-pill">' + p.party + '</span><span>🏠 ' + p.homeState + '</span></div>' +
+        '<div class="pol-meta"><span class="pol-party-pill">' + p.party + '</span><span>🏠 ' + [p.homeState].concat(p.secondaryHomeStates || []).join(' + ') + '</span></div>' +
         '<div class="pol-section-label">Manifesto</div>' +
         '<div class="pol-agendas"></div>' +
         '<div class="pol-section-label">Special Power</div>' +
         '<div class="pol-power"><div class="pow-seal">⚡</div><div class="pow-name">' + p.power.name + '</div>' +
-          '<div class="pow-desc">' + p.power.description + '</div>' +
+          '<div class="pow-benefit">Benefit: ' + p.specialPower.effect + '</div>' +
           '<div class="pow-cost">Cost: ' + p.specialPower.cost + '</div></div>' +
       '</div>' +
       '<div class="pol-footer"></div>';
@@ -457,7 +457,12 @@
     var seats = game.finalSeats;
     var seal, headline, sub;
     if (game.winner === 'p1') { seal = '🏆'; headline = 'You won the election'; sub = 'You crossed 272 seats.'; }
-    else if (game.hungParliament) { seal = '⚖️'; headline = 'Hung parliament'; sub = 'Neither side reached 272 — against an AI opponent, that’s a loss, not a draw.'; }
+    else if (game.hungParliament) {
+      seal = '⚖️';
+      var vsAI = game.players.p2.isAI;
+      headline = vsAI ? 'Hung parliament — you lose' : 'Hung parliament';
+      sub = 'Neither side reached 272 seats.';
+    }
     else { seal = '💔'; headline = 'You lost the election'; sub = game.players.p2.politician.name + ' crossed 272 seats.'; }
     $('declareSeal').textContent = seal;
     $('endHeadline').textContent = headline;
@@ -981,6 +986,24 @@
     $('phaseNum').textContent = game.phase + '/' + game.cfg.totalPhases;
   }
 
+  // Ambient capture indicator — independent of which group card (if any) is
+  // open, so a hex lights up in the holder's color the moment every member
+  // state clears the regional-dominance threshold, and clears the moment it
+  // doesn't. Reads live game.pop via E.dominanceActive rather than game's
+  // payout-gating dominanceHeld flag, since that flag exists only to avoid
+  // re-paying a bonus and is beside the point for a live visual readout.
+  function renderGroupCaptureBadges() {
+    var threshold = game.cfg.regionalDominance.thresholdBps;
+    game.groups.forEach(function (g) {
+      var chip = document.querySelector('.gchip[data-key="' + g.key + '"]');
+      if (!chip) return;
+      var p1 = E.dominanceActive(g, game.states, game.pop, 'p1', threshold);
+      var p2 = E.dominanceActive(g, game.states, game.pop, 'p2', threshold);
+      chip.classList.toggle('captured-p1', p1);
+      chip.classList.toggle('captured-p2', p2 && !p1);
+    });
+  }
+
   function renderAll() {
     paintMap();
     renderRallyTokens();
@@ -989,6 +1012,7 @@
     renderHeader();
     renderTokens();
     renderAgendas();
+    renderGroupCaptureBadges();
     syncNewsFeed();
   }
 
@@ -1011,6 +1035,18 @@
       renderAll();
       if (any) { spawnFlash(pt.x, pt.y); spawnMoneyText(pt.x, pt.y, totalCost, -1); playSound('money_spent'); showToast('Invested in all Union Territories'); }
       else { shakeInvalid($('utsBtn')); showToast('Insufficient funds'); }
+    });
+  });
+  $('neBtn').addEventListener('click', function () {
+    handleButtonTap('ALL_NE', function () {
+      var pt = viewportPoint($('neBtn')), any = false, totalCost = 0;
+      G.NORTHEAST_IDS.forEach(function (id) {
+        var r = G.investCash(game, 'p1', id);
+        if (r.ok) { any = true; totalCost += r.cost; }
+      });
+      renderAll();
+      if (any) { spawnFlash(pt.x, pt.y); spawnMoneyText(pt.x, pt.y, totalCost, -1); playSound('money_spent'); showToast('Invested in all Northeast states'); }
+      else { shakeInvalid($('neBtn')); showToast('Insufficient funds'); }
     });
   });
   $('delhiBtn').addEventListener('click', function () {

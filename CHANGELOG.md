@@ -49,8 +49,42 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - **[D3] Resource-seizure powers must confiscate/destroy the opponent's resources, not transfer them to the activator.** Kejriwal's, Sivaji Rao's, and an intermediate version of Indira Gandhi's power all originally reused the existing transfer-to-self primitives by default; the user clarified "seizure"/"raid"/"confiscation" should mean the resources vanish, not move to the activator. This changes a power's real value, not just its wording — each self-cost had to be re-modeled after the switch.
 - **[D4] Sivaji Rao's power was fully redesigned rather than rebalanced.** After switching to confiscation-only, no self-cost magnitude between −1% and −6% nationwide broke even (true full-game value modeled from −2.4 to −27.2 seats depending on the cost). Rather than keep shrinking the cost toward the smallest number that cleared zero, redesigned around his "one-day CM" archetype directly: free, instant, 100% popularity in his home state.
 
+#### Agenda System & Policy-Tag Reworks — 2026-07-26
+
+**ADDED**: `data/policy-tags.json` — new "Film and TV" agenda (tagEffects: `Education: +8`, `TribalLands: +12`), assigned to Hema Malini, Rajinikanth, Amitabh Bachchan, Sachin Tendulkar, Jayalalithaa, Sivaji Rao (swapped in for each one's weakest-fit existing slot) [C5]
+
+**REWORKED**: `data/policy-tags.json` & `data/politicians-data.json` — 6 politician agenda assignments swapped to improve thematic fit:
+  - **Sivaji Rao** (2026-07-26): Press Freedom + Film and TV (journalist/one-day-CM movie-plot fit), dropped Judicial Activism + Infrastructure [C6]
+  - **Rahul Gandhi**: Judicial Activism replaces Land Reforms (Bhatta Parsaul anti-land-acquisition framing → "Save the Constitution" 2024 campaign messaging) [C13]
+  - **Sardar Patel**: Land Reforms replaces Anti-Corruption (fits forced-integration-of-princely-states historical pattern; new Iron Unification power design reflects this) [C14]
+
+**REWORKED**: Seven policy-tag effects to fix geographic/thematic accuracy (2026-07-26):
+  - **Press Freedom**: `Education: +8`, `MinorityAreas: +8`, `TribalLands: +4` (was `Education: +4`, `MinorityAreas: +4`) — bumped 2× [C7]
+  - **Public Sector**: `IndustrialCorridor: +4`, `Manufacturing: +4`, `TribalLands: +4`, `AgriculturalRegion: -4` (was backwards: `AgriculturalRegion: +4`, `IndustrialCorridor: -4`, `Manufacturing: -4`) [C8]
+  - **National Defense**: dropped `CoastalIndia: -12` (no real-world story), added `MinorityAreas: -4` (Northeast/J&K security friction) [C9]
+  - **Caste Reservation**: added `SouthIndia: +4` (Dravidian reservation tradition), removed `MinorityAreas: -12` (conflated caste politics with religious-minority politics) [C10]
+  - **Judicial Activism**: `Education: +8`, `MinorityAreas: +4`, `TribalLands: +4`, `IndustrialCorridor: -4`, `Manufacturing: -4` (was a costless `Education: +4`, `IndustrialCorridor: +4` freebie) [C11]
+  - **Land Reforms**: `IndustrialCorridor: +8`, `Manufacturing: +8`, `AgriculturalRegion: -8`, `TribalLands: -8` (completely inverted — recast as land-acquisition-liberalization, industry-friendly/anti-farmer, distinct from Agricultural Reforms which stays generic pro-farmer) [C12]
+
+**REDESIGNED**: Three politician special powers (2026-07-26):
+  - **Sardar Patel (Iron Unification)**: was a single small-UT 70%-floor for 3,000 Cr (weak/overpriced); now nationwide 20% popularity floor + 1,000 Cr funds gain, zero cost otherwise, gated by new `requiresMinPhase: 5` mechanic (`mobile/game.js`: new field in `makePlayer`, new check in `activatePower`, new AI `canPay` gate). Explicit exception to "no timing-gate costs" rule, documented in CLAUDE.md [C15]
+  - **B.R. Ambedkar (Constitutional Reform)**: was home-state-only +25% popularity for 2,500 Cr (thematically mismatched — he authored the *national* Constitution, not a Maharashtra-only reform); now `MinorityAreas: +10%` / `TribalLands: +10%` plus a full refund of all Cr spent on agendas so far. New `refundAgendaSpend` effect kind added to `mobile/game.js`'s `runEffect` (derives total spend from `agendaProgress` tap counts × flat per-tap cost) [C16]
+  - **P.V. Narasimha Rao (Minority Government Survival)**: was a generic "replay a completed agenda" mechanic; now lowers his seats-to-win threshold to 250 (from 272) for the rest of the match, same 2,000 Cr cost — reflects his real 1991-96 minority government. New `lowerSeatsToWin` effect kind + per-player `seatsToWinOverride` field, read in `finalizeGame()` instead of the single shared `game.cfg.seatsToWin` constant [C17]
+
+**UPDATED**: `mobile/index.html` — pin button (bottom-right of info panel): fixed 70px button with full button styling instead of faded 48px icon [C2]
+
+**ADDED**: `mobile/main.js` + `mobile/index.html` — group-capture ring feature: `renderGroupCaptureBadges()` function + `.gchip.captured-p1/p2` CSS — hex chip border lights up in the holder's color when a player achieves regional dominance [C3]
+
+**UPDATED**: `data/politicians-data.json` — Hema Malini now has `secondaryHomeStates: ["Tamil Nadu"]` alongside her primary Karnataka, updated her Star Power Rally flavor text to reflect both home states [C4]
+
+**UPDATED**: `CLAUDE.md` (2026-07-26) — two new bullets under Game design principles:
+  - Sardar Patel's phase-5 gate as an explicit documented exception to the "no timing-gate costs" rule (flavor decision: "mimicking how long real unification took") [C18]
+  - New methodology note: a policy's `tagEffects` sign and region choice should be sanity-checked against real-world Indian political geography, as a distinct pass from magnitude balance or same-state-cancellation [C18]
+
+**UPDATED**: `findings.md` — 7 new dated 2026-07-26 entries documenting this session's findings (funds double-credit confirmation, home-state-collision, Education-tag film-industry mapping, agenda avg-pts balance metric, border/minority tag overlap, win-condition single-check-point, testing-methodology bugs) [C19]
+
 #### Context
-This session reviewed every special power in the 20-politician (21 with Sivaji Rao) roster for redundant/duplicate mechanics, reworked the 4 non-politician powers' design philosophy (twice — an initial "weaker" direction was corrected to "stronger" per [D1]), fixed several powers whose text no longer matched their actual mechanics, and redesigned 4 politicians' powers around confiscation instead of transfer per [D3]. Along the way, two testing-methodology bugs were found and fixed in the modeling scripts used to validate these changes (an instant seat-diff test is blind to funds/token effects; reusing the AI's code for both players via a player-object swap silently corrupts data) — see `CLAUDE.md` and `findings.md` for the full detail. Modi's Demonetization needed a real one-phase persistent-state mechanic, which required revising the project's long-standing "instant-only, ever" rule to "instant or exactly one phase" per [D2] — formalized in ADR-0009. All changes maintain single-player-vs-AI scope; multiplayer backend remains deferred per ADR-0007.
+This session reviewed every special power in the 20-politician (21 with Sivaji Rao) roster for redundant/duplicate mechanics, reworked the 4 non-politician powers' design philosophy (twice — an initial "weaker" direction was corrected to "stronger" per [D1]), fixed several powers whose text no longer matched their actual mechanics, and redesigned 4 politicians' powers around confiscation instead of transfer per [D3]. Along the way, two testing-methodology bugs were found and fixed in the modeling scripts used to validate these changes (an instant seat-diff test is blind to funds/token effects; reusing the AI's code for both players via a player-object swap silently corrupts data) — see `CLAUDE.md` and `findings.md` for the full detail. Modi's Demonetization needed a real one-phase persistent-state mechanic, which required revising the project's long-standing "instant-only, ever" rule to "instant or exactly one phase" per [D2] — formalized in ADR-0009. All changes maintain single-player-vs-AI scope; multiplayer backend remains deferred per ADR-0007. A parallel comprehensive agenda-system review fixed six politicians' agenda assignments to better match historical/thematic patterns, reworked seven policy-tag effects for geographic and thematic accuracy, and redesigned three major special powers (Sardar Patel, B.R. Ambedkar, P.V. Narasimha Rao) with new engine mechanics (phase-5 gating, agenda-spend refunds, per-player win thresholds). The design rationale for each rework and methodology notes are recorded in CLAUDE.md and findings.md.
 
 ---
 

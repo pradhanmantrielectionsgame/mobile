@@ -12,6 +12,10 @@
   // CLAUDE.md) plus Delhi/Goa, which get their own quick-invest buttons.
   var SMALL_UT_IDS = ['INCH', 'INDH', 'INPY', 'INLD', 'INAN', 'INDL', 'INGA'];
 
+  // Northeast 8 quick-invest button (mirrors the SMALL_UT_IDS/ALL_UTS pattern) —
+  // these states are individually tappable on the map, this is just a shortcut.
+  var NORTHEAST_IDS = ['INNL', 'INMN', 'INMZ', 'INTR', 'INML', 'INSK', 'INAR', 'INAS'];
+
   var NON_GROUP_FIELDS = { State: true, LokSabhaSeats: true, SvgId: true, UnionTerritory: true };
   var GROUP_META = [
     { key: 'WesternBorder', icon: '🏔️', label: 'Western Border' },
@@ -32,6 +36,19 @@
   ];
 
   function stripBOM(s) { return s.charCodeAt(0) === 0xFEFF ? s.slice(1) : s; }
+
+  // A politician's home state(s) — most have one; a few (e.g. Kejriwal:
+  // Delhi+Punjab) carry a second real-world stronghold.
+  function homeStatesOf(politician) {
+    return [politician.homeState].concat(politician.secondaryHomeStates || []);
+  }
+
+  // Deliberate exception to the instant-only rule for special powers (see
+  // Modi's Demonetization) — a documented one-off, not a pattern to reuse
+  // casually. Blocks every funds-spending action for exactly one full phase,
+  // starting the phase after activation; clears itself once game.phase
+  // moves past it, no separate cleanup step needed.
+  function fundsFrozen(pl, game) { return pl.fundsFrozenUntilPhase === game.phase; }
 
   // ---------------------------------------------------------------------
   // Data loading / normalization (browser: fetch; Node: fs, for tests)
@@ -103,6 +120,7 @@
       powerNullified: false,
       agendaProgress: {},
       agendaTokenBonusEarned: 0,
+      seatsToWinOverride: null,
       investmentTaps: {},
       aiTargetGroup: null,
       aiRalliedThisPhase: false,
@@ -116,7 +134,7 @@
     var p2Pol = data.politicians.filter(function (p) { return p.id === p2PoliticianId; })[0];
     if (!p1Pol || !p2Pol) throw new Error('Unknown politician id');
 
-    var pop = E.generateStartingPosition(data.states, p1Pol.homeState, p2Pol.homeState, rng);
+    var pop = E.generateStartingPosition(data.states, homeStatesOf(p1Pol), homeStatesOf(p2Pol), rng);
     var statesById = {};
     data.states.forEach(function (s) { statesById[s.svgId] = s; });
     var policiesByName = data.policyTags;
@@ -213,8 +231,10 @@
   function finalizeGame(game) {
     var seats = E.nationalSeats(game.states, game.pop);
     game.finalSeats = seats;
-    if (seats.p1 >= game.cfg.seatsToWin) { game.winner = 'p1'; }
-    else if (seats.p2 >= game.cfg.seatsToWin) { game.winner = 'p2'; }
+    var p1Threshold = game.players.p1.seatsToWinOverride || game.cfg.seatsToWin;
+    var p2Threshold = game.players.p2.seatsToWinOverride || game.cfg.seatsToWin;
+    if (seats.p1 >= p1Threshold) { game.winner = 'p1'; }
+    else if (seats.p2 >= p2Threshold) { game.winner = 'p2'; }
     else {
       // Hung parliament — decided 2026-07-22 (ADR-0006): draw vs a human
       // opponent, loss vs the AI fallback. This build is always vs-AI.
@@ -251,6 +271,7 @@
   // ---------------------------------------------------------------------
   function investCash(game, playerKey, svgId) {
     var pl = game.players[playerKey];
+    if (fundsFrozen(pl, game)) return { ok: false, reason: 'funds_frozen' };
     var cost = E.investmentCostCr(game.statesById[svgId].seats, game.cfg.investment);
     if (pl.fundsCr < cost) return { ok: false, reason: 'insufficient_funds' };
     var tapNum = (pl.investmentTaps[svgId] || 0) + 1;
@@ -318,6 +339,7 @@
     if (!policy) return { ok: false, reason: 'unknown_policy' };
     var progress = pl.agendaProgress[policyName] || 0;
     if (progress >= game.cfg.agenda.tapsToComplete) return { ok: false, reason: 'already_maxed' };
+    if (fundsFrozen(pl, game)) return { ok: false, reason: 'funds_frozen' };
     var cost = game.cfg.agenda.costPerTapCr;
     if (pl.fundsCr < cost) return { ok: false, reason: 'insufficient_funds' };
     pl.fundsCr -= cost;
@@ -356,12 +378,12 @@
   function resolvePowerScope(game, playerKey, opp, effect, opts) {
     if (effect.scope === 'nationwide') return game.states.map(function (s) { return s.svgId; });
     if (effect.scope === 'home') {
-      var hs = game.players[playerKey].politician.homeState;
-      return game.states.filter(function (s) { return s.name === hs; }).map(function (s) { return s.svgId; });
+      var hs = homeStatesOf(game.players[playerKey].politician);
+      return game.states.filter(function (s) { return hs.indexOf(s.name) !== -1; }).map(function (s) { return s.svgId; });
     }
     if (effect.scope === 'opponentHome') {
-      var hs2 = game.players[opp].politician.homeState;
-      return game.states.filter(function (s) { return s.name === hs2; }).map(function (s) { return s.svgId; });
+      var hs2 = homeStatesOf(game.players[opp].politician);
+      return game.states.filter(function (s) { return hs2.indexOf(s.name) !== -1; }).map(function (s) { return s.svgId; });
     }
     if (effect.scope === 'tags') {
       return game.states.filter(function (s) {
@@ -403,8 +425,10 @@
       if (!done.length) return { ok: false, reason: 'no_completed_agenda' };
       if (!opts.targetAgendaName || done.indexOf(opts.targetAgendaName) === -1) return { ok: false, reason: 'bad_target_agenda' };
     }
+    if (power.requiresMinPhase && game.phase < power.requiresMinPhase) return { ok: false, reason: 'too_early' };
     if (power.requiresMinFundsCr && pl.fundsCr < power.requiresMinFundsCr) return { ok: false, reason: 'insufficient_funds' };
     if (pl.fundsCr < powerFundsCost(power)) return { ok: false, reason: 'insufficient_funds' };
+    if (powerFundsCost(power) > 0 && fundsFrozen(pl, game)) return { ok: false, reason: 'funds_frozen' };
 
     pl.usedSpecial = true;
     if (pl.powerNullified) return { ok: true, nullified: true };
@@ -413,9 +437,33 @@
       if (e.kind === 'funds') {
         var who = e.target === 'self' ? pl : oppPl;
         who.fundsCr = Math.max(0, who.fundsCr + e.amountCr);
+      } else if (e.kind === 'freezeFunds') {
+        var who4 = e.target === 'self' ? pl : oppPl;
+        who4.fundsFrozenUntilPhase = game.phase + 1;
       } else if (e.kind === 'stealFundsPct') {
         var amt = Math.round(oppPl.fundsCr * e.pct / 100);
         oppPl.fundsCr -= amt; pl.fundsCr += amt;
+      } else if (e.kind === 'stealTokens') {
+        var tt = e.tokenType || 'stateRally';
+        var seized = oppPl.tokens[tt] || 0;
+        oppPl.tokens[tt] = 0;
+        pl.tokens[tt] = (pl.tokens[tt] || 0) + seized;
+      } else if (e.kind === 'seizeFundsPct') {
+        // Confiscated, not transferred — unlike stealFundsPct, the activator gains nothing.
+        oppPl.fundsCr -= Math.round(oppPl.fundsCr * e.pct / 100);
+      } else if (e.kind === 'seizeTokens') {
+        // Confiscated, not transferred — unlike stealTokens, the activator gains nothing.
+        oppPl.tokens[e.tokenType || 'stateRally'] = 0;
+      } else if (e.kind === 'refundAgendaSpend') {
+        // "The reforms pay for themselves" — refunds every Cr the activator has
+        // spent tapping agendas so far this match, self only (spend is tracked
+        // as tap counts, not a running Cr total, so derive it from the flat
+        // per-tap cost rather than storing a second redundant counter).
+        var totalTaps = 0;
+        Object.keys(pl.agendaProgress).forEach(function (k) { totalTaps += pl.agendaProgress[k]; });
+        pl.fundsCr += totalTaps * game.cfg.agenda.costPerTapCr;
+      } else if (e.kind === 'lowerSeatsToWin') {
+        pl.seatsToWinOverride = e.seatsToWin;
       } else if (e.kind === 'tokens') {
         var who2 = e.target === 'self' ? pl : oppPl;
         who2.tokens[e.tokenType] = Math.max(0, (who2.tokens[e.tokenType] || 0) + e.amount);
@@ -585,7 +633,8 @@
 
     if (pl.craftedSpecial && !pl.usedSpecial) {
       var power = pl.politician.power;
-      var canPay = (!power.requiresMinFundsCr || pl.fundsCr >= power.requiresMinFundsCr) &&
+      var canPay = (!power.requiresMinPhase || game.phase >= power.requiresMinPhase) &&
+        (!power.requiresMinFundsCr || pl.fundsCr >= power.requiresMinFundsCr) &&
         pl.fundsCr >= powerFundsCost(power);
       if (canPay) {
         var opts = {};
@@ -636,6 +685,7 @@
 
   var API = {
     SMALL_UT_IDS: SMALL_UT_IDS,
+    NORTHEAST_IDS: NORTHEAST_IDS,
     GROUP_META: GROUP_META,
     normalizeGameData: normalizeGameData,
     loadGameData: loadGameData,

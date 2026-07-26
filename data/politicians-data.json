@@ -29,17 +29,16 @@
       ],
       "specialPower": {
         "name": "Demonetization",
-        "effect": "Opponent instantly loses a lump sum of funds",
+        "effect": "Opponent's funds are frozen — they can't invest, tap agendas, or activate their own special power (if it costs funds) for one full phase",
         "cost": "-5% popularity nationwide"
       },
       "power": {
         "name": "Demonetization",
-        "description": "Opponent instantly loses a lump sum of funds; costs you popularity nationwide.",
+        "description": "Freezes the opponent's funds for one full phase — they can't invest, tap agendas, or activate a funds-costing special power; costs -5% of your own popularity nationwide.",
         "benefits": [
           {
-            "kind": "funds",
-            "target": "opponent",
-            "amountCr": -2000
+            "kind": "freezeFunds",
+            "target": "opponent"
           }
         ],
         "costs": [
@@ -81,12 +80,12 @@
       ],
       "specialPower": {
         "name": "Economic Reform",
-        "effect": "Large one-time funds boost",
-        "cost": "-8% popularity in Agricultural Region / Public Sector states"
+        "effect": "Instant 2,500 Cr funds gain",
+        "cost": "-8% popularity in Agricultural Region states"
       },
       "power": {
         "name": "Economic Reform",
-        "description": "A large one-time funds boost, at the cost of popularity in Agricultural Region states.",
+        "description": "+2,500 Cr instantly, at the cost of -8% popularity in Agricultural Region states.",
         "benefits": [
           {
             "kind": "funds",
@@ -122,7 +121,7 @@
           "bonus": 40
         },
         {
-          "name": "Land Reforms",
+          "name": "Judicial Activism",
           "bonus": 30
         },
         {
@@ -136,8 +135,8 @@
       ],
       "specialPower": {
         "name": "Bharat Jodo Yatra",
-        "effect": "Popularity boost in Secularism / Minority Areas states",
-        "cost": "Instant lump-sum funds payment"
+        "effect": "+12% popularity in Minority Areas states",
+        "cost": "Instant 1,500 Cr funds cost, deducted on activation"
       },
       "power": {
         "name": "Bharat Jodo Yatra",
@@ -193,11 +192,11 @@
       "specialPower": {
         "name": "Pokhran Test",
         "effect": "+10% popularity nationwide",
-        "cost": "Instant heavy funds penalty"
+        "cost": "None — no cost beyond the shared 6-token craft"
       },
       "power": {
         "name": "Pokhran Test",
-        "description": "+10% popularity nationwide. Reviewed and kept as the roster’s deliberate signature outlier — no additional cost beyond the craft.",
+        "description": "+10% popularity nationwide. No cost beyond the craft.",
         "benefits": [
           {
             "kind": "popularity",
@@ -216,6 +215,7 @@
       "party": "AAP",
       "archetype": "ANTI-CORRUPTION CRUSADER",
       "homeState": "Delhi",
+      "secondaryHomeStates": ["Punjab"],
       "image": "assets/images/Arvind_Kejriwal.png",
       "partyLogo": "assets/icons/Aam_Aadmi_Party_logo_(English).svg",
       "primaryColor": "#2196F3",
@@ -239,15 +239,15 @@
       ],
       "specialPower": {
         "name": "Anti-Corruption Raid",
-        "effect": "Robs the opponent of 50% of their cash on hand",
+        "effect": "Reduces the opponent's cash on hand by 50% (seized/frozen by the raid, not transferred to you)",
         "cost": "-15% popularity in the opponent's home state"
       },
       "power": {
         "name": "Anti-Corruption Raid",
-        "description": "Robs the opponent of 50% of their cash on hand; costs you popularity in the opponent’s home state.",
+        "description": "Reduces the opponent's cash on hand by 50% — seized by the raid, not transferred to you; costs -15% of your own popularity in the opponent's home state.",
         "benefits": [
           {
-            "kind": "stealFundsPct",
+            "kind": "seizeFundsPct",
             "pct": 50
           }
         ],
@@ -290,8 +290,8 @@
       ],
       "specialPower": {
         "name": "State Autonomy Stand",
-        "effect": "Home state + State's Rights states immune to opponent's agendas/rallies for rest of game",
-        "cost": "Funds hit now"
+        "effect": "+15% popularity in your home state",
+        "cost": "Instant 1,500 Cr funds cost, deducted on activation"
       },
       "power": {
         "name": "State Autonomy Stand",
@@ -408,12 +408,12 @@
       ],
       "specialPower": {
         "name": "Bulldozer Action",
-        "effect": "Sharply cuts opponent's popularity in one target state",
-        "cost": "-popularity nationwide in Minority Areas states"
+        "effect": "-20% opponent popularity in one target state",
+        "cost": "-6% popularity in Minority Areas states"
       },
       "power": {
         "name": "Bulldozer Action",
-        "description": "Sharply cuts the opponent’s popularity in one state you choose; costs you popularity in Minority Areas states.",
+        "description": "-20% opponent popularity in one state you choose; costs you -6% popularity in Minority Areas states.",
         "benefits": [
           {
             "kind": "popularity",
@@ -465,19 +465,20 @@
       ],
       "specialPower": {
         "name": "National Emergency",
-        "effect": "Instantly seizes a large popularity swing from the opponent across all states",
-        "cost": "Instant -10% popularity nationwide + instant heavy funds loss"
+        "effect": "Confiscates 100% of the opponent's cash on hand and all of their currently-held rally tokens (destroyed, not transferred to you)",
+        "cost": "-3% of your own popularity nationwide"
       },
       "power": {
         "name": "National Emergency",
-        "description": "Seizes a large popularity swing from the opponent nationwide; costs you popularity and funds.",
+        "description": "Confiscates 100% of the opponent's cash and all their currently-held rally tokens — destroyed, not transferred to you; costs -3% of your own popularity nationwide.",
         "benefits": [
           {
-            "kind": "popularity",
-            "target": "self",
-            "scope": "nationwide",
-            "bps": 800,
-            "source": "opponent"
+            "kind": "seizeFundsPct",
+            "pct": 100
+          },
+          {
+            "kind": "seizeTokens",
+            "tokenType": "stateRally"
           }
         ],
         "costs": [
@@ -485,12 +486,7 @@
             "kind": "popularity",
             "target": "self",
             "scope": "nationwide",
-            "bps": -1000
-          },
-          {
-            "kind": "funds",
-            "target": "self",
-            "amountCr": -2000
+            "bps": -300
           }
         ]
       }
@@ -568,36 +564,34 @@
           "bonus": 30
         },
         {
-          "name": "Anti-Corruption",
+          "name": "Land Reforms",
           "bonus": 30
         }
       ],
       "specialPower": {
         "name": "Iron Unification",
-        "effect": "Instantly flips one small state/UT fully to your majority",
-        "cost": "Heavy instant funds hit"
+        "effect": "Raises your popularity to a 20% floor in every state nationwide — no effect anywhere you're already above it; also grants +1,000 Cr instantly",
+        "cost": "None beyond the shared 6-token craft — in fact grants +1,000 Cr on activation; not usable before phase 5, mirroring how long real unification took"
       },
       "power": {
         "name": "Iron Unification",
-        "description": "Instantly flips one small state/UT toward your majority; costs a heavy upfront spend.",
+        "description": "Raises your popularity to at least 20% in every state nationwide (no effect where you're already above it); grants +1,000 Cr instantly. Not usable before phase 5.",
         "benefits": [
           {
             "kind": "popularity",
             "target": "self",
-            "scope": "targetState",
-            "toBps": 7000,
-            "source": "both",
-            "constraint": "smallUT"
-          }
-        ],
-        "costs": [
+            "scope": "nationwide",
+            "toBps": 2000,
+            "source": "both"
+          },
           {
             "kind": "funds",
             "target": "self",
-            "amountCr": -3000
+            "amountCr": 1000
           }
         ],
-        "requiresTargetState": true
+        "costs": [],
+        "requiresMinPhase": 5
       }
     },
     {
@@ -606,7 +600,7 @@
       "party": "Independent",
       "archetype": "CONSTITUTIONAL ARCHITECT",
       "homeState": "Maharashtra",
-      "image": "assets/images/BR_Ambedkar.png",
+      "image": "assets/images/Bhimrao_Ambedkar.png",
       "partyLogo": null,
       "primaryColor": "#0033A0",
       "policies": [
@@ -629,19 +623,31 @@
       ],
       "specialPower": {
         "name": "Constitutional Reform",
-        "effect": "Permanent, non-decaying popularity floor in Caste Reservation / Indigenous Rights states",
-        "cost": "High instant funds hit"
+        "effect": "+10% popularity in Minority Areas, +10% in Tribal Lands, plus a full refund of every Cr spent tapping agendas so far this match — the reforms pay for themselves",
+        "cost": "Instant 2,500 Cr funds cost, deducted on activation"
       },
       "power": {
         "name": "Constitutional Reform",
-        "description": "Instant popularity boost in your home state, funded by a high upfront spend.",
+        "description": "+10% popularity in Minority Areas and Tribal Lands; refunds all Cr spent on agendas so far; costs 2,500 Cr instantly.",
         "benefits": [
           {
             "kind": "popularity",
             "target": "self",
-            "scope": "home",
-            "bps": 1500,
+            "scope": "tags",
+            "tags": ["MinorityAreas"],
+            "bps": 1000,
             "source": "both"
+          },
+          {
+            "kind": "popularity",
+            "target": "self",
+            "scope": "tags",
+            "tags": ["TribalLands"],
+            "bps": 1000,
+            "source": "both"
+          },
+          {
+            "kind": "refundAgendaSpend"
           }
         ],
         "costs": [
@@ -668,7 +674,7 @@
           "bonus": 40
         },
         {
-          "name": "Public Sector",
+          "name": "Film and TV",
           "bonus": 30
         },
         {
@@ -682,12 +688,12 @@
       ],
       "specialPower": {
         "name": "Amma Welfare Scheme",
-        "effect": "Large popularity boost in home state + Public Sector states",
-        "cost": "Heavy instant funds hit"
+        "effect": "+18% popularity in South India",
+        "cost": "Instant 2,500 Cr funds cost, deducted on activation"
       },
       "power": {
         "name": "Amma Welfare Scheme",
-        "description": "Large popularity boost across South India, funded by a heavy upfront spend.",
+        "description": "+18% popularity in South India; costs 2,500 Cr instantly.",
         "benefits": [
           {
             "kind": "popularity",
@@ -739,7 +745,7 @@
       "specialPower": {
         "name": "Jai Jawan Jai Kisan",
         "effect": "Popularity boost in Eastern Border/Western Border AND Agricultural Region states at once",
-        "cost": "Instant funds penalty"
+        "cost": "Instant 1,500 Cr funds cost, deducted on activation"
       },
       "power": {
         "name": "Jai Jawan Jai Kisan",
@@ -773,7 +779,7 @@
       "party": "INC",
       "archetype": "SURVIVAL STRATEGIST",
       "homeState": "Telangana",
-      "image": "assets/images/PV_Narasimha_Rao.png",
+      "image": "assets/images/P_V_Narasimha_Rao.png",
       "partyLogo": "assets/icons/Indian_National_Congress_hand_logo.svg",
       "primaryColor": "#138808",
       "policies": [
@@ -796,15 +802,16 @@
       ],
       "specialPower": {
         "name": "Minority Government Survival",
-        "effect": "Re-activate one of your own agenda cards a second time",
-        "cost": "Instant heavy funds penalty"
+        "effect": "For the rest of the match, you only need 250 seats to win instead of 272 — governing without a full majority, like his real 1991-96 government",
+        "cost": "Instant 2,000 Cr funds cost, deducted on activation"
       },
       "power": {
         "name": "Minority Government Survival",
-        "description": "Re-applies one of your already-completed agendas’ full effect a second time; costs a heavy upfront spend.",
+        "description": "Lowers your seats-to-win threshold to 250 (from 272) for the rest of the match; costs 2,000 Cr instantly.",
         "benefits": [
           {
-            "kind": "replayAgenda"
+            "kind": "lowerSeatsToWin",
+            "seatsToWin": 250
           }
         ],
         "costs": [
@@ -813,8 +820,7 @@
             "target": "self",
             "amountCr": -2000
           }
-        ],
-        "requiresCompletedAgenda": true
+        ]
       }
     },
     {
@@ -846,8 +852,8 @@
       ],
       "specialPower": {
         "name": "Telecom Revolution",
-        "effect": "Permanently discounts Digital Transformation agenda costs for rest of game",
-        "cost": "Heavy upfront funds hit"
+        "effect": "Instant 2,000 Cr funds rebate",
+        "cost": "Instant 1,000 Cr funds cost, deducted on activation"
       },
       "power": {
         "name": "Telecom Revolution",
@@ -887,7 +893,7 @@
           "bonus": 30
         },
         {
-          "name": "Education",
+          "name": "Film and TV",
           "bonus": 30
         },
         {
@@ -897,18 +903,18 @@
       ],
       "specialPower": {
         "name": "Celebrity Endorsement",
-        "effect": "Converts undecided (\"Others\") popularity to you nationwide, not taken from the opponent",
-        "cost": "Funds hit this phase"
+        "effect": "+12% popularity nationwide, pulled only from undecided (\"Others\") voters — never taken from the opponent, so it's capped by how much Others is actually left in each state",
+        "cost": "Instant 1,000 Cr funds cost, deducted on activation"
       },
       "power": {
         "name": "Celebrity Endorsement",
-        "description": "Converts undecided (\"Others\") popularity to you nationwide — never taken from the opponent; costs funds.",
+        "description": "+12% popularity nationwide, converted only from undecided (\"Others\") voters — never taken from the opponent; costs funds.",
         "benefits": [
           {
             "kind": "popularity",
             "target": "self",
             "scope": "nationwide",
-            "bps": 600,
+            "bps": 1200,
             "source": "others"
           }
         ],
@@ -932,7 +938,7 @@
       "primaryColor": "#004BA0",
       "policies": [
         {
-          "name": "Education",
+          "name": "Film and TV",
           "bonus": 40
         },
         {
@@ -950,18 +956,18 @@
       ],
       "specialPower": {
         "name": "National Icon",
-        "effect": "Flat popularity boost split across all states",
-        "cost": "Instant 1,000 Cr funds cost, deducted on activation — requires holding at least 1,000 Cr to activate; usable any phase"
+        "effect": "Raises your popularity to a 30% floor in every state nationwide — no effect anywhere you're already above it, huge everywhere you're not",
+        "cost": "Instant 1,000 Cr funds cost, deducted on activation; usable any phase"
       },
       "power": {
         "name": "National Icon",
-        "description": "Flat popularity boost nationwide. Any phase; requires holding ≥1,000 Cr; costs a flat 1,000 Cr instantly.",
+        "description": "Raises your popularity to at least 30% in every state nationwide (no effect where you're already above it); costs 1,000 Cr instantly.",
         "benefits": [
           {
             "kind": "popularity",
             "target": "self",
             "scope": "nationwide",
-            "bps": 300,
+            "toBps": 3000,
             "source": "both"
           }
         ],
@@ -981,6 +987,7 @@
       "party": "BJP",
       "archetype": "STAR POWER CANDIDATE",
       "homeState": "Uttar Pradesh",
+      "secondaryHomeStates": ["Tamil Nadu"],
       "image": "assets/images/Hema_Malini.png",
       "partyLogo": "assets/icons/Bharatiya_Janata_Party_(icon).svg",
       "primaryColor": "#FF9933",
@@ -998,24 +1005,31 @@
           "bonus": 30
         },
         {
-          "name": "Education",
+          "name": "Film and TV",
           "bonus": 30
         }
       ],
       "specialPower": {
         "name": "Star Power Rally",
-        "effect": "+5% popularity nationwide",
-        "cost": "Instant 500 Cr funds cost, deducted on activation — requires holding at least 500 Cr to activate; usable any phase"
+        "effect": "+8% popularity nationwide, plus another +8% (16% total) in each of her home states, Uttar Pradesh and Tamil Nadu — the crowd goes wildest where they know her best",
+        "cost": "Instant 500 Cr funds cost, deducted on activation; usable any phase"
       },
       "power": {
         "name": "Star Power Rally",
-        "description": "+5% popularity nationwide; requires holding ≥500 Cr; costs 500 Cr instantly.",
+        "description": "+8% popularity nationwide, plus another +8% in each of her home states (Uttar Pradesh and Tamil Nadu); costs 500 Cr instantly.",
         "benefits": [
           {
             "kind": "popularity",
             "target": "self",
             "scope": "nationwide",
-            "bps": 500,
+            "bps": 800,
+            "source": "both"
+          },
+          {
+            "kind": "popularity",
+            "target": "self",
+            "scope": "home",
+            "bps": 800,
             "source": "both"
           }
         ],
@@ -1035,7 +1049,7 @@
       "party": "Independent",
       "archetype": "THALAIVAR OF THE MASSES",
       "homeState": "Tamil Nadu",
-      "image": "assets/images/Sivaji_Rao.png",
+      "image": "assets/images/Rajinikanth.png",
       "partyLogo": null,
       "primaryColor": "#8B0000",
       "policies": [
@@ -1052,18 +1066,18 @@
           "bonus": 30
         },
         {
-          "name": "Education",
+          "name": "Film and TV",
           "bonus": 30
         }
       ],
       "specialPower": {
         "name": "Thalaivar Announcement",
-        "effect": "+20% popularity in South India and Maharashtra (Bollywood)",
-        "cost": "Instant 2,000 Cr funds cost, deducted on activation — requires holding at least 2,000 Cr to activate; usable any phase"
+        "effect": "+25% popularity in South India (Thalaivar's home turf), +18% in Maharashtra (Bollywood) — bigger where the cult following actually is",
+        "cost": "Instant 2,000 Cr funds cost, deducted on activation; usable any phase"
       },
       "power": {
         "name": "Thalaivar Announcement",
-        "description": "+20% popularity in South India and Maharashtra; requires holding ≥2,000 Cr; costs 2,000 Cr instantly.",
+        "description": "+25% popularity in South India, +18% in Maharashtra; costs 2,000 Cr instantly.",
         "benefits": [
           {
             "kind": "popularity",
@@ -1072,7 +1086,7 @@
             "tags": [
               "SouthIndia"
             ],
-            "bps": 2000,
+            "bps": 2500,
             "source": "both"
           },
           {
@@ -1080,7 +1094,7 @@
             "target": "self",
             "scope": "state",
             "stateName": "Maharashtra",
-            "bps": 2000,
+            "bps": 1800,
             "source": "both"
           }
         ],
@@ -1092,6 +1106,53 @@
           }
         ],
         "requiresMinFundsCr": 2000
+      }
+    },
+    {
+      "id": "sivaji-rao",
+      "name": "Sivaji Rao",
+      "party": "Lokahit",
+      "archetype": "THE PEOPLE'S ONE-DAY CM",
+      "homeState": "Maharashtra",
+      "image": "assets/images/Sivaji_Rao.png",
+      "partyLogo": null,
+      "primaryColor": "#00897B",
+      "policies": [
+        {
+          "name": "Anti-Corruption",
+          "bonus": 40
+        },
+        {
+          "name": "Law and Order",
+          "bonus": 30
+        },
+        {
+          "name": "Press Freedom",
+          "bonus": 30
+        },
+        {
+          "name": "Film and TV",
+          "bonus": 30
+        }
+      ],
+      "specialPower": {
+        "name": "One-Day Ordinance",
+        "effect": "Instantly sets your popularity to 100% in your home state (Maharashtra)",
+        "cost": "None — no cost beyond the shared 6-token craft"
+      },
+      "power": {
+        "name": "One-Day Ordinance",
+        "description": "Instantly sets your popularity to 100% in your home state (Maharashtra). Free — no cost beyond the craft.",
+        "benefits": [
+          {
+            "kind": "popularity",
+            "target": "self",
+            "scope": "home",
+            "toBps": 10000,
+            "source": "both"
+          }
+        ],
+        "costs": []
       }
     }
   ]

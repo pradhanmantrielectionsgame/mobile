@@ -13,7 +13,7 @@
       "nationwideBonus": 4
     },
     "Land Reforms": {
-      "tagEffects": { "AgriculturalRegion": 8, "TribalLands": 8, "IndustrialCorridor": -8, "Manufacturing": -8 }
+      "tagEffects": { "IndustrialCorridor": 8, "Manufacturing": 8, "AgriculturalRegion": -8, "TribalLands": -8 }
     },
     "Agricultural Reforms": {
       "tagEffects": { "AgriculturalRegion": 8, "IndustrialCorridor": -8, "Manufacturing": -8 }
@@ -31,7 +31,7 @@
       "tagEffects": { "IndustrialCorridor": 4, "Manufacturing": 4, "AgriculturalRegion": -4 }
     },
     "Public Sector": {
-      "tagEffects": { "AgriculturalRegion": 4, "IndustrialCorridor": -4, "Manufacturing": -4 }
+      "tagEffects": { "IndustrialCorridor": 4, "Manufacturing": 4, "TribalLands": 4, "AgriculturalRegion": -4 }
     },
     "Digital Transformation": {
       "tagEffects": { "Education": 8, "IndustrialCorridor": 8, "AgriculturalRegion": -4, "Pilgrimage": -4, "TribalLands": -4 }
@@ -40,10 +40,10 @@
       "nationwideBonus": 4
     },
     "Judicial Activism": {
-      "tagEffects": { "Education": 4, "IndustrialCorridor": 4 }
+      "tagEffects": { "Education": 8, "MinorityAreas": 4, "TribalLands": 4, "IndustrialCorridor": -4, "Manufacturing": -4 }
     },
     "Press Freedom": {
-      "tagEffects": { "Education": 4, "MinorityAreas": 4 }
+      "tagEffects": { "Education": 8, "MinorityAreas": 8, "TribalLands": 4 }
     },
     "Law and Order": {
       "tagEffects": { "EasternBorder": 4, "WesternBorder": 4, "IndustrialCorridor": 4, "MinorityAreas": -4, "TravelAndTourism": -4 }
@@ -61,7 +61,7 @@
       "tagEffects": { "TribalLands": 8, "EasternBorder": 8, "IndustrialCorridor": -4, "Manufacturing": -8 }
     },
     "Caste Reservation": {
-      "tagEffects": { "HindiHeartland": 12, "Education": -12, "MinorityAreas": -12 }
+      "tagEffects": { "HindiHeartland": 12, "SouthIndia": 4, "Education": -12 }
     },
     "Uniform Civil Code": {
       "tagEffects": { "HindiHeartland": 12, "MinorityAreas": -12 }
@@ -70,7 +70,10 @@
       "tagEffects": { "SouthIndia": 8, "EasternBorder": 8, "HindiHeartland": -8 }
     },
     "National Defense": {
-      "tagEffects": { "EasternBorder": 12, "WesternBorder": 12, "CoastalIndia": -12 }
+      "tagEffects": { "EasternBorder": 12, "WesternBorder": 12, "MinorityAreas": -4 }
+    },
+    "Film and TV": {
+      "tagEffects": { "Education": 8, "TribalLands": 12 }
     }
   }
 }

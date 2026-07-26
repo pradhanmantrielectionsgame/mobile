@@ -25,7 +25,7 @@
   /* Ballot-card motif (politician select, end-of-game results) — a warm
      paper/brass/stamp world layered on top of the app's own ink/surface
      tokens above, not a separate theme: see design/prototypes/pol-card-mockup.html. */
-  --paper:#FBF8EF; --paper-dim:#F1EAD6; --brass:#9C7A1E;
+  --paper:#FBF8EF; --paper-dim:#F1EAD6; --brass:#9C7A1E; --seal-green:#128807;
 }
 *{box-sizing:border-box; -webkit-tap-highlight-color:transparent; touch-action:manipulation;}
 html,body{height:100%; margin:0; overscroll-behavior:none;}
@@ -77,12 +77,21 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
 .hex-row{ display:flex; justify-content:center; gap:var(--hexgap); }
 .hex-row.row-b{ margin-top:calc(var(--hexw) * -0.26); }
 .gchip{ position:relative; width:var(--hexw); aspect-ratio:1; background:none; }
-.gchip .hex{ width:100%; height:100%; display:flex; align-items:center; justify-content:center;
+/* Captured-group ring: a same-shape hexagon behind .hex, a few px larger on
+   every side, so its color peeks out as a border all the way around the
+   point-top hex — a real CSS border can't do this since clip-path only
+   keeps the box edge where the polygon actually touches it (the two side
+   edges), not the pointed top/bottom. Transparent (no capture) costs nothing. */
+.gchip::before{ content:''; position:absolute; inset:-7px; z-index:0; background:transparent;
+  clip-path:polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); transition:background .3s ease; }
+.gchip.captured-p1::before{ background:var(--p1); }
+.gchip.captured-p2::before{ background:var(--p2); }
+.gchip .hex{ position:relative; z-index:1; width:100%; height:100%; display:flex; align-items:center; justify-content:center;
   font-size:calc(var(--hexw) * 0.72); line-height:1; background:var(--surface2);
   clip-path:polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
   filter:drop-shadow(2px 2px 0 var(--line)); }
 .gchip.on .hex{ background:var(--accent); color:#fff; }
-.gchip .badge{ display:none; position:absolute; top:-3px; right:2px; width:13px; height:13px; border-radius:50%; background:var(--stamp); border:2px solid var(--surface); z-index:1; }
+.gchip .badge{ display:none; position:absolute; top:-3px; right:2px; width:13px; height:13px; border-radius:50%; background:var(--stamp); border:2px solid var(--surface); z-index:2; }
 .gchip.qualified .badge{ display:block; }
 
 /* ---- map: the "table" the ballot sits on, pale and flat. Lakshadweep and
@@ -103,10 +112,19 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
 /* ---- bottom-left corner: small-UT quick-invest buttons. Positioned inside
    map-wrap, so it sits a fixed distance above the map's own bottom edge —
    never dependent on the info panel below, which never changes size. ---- */
-.corner-left{ position:absolute; bottom:27px; z-index:7; left:27px; display:flex; flex-direction:column; gap:14px; }
+.corner-left{ position:absolute; bottom:27px; z-index:7; left:27px; display:flex; flex-direction:column; gap:26px; }
 
-.uts-btn{ display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; width:98px; height:82px; border-radius:19px; background:var(--surface); border:3px solid var(--line); box-shadow:4px 4px 0 var(--line); font-size:36px; }
-.uts-btn .lb{ font-size:15px; font-weight:800; letter-spacing:.02em; color:var(--ink-soft); }
+/* ---- top-left corner: Delhi's quick-invest button, split out of
+   corner-left so it reads as its own capital-city pin rather than one more
+   item in the small-UT stack. ---- */
+.corner-top-left{ position:absolute; top:100px; left:27px; z-index:7; }
+
+/* ---- top-right corner: Northeast-8 quick-invest button, placed roughly
+   over where the map's own northeast/China-border landmass sits. ---- */
+.corner-top-right{ position:absolute; top:90px; right:60px; z-index:7; }
+
+.uts-btn{ display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; width:135px; height:135px; border-radius:50%; background:var(--surface); border:3px solid var(--line); box-shadow:4px 4px 0 var(--line); font-size:48px; }
+.uts-btn .lb{ font-size:20px; font-weight:800; letter-spacing:.02em; color:var(--ink-soft); }
 .uts-btn:active{ transform:translate(4px,4px); box-shadow:none; }
 
 /* ---- corner-right: agenda (4) + rally/special/nationwide (3) as fixed,
@@ -178,14 +196,21 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
    of icon-only group chips, one single tug-of-war bar for both players.
    Doesn't expand, doesn't drag, doesn't cover the map. Investing still
    happens by tapping the map directly. ---- */
-.info-panel{ flex:0 0 auto; padding:27px 27px calc(env(safe-area-inset-bottom,0px) + 27px); background:var(--surface); border-top:3px solid var(--line); }
+.info-panel{ position:relative; flex:0 0 auto; padding:27px calc(27px + 90px) calc(env(safe-area-inset-bottom,0px) + 27px) 27px; background:var(--surface); border-top:3px solid var(--line); }
 .info-row{ display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
 .info-row h3{ margin:0; font-size:45px; font-weight:800; letter-spacing:-.01em; }
 .info-row .seats{ font-family:var(--font-mono); font-size:28px; color:var(--ink-soft); font-weight:600; white-space:nowrap; }
 
-.pin-btn{ width:48px; height:48px; flex:0 0 auto; display:flex; align-items:center; justify-content:center;
-  font-size:26px; background:var(--surface2); border-radius:11px; opacity:.5; }
-.pin-btn.on{ background:var(--accent); opacity:1; }
+/* Floats in the panel's own bottom-right corner (reserved gutter above via
+   info-panel's right padding) instead of squeezed inline next to the name —
+   always full-strength styling like the map's action-btn/uts-btn, not a
+   faded icon, so it reads as a real toggle rather than a decoration. */
+.pin-btn{ position:absolute; right:27px; bottom:calc(env(safe-area-inset-bottom,0px) + 27px);
+  width:70px; height:70px; z-index:2; display:flex; align-items:center; justify-content:center;
+  font-size:36px; background:var(--surface); border:3px solid var(--line); border-radius:17px;
+  box-shadow:4px 4px 0 var(--line); transition:transform .1s ease, box-shadow .1s ease; }
+.pin-btn:active{ transform:translate(4px,4px); box-shadow:none; }
+.pin-btn.on{ background:var(--accent); border-color:var(--accent); color:#fff; }
 .pin-btn[hidden]{ display:none; }
 
 .info-groups{ display:flex; flex-wrap:wrap; gap:10px; margin-left:auto; }
@@ -291,7 +316,7 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
 .pol-power{ position:relative; background:rgba(179,49,29,.06); border:1.3px solid rgba(179,49,29,.4); border-radius:25px; padding:18px 30px 18px 100px; margin-bottom:18px; }
 .pow-seal{ position:absolute; left:22px; top:18px; width:55px; height:55px; border-radius:50%; background:var(--stamp); display:flex; align-items:center; justify-content:center; font-size:28px; transform:rotate(-8deg); box-shadow:0 2px 4px rgba(20,22,28,.3); }
 .pow-name{ font-family:var(--font-display); font-weight:700; font-size:34px; margin-bottom:6px; }
-.pow-desc{ font-size:29px; color:rgba(20,22,28,.72); line-height:1.35; margin-bottom:10px; }
+.pow-benefit{ font-family:var(--font-mono); font-size:25px; color:var(--seal-green); font-weight:700; text-transform:uppercase; letter-spacing:.02em; margin-bottom:6px; }
 .pow-cost{ font-family:var(--font-mono); font-size:25px; color:var(--stamp); font-weight:700; text-transform:uppercase; letter-spacing:.02em; }
 .pol-footer{ flex:0 0 auto; border-top:1px solid rgba(20,22,28,.18); padding:20px 35px 24px; display:flex; align-items:center; justify-content:center; }
 .pol-play-btn{ width:100%; max-width:520px; text-align:center; flex:0 0 auto; font-family:var(--font-display); color:#fff; font-weight:700; font-size:42px; padding:28px 45px;
@@ -596,8 +621,13 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
 
     <div class="toast" id="toast"></div>
 
-    <div class="corner-left">
+    <div class="corner-top-left">
       <button class="uts-btn" id="delhiBtn" title="Invest in Delhi — too small to tap reliably on the map">🏙️<span class="lb">DELHI</span></button>
+    </div>
+    <div class="corner-top-right">
+      <button class="uts-btn" id="neBtn" title="Invest in all Northeast states at once">🌄<span class="lb">NE 8</span></button>
+    </div>
+    <div class="corner-left">
       <button class="uts-btn" id="goaBtn" title="Invest in Goa — too small to tap reliably on the map">🌴<span class="lb">GOA</span></button>
       <button class="uts-btn" id="utsBtn" title="Invest in all Union Territories at once">🏛️<span class="lb">ALL UTS</span></button>
     </div>

@@ -163,7 +163,9 @@
   // ---------------------------------------------------------------------
   function randInt(rng, lo, hi) { return Math.floor(lo + rng() * (hi - lo + 1)); }
 
-  function generateStartingPosition(states, p1HomeStateName, p2HomeStateName, rng) {
+  // p1HomeStateNames/p2HomeStateNames: a state name, or an array of names for
+  // a politician with more than one home state (e.g. Kejriwal: Delhi+Punjab).
+  function generateStartingPosition(states, p1HomeStateNames, p2HomeStateNames, rng) {
     rng = rng || Math.random;
     var pop = {};
     states.forEach(function (s) {
@@ -172,20 +174,32 @@
     });
     var byName = {};
     states.forEach(function (s) { byName[s.name] = s; });
-    var p1Home = byName[p1HomeStateName], p2Home = byName[p2HomeStateName];
+    function toHomes(names) {
+      var arr = Array.isArray(names) ? names : (names ? [names] : []);
+      return arr.map(function (n) { return byName[n]; }).filter(Boolean);
+    }
+    var p1Homes = toHomes(p1HomeStateNames), p2Homes = toHomes(p2HomeStateNames);
+    var p1HomeIds = {}, p2HomeIds = {};
+    p1Homes.forEach(function (h) { p1HomeIds[h.svgId] = true; });
+    p2Homes.forEach(function (h) { p2HomeIds[h.svgId] = true; });
 
-    if (p1Home && p2Home && p1Home.svgId !== p2Home.svgId) {
-      var s1 = pop[p1Home.svgId];
+    // A state that's home to both players cancels — no bonus to either there.
+    p1Homes.forEach(function (h) {
+      if (p2HomeIds[h.svgId]) return;
+      var s1 = pop[h.svgId];
       s1.p1 = Math.min(BPS, s1.p1 + 2500);
       s1.others = BPS - s1.p1 - s1.p2;
-      var s2 = pop[p2Home.svgId];
+    });
+    p2Homes.forEach(function (h) {
+      if (p1HomeIds[h.svgId]) return;
+      var s2 = pop[h.svgId];
       s2.p2 = Math.min(BPS, s2.p2 + 2500);
       s2.others = BPS - s2.p1 - s2.p2;
-    }
+    });
 
     var excluded = {};
-    if (p1Home) excluded[p1Home.svgId] = true;
-    if (p2Home) excluded[p2Home.svgId] = true;
+    Object.keys(p1HomeIds).forEach(function (id) { excluded[id] = true; });
+    Object.keys(p2HomeIds).forEach(function (id) { excluded[id] = true; });
     var pool = states.filter(function (s) { return !excluded[s.svgId]; }).slice();
     // Fisher-Yates shuffle
     for (var i = pool.length - 1; i > 0; i--) {
