@@ -6,6 +6,57 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### 🎮 Special Powers Redesign & Game-Balance Fixes — 2026-07-26
+
+#### Special Powers Engine & Mechanics
+- **ADDED**: `mobile/game.js` — new `runEffect` primitives for resource seizure/freezing: `seizeFundsPct`, `seizeTokens`, `stealTokens`, `freezeFunds` (last three join existing fund-transfer variants as engine building blocks) [C8]
+- **REDESIGNED**: `data/politicians-data.json` + `mobile/game.js` + `mobile/main.js` — 4 non-politician special powers completely reworked per [D1] (celebrities are deliberately stronger/quirkier than political roster):
+  - **Tendulkar (National Icon)**: 30%-floor `toBps` on current state (instead of vague magnitude-less "boost") with a 4-phase cost-recovery window, making the floor concretely measurable
+  - **Hema Malini (Star Power Rally)**: stacked home-state home-rally bonus (true +20% on top of default rally boost, not a free-tier gate that's worthless when boosts are already maxed)
+  - **Rajinikanth (Thalaivar Announcement)**: asymmetric dual-region instant pop swap (opponent loses 20% in Coastal India, activator gains that same 20% plus an extra 15% in Tamil Nadu, total +35% net)
+  - **Bachchan (Dharma Nayak)**: 12%-nationwide Others-only seizure (opponent shares get no direct cut; the seized amount goes to Others, not the activator, making it a denying mechanic, not a transfer)
+  [C5]
+- **REDESIGNED**: `data/politicians-data.json` + `mobile/game.js` — 4 opposition politicians' special powers to use non-transfer seizure mechanics and genuine cost-benefit tradeoffs:
+  - **Indira Gandhi (National Emergency)**: confiscation-only (−3% self nationwide), removes opponent's 30% cash on hand + 20% rally tokens, one-phase freeze guard on opponent's invest/agenda/power actions
+  - **Kejriwal (Anti-Corruption Raid)**: confiscation, not transfer; opponent loses 50% cash on hand, activator costs nothing explicit but gains political pressure (implicit: prevents opponent from rebuilding immediately)
+  - **Sivaji Rao (One-Day Ordinance)**: free, instant 100%-in-home-state capture (Maharashtra only), no cost, archetype-perfect "one-day CM" theme
+  - **Modi (Demonetization)**: one-phase funds freeze (opponent can't invest this phase), no cost (determined 2026-07-26: cost is the time cost of delayed opponent actions, not a direct resource sacrifice)
+  [C9]
+
+#### Game Design Rule Clarification
+- **[D2] Special Powers Duration Rule (Revised)**: Powers may resolve **instantly OR last exactly one phase** — longer durations remain banned. Rationale: one-phase effects need exactly one self-clearing flag (cheap, bounded); longer effects need genuine ongoing expiry tracking across open-ended phases (real complexity). Modified from prior absolute instant-only rule per Modi's redesign and related power reworks requiring persistent state. [C10]
+  - **Implementation**: Engine guards (e.g. `fundsFrozen()` check on invest/agenda/power/rally actions) handle one-phase effects; existing instant-effect machinery unchanged. New ADR-0009 documents the rule revision. [C8]
+
+#### Data Corrections & Consistency
+- **FIXED**: `data/politicians-data.json` — National Icon (Tendulkar) magnitude bug: cost was vague "based on boost amount" instead of concrete 2 Cr/bps magnitude (set to 40% floor magnitude = 4000 bps = 40-seat-equivalent cost, balanced against the floor's 20–80-seat value depending on phase/state) [C2]
+- **REMOVED**: `data/politicians-data.json` — 3 redundant "requires holding ≥X Cr" cost-text clauses from non-politician powers (were decorative, now removed for clarity) [C2]
+- **FIXED**: `data/politicians-data.json` — Ambedkar/Mamata Banerjee exact-duplicate home-state power: Mamata was copied from Ambedkar at +20%, Ambedkar raised to +25% to differentiate (both now at +25%, eligible for different home states) [C3]
+- **ADDED**: `data/politicians-data.json` + `mobile/engine.js` + `mobile/game.js` + `mobile/main.js` — multi-home-state support via `secondaryHomeStates` array per politician (Kejriwal now Delhi+Punjab instead of Delhi alone, representing his actual political presence); engine applies same home-state bonus rules to secondary homes as primary, refactored `applyHomeStateBonus` to loop over merged primary+secondary list [C4]
+- **CLEANED**: `data/politicians-data.json` — roster-wide special-power text audit: fixed ~13 vague/generic cost descriptions, wrong Vajpayee cost claim (said "funds" but was empty), and 5 description mismatches (Mamata/Ambedkar/Rajiv Gandhi/Jayalalithaa/Manmohan Singh describing old mechanics no longer in `power.benefits`/`.costs`) [C6]
+
+#### UI Updates
+- **SPLIT**: `mobile/index.html` + `mobile/main.js` — ballot-card power display: separated combined prose line into two color-coded rows (green `.seal-green` for Benefit, red for Cost), making cost/benefit split explicit and scannable [C7]
+- **CONDITIONAL**: `mobile/main.js` — hung-parliament end-overlay headline now conditional on single-player vs. AI: "Hung parliament — you lose" (vs. human) vs. "Hung parliament" (vs. AI fallback), clarifying game state per [C1]
+
+#### Project Documentation
+- **CREATED**: `docs/adr/0009-special-powers-instant-or-one-phase.md` — formalized [D2] decision; supersedes ADR-0004's absolute instant-only rule with clarification that one-phase effects are now allowed (new ADR documents the boundary, why it exists, and cost/complexity tradeoff vs. longer durations) [C10]
+- **UPDATED**: `design/economy-status-map.md` — synced all special-powers redesigns with detailed decision notes, modeled cost/benefit numbers for all 20 politicians, documented [D1]–[D4] reasoning, and updated special-powers rule prose to reflect [D2] [C10]
+- **UPDATED**: `CLAUDE.md` — added bullets documenting [D1]–[D4] decision rules, plus two testing-methodology notes (instant-diff blindness to funds/token effects, and `aiStep`/`runAIFull` player-swap corruption) [C10]
+
+#### Design Decisions
+- **[D1] Celebrities Stronger Than Politicians**: Non-politicians (Bachchan, Tendulkar, Hema Malini, Rajinikanth) are deliberately stronger/quirkier than the political roster, not weaker. Rationale: celebrities are explicitly allowed to exceed political-roster ceilings (e.g. Vajpayee's Pokhran Test) as a fun wildcard tier.
+  
+- **[D2] Special Powers: Instant or One-Phase (Revised Rule)**: See above.
+  
+- **[D3] Resource Seizure is Denial-Only**: Kejriwal, Sivaji Rao, Indira Gandhi's redesigned powers must confiscate/destroy opponent's resources, not transfer to activator. Rationale: matches "seizure/raid/confiscation" theme literally; required new non-transferring primitives since existing `stealFundsPct`/`stealTokens` are still correctly usable elsewhere.
+  
+- **[D4] Sivaji Rao Redesign Over Rebalancing**: After switching to confiscation-only, no cost magnitude between −1% and −6% nationwide broke even (true value ranged −2.4 to −27.2 seats). Rather than endless tuning, accepted user's request for a theme-appropriate redesign: free, instant 100%-in-home-state capture, archetype-perfect.
+
+#### Context
+Session focused on finalizing special-powers balance and consistency across the 20-politician roster, redesigning 4 underperforming non-politician powers to be genuinely strong per [D1], fixing 4 opposition politicians' power mechanics to use proper seizure+denial theming per [D3], and formalizing the game-design rule that powers may now be instant or one-phase (revised from absolute instant-only) per [D2]. All changes maintain single-player-vs-AI scope; multiplayer backend deferred.
+
+---
+
 ### 🎮 Northeast Quick-Invest Button & 21st Politician (Sivaji Rao) — 2026-07-25
 
 #### Mobile UI: Regional Quick-Invest Cluster

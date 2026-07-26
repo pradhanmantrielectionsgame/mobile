@@ -116,6 +116,7 @@ npm test              # Runs simulate.js regression suite
 | [ADR-0006: Hung Parliament Tie Resolution](docs/adr/0006-hung-parliament-tie-resolution.md) | Accepted | Draw vs. human opponent, Loss vs. AI fallback; ensures fairness in human-vs-human, incentivizes multiplayer |
 | [ADR-0007: Single-Player vs. AI Scope](docs/adr/0007-single-player-ai-scope.md) | Accepted | Built single-player-vs-AI only this session; deferred human matchmaking backend to Phase 0. Prioritizes end-to-end design validation + playable game on day 1 |
 | [ADR-0008: Additive Config Schema Evolution](docs/adr/0008-additive-config-schema-evolution.md) | Accepted | Preserved backward compatibility with legacy desktop build via new `mobileEconomy` namespace, rather than restructuring entire `game-config.json` |
+| [ADR-0009: Special Powers — Instant or One-Phase](docs/adr/0009-special-powers-instant-or-one-phase.md) | Accepted | Clarified instant-only rule: powers may resolve instantly OR last exactly one phase; longer durations remain banned. One-phase effects need only one self-clearing flag; longer effects require genuine expiry tracking (real complexity) |
 
 ## Project Documentation & References
 
