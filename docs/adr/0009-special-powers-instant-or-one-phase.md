@@ -1,93 +1,56 @@
-# ADR-0009: Special Powers — Instant or One-Phase Duration Allowed
+# ADR-0009: Special Powers May Resolve Instantly or Last Exactly One Phase
 
 ## Status
 
-Accepted (clarification/revision of ADR-0004, 2026-07-26)
+Accepted (revises ADR-0004, 2026-07-26)
 
 ## Context
 
-ADR-0004 established an absolute instant-only rule for special powers to avoid lateness bugs with duration-based effects (powers unlocking in late phases with no remaining game time to apply the effect). This rule held throughout the initial builds and worked well for most powers.
+ADR-0004 established an absolute instant-only rule for special powers: every power resolves fully in the phase it's activated, no residual state persists. The stated reason was that a duration-based effect has nothing left to apply to if it unlocks on the game's last phase — a real risk under any achievement-gated unlock.
 
-During the 2026-07-26 special-powers redesign pass, four opposition politicians' powers required genuine persistent state across a single game phase to function meaningfully:
+During a 2026-07-26 session reworking several special powers, Narendra Modi's "Demonetization" was redesigned from an instant flat funds removal into a literal freeze: the opponent can't invest, tap agendas, or activate a funds-costing special power for one full phase. This genuinely needs persistent state — a flag that survives from the activating phase into the next one — which the absolute instant-only rule doesn't allow.
 
-- **Modi's Demonetization**: opponent's funds are frozen (cannot invest/tap agendas/activate powers/deploy rally tokens) for exactly one phase, then thaw automatically at phase start
-- **Indira Gandhi's National Emergency**: opponent's actions are locked for exactly one phase, then unlock
-- **Other seizure powers**: resource confiscation effects that deny the opponent's future budget spending (value measured over the phases that follow), requiring at least one phase of persistent state to model accurately
+Two ways to resolve this were considered:
 
-An absolute instant-only rule would force these to resolve as:
-- "Opponent loses all funds" (instant) — but this doesn't capture the denial value of the freeze, only the funds loss
-- "Opponent loses 2 phases worth of funds" (instant lump-sum) — rough approximation, loses the gating/lock aspect entirely
+1. Find an instant equivalent for Modi (e.g. an instant lump-sum funds removal). Rejected: there's no clean instant equivalent that preserves the "you can't act with money you have" flavor — a lump-sum removal is a different power with different math, not this one reframed.
+2. Treat Modi as a one-off undocumented exception to the rule. Rejected by the user, who asked for the rule itself to be clarified rather than quietly special-cased.
 
-The prior rule needed clarification: is a one-phase effect still "instant" (in the sense of "resolved in the activating phase, no forward-looking dependency"), or does it cross a line that should stay forbidden?
+The user then explicitly drew a three-way distinction: instant effects, single-phase effects, and longer time-based effects — and stated they're fine with anything in the first two categories; longer-lasting effects are "trickier to code."
 
 ## Decision
 
 Special powers may resolve in exactly one of two ways:
 
-1. **Instant**: Effect fully resolves in the phase the power is activated. No residual state persists beyond the phase. (Example: Tendulkar's National Icon floor boost, Rajinikanth's population swap, Bachchan's seizure)
-2. **One-Phase Duration**: Effect persists via a single self-clearing flag through exactly one additional phase, then expires automatically at the start of the next phase. (Example: Modi's Demonetization funds freeze, Indira Gandhi's National Emergency lock)
+1. **Instant** — the effect fully resolves in the activating phase, no state persists afterward. This remains the default and the vast majority of the roster (e.g. Indira Gandhi's National Emergency, an instant confiscation of the opponent's cash and rally tokens; Kejriwal's Anti-Corruption Raid, an instant confiscation of half the opponent's cash — neither of these involves any persistent lock or duration, despite superficially resembling "denial" powers).
+2. **One-phase** — the effect sets a single flag on activation that blocks a specific action for exactly one phase, then clears itself automatically once `game.phase` advances past it. Modi's Demonetization is the only power in the roster currently using this category: `pl.fundsFrozenUntilPhase` is set to `game.phase + 1` on activation, and a shared `fundsFrozen()` guard (checked in `investCash`, `tapAgenda`, and `activatePower`'s funds-cost gate) returns `{ok: false}` while `pl.fundsFrozenUntilPhase === game.phase` holds. No countdown, no separate cleanup step — the flag is simply irrelevant once the phase number moves past it.
 
-**Longer durations (2+ phases, or open-ended) remain absolutely banned.**
+**Anything lasting more than one phase, or resolving on a delay (e.g. "triggers at the start of the next phase," "decays over N phases"), remains banned.**
 
 ## Rationale
 
-### Why One-Phase is Allowed
+A one-phase effect needs exactly one flag, set once, compared against `game.phase`, self-clearing — the same shape every time, regardless of which power uses it. A multi-phase effect needs a countdown or expiry field that's actually decremented or checked across an open-ended number of phase transitions, and has to keep working correctly regardless of how many phases the effect has left when the game ends. That's real, ongoing complexity — not a difference of degree from the one-phase case, a difference of kind.
 
-A one-phase effect needs exactly one boolean flag (`fundsFrozen: true/false`, `actionsLocked: true/false`) checked at action-entry points. The flag is set when the power activates, automatically cleared at phase start (no expiry logic needed). This is cheap and bounded—same complexity pattern as any other transient game state.
-
-### Why Longer Durations Stay Banned
-
-Durations lasting 2+ phases require genuine ongoing expiry tracking: either a countdown field (`turnsRemaining: 3`) decremented each phase, or an expiry timestamp (`expiresAtPhase: 8`) checked on every state transition. This is real operational complexity, especially if multiple powers can stack, or if game length changes (same lateness fragility that motivated ADR-0004).
-
-### The Boundary Matters
-
-"One phase" is the exact threshold where the cost (one flag, checked at specific guards) doesn't justify the upside. "Two phases" crosses into genuine ongoing tracking. Allowing one-phase effects but banning longer ones is a clean, defensible rule.
+The late-game weakness ADR-0004 was written to avoid is still real for the one-phase category: if Modi activates Demonetization on the actual last phase, there's no next phase left to freeze, so it does nothing. This is accepted as a deliberate tradeoff, not solved — the user's own playtesting indicates rally tokens are earned quickly enough in practice that the special power is usually crafted and available well before the final phase, making the dead-window case uncommon in real play.
 
 ## Consequences
 
 ### Positive
-
-- **Matches Design Intention**: Modi's Demonetization (funds freeze), Indira's National Emergency (action lock), and Kejriwal's Anti-Corruption Raid (funds denial) now capture their intended game-state impact without artificial instant-lump-sum approximations.
-- **Testable via Fork**: A one-phase effect's true value can now be measured by forking the game state, playing "with power active" vs. "skipped," and comparing final seats — the effect's persistence across one phase becomes visible in the outcome.
-- **Maintains Robustness**: The one-phase rule is just as robust as instant-only to game-length changes. A 10-phase game with one-phase freezes behaves identically to a 16-phase game; the freeze still lasts exactly one additional phase in both cases.
+- Modi's Demonetization can express its real "you can't spend money right now" flavor instead of an approximated instant lump-sum.
+- The implementation cost of the one-phase category is small and fixed: one field, one shared guard function, checked at the 2-3 places funds actually get spent. It doesn't scale up per power.
 
 ### Negative
+- The category carries the same "worthless if popped on the literal last phase" flaw the instant-only rule was designed to avoid entirely — now an accepted risk rather than an eliminated one.
+- Any future one-phase effect needs its own guard added at whichever action(s) it blocks, mirroring `fundsFrozen()`'s pattern — not automatic, has to be done deliberately each time.
 
-- **Slightly More Complex Engine**: Instant-only powers need no state tracking beyond the activation itself. One-phase effects require guards at specific action points and automatic flag clearing. (Mitigation: guards are simple, boolean-only; no countdown arithmetic.)
-- **Potential for Confusion**: Players might assume "one-phase effect" means "effect lasts for my one phase of actions," when it actually means "lasts through opponent's next turn as well" (or vice versa, depending on phrasing). Careful wording in in-game UI is required.
+## What this does NOT change
 
-## Alternatives Rejected
+Confiscation-style powers (Indira Gandhi, Kejriwal) are still fully instant — seizing the opponent's current cash/tokens right now doesn't require persisting anything; the *opponent's future budget* is smaller as a natural consequence of losing that cash now, not because of any ongoing lock. Modeling the *value* of that denial requires playing out the rest of the game (see `CLAUDE.md`'s testing-methodology note on instant-diff blindness), but the mechanic itself has zero persistent state. Don't confuse "a power whose value plays out over future phases" with "a power that needs duration-based engine state" — only the latter is what this ADR is about.
 
-### Keep Strict Instant-Only; Find an Instant Equivalent
+## Related decisions
 
-- **Problem**: Modi's funds freeze doesn't have a clean instant equivalent. "Opponent loses 2,500 Cr worth of funds" (one phase's refresh) is crude and loses the lock/gate semantics. "Opponent loses 5,000 Cr" (one phase's starting funds + refresh) is arbitrary. This alternative was explicitly rejected for Modi per user feedback.
-- **Additional problem**: Kejriwal's "confiscate half the opponent's current cash" is mechanically instant, but its value (denying future phases' budget) only surfaces if the opponent continues playing. Measuring the real impact requires multi-phase fork testing, not instant-diff snapshots.
+- Non-politician powers (Tendulkar, Hema Malini, Rajinikanth, Bachchan) are all instant — none needed the one-phase category.
+- Resource-seizure powers (Indira, Kejriwal) confiscate rather than transfer, per the same session's related decision — orthogonal to this ADR, but easy to conflate since both changes landed the same day.
 
-### Make Modi a One-Off Undocumented Exception
+## Revision history
 
-- **Problem**: Creates a precedent for future exceptions. When the next power needs persistent state, is it "another exception," or does the rule change again? Explicit clarification is cleaner than exception-by-exception.
-- **User Request**: Explicitly rejected by user, who asked for the rule itself to be clarified rather than papered over with an undocumented special case.
-
-## Related Decisions
-
-- **[D1] Celebrities Stronger Than Politicians**: Non-politician powers (Tendulkar, Hema Malini, Rajinikanth, Bachchan) are permitted to exceed political-roster ceilings, including one-phase effects if needed.
-- **[D3] Resource Seizure is Denial-Only**: Seized funds/tokens are destroyed/deducted, not transferred to the activator. This denial-only framing makes the multi-phase value clearer: "opponent lost X resources that they can't spend in future phases," not "you gained X."
-- **[D4] Matched Cost/Benefit Tradeoffs**: Every special power still requires a genuine resource cost (funds, popularity, or rally tokens). A one-phase lock/freeze is never free; it pairs with an explicit cost. Modi's Demonetization pairs the freeze with zero direct cost because the "cost" is the opportunity cost of one phase of delayed investment — this is only acceptable because the power itself is thematically tied to a sudden, temporary disruption (a real-world demonetization does freeze economic activity, not charge a fee).
-
-## Implementation Notes
-
-### Code Structure
-
-- **One-Phase Flags**: Engine adds simple boolean flags like `pop[svgId].fundsFrozen[playerKey]` or `game.actionsLocked[playerKey]`.
-- **Guards at Action Entry Points**: `investCash`, `tapAgenda`, `activatePower`, `deployRallyToken` checks: `if (fundsFrozen()) return {ok: false, reason: "Funds frozen"}`.
-- **Automatic Expiry**: `startPhase()` clears all one-phase flags at the phase boundary.
-- **No Countdown**: No `turnsRemaining` field, no per-tick decrement. The flag lives exactly one phase, then is gone.
-
-### Testing
-
-- **Fork Testing**: To measure a one-phase power's true value, `structuredClone` the game state before activation, play both "activated" and "skipped" versions independently to game end, compare final seat totals.
-- **Instant-Diff Blindness**: A before/after `nationalSeats()` diff cannot measure a one-phase effect's value (only the instant-cost side shows, not the denial value). See findings.md for the full discussion.
-
-## Revision History
-
-- **2026-07-26**: Clarified and formalized one-phase allowance, superseding ADR-0004's absolute instant-only stance.
+- 2026-07-26: revises ADR-0004's absolute instant-only rule to allow a one-phase category, following Modi's Demonetization redesign.
