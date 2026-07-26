@@ -6,6 +6,37 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### 🎮 Northeast Quick-Invest Button & 21st Politician (Sivaji Rao) — 2026-07-25
+
+#### Mobile UI: Regional Quick-Invest Cluster
+- **ADDED**: `mobile/index.html` — new `.corner-top-right` container holding NE8 quick-invest button (Nagaland, Manipur, Mizoram, Tripura, Meghalaya, Sikkim, Arunachal Pradesh, Assam) [C2]
+- **RESIZED**: All 4 quick-invest buttons (Delhi, Goa, All UTs, NE8) scaled 50% larger (90px→135px icon size, 32px→48px font-size for icon, 13px→20px for label); border-width and box-shadow remain unscaled per project convention [C3]
+- **REPOSITIONED**: Goa button moved up relative to All UTs button by increasing `.corner-left` flex gap (14px→26px) to improve visual separation [C4]
+- **REPOSITIONED**: Delhi quick-invest button moved into new `.corner-top-left` container, made circular [C1]
+
+#### Game Data & New Politician
+- **ADDED**: `data/politicians-data.json` — new 21st politician entry `sivaji-rao` (Lokahit party, Maharashtra home state, archetype "THE PEOPLE'S ONE-DAY CM", 4 signature agendas: Anti-Corruption/Law and Order/Infrastructure/Judicial Activism). Special power "One-Day Ordinance": steals 30% of opponent's cash on hand, costs 6% of player's own nationwide popularity [C8]
+- **FIXED**: `data/politicians-data.json` — `rajinikanth` image path now correctly points to `Rajinikanth.png` (was wrongly pointing at `Sivaji_Rao.png`); `br-ambedkar` corrected to `Bhimrao_Ambedkar.png` (was `BR_Ambedkar.png`); `pv-narasimha-rao` corrected to `P_V_Narasimha_Rao.png` (was `PV_Narasimha_Rao.png`) [C9]
+
+#### Portrait Images & Asset Corrections
+- **ADDED**: `assets/images/` — 7 new politician portrait images (Bhimrao_Ambedkar.png, Jayalalithaa.png, Hema_Malini.png, P_V_Narasimha_Rao.png, Rajinikanth.png, Lal_Bahadur_Shastri.png, Rajiv_Gandhi.png) [C10]
+- **CORRECTED**: Renamed 2 typo'd generated filenames to match convention (Rajinikaanth.png→Rajinikanth.png, Laal_Bahadur_Shastri.png→Lal_Bahadur_Shastri.png) [C10]
+
+#### Mobile Engine & Test Suite
+- **ADDED**: `mobile/game.js` — `NORTHEAST_IDS` array (8 state svgIds: Nagaland, Manipur, Mizoram, Tripura, Meghalaya, Sikkim, Arunachal Pradesh, Assam), exported via API alongside existing `SMALL_UT_IDS` [C5]
+- **ADDED**: `mobile/main.js` — `neBtn` click handler implementing double-tap-to-invest pattern for NE8 region, looping `G.investCash()` over `G.NORTHEAST_IDS` [C6]
+- **FIXED**: `mobile/simulate.js` — replaced two hardcoded "20" strings in test-summary console output with `data.politicians.length` for dynamic roster reflection (roster is now 21 politicians) [C7]
+
+#### Design Decisions
+- **[D1] Separate Sivaji Rao Profile**: Added as 21st politician rather than relabeling/reusing the existing Rajinikanth entry. Rationale: Gemini-generated `Sivaji_Rao.png` actually depicts Anil Kapoor's character from the film *Nayak*, not Rajinikanth — a naming coincidence, since "Shivaji Rao" is both the film character's name and Rajinikanth's real birth name (Shivaji Rao Gaekwad). The existing Rajinikanth entry's archetype ("THALAIVAR OF THE MASSES"), Tamil Nadu home state, and special-power mechanics were all genuinely written for Rajinikanth and needed no change. Cleanest resolution: two distinct politicians, each eventually with correct art.
+
+- **[D2] Sivaji Rao Power Mechanics**: "One-Day Ordinance" special power (30% opponent cash steal, 6% nationwide popularity cost) designed as mechanically distinct from Kejriwal's Anti-Corruption Raid (50% steal, opponent-homestate-only cost) despite both being anti-corruption-crackdown themed. Reuses existing effect "kinds" from the unified power schema (funds, stealFundsPct, popularity) without requiring new engine code, following the project convention of politicians sharing effect kinds at different tunings. Rejected alternatives: reusing Kejriwal's exact formula (pure duplicate); inventing a new benefit/cost kind (would need `mobile/game.js`'s `activatePower()` engine changes).
+
+#### Context
+Session focused on adding a dedicated quick-invest button for the Northeast region (8 states) to improve regional gameplay flow, expanding the politician roster to 21 entries, and correcting portrait-image mismatches and filename typos discovered during a round of Gemini portrait generation. Image fixes included 4 of 7 new portraits needing filename/path corrections before `politicians-data.json` would resolve them. All changes maintain single-player vs. AI scope and existing game mechanics.
+
+---
+
 ### 🎨 Mobile UI Refinements: Welcome Screen & Politician-Select Ballot-Card Details — 2026-07-25
 
 #### UI Enhancements
