@@ -474,7 +474,7 @@ boost_bps(tapNumberInThisState) =
       <h3>🎯 Scarcity &amp; crafting</h3>
       <div class="step decided">per-state cap: max 2 total token plays per state, ever, shared across both players — Nationwide Rally exempt</div>
       <div class="arrow">↓</div>
-      <div class="step decided">craft 6 → Special Powerup (min. 3 phases, crafting counts against spend cap), 1 use/game — this <i>is</i> the cost of activating your politician's unique Special Power (see that section below), not a separate generic effect</div>
+      <div class="step decided">craft 6 → Special Powerup (no phase gate — usable the instant 6 tokens are banked, even phase 1; crafting counts against spend cap), 1 use/game — this <i>is</i> the cost of activating your politician's unique Special Power (see that section below), not a separate generic effect. Decided 2026-07-26: the earlier min-phase-3 gate was removed at the user's request after playtesting showed 6 tokens reachable via agenda completions alone in round 1, making the wait feel like arbitrary friction on top of an already-earned resource.</div>
       <div class="arrow">↓</div>
       <div class="step decided">craft 12 → Nationwide Rally (min. 6 phases — must start almost immediately in a 10-phase game), 1 use/game, replaces the old random ⭐ roll entirely — <b>+5% nationwide</b>, applied to every state at once</div>
     </div>

@@ -68,7 +68,7 @@
       "maxPlaysPerStateShared": 2,
       "tokenBoostBps": 500,
       "specialPowerupCraftCost": 6,
-      "specialPowerupMinPhase": 3,
+      "specialPowerupMinPhase": 0,
       "nationwideRallyCraftCost": 12,
       "nationwideRallyMinPhase": 6,
       "nationwideRallyBoostBps": 500,

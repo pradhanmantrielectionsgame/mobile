@@ -73,7 +73,8 @@
   ['bg_music', 'cash_added', 'money_spent', 'invalid_action', 'fanfare', 'game_over', 'phase_reset', 'rally_sound']
     .forEach(function (name) { sounds[name] = new Audio('../sounds/' + name + '.mp3'); });
   sounds.bg_music.loop = true;
-  sounds.bg_music.volume = 0.35;
+  var BG_MUSIC_VOLUME = 0.35, BG_MUSIC_DUCKED_VOLUME = 0;
+  sounds.bg_music.volume = BG_MUSIC_VOLUME;
   function playSound(name) {
     var a = sounds[name];
     if (!a) return;
@@ -81,6 +82,21 @@
     if (!soundEnabled) return;
     a.currentTime = 0;
     a.play().catch(function () {});
+  }
+
+  // Per-politician special-power sound — sounds/<Politician_Name>.mp3
+  // (spaces -> underscores, e.g. "Amitabh Bachchan" -> Amitabh_Bachchan.mp3).
+  // Falls back to the generic fanfare for politicians without their own file yet.
+  var powerSounds = {};
+  function playPowerSound(politicianName) {
+    if (!soundEnabled) return;
+    var key = politicianName.replace(/\s+/g, '_');
+    if (!powerSounds[key]) powerSounds[key] = new Audio('../sounds/' + key + '.mp3');
+    var a = powerSounds[key];
+    a.currentTime = 0;
+    if (musicEnabled) sounds.bg_music.volume = BG_MUSIC_DUCKED_VOLUME;
+    a.addEventListener('ended', function () { sounds.bg_music.volume = BG_MUSIC_VOLUME; }, { once: true });
+    a.play().catch(function () { sounds.bg_music.volume = BG_MUSIC_VOLUME; playSound('fanfare'); });
   }
 
   // ---------------------------------------------------------------------
@@ -224,7 +240,9 @@
         '<div class="pol-section-label">Special Power</div>' +
         '<div class="pol-power"><div class="pow-seal">⚡</div><div class="pow-name">' + p.power.name + '</div>' +
           '<div class="pow-benefit">Benefit: ' + p.specialPower.effect + '</div>' +
-          '<div class="pow-cost">Cost: ' + p.specialPower.cost + '</div></div>' +
+          '<div class="pow-cost">Cost: ' + p.specialPower.cost + '</div>' +
+          (p.power.requiresMinPhase ? '<div class="pow-unlock">Unlocks at: Phase ' + p.power.requiresMinPhase + '</div>' : '') +
+        '</div>' +
       '</div>' +
       '<div class="pol-footer"></div>';
 
@@ -409,7 +427,10 @@
     setTimeout(function () {
       if (game && !timerPaused && !game.winner) {
         var action = G.aiStep(game);
-        if (action) { renderAll(); animateAITap(action); }
+        if (action) {
+          renderAll(); animateAITap(action);
+          if (action.type === 'power') playPowerSound(game.players.p2.politician.name);
+        }
       }
       scheduleAITick();
     }, delay);
@@ -445,8 +466,8 @@
       spawnMoneyText(pt.x, pt.y, fundsGained, 1);
       playSound('cash_added');
     }
-    if (game.log.slice(0, 10).some(function (e) { return e.msg.indexOf('💰 You hold') === 0; })) playSound('fanfare');
     if (game.winner) { playSound('game_over'); renderAll(); showEndOverlay(); return; }
+    if (game.log.slice(0, 10).some(function (e) { return e.msg.indexOf('💰 You hold') === 0; })) playSound('fanfare');
     renderAll();
     startPhaseTimer();
     playSound('phase_reset');
@@ -891,7 +912,7 @@
     var r = G.activatePower(game, 'p1', opts);
     renderAll();
     if (!r.ok) { showToast('Cannot activate: ' + r.reason); shakeInvalid($('specialBtn')); return; }
-    if (!r.nullified) playSound('fanfare');
+    if (!r.nullified) playPowerSound(game.players.p1.politician.name);
     showToast(r.nullified ? 'Your power fizzled — it had been secretly nullified' : '⚡ ' + game.players.p1.politician.power.name + ' activated');
   }
 

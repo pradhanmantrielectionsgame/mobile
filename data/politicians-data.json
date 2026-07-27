@@ -48,7 +48,8 @@
             "scope": "nationwide",
             "bps": -500
           }
-        ]
+        ],
+        "requiresMinPhase": 3
       }
     },
     {
@@ -488,7 +489,8 @@
             "scope": "nationwide",
             "bps": -300
           }
-        ]
+        ],
+        "requiresMinPhase": 5
       }
     },
     {
@@ -570,12 +572,12 @@
       ],
       "specialPower": {
         "name": "Iron Unification",
-        "effect": "Raises your popularity to a 20% floor in every state nationwide — no effect anywhere you're already above it; also grants +1,000 Cr instantly",
-        "cost": "None beyond the shared 6-token craft — in fact grants +1,000 Cr on activation; not usable before phase 5, mirroring how long real unification took"
+        "effect": "Increases popularity nationwide to a 20% floor. No effect on states where popularity is already higher. Funds +1,000 crores",
+        "cost": "None"
       },
       "power": {
         "name": "Iron Unification",
-        "description": "Raises your popularity to at least 20% in every state nationwide (no effect where you're already above it); grants +1,000 Cr instantly. Not usable before phase 5.",
+        "description": "Raises your popularity to at least 20% in every state nationwide (no effect where you're already above it); grants +1,000 Cr instantly.",
         "benefits": [
           {
             "kind": "popularity",
@@ -656,7 +658,8 @@
             "target": "self",
             "amountCr": -2500
           }
-        ]
+        ],
+        "requiresMinPhase": 3
       }
     },
     {
@@ -820,7 +823,8 @@
             "target": "self",
             "amountCr": -2000
           }
-        ]
+        ],
+        "requiresMinPhase": 6
       }
     },
     {
@@ -957,7 +961,7 @@
       "specialPower": {
         "name": "National Icon",
         "effect": "Raises your popularity to a 30% floor in every state nationwide — no effect anywhere you're already above it, huge everywhere you're not",
-        "cost": "Instant 1,000 Cr funds cost, deducted on activation; usable any phase"
+        "cost": "Instant 1,000 Cr funds cost, deducted on activation"
       },
       "power": {
         "name": "National Icon",
@@ -1012,7 +1016,7 @@
       "specialPower": {
         "name": "Star Power Rally",
         "effect": "+8% popularity nationwide, plus another +8% (16% total) in each of her home states, Uttar Pradesh and Tamil Nadu — the crowd goes wildest where they know her best",
-        "cost": "Instant 500 Cr funds cost, deducted on activation; usable any phase"
+        "cost": "Instant 500 Cr funds cost, deducted on activation"
       },
       "power": {
         "name": "Star Power Rally",
@@ -1073,7 +1077,7 @@
       "specialPower": {
         "name": "Thalaivar Announcement",
         "effect": "+25% popularity in South India (Thalaivar's home turf), +18% in Maharashtra (Bollywood) — bigger where the cult following actually is",
-        "cost": "Instant 2,000 Cr funds cost, deducted on activation; usable any phase"
+        "cost": "Instant 2,000 Cr funds cost, deducted on activation"
       },
       "power": {
         "name": "Thalaivar Announcement",
