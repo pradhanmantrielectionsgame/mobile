@@ -137,7 +137,7 @@
       "specialPower": {
         "name": "Bharat Jodo Yatra",
         "effect": "+12% popularity in Minority Areas states",
-        "cost": "Instant 1,500 Cr funds cost, deducted on activation"
+        "cost": "₹1,500 crores"
       },
       "power": {
         "name": "Bharat Jodo Yatra",
@@ -193,7 +193,7 @@
       "specialPower": {
         "name": "Pokhran Test",
         "effect": "+10% popularity nationwide",
-        "cost": "None — no cost beyond the shared 6-token craft"
+        "cost": "None"
       },
       "power": {
         "name": "Pokhran Test",
@@ -292,7 +292,7 @@
       "specialPower": {
         "name": "State Autonomy Stand",
         "effect": "+15% popularity in your home state",
-        "cost": "Instant 1,500 Cr funds cost, deducted on activation"
+        "cost": "₹1,500 crores"
       },
       "power": {
         "name": "State Autonomy Stand",
@@ -345,7 +345,7 @@
       "specialPower": {
         "name": "Alliance Switch",
         "effect": "+7% popularity nationwide for you, -7% popularity nationwide for your opponent",
-        "cost": "Instant 1,000 Cr funds cost + 2 rally tokens, deducted on activation"
+        "cost": "₹1,000 crores + 2 rally tokens"
       },
       "power": {
         "name": "Alliance Switch",
@@ -626,7 +626,7 @@
       "specialPower": {
         "name": "Constitutional Reform",
         "effect": "+10% popularity in Minority Areas, +10% in Tribal Lands, plus a full refund of every Cr spent tapping agendas so far this match — the reforms pay for themselves",
-        "cost": "Instant 2,500 Cr funds cost, deducted on activation"
+        "cost": "₹2,500 crores"
       },
       "power": {
         "name": "Constitutional Reform",
@@ -692,7 +692,7 @@
       "specialPower": {
         "name": "Amma Welfare Scheme",
         "effect": "+18% popularity in South India",
-        "cost": "Instant 2,500 Cr funds cost, deducted on activation"
+        "cost": "₹2,500 crores"
       },
       "power": {
         "name": "Amma Welfare Scheme",
@@ -748,7 +748,7 @@
       "specialPower": {
         "name": "Jai Jawan Jai Kisan",
         "effect": "Popularity boost in Eastern Border/Western Border AND Agricultural Region states at once",
-        "cost": "Instant 1,500 Cr funds cost, deducted on activation"
+        "cost": "₹1,500 crores"
       },
       "power": {
         "name": "Jai Jawan Jai Kisan",
@@ -806,7 +806,7 @@
       "specialPower": {
         "name": "Minority Government Survival",
         "effect": "For the rest of the match, you only need 250 seats to win instead of 272 — governing without a full majority, like his real 1991-96 government",
-        "cost": "Instant 2,000 Cr funds cost, deducted on activation"
+        "cost": "₹2,000 crores"
       },
       "power": {
         "name": "Minority Government Survival",
@@ -857,7 +857,7 @@
       "specialPower": {
         "name": "Telecom Revolution",
         "effect": "Instant 2,000 Cr funds rebate",
-        "cost": "Instant 1,000 Cr funds cost, deducted on activation"
+        "cost": "₹1,000 crores"
       },
       "power": {
         "name": "Telecom Revolution",
@@ -908,7 +908,7 @@
       "specialPower": {
         "name": "Celebrity Endorsement",
         "effect": "+12% popularity nationwide, pulled only from undecided (\"Others\") voters — never taken from the opponent, so it's capped by how much Others is actually left in each state",
-        "cost": "Instant 1,000 Cr funds cost, deducted on activation"
+        "cost": "₹1,000 crores"
       },
       "power": {
         "name": "Celebrity Endorsement",
@@ -961,7 +961,7 @@
       "specialPower": {
         "name": "National Icon",
         "effect": "Raises your popularity to a 30% floor in every state nationwide — no effect anywhere you're already above it, huge everywhere you're not",
-        "cost": "Instant 1,000 Cr funds cost, deducted on activation"
+        "cost": "₹1,000 crores"
       },
       "power": {
         "name": "National Icon",
@@ -1016,7 +1016,7 @@
       "specialPower": {
         "name": "Star Power Rally",
         "effect": "+8% popularity nationwide, plus another +8% (16% total) in each of her home states, Uttar Pradesh and Tamil Nadu — the crowd goes wildest where they know her best",
-        "cost": "Instant 500 Cr funds cost, deducted on activation"
+        "cost": "₹500 crores"
       },
       "power": {
         "name": "Star Power Rally",
@@ -1077,7 +1077,7 @@
       "specialPower": {
         "name": "Thalaivar Announcement",
         "effect": "+25% popularity in South India (Thalaivar's home turf), +18% in Maharashtra (Bollywood) — bigger where the cult following actually is",
-        "cost": "Instant 2,000 Cr funds cost, deducted on activation"
+        "cost": "₹2,000 crores"
       },
       "power": {
         "name": "Thalaivar Announcement",
@@ -1142,7 +1142,7 @@
       "specialPower": {
         "name": "One-Day Ordinance",
         "effect": "Instantly sets your popularity to 100% in your home state (Maharashtra)",
-        "cost": "None — no cost beyond the shared 6-token craft"
+        "cost": "None"
       },
       "power": {
         "name": "One-Day Ordinance",

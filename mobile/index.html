@@ -140,18 +140,10 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
 .action-group{ display:grid; grid-template-columns:repeat(2, 98px); gap:10px; }
 .action-btn{ position:relative; width:98px; height:82px; border-radius:19px;
   background:var(--surface); border:3px solid var(--line); box-shadow:4px 4px 0 var(--line);
-  display:flex; align-items:center; justify-content:center; font-size:36px;
+  display:flex; align-items:center; justify-content:center; font-size:74px;
   transition:transform .1s ease, box-shadow .1s ease; }
 .action-btn:active{ transform:translate(4px,4px); box-shadow:none; }
 .action-btn-wide{ grid-column:span 2; width:100%; }
-/* agenda buttons get the policy name under the icon, wrapping as needed,
-   instead of making the player memorize/hover an icon — there's headroom
-   for it now that these match the uts-btn footprint. */
-.action-btn-labeled{ flex-direction:column; gap:2px; height:104px; padding:8px 4px; }
-.action-btn-icon{ font-size:26px; line-height:1; }
-.action-btn-label{ font-size:10.5px; font-weight:800; line-height:1.15; letter-spacing:.01em;
-  color:var(--ink-soft); text-align:center; white-space:normal; overflow-wrap:break-word; }
-.action-btn-labeled.agenda-done .action-btn-label{ color:var(--stamp); }
 .action-btn .badge{ position:absolute; top:-11px; right:-11px; min-width:28px; height:28px; padding:0 5px;
   border-radius:14px; background:var(--ink); color:var(--page); font-family:var(--font-mono); font-size:13px;
   font-weight:800; display:flex; align-items:center; justify-content:center; line-height:1; }
@@ -354,10 +346,9 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
 .target-banner[hidden]{ display:none; }
 
 /* ---- settings overlay ---- */
-.settings-body{ padding:16px; display:flex; flex-direction:column; gap:10px; max-width:420px; margin:0 auto; width:100%; }
-.settings-row{ background:var(--surface); border:1px solid var(--rule); border-radius:12px; padding:14px 16px; font-size:15px; font-weight:600; text-align:left; display:block; width:100%; }
-.settings-row.danger{ color:var(--stamp); }
-.settings-help{ background:var(--surface2); border-radius:12px; padding:14px 16px; font-size:13px; color:var(--ink-soft); line-height:1.5; }
+.settings-body{ padding:40px; display:flex; flex-direction:column; gap:25px; width:100%; }
+.settings-row{ background:var(--surface); border:1px solid var(--rule); border-radius:19px; padding:35px 40px; font-size:36px; font-weight:600; text-align:left; display:block; width:100%; }
+.settings-help{ background:var(--surface2); border-radius:19px; padding:35px 40px; font-size:30px; color:var(--ink-soft); line-height:1.5; }
 .settings-help b{ display:block; margin-bottom:6px; color:var(--ink); }
 
 /* ---- feedback fx layer: viewport-fixed so it works over both the map and
@@ -367,7 +358,7 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
   background:var(--accent); opacity:.55; animation:fx-flash-anim .45s ease-out forwards; }
 .fx-flash.p2{ background:var(--p2); }
 @keyframes fx-flash-anim{ to{ width:110px; height:110px; margin:-55px 0 0 -55px; opacity:0; } }
-.fx-money{ position:absolute; transform:translate(-50%,-50%); font-family:var(--font-mono); font-weight:800; font-size:22px;
+.fx-money{ position:absolute; transform:translate(-50%,-50%); font-family:var(--font-mono); font-weight:800; font-size:60px;
   animation:fx-money-anim .7s ease-out forwards; white-space:nowrap; }
 .fx-money.spend{ color:var(--stamp); }
 .fx-money.gain{ color:#1C8A4B; }
@@ -419,12 +410,10 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
   <div class="settings-body">
     <button class="settings-row" id="soundToggleBtn">🔊 Sound: <span id="soundToggleState">On</span></button>
     <button class="settings-row" id="musicToggleBtn">🎵 Music: <span id="musicToggleState">On</span></button>
-    <button class="settings-row" id="pauseToggleBtn">⏸ Pause</button>
     <div class="settings-help">
       <b>How to play</b>
-      <p>Tap a state to select it, double-tap to invest. Delhi, Goa, and the other small Union Territories invest through the corner buttons the same way. Craft rally tokens into a Special Powerup or Nationwide Rally from the token tray. Commit funds to your politician's agendas from the agenda tray. Cross 272 of 543 seats to win.</p>
+      <p>Tap a state to select it, double-tap to invest. Delhi, Goa, and the other Small UTs invest through the corner buttons the same way. Craft rally tokens into a Special Powerup or Nationwide Rally from the token tray. Commit funds to your politician's agendas from the agenda tray. Cross 272 of 543 seats to win.</p>
     </div>
-    <button class="settings-row danger" id="newGameBtn">🔁 New Game</button>
     <button class="settings-row" id="closeSettingsBtn">Close</button>
   </div>
 </div>
@@ -435,6 +424,7 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
     <div class="topstrip-row">
       <div class="phase-chip">PHASE <b id="phaseNum">1/10</b> &nbsp;&middot;&nbsp; <span id="phaseTimer">00:45</span></div>
       <div class="top-actions">
+        <button class="iconbtn" id="pauseToggleBtn" title="Pause">⏸</button>
         <button class="iconbtn" id="settingsBtn" title="Settings">⚙️</button>
         <button class="iconbtn" id="endPhaseBtn" title="End phase now">⏭</button>
       </div>
@@ -630,7 +620,7 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
     </div>
     <div class="corner-left">
       <button class="uts-btn" id="goaBtn" title="Invest in Goa — too small to tap reliably on the map">🌴<span class="lb">GOA</span></button>
-      <button class="uts-btn" id="utsBtn" title="Invest in all Union Territories at once">🏛️<span class="lb">ALL UTS</span></button>
+      <button class="uts-btn" id="utsBtn" title="Invest in all Small UTs at once">🏛️<span class="lb">SMALL UTS</span></button>
     </div>
     <div class="corner-right">
       <div class="action-block">

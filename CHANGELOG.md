@@ -6,6 +6,52 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### 🎵 Audio Systems, Special-Power Timing Gates & UI Polish — 2026-07-27
+
+#### Audio System & End-Game Sound Priority
+- **FIXED**: `mobile/main.js` `doEndPhase()` — win-condition check now happens before dominance-fanfare, preventing fanfare from drowning out game_over sound on final phase [C1]
+- **ADDED**: `mobile/main.js` — `playPowerSound()` function plays per-politician special-power sound clips (falls back to fanfare if `sounds/<Name>.mp3` not found), ducks background music to 0 while playing [C2]
+- **WIRED**: Special-power activation now calls `playPowerSound()` on both human (`finishActivatePower`) and AI (`scheduleAITick`) paths [C3]
+- **ADDED**: `sounds/Amitabh_Bachchan.mp3` — first per-politician power sound asset [C4]
+- **ADDED**: `mobile/main.js` — `unlockSounds()` function plays-then-pauses every Audio element to bypass iOS Safari's per-element gesture-unlock requirement; called from welcome screen "Begin Campaign" button (first gesture in app), fixing silent blocks on `game_over`, `cash_added`, `phase_reset` [C10]
+
+#### Special-Power Timing Gates: Expanded & UI Restructured
+- **REMOVED**: `data/game-config.json` `rally.specialPowerupMinPhase` — changed 3 → 0, removing craft-timing gate entirely [C5] per **[D1]**: User found 6 tokens reachable via agenda completions alone in round 1, making phase-3 gate arbitrary on already-earned resources; explicitly chose "remove entirely" when offered alternatives
+- **EXTENDED**: `data/politicians-data.json` — added `power.requiresMinPhase` gates to 4 new politicians (Modi: 3, Indira Gandhi: 5, Ambedkar: 3, Narasimha Rao: 6), extending Patel's existing phase-5 gate [C6] per **[D2]**: Each justified by real-world timing story (Modi's Demonetization mid-term, Indira's Emergency deep in tenure, Ambedkar's Constitution 3-year draft, Narasimha Rao's minority government only meaningful late-game); CLAUDE.md rule updated to document this extension
+- **UPDATED**: `design/economy-status-map.md` + `CLAUDE.md` — synced prose documenting Patel's exception and the four new timing-gated politicians with their historical reasoning [C7]
+- **ADDED**: `mobile/index.html` — new `.pow-unlock` row in ballot-card special-power block, displaying "Unlocks at: Phase N" when applicable [C8]
+- **SIMPLIFIED**: `data/politicians-data.json` — removed now-redundant phase-gate references from `specialPower.cost` and `power.description` prose for 8 affected politicians (5 gated + 3 celebrities whose text said "usable any phase") [C8] per **[D3]**: User requested "fixed field in header saying 'unlocks at'" instead of text buried in cost — applied consistently across all affected politicians
+- **STANDARDIZED**: `data/politicians-data.json` — all funds-cost strings roster-wide changed to "₹X,XXX crores" format (rupee symbol, full word, comma-separated thousands), replacing verbose "Instant X Cr funds cost, deducted on activation" boilerplate [C9] per **[D4]**: User specified desired style via concrete example; applied via targeted script (several strings were identical duplicates)
+- **SIMPLIFIED**: Zero-cost strings standardized to "None" (dropped redundant "no cost beyond shared token craft" clause) [C9]
+
+#### Mobile UI Polish: Agenda Buttons, Regional Quick-Invest, Button Sizing
+- **REFINED**: `mobile/index.html` + `mobile/main.js` — agenda tray buttons changed from icon+label to icon-only (labels were rendering at ~4px real size due to viewport-scale miss); removed dead `.action-btn-labeled`/`.action-btn-label`/`.action-btn-icon` CSS [C11]
+- **ADDED**: `mobile/main.js` + `mobile/index.html` — `activeCluster` state + `renderClusterCard()` — single-tap on NE8/Small-UTs quick-invest buttons now displays member-state info in bottom info panel (previously silent tap with toast only) [C12]
+- **RENAMED**: "All UTs" → "Small UTs" across button label, tooltip, toast message, and on-screen instructions text [C13]
+- **SCALED**: `.action-btn` icon font-size increased 36px → 74px, now nearly filling button area [C14]
+- **SCALED**: `.fx-money` (floating funds display) font-size increased 22px → 60px [C15]
+
+#### Top Panel Redesign & Settings Overlay Updates
+- **MOVED**: Pause toggle relocated from Settings overlay into top panel as icon button (⏸ play / ▶ pause symbols) [C16]
+- **REMOVED**: "New Game" (reset) button entirely — was the only mid-game abandon control available [C16] per **[D6]**: User explicitly requested removal when adding pause to top panel; flagged that this removes the only way to reset mid-game before execution (no objection raised)
+- **RESIZED**: Settings overlay no longer capped to max-width 420px / centered via margin — now fills full screen width like other overlays [C17]
+- **SCALED**: Settings overlay CSS `font-size`/`padding`/`gap` up ~2.5x to match app UI scale convention (font 15px→36px for headers, 13px→30px for body; padding 14px→35px rows; body padding 16px→40px, gap 10px→25px) [C18]
+
+#### Project Documentation & Deployment
+- **UPDATED**: `CLAUDE.md` — two new durable rules (already written by `/checkpoint`'s Phase 1.6) [C19]:
+  - New "Deployment" section: `origin` (`pradhanmantrielectionsgame.github.io`) is a live GitHub Pages site with no build workflow — requires root-level file-diff verification before merging long-lived feature branches (not just commit count check), and every push to `main` is a real public deploy
+  - Frontend technical rules extended: iOS Safari blocks `.play()` per-element until that element plays from a real gesture at least once (per-element requirement, not per-page), plus caveat against assuming earlier scale-up passes caught all `mobile/index.html` regions
+- **NOTED**: `findings.md` — 4 new entries dated 2026-07-27 documenting GitHub Pages divergence risk, iOS audio-unlock root cause, settings-overlay-unscaled oversight, and deployment decision context
+
+#### Design Decisions Documented
+- **[D5] Root-caused non-playing end-game sound to iOS per-element gesture-unlock requirement.** `game_over`, `cash_added`, `phase_reset` only triggered from `setInterval`, never a tap — silently blocked on strict mobile browsers while gesture-triggered sounds worked fine. Fixed all three at once via unlock pass at first gesture (welcome screen tap), not treating as isolated game_over bug. Matches project's "root cause not symptom" convention and identifies the same underlying issue affecting all three.
+- **[D7] Did not merge `mobile-ui-overhaul` into `main` or push to GitHub Pages.** Initially recommended as low-risk fast-forward merge (72 commits ahead, 0 behind), but root-level `git diff main mobile-ui-overhaul --stat` revealed `index.html` and all 45 files under `js/` had diverged substantially (not just `mobile/` added alongside desktop game) — merging would have silently overwritten the live desktop build at the root URL. Used temporary Cloudflare quick tunnel (`cloudflared tunnel --url http://localhost:8934`) to point the local dev server instead, entirely bypassing GitHub/Pages interaction. See findings.md 2026-07-27 entry for full context.
+
+#### Context
+Multi-turn session focused on adding per-politician special-power sounds, expanding the timing-gate exception pattern to 4 thematically-justified politicians (from 1 original), restructuring how timing gates are communicated in the UI, standardizing all power-cost text for readability, and polishing the settings/top-panel UI to match the established 2.5x scale convention. Also root-caused and fixed iOS audio-unlock issues affecting three non-gesture-triggered sounds at once, and clarified the live-deployment risk posed by the long-diverged feature branch before merging/pushing. All changes maintain single-player-vs-AI scope; no multiplayer backend changes.
+
+---
+
 ### 🎮 Special Powers Redesign & Game-Balance Fixes — 2026-07-26
 
 #### Special Powers Engine & Mechanics

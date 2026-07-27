@@ -61,6 +61,11 @@
   var data = null, game = null, selectedId = 'INUP', armed = null; // armed: null | 'stateRally' | 'powerTarget'
   var activeAgenda = null; // agenda name currently shown in the info panel, or null
   var activeAction = null; // 'rally' | 'nationwide' | 'special' currently shown in the info panel, or null
+  var activeCluster = null; // 'ALL_UTS' | 'ALL_NE' currently shown in the info panel, or null
+  var CLUSTER_DEFS = {
+    ALL_UTS: { icon: '🏛️', label: 'Small UTs', ids: G.SMALL_UT_IDS.filter(function (id) { return id !== 'INDL' && id !== 'INGA'; }) },
+    ALL_NE: { icon: '🌄', label: 'Northeast 8', ids: G.NORTHEAST_IDS }
+  };
   var timerHandle = null, timeLeft = 0, lastLogShown = 0, timerPaused = false;
   var lastMapTapId = null, lastMapTapTime = 0, lastBtnTapId = null, lastBtnTapTime = 0;
   var DOUBLE_TAP_MS = 400;
@@ -82,6 +87,21 @@
     if (!soundEnabled) return;
     a.currentTime = 0;
     a.play().catch(function () {});
+  }
+
+  // Some sounds (game_over, cash_added, phase_reset) only ever fire from a
+  // setInterval callback, never a tap — iOS Safari blocks .play() on a media
+  // element until that specific element has been played from within a real
+  // user gesture at least once. Unlock every element here, on the first
+  // gesture in the app, so those still work later with no gesture attached.
+  function unlockSounds() {
+    Object.keys(sounds).forEach(function (name) {
+      var a = sounds[name];
+      var p = a.play();
+      if (p && p.catch) p.catch(function () {});
+      a.pause();
+      a.currentTime = 0;
+    });
   }
 
   // Per-politician special-power sound — sounds/<Politician_Name>.mp3
@@ -358,9 +378,9 @@
     $('p2Name').textContent = game.players.p2.politician.name;
 
     lastLogShown = 0;
-    armed = null; activeGroup = null; groupPinned = false; activeAgenda = null; activeAction = null;
+    armed = null; activeGroup = null; groupPinned = false; activeAgenda = null; activeAction = null; activeCluster = null;
     lastMapTapId = null; lastBtnTapId = null; timerPaused = false;
-    $('pauseToggleBtn').textContent = '⏸ Pause';
+    $('pauseToggleBtn').textContent = '⏸'; $('pauseToggleBtn').title = 'Pause';
     G.pushLog(game, '🗳️ Your opponent this match: ' + game.players.p2.politician.name + ' (' + game.players.p2.politician.party + ')');
 
     $('selectOverlay').hidden = true;
@@ -592,6 +612,7 @@
   function updateCard() {
     if (activeAction) { renderActionInfo(activeAction); return; }
     if (activeAgenda) { renderAgendaCard(activeAgenda); return; }
+    if (activeCluster) { renderClusterCard(activeCluster); return; }
     if (activeGroup) { renderGroupCard(activeGroup); return; }
     renderStateCard();
   }
@@ -708,11 +729,39 @@
     });
   }
 
+  // Info for the NE8 / Small UTs quick-invest clusters — same led-grid
+  // layout as a regional-dominance group card, but these aren't official
+  // dominance groups (no bonus payout), so no "bonus qualified" wording.
+  function renderClusterCard(key) {
+    var c = CLUSTER_DEFS[key];
+    if (!c) return;
+    var threshold = game.cfg.regionalDominance.thresholdBps;
+    var members = game.states.filter(function (s) { return c.ids.indexOf(s.svgId) !== -1; });
+    var leadingCount = members.filter(function (s) { return game.pop[s.svgId].p1 >= threshold; }).length;
+    var totalSeats = members.reduce(function (sum, s) { return sum + s.seats; }, 0);
+    $('cardName').textContent = c.icon + ' ' + c.label;
+    $('cardSeats').textContent = totalSeats + ' seats · leading ' + leadingCount + '/' + members.length;
+    $('cardVsBar').hidden = true;
+    $('cardPinBtn').hidden = true;
+    var ledEl = $('cardGroups');
+    ledEl.className = 'led-grid';
+    ledEl.innerHTML = '';
+    members.slice().sort(function (a, b) { return b.seats - a.seats; }).forEach(function (s) {
+      var isLeading = game.pop[s.svgId].p1 >= threshold;
+      var chip = document.createElement('button');
+      chip.className = 'led-chip' + (isLeading ? ' led-on' : '');
+      chip.title = s.name;
+      chip.innerHTML = '<span class="led-dot"></span><span>' + s.svgId.slice(2) + '</span>';
+      chip.addEventListener('click', function () { selectState(s.svgId); });
+      ledEl.appendChild(chip);
+    });
+  }
+
   function selectState(id) {
     document.querySelectorAll('.india-map path.selected, .india-map circle.selected').forEach(function (p) { p.classList.remove('selected'); });
     var el = document.getElementById(id); if (el) el.classList.add('selected');
     selectedId = id;
-    activeAgenda = null; activeAction = null; // picking a state drills out of agenda/action-info mode too
+    activeAgenda = null; activeAction = null; activeCluster = null; // picking a state drills out of agenda/action-info mode too
     // Picking a specific state normally drills out of group view too — unless
     // the group card is pinned, in which case it's meant to survive exactly
     // this (checking leads, investing in a state, rechecking) without having
@@ -734,7 +783,7 @@
     updateCard();
   }
   function setActiveGroup(key) {
-    activeAgenda = null; activeAction = null; // picking a group drills out of agenda/action-info mode too
+    activeAgenda = null; activeAction = null; activeCluster = null; // picking a group drills out of agenda/action-info mode too
     if (activeGroup === key) { exitGroupMode(); } else {
       activeGroup = key;
       document.querySelectorAll('.gchip').forEach(function (x) { x.classList.toggle('on', x.dataset.key === activeGroup); });
@@ -784,9 +833,8 @@
     game.players.p1.politician.policies.forEach(function (policy) {
       var name = policy.name, safeId = 'agenda' + name.replace(/[^a-zA-Z0-9]/g, '');
       var btn = document.createElement('button');
-      btn.className = 'action-btn action-btn-labeled'; btn.id = safeId; btn.title = name;
-      btn.innerHTML = '<span class="action-btn-icon">' + (AGENDA_ICONS[name] || '📜') + '</span>' +
-        '<span class="action-btn-label">' + name + '</span>' +
+      btn.className = 'action-btn'; btn.id = safeId; btn.title = name;
+      btn.innerHTML = (AGENDA_ICONS[name] || '📜') +
         '<span class="badge" id="' + safeId + 'Badge">0%</span>';
       btn.addEventListener('click', function () { handleAgendaTap(name); });
       tray.appendChild(btn);
@@ -1046,6 +1094,7 @@
   });
   $('cardPinBtn').addEventListener('click', toggleGroupPin);
   $('utsBtn').addEventListener('click', function () {
+    activeAgenda = null; activeAction = null; activeCluster = 'ALL_UTS'; updateCard();
     handleButtonTap('ALL_UTS', function () {
       var pt = viewportPoint($('utsBtn')), any = false, totalCost = 0;
       G.SMALL_UT_IDS.forEach(function (id) {
@@ -1054,11 +1103,12 @@
         if (r.ok) { any = true; totalCost += r.cost; }
       });
       renderAll();
-      if (any) { spawnFlash(pt.x, pt.y); spawnMoneyText(pt.x, pt.y, totalCost, -1); playSound('money_spent'); showToast('Invested in all Union Territories'); }
+      if (any) { spawnFlash(pt.x, pt.y); spawnMoneyText(pt.x, pt.y, totalCost, -1); playSound('money_spent'); showToast('Invested in all Small UTs'); }
       else { shakeInvalid($('utsBtn')); showToast('Insufficient funds'); }
     });
   });
   $('neBtn').addEventListener('click', function () {
+    activeAgenda = null; activeAction = null; activeCluster = 'ALL_NE'; updateCard();
     handleButtonTap('ALL_NE', function () {
       var pt = viewportPoint($('neBtn')), any = false, totalCost = 0;
       G.NORTHEAST_IDS.forEach(function (id) {
@@ -1100,17 +1150,10 @@
   });
   $('pauseToggleBtn').addEventListener('click', function () {
     timerPaused = !timerPaused;
-    $('pauseToggleBtn').textContent = timerPaused ? '▶ Resume' : '⏸ Pause';
+    var btn = $('pauseToggleBtn');
+    btn.textContent = timerPaused ? '▶' : '⏸';
+    btn.title = timerPaused ? 'Resume' : 'Pause';
     if (timerPaused) clearInterval(timerHandle); else resumePhaseTimer();
-  });
-  $('newGameBtn').addEventListener('click', function () {
-    if (!confirm('Start a new game? Current progress will be lost.')) return;
-    clearInterval(timerHandle);
-    sounds.bg_music.pause();
-    $('settingsOverlay').hidden = true;
-    $('stage').hidden = true;
-    $('endOverlay').hidden = true;
-    $('selectOverlay').hidden = false;
   });
 
   if ('serviceWorker' in navigator) {
@@ -1118,6 +1161,7 @@
   }
 
   $('welcomeStartBtn').addEventListener('click', function () {
+    unlockSounds();
     $('welcomeOverlay').hidden = true;
     $('selectOverlay').hidden = false;
   });
