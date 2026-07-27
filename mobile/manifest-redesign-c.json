@@ -1,0 +1,15 @@
+{
+  "name": "PME Redesign C",
+  "short_name": "PME Redesign C",
+  "description": "Redesign-C prototype build — separate manifest so Add to Home Screen doesn't point back at the real app's index.html.",
+  "start_url": "./index-redesign-c.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0B0F1A",
+  "theme_color": "#0B0F1A",
+  "icons": [
+    { "src": "../assets/icons/pme-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "../assets/icons/pme-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}
