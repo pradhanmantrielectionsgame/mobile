@@ -6,6 +6,38 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### 🎨 Mobile HUD Prototype Redesigns & Proof-of-Concept Testing — 2026-07-27
+
+#### Prototype Builds & Real-Time Map Validation
+- **CREATED**: `mobile/index-redesign-a.html` — full interactive UI-only redesign prototype ("Refined Booth Ink" concept) of the in-game HUD, using the real `mobile/engine.js`/`game.js`/`mobile/main.js` engine and live map, CSS/HTML-only reimplementation with no engine changes [C1]
+- **CREATED**: `mobile/index-redesign-c.html` — second interactive prototype ("Election Night" dark-theme concept), dark tokens scoped only to `.stage` so other overlays stay light-themed [C2]
+- **CREATED**: `mobile/manifest-redesign-a.json` and `mobile/manifest-redesign-c.json` — separate PWA manifests so "Add to Home Screen" on a prototype doesn't hijack back to `index.html`'s start_url [C3]
+
+#### Design Token System & Unified UI Scale (Redesign-A)
+- **ADDED**: `index-redesign-a.html` — unified type/radius/shadow token scale at `:root` (--fs-1..6 for font sizes, --radius-sm/md for border-radius, --shadow-sm/md for box-shadow), replacing ~45 ad hoc font-size values scattered through the HUD [C4]
+
+#### HUD Layout Restructuring (Redesign-A)
+- **REWORKED**: `index-redesign-a.html` — complete HUD spatial reorganization [C5]:
+  - 15 state-group filter chips → vertical single-column sidebar (left edge, evenly fills height with flex:1, no scroll)
+  - Player identity + funds + seats → floating strip over map (top, full width, semi-transparent)
+  - Agenda/Rally info → rounded-rect floating strips positioned in map's NE/SE "dead space" (inherent to India's shape, not viewBox letterboxing)
+  - 4 UT quick-invest buttons (Delhi/Goa/Small UTs/NE8) → single floating bar (bottom, width-matched to player strip)
+- **CONVERTED**: State-group chips from horizontal 2-row hexagon honeycomb to vertical rounded-square design, fixing a real low-contrast bug where hex fill was nearly invisible against page background [C6]
+
+#### Real-Device Testing & Proof-of-Concept Verification
+- **DOWNLOADED**: `cloudflared.exe` (Windows binary, not pre-installed on this machine, no winget/choco available) to session scratchpad and used with `npm run serve` (port 8934) to expose local dev server publicly for live phone testing of both prototype builds [C7]
+
+#### Design Decisions Documented
+- **[D1] Real interactive prototypes over static mockups**: Built both concepts as fully playable builds wired to the real engine, rather than continuing static HTML Artifact iterations, specifically to validate whether the SVG India map stayed tappable and interactive under the redesigned layout (a question static mockups couldn't answer). User explicitly needed to test real map tap-targets before committing to a direction.
+- **[D2] HUD actions always visible (no tabs)**: Confirmed that Agenda, Rally, Nationwide Rally, and Special Power buttons must remain simultaneously visible — rejected an earlier iOS-style segmented-control concept that grouped them. Rationale: fast click-based game where opportunity-cost comparison requires seeing all available actions at once each phase.
+- **[D3] Floating panel shapes**: Agenda/Rally panels ended up as plain rounded-rectangle floating strips. Rejected two iterations of "quarter-circle corner shelf" panels (built and Playwright-measured twice for precise resizing), in favor of matching the simpler rounded-rect button system already in use.
+- **[D4] Map scaling**: Reverted a non-uniform map stretch (scaleY 1.3, scaleX 1.06 to make India "taller without wider") back to uniform scale(1.06). User rejected the vertically-distorted proportions ("Distorted India doesn't look good") even though it technically satisfied the literal request.
+
+#### Context
+Session focused on prototyping two alternate HUD concepts as fully interactive builds (CSS/HTML-only, no code changes) to validate layout/map-interaction assumptions that static mockups couldn't answer — specifically whether the SVG India map stayed playable under a redesigned layout that moves state-group controls to a sidebar and floats action panels into inherent dead space around India's triangular shape. Both prototypes run against the real engine and were tested on a real device via a temporary Cloudflare tunnel to the local dev server. Decision [D2] was already saved as project memory (feedback_hud_no_tabs.md) from an earlier part of this session — flagging here for changelog completeness. All work maintains single-player-vs-AI scope; no engine or game-logic changes.
+
+---
+
 ### 🎵 Audio Systems, Special-Power Timing Gates & UI Polish — 2026-07-27
 
 #### Audio System & End-Game Sound Priority
