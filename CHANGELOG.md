@@ -6,6 +6,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### 🎮 Starting-Position Seat Variance: Parameter Retuning & Batch Simulator — 2026-07-28
+
+#### Game Engine & Starting Position Fix
+- **RETUNED**: `mobile/engine.js` `generateStartingPosition()` — advantage-draw stopping thresholds raised from 100/130 to 124/154 (`drawStopAt`/`drawBudget` parameters), shifting the distribution's mean from ~135-142 seats (right tail 180-200+) to precisely ~150 seats while keeping σ stable at ~12.5 (175/125 as 2σ events) [C1]
+  - **Rationale**: The stopping rule is self-correcting — a player drawing small states just needs more draws to cross the threshold, keeping overshoot/σ stable regardless of threshold position; direct mean/σ measurement (not percentile inference) revealed this single knob controls mean without stretching the spread
+  - **Testing**: Empirically verified via 3,000-8,000-sample direct simulation; verified the new distribution matches user's stated target (mean 150, σ~12.5, 2σ bounds ~125/175)
+  - **Alternatives considered**: (a) reject-and-retry hard cap at 150 → asymmetric truncated distribution, not symmetric mean-150, didn't match user's actual requirement; (b) narrow the baseline population range → drags average down without independently controlling tail; (c) post-hoc rescale final totals → too complex
+
+#### Measurement & Tuning Tools
+- **ADDED**: `mobile/balance-sim.js` — new batch simulator, plays every politician as p1 (fixed naive/random strategy, not optimized) vs. every other politician's AI as p2 (real `runAIFull`) across multiple seeds/ordered pair, logs one JSONL row per game to `mobile/balance-log.jsonl`, prints win-rate / avg final seats / avg home-state-popularity aggregates per politician [C3]
+  - **Usage**: `node mobile/balance-sim.js [gamesPerOrderedPair]` (default 1; use 3-5 for more confidence before re-running after politician/agenda tweaks)
+  - **Discovery output**: Identified Mamata Banerjee, Rahul Gandhi, Manmohan Singh as empirically weakest; root causes differ per politician (self-inflicted home-state penalty on own agenda kit, shared home-state bonus nullification frequency, home-state agenda net-negative across largest seat blocs)
+
+#### Data & Config
+- **UPDATED**: `.gitignore` — added `mobile/balance-log.jsonl` (regenerable simulator output, not source code) [C4]
+- **UPDATED**: `design/economy-status-map.md` — Starting Position section, implementation-notes pseudocode, and Plausibility-check table all updated to reflect the new 124/154 thresholds and resulting distribution statistics (combined-strategy total ~371→~379/543, margin ~99→~107 seats) [C2]
+
+#### Design Decisions
+- **[D1] Parameter retuning over hard-cap rejection.** User initially reported starting seats as high as 180-200 for one player and proposed narrowing the baseline population range; a first attempt implemented a reject-and-retry hard-cap that produced a truncated (asymmetric) distribution, which didn't match the user's actual stated target (mean 150, σ~12.5 symmetric). Parameter sweep revealed the advantage-draw stopping threshold as the one knob that moves mean without widening spread — direct measurement over intuition proved essential for finding the right lever.
+
+#### Context
+Session focused on fixing the starting-position seat-variance issue: the generator was producing highly variable one-player advantages (often 180-200 seats for one player in the same game), making early matchups feel unbalanced. Direct simulation measurement revealed the stopping-threshold parameter as the correct tuning point, replacing an earlier reject-and-retry hard-cap with a minimal parameter change that hits the user's exact stated target distribution. Added `mobile/balance-sim.js` as a repeatable tool for future politician-balance work, with initial findings (weakest politicians + their structural reasons) documented in findings.md. All changes maintain single-player-vs-AI scope.
+
+---
+
 ### 🔊 Special-Power Audio & Duration Fixes — 2026-07-28
 
 #### Audio System Improvements

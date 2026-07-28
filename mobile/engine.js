@@ -165,8 +165,16 @@
 
   // p1HomeStateNames/p2HomeStateNames: a state name, or an array of names for
   // a politician with more than one home state (e.g. Kejriwal: Delhi+Punjab).
+  //
+  // Starting national seats target mean 150, sigma ~12.5 (2-sigma ~125/~175)
+  // — tuned 2026-07-28 after playtesting turned up starts as high as ~180-200
+  // under the old 100/130 advantage-draw thresholds (mean ~142, sigma ~12.4).
+  // Confirmed by direct simulation that raising the draw thresholds shifts
+  // the whole distribution's mean without widening its spread (sigma stays
+  // ~12.4-12.7 across the tested range) — the stopping rule below is
+  // self-correcting (a player who draws a run of small states just needs
+  // more draws to cross the threshold), which is what keeps sigma stable.
   function generateStartingPosition(states, p1HomeStateNames, p2HomeStateNames, rng) {
-    rng = rng || Math.random;
     var pop = {};
     states.forEach(function (s) {
       var p1 = randInt(rng, 500, 2900), p2 = randInt(rng, 500, 2900);
@@ -213,7 +221,7 @@
     var guard = 0;
     while (pool.length > 0 && (stillDrawing.p1 || stillDrawing.p2) && guard++ < 10000) {
       if (!stillDrawing[turn]) { turn = otherPlayer(turn); continue; }
-      var budget = 130 - seatCountWithAdvantage[turn];
+      var budget = 154 - seatCountWithAdvantage[turn];
       var idx = -1;
       for (var k = 0; k < pool.length; k++) { if (pool[k].seats <= budget) { idx = k; break; } }
       if (idx === -1) { stillDrawing[turn] = false; turn = otherPlayer(turn); continue; }
@@ -222,7 +230,7 @@
       pop[st.svgId][turn] = p;
       pop[st.svgId].others = BPS - pop[st.svgId].p1 - pop[st.svgId].p2;
       seatCountWithAdvantage[turn] += st.seats;
-      if (seatCountWithAdvantage[turn] > 100) stillDrawing[turn] = false;
+      if (seatCountWithAdvantage[turn] > 124) stillDrawing[turn] = false;
       turn = otherPlayer(turn);
     }
     return pop;

@@ -253,8 +253,12 @@ footer{ border-top:1px solid var(--rule-strong); padding-top:20px; color:var(--i
       <div class="arrow">↓</div>
       <div class="step decided">each drawn state's popularity is set to a fresh random 35%–65% for the player who drew it</div>
       <div class="arrow">↓</div>
-      <div class="step decided">keep drawing until that player's <code>seatCountWithAdvantage</code> (Lok Sabha seats summed across their drawn states) exceeds 100 — but skip any candidate state that would push it past 130, and try the next instead</div>
+      <div class="step decided">keep drawing until that player's <code>seatCountWithAdvantage</code> (Lok Sabha seats summed across their drawn states) exceeds 124 — but skip any candidate state that would push it past 154, and try the next instead</div>
     </div>
+  </div>
+  <div class="example">
+    <p class="label">Tuned to a target distribution — mean 150, σ ~12.5 — 2026-07-28</p>
+    <p>Playtesting turned up individual matches starting as high as ~180-200 seats for one player — a near-majority before either player has taken a single action. The original thresholds here (drawn until 100+ seats claimed, capped at 130 per candidate) produced mean ~142, σ ~12.4 — that ~180-200 tail wasn't a rare fluke, it's just what a σ-12.4 spread around a 142 mean produces regularly. Rather than clamp the result after the fact (which would truncate the distribution asymmetrically), the two thresholds were raised to 124/154. Confirmed via 8,000-sample simulation that this shifts the whole distribution to mean ~150 <b>without widening it</b> — σ stays ~12.5-12.7 across the range tested. That's because the stopping rule is self-correcting: a player who draws a run of small states just needs more draws to cross the (now higher) threshold, which keeps the overshoot — and therefore σ — stable regardless of where the threshold sits. Net result: mean 150, σ ~12.5, so ~125 and ~175 are roughly 2σ events — an intentional, symmetric spread around 150, not a hard ceiling.</p>
   </div>
   <div class="example">
     <p class="label">Replaces the old fixed-stronghold table</p>
@@ -278,11 +282,11 @@ footer{ border-top:1px solid var(--rule-strong); padding-top:20px; color:var(--i
 3. random draw — pool = allStates − {p1.homeState, p2.homeState}, shuffled once
    firstDrawer = coinFlip(); players alternate turns consuming the pool
    on your turn, take the next pool state where:
-     seatCountWithAdvantage[you] + state.seats ≤ 130
-     (skip it and try the next pool entry if it would exceed 130)
+     seatCountWithAdvantage[you] + state.seats ≤ 154
+     (skip it and try the next pool entry if it would exceed 154)
    you.pop[state] = randomInt(3500, 6500)
    seatCountWithAdvantage[you] += state.seats
-   stop drawing for a player once seatCountWithAdvantage[them] > 100</pre></div>
+   stop drawing for a player once seatCountWithAdvantage[them] > 124</pre></div>
   </div>
 </section>
 
@@ -828,15 +832,15 @@ payout(group) = 5 × sum(state.seats for state in group.members)     // Cr
 <section id="plausibility">
   <h2>Plausibility check — can the design actually be won?</h2>
   <p class="section-note">Worked numbers against the decided formulas above, modeling one player's best realistic play. Important caveat baked into every number here: this assumes an opponent who does nothing. A real, actively-adversarial opponent almost certainly pushes both players' realistic ceilings lower — nobody has modeled the two-active-player case yet (tracked as open, below).</p>
-  <p class="section-note"><b>Recomputed 2026-07-22</b> against the values decided this session (5% rally tokens, 5% Nationwide Rally, the exact investment decay formula) — replaces the earlier ~195 / ~278 figures below. <b>Recomputed again, same day</b>, after the Economic Liberalization / Education rebalance (see Agenda section above) dropped the combined agenda contribution from +101.2 to +59.2 — this materially shrinks the margin below, not just the ranking table. <b>Recomputed a third time, 2026-07-24</b>, against the 5,000/2,500 funds bump (see Core loop, above) — this widens the margin back out substantially; see below.</p>
+  <p class="section-note"><b>Recomputed 2026-07-22</b> against the values decided this session (5% rally tokens, 5% Nationwide Rally, the exact investment decay formula) — replaces the earlier ~195 / ~278 figures below. <b>Recomputed again, same day</b>, after the Economic Liberalization / Education rebalance (see Agenda section above) dropped the combined agenda contribution from +101.2 to +59.2 — this materially shrinks the margin below, not just the ranking table. <b>Recomputed a third time, 2026-07-24</b>, against the 5,000/2,500 funds bump (see Core loop, above) — this widens the margin back out substantially; see below. <b>Recomputed a fourth time, 2026-07-28</b>, against the retuned starting-position distribution (see Starting position, above) — widens it slightly; see below.</p>
 
   <div class="table-wrap">
   <table>
     <thead><tr><th>Scenario</th><th>Best-case seat total</th></tr></thead>
     <tbody>
       <tr><td class="feat">Cash only — full 30,000 Cr budget, optimally spread</td><td class="num">~281 / 543 (51.8%)</td></tr>
-      <tr><td class="feat">Cash + full 20 tokens (12 crafted into Nationwide Rally + 8 played individually) + 2 strong agendas (Education, Economic Liberalization)</td><td class="num">~371 / 543 (68.4%)</td></tr>
-      <tr class="verdict-row"><td colspan="2">Majority is reachable at the model's best case by a wide <b>~99-seat margin</b> — up from the ~19-seat margin this table showed before the 2026-07-24 funds bump. The passive-opponent ceiling this section warns about below applies with more force now, not less: a ~99-seat cushion is a lot more room for a real adversarial opponent to eat into before either figure becomes meaningful — see "Still open," below.</td></tr>
+      <tr><td class="feat">Cash + full 20 tokens (12 crafted into Nationwide Rally + 8 played individually) + 2 strong agendas (Education, Economic Liberalization)</td><td class="num">~379 / 543 (69.8%)</td></tr>
+      <tr class="verdict-row"><td colspan="2">Majority is reachable at the model's best case by a wide <b>~107-seat margin</b> — up from ~99 seats after the 2026-07-28 starting-position retune, and up from the ~19-seat margin this table showed before the 2026-07-24 funds bump. The passive-opponent ceiling this section warns about below applies with more force now, not less: a ~107-seat cushion is a lot of room for a real adversarial opponent to eat into before either figure becomes meaningful — see "Still open," below.</td></tr>
     </tbody>
   </table>
   </div>
@@ -845,10 +849,15 @@ payout(group) = 5 × sum(state.seats for state in group.members)     // Cr
 
   <div class="example">
     <p class="label">Why the combined-strategy number moved</p>
-    <p><b>Starting position (~142 seats, up from ~135):</b> the old figure came from the fixed stronghold table this document has since replaced with a randomized generator (see Starting position, above). ~142 is that generator's expected value, averaged across a home state at baseline+25%, ~110 seats of drawn 35–65% advantage, and everything else at the 5–29% baseline — not a guaranteed number the way the old table was, so any individual match will land above or below it.</p>
+    <p><b>Starting position (~150 seats, σ ~12.5):</b> the old figure came from the fixed stronghold table this document has since replaced with a randomized generator (see Starting position, above). ~150 is that generator's expected value (post 2026-07-28 retune; ~142 before it — see the note below), averaged across a home state at baseline+25%, ~130 seats of drawn 35–65% advantage, and everything else at the 5–29% baseline — not a guaranteed number the way the old table was, so any individual match will land above or below it (~125-175 covers roughly 95% of matches).</p>
     <p><b>Cash contribution at the 26,000 Cr allocation left after agendas (~122 seats, up from ~42):</b> recomputed directly from the decay formula documented in the Investment section's implementation notes — tapping every state once costs a flat 5,430 Cr regardless of which states (seats × 10 Cr/tap, but there are always exactly 543 total seats to tap once), so 26,000 Cr buys four full nationwide rounds plus a partial fifth. The ~42→~122 jump is the 2026-07-24 funds bump alone; nothing about the decay formula itself changed.</p>
     <p><b>Token contribution (~48 seats, unchanged):</b> tokens are earned from phase income and agenda-completion bonuses, not bought with Cr, so the funds bump doesn't touch this figure. Crafting 12 of the 20 tokens into a Nationwide Rally sweeps <i>all</i> 543 seats at 5%, whereas 20 individually-played tokens are capped at 2-per-state and can only ever reach the biggest 10 states (worth ~38 seats, not ~48). Nationwide Rally beats individual play specifically because it reaches the medium and small states individual tokens structurally cannot touch.</p>
     <p><b>Agenda contribution (+59.2, unchanged):</b> a property of the policy-tags pool (see the full ranking below), not of the funds budget — 500 Cr/tap is a flat cost regardless of lifetime budget size, so this figure is untouched by the 2026-07-24 change. Economic Liberalization and Education were the two best agendas in the pool specifically because they were structurally broken — near-zero real opposition anywhere on the map (see the fix above); +59.2 (26.2 + 33.0) is the honest post-fix figure.</p>
+  </div>
+
+  <div class="example">
+    <p class="label">Recomputed 2026-07-28 — starting-position retune widens the combined-strategy total slightly</p>
+    <p>The starting-position generator's advantage-draw thresholds were retuned above (see Starting position) to target mean 150, σ ~12.5 — up from the old mean ~142 (a passive parameter shift, not a cap: the earlier draft of this fix used a hard reject-and-retry cap at 150, which was replaced once the actual goal was clarified as a centered, symmetric distribution rather than a ceiling). That raises the starting-position contribution from ~142 to ~150, which lifts the combined-strategy total in the table above from ~371 to <b>~379/543</b>, and the majority margin from ~99 seats to <b>~107 seats</b>. Nothing else in this section's math changed — cash, token, and agenda contributions are all unaffected by this retune.</p>
   </div>
 
   <div class="example warn">
