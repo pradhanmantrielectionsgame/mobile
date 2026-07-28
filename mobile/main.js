@@ -118,16 +118,38 @@
   // Per-politician special-power sound — sounds/<Politician_Name>.mp3
   // (spaces -> underscores, e.g. "Amitabh Bachchan" -> Amitabh_Bachchan.mp3).
   // Falls back to the generic fanfare for politicians without their own file yet.
-  var powerSounds = {};
+  var powerSounds = {}, powerGains = {}, audioCtx = null;
+  // ponytail: element.volume caps at 1.0, and some clips (e.g. Rajinikanth.mp3)
+  // are mastered too quiet to hear even with bg music fully ducked — route
+  // through a shared GainNode to push past that ceiling. One flat boost for
+  // all clips since we can't listen to individually recalibrate; back off (or
+  // add a per-key override) if a specific clip starts clipping/distorting.
+  var POWER_SOUND_GAIN = 2.5;
   function playPowerSound(politicianName) {
     if (!soundEnabled) return;
     var key = politicianName.replace(/\s+/g, '_');
     if (!powerSounds[key]) powerSounds[key] = new Audio('../sounds/' + key + '.mp3');
     var a = powerSounds[key];
+    if (!powerGains[key]) {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        var gain = audioCtx.createGain();
+        gain.gain.value = POWER_SOUND_GAIN;
+        audioCtx.createMediaElementSource(a).connect(gain).connect(audioCtx.destination);
+        powerGains[key] = gain;
+      } catch (e) { /* Web Audio unavailable — plays at normal volume instead */ }
+    }
+    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
     a.currentTime = 0;
+    var restore = function () { sounds.bg_music.volume = BG_MUSIC_VOLUME; };
     if (musicEnabled) sounds.bg_music.volume = BG_MUSIC_DUCKED_VOLUME;
-    a.addEventListener('ended', function () { sounds.bg_music.volume = BG_MUSIC_VOLUME; }, { once: true });
-    a.play().catch(function () { sounds.bg_music.volume = BG_MUSIC_VOLUME; playSound('fanfare'); });
+    a.addEventListener('ended', restore, { once: true });
+    a.play().catch(function () {
+      // no dedicated file for this politician — duck stays applied for the fanfare fallback too
+      sounds.fanfare.currentTime = 0;
+      sounds.fanfare.addEventListener('ended', restore, { once: true });
+      sounds.fanfare.play().catch(restore);
+    });
   }
 
   // ---------------------------------------------------------------------

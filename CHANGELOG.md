@@ -6,6 +6,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### 🔊 Special-Power Audio & Duration Fixes — 2026-07-28
+
+#### Audio System Improvements
+- **FIXED**: `mobile/main.js` `playPowerSound()` — fallback path (for 14/20 politicians without dedicated power-sound files) now preserves background-music ducking through the generic fanfare playback, instead of restoring volume before the fallback (which was letting fanfare play over full-volume music) [C1]
+- **ADDED**: `mobile/main.js` `playPowerSound()` — shared Web Audio `GainNode` (2.5x boost) on all power-sound playback to compensate for quiet mastering on clips like Rajinikanth.mp3, since HTMLAudioElement.volume caps at 1.0 [C2]
+
+#### Special-Power Timing Fixes
+- **ADDED**: `mobile/game.js` `activatePower()` — pushes a log message describing the freeze effect when Modi's Demonetization lands, specifying which funds are frozen and through which phase [C3]
+- **FIXED**: `mobile/game.js` `fundsFrozen()` / `activatePower()` — off-by-one bug: `fundsFrozenUntilPhase` was incorrectly set to `game.phase + 1` (delaying freeze to next phase) instead of `game.phase` (immediate), directly contradicting design/economy-status-map.md's explicit ban on delayed-trigger power effects; corrected to use `game.phase` [C4]
+
+#### Documentation Updates
+- **UPDATED**: `CLAUDE.md` — two new durable rules documented [C5]:
+  - Under Game design principles: "A duration-based special power that lasts 'one phase' must set its expiry field to the current `game.phase` at activation, never `game.phase + 1`" — documents the off-by-one correction above and the checking criterion for any future one-phase-duration powers
+  - Under Frontend technical rules: "Any fallback/alternate sound path must preserve whatever ducking state is already active, not reset volume before playing the fallback" — documents the audio fallback fix above and explains why (ducking must be maintained through fallback playback too)
+- **FINDINGS**: Two new entries added to `findings.md` (2026-07-28) [written by /checkpoint, Phase 1.3]:
+  - Audio fallback-ducking bug: fallback fanfare was undoing music ducking, plus quiet-mastering issue on some clips (fixed via GainNode)
+  - Modi's Demonetization off-by-one bug: froze opponent funds one phase late instead of immediately
+
+#### Context
+Session focused on fixing two user-reported bugs: (1) special-power audio (fallback fanfare) playing over full-volume background music due to fallback path restoring ducking before playback; fixed by preserving ducking state through fallback and adding Web Audio boost for quiet-mastered clips; (2) Modi's Demonetization freezing opponent funds one phase too late; fixed by using current `game.phase` instead of `+1` for the freeze-until flag. Both fixes prompted new CLAUDE.md documentation rules to prevent similar issues in future powers. All changes maintain single-player-vs-AI scope.
+
+---
+
 ### ✨ Special-Power Visual & Audio Integration — 2026-07-28
 
 #### Power Activation Animations & Sound System Refinement

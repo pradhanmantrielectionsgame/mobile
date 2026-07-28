@@ -45,9 +45,10 @@
 
   // Deliberate exception to the instant-only rule for special powers (see
   // Modi's Demonetization) — a documented one-off, not a pattern to reuse
-  // casually. Blocks every funds-spending action for exactly one full phase,
-  // starting the phase after activation; clears itself once game.phase
-  // moves past it, no separate cleanup step needed.
+  // casually. Blocks every funds-spending action for the remainder of the
+  // current phase, self-clearing once game.phase moves past it — no
+  // separate cleanup step, and no delayed "starts next phase" trigger
+  // (that pattern is explicitly banned, see design/economy-status-map.md).
   function fundsFrozen(pl, game) { return pl.fundsFrozenUntilPhase === game.phase; }
 
   // ---------------------------------------------------------------------
@@ -439,7 +440,9 @@
         who.fundsCr = Math.max(0, who.fundsCr + e.amountCr);
       } else if (e.kind === 'freezeFunds') {
         var who4 = e.target === 'self' ? pl : oppPl;
-        who4.fundsFrozenUntilPhase = game.phase + 1;
+        who4.fundsFrozenUntilPhase = game.phase;
+        pushLog(game, '🧊 ' + who4.politician.name +
+          '\'s funds are frozen for the rest of this phase — no investing, agenda taps, or funded powers');
       } else if (e.kind === 'stealFundsPct') {
         var amt = Math.round(oppPl.fundsCr * e.pct / 100);
         oppPl.fundsCr -= amt; pl.fundsCr += amt;
