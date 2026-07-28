@@ -6,6 +6,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### 🎯 Multiplayer Architecture Plan — Implementation-Ready Design — 2026-07-28
+
+#### Multiplayer Plan Document
+- **CREATED**: `design/multiplayer-implementation-plan.md` — complete, implementation-ready architecture for real-time 2-player-over-internet mode (event-sourced action-log sync over Firebase Realtime Database, reuses existing `mobile/game.js` action functions since they're already pure/playerKey-agnostic). Decisions locked in (no re-litigation needed): Firebase RTDB + Anonymous Auth, event-sourced sync model, Phase 1 MVP skips full matchmaking queue, MVP disconnects end the session (AI takeover is Phase 3, deferred). Includes concrete schema, security rules, phased build plan (Phases 0–3), and prerequisites — point a future session at this file to implement with zero additional design discussion.
+
+#### Design Decisions
+- **[D1] Event-sourced action log over state-snapshot or server-authoritative sync.** Rationale: `mobile/game.js`'s action functions are already pure, side-effect-free, playerKey-agnostic mutators; `mobile/engine.js`'s `resolveSimultaneousGain` already handles concurrent two-player collisions. An ordered log of `{type, playerKey, args}` records replayed through those existing functions is a near-zero-abstraction serialization of what already happens on every tap locally.
+- **[D2] Firebase Realtime Database + Anonymous Auth as default.** Rationale: Native primitives (`push()` lists, `onDisconnect()`, `.info/serverTimeOffset`) map 1:1 to sync design needs. Supabase remains an architecturally-equivalent fallback per ADR-0002.
+- **[D3] Phase 1 MVP uses direct match-code create/join, skipping full matchmaking queue.** Rationale: Queue/race-condition complexity (ADR-0001 flags "both accept simultaneously") isn't needed to prove core sync works; match-code flow exercises identical machinery end-to-end with far less surface area.
+- **[D4] MVP (Phase 1/2) disconnects just end the match; AI takeover is Phase 3 only.** Rationale: No save/load exists; reconnect = full action-log replay (cheap). AI takeover needs `aiStep` playerKey-parameterization (real refactor, not a toggle).
+
+#### Findings
+- **[F1]** `mobile/game.js`'s action functions (`investCash`, `tapAgenda`, etc.) and `mobile/engine.js`'s `resolveSimultaneousGain` are already well-shaped for network sync — no engine changes needed beyond swapping `Math.random` for a seeded PRNG. Full detail and implication documented in findings.md (2026-07-28, written by /checkpoint in Phase 1.3).
+
+#### Context
+Session focused on research and planning for multiplayer architecture, revisiting ADR-0001/0002/0007 against current code (`mobile/game.js`, `engine.js`, `main.js`). Found the existing engine already well-shaped for network sync — all action functions pure/playerKey-agnostic, collision resolution already exists. Wrote complete implementation plan with decisions locked in, concrete schema, security rules, phased build, and prerequisites, so future sessions can implement immediately without re-deriving architecture. No game code changes this session; all work is documentation/planning.
+
+---
+
 ### 🎮 Starting-Position Seat Variance: Parameter Retuning & Batch Simulator — 2026-07-28
 
 #### Game Engine & Starting Position Fix

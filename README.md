@@ -145,12 +145,14 @@ See the "Key Architectural Decisions" table above for framework selection, multi
 
 **Testing (Complete):** `mobile/simulate.js` regression suite validates 5 full 10-phase games + all 20 politicians' special-power activations, asserting bps/seat invariants throughout. Run via `npm test`.
 
-**Multiplayer (Deferred):** Single-player vs. AI only for this build. Human matchmaking backend (Firebase/Supabase) planned for Phase 0, following the design in ADR-0001/ADR-0002. Local hotseat (pass-the-phone) available now.
+**Multiplayer (Deferred):** Single-player vs. AI only for this build. Human matchmaking backend (Firebase/Supabase) planned per ADR-0001/ADR-0002. Local hotseat (pass-the-phone) available now. **A full implementation-ready plan exists at `design/multiplayer-implementation-plan.md`** (written 2026-07-28) — event-sourced action-log sync over Firebase Realtime Database, reusing the existing `mobile/game.js` action functions (already pure, playerKey-agnostic). Point a future session at that file to resume implementation with no re-design needed.
 
 **Next phases:**
-- **Phase 0:** Firebase/Supabase matchmaking backend + anonymous auth
-- **Phase 1:** Connect Player 2 selection to real multiplayer queue vs. AI fallback
-- **Phase 2+:** Capacitor wrapping, session management, portrait images, balance tuning based on playtesting
+- **Phase 0:** Firebase Realtime DB + seeded PRNG setup; determinism verification
+- **Phase 1:** Direct match-code MVP (create/join by code, skip full matchmaking queue)
+- **Phase 2:** Full ADR-0001 matchmaking queue with timeout → AI fallback
+- **Phase 3:** Presence/reconnect + grace-period AI takeover (deferred, needs `aiStep` refactor)
+- **Phase 4+:** Capacitor wrapping, session persistence, competitive/ranked mode (if multiplayer gains traction)
 
 See `design/economy-status-map.md`'s "Build status & roadmap" section for current tech stack, deployment status, and open items.
 
