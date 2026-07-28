@@ -6,6 +6,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### ✨ Special-Power Visual & Audio Integration — 2026-07-28
+
+#### Power Activation Animations & Sound System Refinement
+- **ADDED**: `mobile/main.js` — `spawnPowerBurst()` function: full-screen 5-second animation (radiating color rays + popup card) fired whenever a special power activates, for both human player and AI opponent [C2]
+- **ADDED**: `mobile/index.html`, `mobile/index-redesign-a.html`, `mobile/index-redesign-c.html` — matching `.power-burst` CSS (glow/rays/card + 3 keyframe animations) to all three files' independently-duplicated `<style>` blocks; first pass only touched `mobile/index.html`, making the animation invisible on redesign files until this fix [C3]
+- **CHANGED**: `mobile/main.js` — agenda info-panel display changed from "X/4 taps invested" to "NN% committed" (renderAgendaCard function), matching the percentage phrasing already used on agenda tray badges [C4]
+
+#### Background Music System Architecture
+- **RESTRUCTURED**: `mobile/main.js` — split background music into two separate looping tracks: `bg_music` (original file, gameplay-phase-only) and `intro_music` (`sounds/saare_jahan_se_accha.mp3`, welcome/select/post-game screens) [C1]
+- **ADDED**: `mobile/main.js` — new `switchMusic()` helper wired at 4 call sites (welcome-screen "Begin Campaign" tap, game-start transition, playAgainBtn, musicToggleBtn) to ensure the two tracks never overlap and correct track plays at each app state [C1]
+
+#### Documentation Updates
+- **FINDINGS**: One new entry prepended to `findings.md` (2026-07-28) covering the three-HTML-file duplicated-`<style>`-block trap that made the power-burst CSS invisible on redesign files [written by /checkpoint, Phase 1.3]
+
+#### Context
+Session focused on wiring visual feedback for special-power activation (a 5-second full-screen animation visible to both players) and separating background music into state-specific intro and gameplay loops. Discovered that CSS-only changes must be applied to all three HTML files' `<style>` blocks independently (not just the main `mobile/index.html`) since they share JS engines but not stylesheets — a previously-undocumented caveat now recorded in findings.md. All changes maintain single-player-vs-AI scope.
+
+---
+
 ### 🎵 Sound System Fixes & Autoplay Integration — 2026-07-28
 
 #### Audio Asset Corrections & Naming Consistency

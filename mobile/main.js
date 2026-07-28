@@ -77,17 +77,27 @@
   var sounds = {};
   ['cash_added', 'money_spent', 'invalid_action', 'fanfare', 'game_over', 'phase_reset', 'rally_sound']
     .forEach(function (name) { sounds[name] = new Audio('../sounds/' + name + '.mp3'); });
-  sounds.bg_music = new Audio('../sounds/saare_jahan_se_accha.mp3');
-  sounds.bg_music.loop = true;
+  sounds.bg_music = new Audio('../sounds/bg_music.mp3');
+  sounds.intro_music = new Audio('../sounds/saare_jahan_se_accha.mp3');
+  var LOOP_TRACKS = ['bg_music', 'intro_music'];
   var BG_MUSIC_VOLUME = 0.35, BG_MUSIC_DUCKED_VOLUME = 0;
-  sounds.bg_music.volume = BG_MUSIC_VOLUME;
+  LOOP_TRACKS.forEach(function (name) { sounds[name].loop = true; sounds[name].volume = BG_MUSIC_VOLUME; });
+  var currentMusicKey = null;
   function playSound(name) {
     var a = sounds[name];
     if (!a) return;
-    if (name === 'bg_music') { if (musicEnabled) a.play().catch(function () {}); return; }
+    if (LOOP_TRACKS.indexOf(name) !== -1) { if (musicEnabled) a.play().catch(function () {}); return; }
     if (!soundEnabled) return;
     a.currentTime = 0;
     a.play().catch(function () {});
+  }
+  // Switches between the two looping tracks (welcome/select-screen theme vs
+  // in-game theme) — pauses whichever one is playing before starting the
+  // other, so they never both play at once.
+  function switchMusic(name) {
+    currentMusicKey = name;
+    LOOP_TRACKS.forEach(function (n) { if (n !== name) sounds[n].pause(); });
+    playSound(name);
   }
 
   // Some sounds (game_over, cash_added, phase_reset) only ever fire from a
@@ -144,6 +154,21 @@
     el.style.left = x + 'px'; el.style.top = y + 'px';
     $('fxLayer').appendChild(el);
     setTimeout(function () { el.remove(); }, 700);
+  }
+  function spawnPowerBurst(playerKey, powerName, politicianName) {
+    var el = document.createElement('div');
+    el.className = 'power-burst';
+    el.style.setProperty('--glow-color', playerKey === 'p2' ? COLORS.p2 : COLORS.p1);
+    var glow = document.createElement('div'); glow.className = 'glow';
+    var rays = document.createElement('div'); rays.className = 'rays';
+    var card = document.createElement('div'); card.className = 'card';
+    var bolt = document.createElement('div'); bolt.className = 'bolt'; bolt.textContent = '⚡';
+    var name = document.createElement('div'); name.className = 'name'; name.textContent = powerName;
+    var who = document.createElement('div'); who.className = 'who'; who.textContent = politicianName;
+    card.appendChild(bolt); card.appendChild(name); card.appendChild(who);
+    el.appendChild(glow); el.appendChild(rays); el.appendChild(card);
+    $('fxLayer').appendChild(el);
+    setTimeout(function () { el.remove(); }, 5000);
   }
   function shakeInvalid(el) {
     if (el) {
@@ -394,7 +419,7 @@
     selectState(selectedId);
     renderAll();
     startPhaseTimer();
-    playSound('bg_music');
+    switchMusic('bg_music');
     playSound('phase_reset');
   }
 
@@ -450,7 +475,10 @@
         var action = G.aiStep(game);
         if (action) {
           renderAll(); animateAITap(action);
-          if (action.type === 'power') playPowerSound(game.players.p2.politician.name);
+          if (action.type === 'power') {
+            playPowerSound(game.players.p2.politician.name);
+            spawnPowerBurst('p2', game.players.p2.politician.power.name, game.players.p2.politician.name);
+          }
         }
       }
       scheduleAITick();
@@ -661,7 +689,8 @@
     $('cardName').textContent = (AGENDA_ICONS[name] || '📜') + ' ' + name;
     var taps = game.players.p1.agendaProgress[name] || 0;
     var done = taps >= game.cfg.agenda.tapsToComplete;
-    $('cardSeats').textContent = done ? 'Maxed' : taps + '/' + game.cfg.agenda.tapsToComplete + ' taps invested';
+    var pct = Math.round(taps / game.cfg.agenda.tapsToComplete * 100);
+    $('cardSeats').textContent = done ? 'Maxed' : pct + '% committed';
     var el = $('cardGroups');
     el.className = 'led-grid';
     el.innerHTML = '';
@@ -961,7 +990,10 @@
     var r = G.activatePower(game, 'p1', opts);
     renderAll();
     if (!r.ok) { showToast('Cannot activate: ' + r.reason); shakeInvalid($('specialBtn')); return; }
-    if (!r.nullified) playPowerSound(game.players.p1.politician.name);
+    if (!r.nullified) {
+      playPowerSound(game.players.p1.politician.name);
+      spawnPowerBurst('p1', game.players.p1.politician.power.name, game.players.p1.politician.name);
+    }
     showToast(r.nullified ? 'Your power fizzled — it had been secretly nullified' : '⚡ ' + game.players.p1.politician.power.name + ' activated');
   }
 
@@ -1140,6 +1172,7 @@
   $('playAgainBtn').addEventListener('click', function () {
     $('endOverlay').hidden = true;
     $('selectOverlay').hidden = false;
+    switchMusic('intro_music');
   });
 
   $('settingsBtn').addEventListener('click', function () { $('settingsOverlay').hidden = false; });
@@ -1151,7 +1184,8 @@
   $('musicToggleBtn').addEventListener('click', function () {
     musicEnabled = !musicEnabled;
     $('musicToggleState').textContent = musicEnabled ? 'On' : 'Off';
-    if (musicEnabled) playSound('bg_music'); else sounds.bg_music.pause();
+    if (musicEnabled) { if (currentMusicKey) playSound(currentMusicKey); }
+    else { sounds.bg_music.pause(); sounds.intro_music.pause(); }
   });
   $('pauseToggleBtn').addEventListener('click', function () {
     timerPaused = !timerPaused;
@@ -1169,7 +1203,7 @@
     unlockSounds();
     $('welcomeOverlay').hidden = true;
     $('selectOverlay').hidden = false;
-    playSound('bg_music');
+    switchMusic('intro_music');
   });
 
   scheduleAITick();
