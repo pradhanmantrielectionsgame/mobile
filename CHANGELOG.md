@@ -6,6 +6,38 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### 🎨 Mobile HUD Prototype Redesign (Concept A) — Polish & Real-Device Testing — 2026-07-27
+
+#### Prototype Refinement & Layout Optimization
+- **ADDED**: `mobile/index-redesign-a.html` + `mobile/main.js` — Kerala quick-invest button (`.uts-btn "KERALA"`) mirroring existing Delhi/Goa single-state pattern [C1]
+- **ENLARGED**: Bottom info panel (`zoom:1.15` per user feedback; initial `zoom:1.3` was too large) [C2]
+- **SCALED**: Shared `:root` font-size tokens (`--fs-1`..`--fs-6`) up ~15% for consistent text increase across top phase bar, player strip, news ticker, agenda/rally buttons; also bumped `.uts-btn` icon/label font sizes directly (hardcoded, non-tokenized) [C3]
+
+#### Politician-Select Ballot-Card Responsive Fix
+- **REWORKED**: `mobile/index-redesign-a.html` — ballot-card portrait region from fixed 760px height to flexible `flex:1 1 auto; min-height:260px` that shrinks/grows to content, with `.pol-bio{ flex:0 0 auto }` so text never shrinks; `.pol-art img` switched from `object-fit:cover` to `object-fit:contain` (cover was cropping heads/faces at small sizes with no single anchor working for all 20 portraits' varying compositions) [C4]
+  - **Fixes real overflow:** Modi, Indira Gandhi, Nehru, Ambedkar, Patel, Rao cards on real iOS Safari (normal tab, ~664px usable height) had been reporting as 0px overflow in earlier testing at 980×2130 headless viewport (which only matches Safari with chrome hidden) — re-testing at real 980×1669 revealed actual 187-327px overflow, worst on the exact politicians user flagged as cut off
+  - **Decision [D1]**: Flexible sizing self-adjusts per card content, rejecting both manual per-card pixel tuning (fragile) and overflow-scroll fallback (user explicitly wants zero scrolling ever)
+  - **Decision [D2]**: `object-fit:contain` over per-image `object-position` tuning, matching project rule (CLAUDE.md) for "cropping might cut off a face" — Modi's card (face lower with raised fist above) would break any top-anchor fix for Nehru's card (subject positioned high), so prefer full-visibility letterboxing
+
+#### App Icons & Web Manifest
+- **ADDED**: `assets/icons/pme-icon-{32,180,192,512,1024}.png` — new icon set (flat-vector illustration of raised index finger with indelible-ink voting mark, brass-ring border, cream background, matching app color tokens) generated via Gemini + resized via Python/Pillow [C5]
+- **WIRED**: Icon set into `mobile/manifest-redesign-a.json`'s `icons` array; linked in `index-redesign-a.html`'s `<link rel="icon">` and `<link rel="apple-touch-icon">` tags [C5]
+- **PRESERVED**: Old `assets/icons/pme-icon.svg` left untouched (still referenced by main `mobile/manifest.json`, `mobile/index.html`, `mobile/index-redesign-c.html`)
+
+#### Regional Dominance & Action Panel Visual Refinement
+- **ENHANCED**: `mobile/index-redesign-a.html` — group-capture badges (`.gchip.captured-p1/p2`) border thickened 3px→6px plus matching colored `box-shadow` for visual prominence when a player achieves regional dominance (underlying capture-detection logic in main.js already correct; this was pure visual fix) [C6]
+- **ENLARGED**: Agenda (`.ne-actions`) and rally (`.se-actions`) floating button panels — `.action-block` width 78px→100px, `.action-btn` icon font-size 52px→64px, badge sizing scaled to match, panel width 19%→23% [C7]
+- **REPOSITIONED**: NE agenda panel pushed down, `.ne-actions{ top:130px→165px }` per user request, verified no overlap with news ticker/player-strip [C8]
+
+#### Project Documentation & Testing Notes
+- **FINDINGS**: Two new entries prepended to `findings.md` (2026-07-27) covering: (1) viewport convention correction — this app's established Playwright test height (~2130px) only matches Safari with chrome hidden; a normal tab gives ~1669px, hiding real overflow bugs, and (2) `object-fit:cover`'s crop-anchor problem with varying-composition illustration sets [written by /checkpoint, Phase 1.3]
+- **UPDATED**: `CLAUDE.md` Playwright-testing-notes with new item (8) documenting the viewport-convention correction [added by /checkpoint, Phase 1.6, user-approved]
+
+#### Context
+Session focused on polishing the redesign-A prototype to address real-device testing feedback: Kerala quick-invest button for consistency, enlarged action panels for easier tapping, responsive ballot-card fix to eliminate overflow on real Safari tabs (worst case 327px cut-off on Nehru/Gandhi/Modi), and new app icon set for web manifest. All changes CSS/HTML-only, no engine or game-logic modifications. Prototype remains a candidate to become the final shipped mobile UI (per project memory), not yet promoted to production.
+
+---
+
 ### 🎨 Mobile HUD Prototype Redesigns & Proof-of-Concept Testing — 2026-07-27
 
 #### Prototype Builds & Real-Time Map Validation

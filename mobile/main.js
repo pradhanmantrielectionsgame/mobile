@@ -1128,6 +1128,10 @@
     selectState('INGA');
     handleButtonTap('INGA', function () { investPaid('INGA', viewportPoint($('goaBtn'))); });
   });
+  if ($('keralaBtn')) $('keralaBtn').addEventListener('click', function () {
+    selectState('INKL');
+    handleButtonTap('INKL', function () { investPaid('INKL', viewportPoint($('keralaBtn'))); });
+  });
   $('rallyBtn').addEventListener('click', onRallyBtn);
   $('specialBtn').addEventListener('click', onSpecialBtn);
   $('nationwideBtn').addEventListener('click', onNationwideBtn);
