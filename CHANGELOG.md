@@ -6,6 +6,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### 🎵 Sound System Fixes & Autoplay Integration — 2026-07-28
+
+#### Audio Asset Corrections & Naming Consistency
+- **RENAMED**: `sounds/Rajinikaanth.mp3` → `sounds/Rajinikanth.mp3` to match politician name lookup in `mobile/main.js`'s `playPowerSound()` (extra "a" typo was causing silent fallback to generic fanfare) [C1]
+- **ADDED**: `sounds/Narendra_Modi.mp3`, `sounds/Sachin_Tendulkar.mp3` — new per-politician special-power sound assets [C2]
+- **ADDED**: `sounds/saare_jahan_se_accha.mp3` — background music asset for ambient campaign theme [C2]
+
+#### Background Music Integration
+- **ADDED**: `mobile/main.js` — `playSound('bg_music')` call wired to `welcomeStartBtn` click handler, starting background music from the welcome/login screen onward instead of only once gameplay begins [C2]
+- **CHANGED**: `mobile/main.js` `bg_music` Audio source from placeholder to `sounds/saare_jahan_se_accha.mp3` (national anthem-inspired campaign theme) [C2]
+
+#### Project Documentation
+- **FINDINGS**: Two new entries prepended to `findings.md` (2026-07-28) covering: (1) sound-file naming convention mismatch (Rajinikaanth.mp3 vs. the politician's actual name) and (2) GitHub authentication failures when attempting to push to a new account's repo [written by /checkpoint, Phase 1.3]
+
+#### Context
+Session focused on wiring up background music for the welcome screen entry point and correcting a pre-existing sound-file naming typo that was silently falling back to generic fanfare instead of playing Rajinikanth's power sound. All three new sound assets follow the `<PoliticianName with spaces→underscores>.mp3` naming convention. No engine or game-logic modifications.
+
+---
+
 ### 🎨 Mobile HUD Prototype Redesign (Concept A) — Polish & Real-Device Testing — 2026-07-27
 
 #### Prototype Refinement & Layout Optimization

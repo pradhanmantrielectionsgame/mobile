@@ -75,8 +75,9 @@
   // ---------------------------------------------------------------------
   var soundEnabled = true, musicEnabled = true;
   var sounds = {};
-  ['bg_music', 'cash_added', 'money_spent', 'invalid_action', 'fanfare', 'game_over', 'phase_reset', 'rally_sound']
+  ['cash_added', 'money_spent', 'invalid_action', 'fanfare', 'game_over', 'phase_reset', 'rally_sound']
     .forEach(function (name) { sounds[name] = new Audio('../sounds/' + name + '.mp3'); });
+  sounds.bg_music = new Audio('../sounds/saare_jahan_se_accha.mp3');
   sounds.bg_music.loop = true;
   var BG_MUSIC_VOLUME = 0.35, BG_MUSIC_DUCKED_VOLUME = 0;
   sounds.bg_music.volume = BG_MUSIC_VOLUME;
@@ -1168,6 +1169,7 @@
     unlockSounds();
     $('welcomeOverlay').hidden = true;
     $('selectOverlay').hidden = false;
+    playSound('bg_music');
   });
 
   scheduleAITick();
