@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### 📚 Documentation Audit & Authoritative Reference Consolidation — 2026-07-29
+
+#### Design Documentation Restructuring
+- **DEPRECATED**: `design/economy-status-map.md` — added visible deprecation banner (title, meta description, header eyebrow, notice div) dated 2026-07-29, pointing to `docs/wiki.html` as the new authoritative reference. Content below banner kept as historical decision log. [C2]
+  - **Reason for deprecation:** Cross-check against current code/data during wiki refresh found multiple concrete drift points: hung-parliament rule still describes superseded ADR-0006 despite `finalizeGame()` implementing ADR-0010 the same day the doc was last edited; Public Sector tag direction still marked "not fixed" despite shipping 2026-07-26; Regional Dominance example still cited pre-2026-07-24 budget figures. Pattern: a design reference document only stays current if actively synchronized with every code change — separating into a "should-be-kept-in-sync" doc has consistently failed on this project, despite good intentions.
+- **PROMOTED TO AUTHORITATIVE**: `docs/wiki.html` — comprehensive project wiki (Claude Artifact) now declared the single authoritative reference for finalized game design, consolidating game mechanics, architecture/multiplayer planning, AI/testing methodology, and a full divergence/discovery log documenting where the design doc was found stale (4 concrete examples, entries 8–11 in findings.md plus hung-parliament entry). Replaces `design/economy-status-map.md` as the first place to check for "how does X work" questions. [C1]
+- **UPDATED**: `CLAUDE.md` — rewrote "Game design principles" opening bullet to declare `docs/wiki.html` as authoritative reference, replacing design-status-map.md. Repointed ~6 other forward-looking "see design/economy-status-map.md's X section" citations to equivalent `docs/wiki.html` sections. Added cautionary note: "don't let the wiki drift the way the design doc did" (same session, same decision, different sections — that's the failure mode that triggered this restructuring). [C3]
+- **UPDATED**: `CLAUDE.md` "Data & config conventions" — corrected policy-tags.json pool from 24 to 25 entries (Film and TV agenda was added without decision record) and added note about recording future policy additions in CLAUDE.md to prevent similar silent count-invalidations of doc tables. [C3]
+
+#### Context
+Session focused on refreshing `docs/wiki.html` to reflect current codebase state (2026-07-28 balance passes and multiple mechanic reworks). Cross-reference check against code/data revealed the design doc had drifted on multiple current-state facts despite being actively edited the same week for unrelated sections — a pattern that repeatedly broke throughout development. Formalized the solution: deprecate design doc with visible banner, promote wiki to authoritative reference, add discipline note to prevent repeating the failure mode on the wiki itself.
+
+---
+
 ### 🎮 Politician Rebalancing & AI Generalization for Multiplayer — 2026-07-28
 
 #### AI Engine Generalization for Network Sync

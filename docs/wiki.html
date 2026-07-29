@@ -210,7 +210,7 @@ footer{border-top:1px solid var(--rule-strong); padding-top:22px; color:var(--in
       </div>
       <div class="toc-group">
         <p class="eyebrow">Review</p>
-        <a href="#divergence-log">Divergence log<span class="toc-count" style="background:var(--verified-bg);color:var(--verified-fg);">7 resolved</span></a>
+        <a href="#divergence-log">Divergence log<span class="toc-count" style="background:var(--verified-bg);color:var(--verified-fg);">11 resolved</span></a>
         <a href="#open-questions">Open design questions</a>
       </div>
     </div>
@@ -220,7 +220,7 @@ footer{border-top:1px solid var(--rule-strong); padding-top:22px; color:var(--in
     <header class="hero">
       <p class="eyebrow">Project wiki · compiled from design/economy-status-map.md + mobile/*.js + data/*.json</p>
       <h1>How Booth Ink actually works</h1>
-      <p class="sub">Pradhan Mantri Elections Mobile is a 2-player, 10-phase election simulation played on a map of India: invest cash, deploy rally tokens, commit to policy agendas, and pull a state's popularity away from your rival and the undecided middle until one side clears 272 of 543 Lok&nbsp;Sabha seats. This page explains the mechanics for players, the implementation for developers, and — in the last section — seven places where the design document and the shipped code had quietly drifted apart, all reviewed and reconciled on 2026-07-24.</p>
+      <p class="sub">Pradhan Mantri Elections Mobile is a 2-player, 10-phase election simulation played on a map of India: invest cash, deploy rally tokens, commit to policy agendas, and pull a state's popularity away from your rival and the undecided middle until one side clears 272 of 543 Lok&nbsp;Sabha seats. This page explains the mechanics for players, the implementation for developers, and — in the last section — places where the design document and the shipped code have quietly drifted apart. First compiled 2026-07-24 (seven divergences found and resolved); refreshed 2026-07-28 against the current roster, AI, and balance-testing work — four more divergences turned up, mostly the design doc itself lagging decisions that already shipped in code.</p>
       <div class="legend">
         <span class="pill verified">✓ verified in code</span>
         <span class="pill flagged">⚑ divergence flagged</span>
@@ -262,12 +262,10 @@ flowchart LR
   C -- "no" --> A
   C -- "yes" --> D{"Either player<br/>≥ 272 seats?"}
   D -- "yes, one side" --> E["That player wins"]
-  D -- "no" --> F{"Opponent is<br/>the AI?"}
-  F -- "yes" --> G["Human loses<br/>(hung parliament vs. AI)"]
-  F -- "no, human vs human" --> H["Draw<br/>(hung parliament vs. human)"]
+  D -- "no" --> H["Draw, always<br/>(hung parliament — ADR-0010)"]
 </pre>
       </div>
-      <p style="font-size:13px;color:var(--ink-soft);font-family:var(--sans);margin-top:-6px;">The asymmetric hung-parliament rule (draw vs. a human, loss vs. the AI) is deliberate — see <a href="#" onclick="return false;">ADR-0006</a>. This build is always human-vs-AI, since live matchmaking isn't built (see <a href="#architecture">Architecture</a>).</p>
+      <p style="font-size:13px;color:var(--ink-soft);font-family:var(--sans);margin-top:-6px;">Hung parliament is <b>always a draw</b> now, regardless of who's on the other side — <a href="#" onclick="return false;">ADR-0010</a>, revised 2026-07-28, supersedes ADR-0006's original "draw vs. a human, loss vs. the AI" rule. That asymmetric version was dropped once <code>mobile/balance-sim.js</code> measurements showed hung parliament actually landing 48–98% of games per politician on the now-harder-to-win roster — defaulting that many undecided matches to an automatic AI win would have made a disguised loss the modal outcome, not a rare edge case. This build is always human-vs-AI, since live matchmaking isn't built (see <a href="#architecture">Architecture</a>) — though a full implementation-ready plan for it now exists.</p>
 
       <div class="example">
         <p class="label">Where the 30,000 Cr figure comes from</p>
@@ -351,9 +349,14 @@ flowchart TD
           <div class="step">Both home states are pulled from the pool. Players alternate drawing (coin-flip who goes first); each drawn state gets a fresh 35%–65% for the drawer, until their seat total from drawn states exceeds 100 (never past 130).</div>
         </div>
       </div>
+      <div class="note">
+        <p class="label">A politician can have more than one home state</p>
+        <p>The additive <code>secondaryHomeStates</code> array (added 2026-07-25 for Kejriwal, <code>["Punjab"]</code> alongside his primary Delhi) exists because Delhi's 7 Lok Sabha seats made the standard +25% bonus far weaker in absolute terms than for politicians whose home is a bigger state. Every consumer of <code>homeState</code> — the starting-position generator, the <code>home</code>/<code>opponentHome</code> special-power scopes, the display line — has to read through a shared helper rather than the raw field directly, or a multi-home politician silently loses the bonus in whichever spot still reads <code>homeState</code> alone. The "shared home state nullifies for both players" rule now applies per overlapping state, not per player.</p>
+      </div>
+
       <div class="example">
         <p class="label">Why Uttar Pradesh's over-representation is a feature</p>
-        <p>10 of the 20 politicians call Uttar Pradesh home. That sounds like a balance problem, but it means the home-state-tie nullification rule triggers <i>often</i> — which is exactly what stops one player starting with a lopsided lead just by picking a UP-born politician and claiming the country's single biggest state (80 seats) uncontested.</p>
+        <p>9 of the 21 politicians call Uttar Pradesh home. That sounds like a balance problem, but it means the home-state-tie nullification rule triggers <i>often</i> — which is exactly what stops one player starting with a lopsided lead just by picking a UP-born politician and claiming the country's single biggest state (80 seats) uncontested.</p>
       </div>
       <p style="font-size:13px;color:var(--ink-soft);font-family:var(--sans)">Implemented as <code>generateStartingPosition()</code> in <code>mobile/engine.js:166-215</code>. The 2026-07-23 playtest bug where this occasionally produced a 200-seat starting position instead of the intended ~100–130 range was traced and fixed before this document was written — see <a href="#div-2">Divergence 2</a> for why the design doc still lists it as open.</p>
     </section>
@@ -395,7 +398,7 @@ boost_bps(tap) = tap ≤ 20 : round(500 − (tap−1) × 300/19)          // 500
       </div>
 
       <h3>Agenda commitment</h3>
-      <p>Each politician carries 4 agendas drawn from a shared 24-policy pool (<code>data/policy-tags.json</code>). Each agenda costs <b>500 Cr per tap, flat</b>, 4 taps to max (2,000 Cr/agenda, 8,000 Cr to max all 4 — <b>27% of the 30,000 Cr lifetime budget</b>, per the recomputed figure the design doc now also states (see Divergence 1). Agendas aren't a race — each player only ever funds their own 4; there's no way to contest a policy away from an opponent.</p>
+      <p>Each politician carries 4 agendas drawn from a shared 25-policy pool (<code>data/policy-tags.json</code> — 24 originally, plus a later <code>Film and TV</code> addition for the film-persona politicians that isn't yet called out in the design doc's prose). Each agenda costs <b>500 Cr per tap, flat</b>, 4 taps to max (2,000 Cr/agenda, 8,000 Cr to max all 4 — <b>27% of the 30,000 Cr lifetime budget</b>, per the recomputed figure the design doc now also states (see Divergence 1). Agendas aren't a race — each player only ever funds their own 4; there's no way to contest a policy away from an opponent.</p>
       <div class="example">
         <p class="label">Net-first, apply-once — the rule every agenda tap follows</p>
         <p>A state can carry several of a policy's region tags at once, some supporting, some opposing, each at its own signed strength. The engine sums every matching tag into <b>one net value</b> for that state <i>before</i> touching the redistribution engine — never applies each tag as a separate transaction. National Defense supports the border regions and used to also (accidentally) oppose Hindi Heartland; six of the largest states carried both tags and canceled to exactly zero, quietly zeroing out states that should have been the policy's strongest supporters. Fixed 2026-07-22 by dropping the stray oppose tag.</p>
@@ -407,13 +410,16 @@ boost_bps(tap) = tap ≤ 20 : round(500 − (tap−1) × 300/19)          // 500
         <thead><tr><th>Rank</th><th>Policy</th><th>Seat-eq.</th></tr></thead>
         <tbody>
           <tr><td class="num">1</td><td class="feat">Education</td><td class="num">+33.0</td></tr>
-          <tr><td class="num">2</td><td class="feat">Economic Liberalization</td><td class="num">+26.2</td></tr>
-          <tr><td class="num">3–5</td><td class="feat">Women's Empowerment / Healthcare / Anti-Corruption <span style="color:var(--ink-soft)">(flat nationwide)</span></td><td class="num">+21.7</td></tr>
-          <tr><td class="num">…</td><td class="feat">— 15 more, mid-pack —</td><td class="num">…</td></tr>
-          <tr><td class="num">24</td><td class="feat">Secularism <span style="color:var(--ink-soft)">(worst pick, real polarization — Bengal/Kerala gains vs. UP/Bihar/MP/Rajasthan losses)</span></td><td class="num">−20.3</td></tr>
+          <tr><td class="num">2</td><td class="feat">Press Freedom</td><td class="num">+28.9</td></tr>
+          <tr><td class="num">3</td><td class="feat">Film and TV <span style="color:var(--ink-soft)">(new, added since the last policy count)</span></td><td class="num">+28.3</td></tr>
+          <tr><td class="num">4</td><td class="feat">National Defense</td><td class="num">+27.7</td></tr>
+          <tr><td class="num">5</td><td class="feat">Economic Liberalization</td><td class="num">+26.2</td></tr>
+          <tr><td class="num">6–8</td><td class="feat">Women's Empowerment / Healthcare / Anti-Corruption <span style="color:var(--ink-soft)">(flat nationwide)</span></td><td class="num">+21.7</td></tr>
+          <tr><td class="num">…</td><td class="feat">— 17 more, mid-pack — Public Sector (+11.1) and Caste Reservation (+8.1) both now sit here, not among the net-negatives</td><td class="num">…</td></tr>
+          <tr><td class="num">25</td><td class="feat">Secularism <span style="color:var(--ink-soft)">(worst pick, real polarization — Bengal/Kerala gains vs. UP/Bihar/MP/Rajasthan losses)</span></td><td class="num">−20.3</td></tr>
         </tbody>
       </table></div>
-      <p style="font-size:13px;color:var(--ink-soft);font-family:var(--sans)">Full 24-row table lives in the design doc's Agenda section; reproducible any time via <code>node recompute_policy_ranking.js</code>. 7 of 24 are net-negative nationally — five confirmed as real thematic polarization (Land Reforms, Public Sector, Caste Reservation, Agricultural Reforms, Secularism), two as partially-fixed accidental tag cancellations (Indigenous Rights). Public Sector's tag <i>direction</i> (opposing industrial regions instead of supporting them) is flagged in the design doc as possibly backwards from real PSU politics — a judgment call, not re-litigated here.</p>
+      <p style="font-size:13px;color:var(--ink-soft);font-family:var(--sans)">Full 25-row table reproducible any time via <code>node recompute_policy_ranking.js</code> (run 2026-07-28 for this page — the numbers above come directly from that run, not the design doc's table, which is stale — see <a href="#div-9">Divergence 9</a>). Only <b>4 of 25</b> are net-negative nationally now, down from 7 of 24 in the 2026-07-24 pass: Indigenous Rights (−2.5), Hindi Language (−8.9), Agricultural Reforms (−14.1), and Secularism (−20.3, still worst). Land Reforms, Public Sector, and Caste Reservation all flipped positive once their region-tag directions were corrected 2026-07-26 (Public Sector in particular: industrial/manufacturing/tribal-lands now support it, agricultural regions oppose it — the reverse of the direction both this page and the design doc described as of the last pass).</p>
     </section>
 
     <!-- ======================================================== -->
@@ -422,9 +428,19 @@ boost_bps(tap) = tap ≤ 20 : round(500 − (tap−1) × 300/19)          // 500
       <h2>Special powers</h2>
       <p class="dek">Every politician has exactly one unique power, activated once per game by crafting a 6-token Special Powerup. The rule that governs every one of them: resolve <b>instantly only</b>, and cost a <b>genuine resource</b> — never a timing gate ("only in the final phase") or an eligibility condition ("only while behind") — because either of those costs nothing whenever the power is actually usable.</p>
 
+      <div class="note">
+        <p class="label">Explicit exception, decided 2026-07-26: five powers ARE timing-gated, on purpose</p>
+        <p>Sardar Patel's Iron Unification (<code>requiresMinPhase: 5</code>), Narendra Modi's Demonetization (<code>3</code>), Indira Gandhi's National Emergency (<code>5</code>), B.R. Ambedkar's Constitutional Reform (<code>3</code>), and P.V. Narasimha Rao's Minority Government Survival (<code>6</code>) all block activation before a specific phase (<code>mobile/game.js</code>'s <code>activatePower</code> and the AI's <code>canPay</code> check both read the field). Each is a deliberate flavor call mimicking the real-world timing of the event it represents (Patel's unification took years; Modi's 2016 demonetization landed mid-term; the Emergency came deep into Indira's tenure; the Constitution took ~3 years to draft; a minority government only means something once a majority looks out of reach) — not an oversight of the no-timing-gate rule above. The project has stated this won't be extended to further powers without the same case-by-case justification.</p>
+      </div>
+
       <div class="example">
-        <p class="label">All 20 now carry concrete numbers</p>
-        <p>Six powers were reworked 2026-07-22 after failing the matched-cost-and-benefit rule outright (see table below). The other 14, including Vajpayee's reviewed-and-kept Pokhran Test, all carry real numeric costs and benefits in <code>data/politicians-data.json</code> today — verified directly, entry by entry. This is a genuine first-pass assignment, <b>not</b> a balance/playtesting pass — several numbers were chosen by analogy to Vajpayee's +10% nationwide reference point rather than simulated. See <a href="#div-4">Divergence 4</a> for how this differs from what the design doc currently says.</p>
+        <p class="label">All 21 now carry concrete numbers</p>
+        <p>Six powers were reworked 2026-07-22 after failing the matched-cost-and-benefit rule outright (see table below). The rest, including Vajpayee's reviewed-and-kept Pokhran Test, all carry real numeric costs and benefits in <code>data/politicians-data.json</code> today — verified directly, entry by entry. This was a first-pass assignment, not a balance/playtesting pass when originally written — that gap has since been closed by <code>mobile/balance-sim.js</code> (see <a href="#ai">The AI opponent</a>), which found three politicians (Rahul Gandhi, Mamata Banerjee, Manmohan Singh) genuinely bottom-tier and four "OP" celebrity/film-persona powers over-tuned; both findings drove real rebalances, not just a numbers pass. See <a href="#div-4">Divergence 4</a> for how the original first-pass claim differs from what the design doc currently says.</p>
+      </div>
+
+      <div class="example">
+        <p class="label">Confiscate vs. transfer: "seize" and "steal" are deliberately different primitives</p>
+        <p>A power that takes the opponent's resources must choose explicitly between <b>seize</b> (<code>seizeFundsPct</code>/<code>seizeTokens</code> — confiscated, destroyed, never reach the activator) and <b>steal</b> (<code>stealFundsPct</code>/<code>stealTokens</code> — transferred to the activator). Kejriwal's Anti-Corruption Raid, Indira Gandhi's National Emergency, and Sivaji Rao's original One-Day Ordinance were all built on the transfer primitives by default; corrected 2026-07-26 once "raid"/"seizure"/"confiscation" framing was clarified to mean the opponent's resources vanish, not that they move to you. It changes each power's real value, not just its wording — Kejriwal's Anti-Corruption Raid now reads "seizes 50% of the opponent's cash (destroyed, not transferred)," and Indira's National Emergency seizes 100% of cash plus all rally tokens.</p>
       </div>
 
       <h4>Six powers reworked 2026-07-22</h4>
@@ -434,7 +450,7 @@ boost_bps(tap) = tap ≤ 20 : round(500 − (tap−1) × 300/19)          // 500
           <tr><td class="feat">Sachin Tendulkar</td><td>National Icon</td><td>free in the final phase</td><td>+3% nationwide; needs ≥1,000 Cr; costs 1,000 Cr</td></tr>
           <tr><td class="feat">Hema Malini</td><td>Star Power Rally</td><td>free while behind</td><td>+5% nationwide; needs ≥500 Cr; costs 500 Cr</td></tr>
           <tr><td class="feat">Rajinikanth</td><td>Thalaivar Announcement</td><td>undefined benefit, brutal permanent cost</td><td>+20% South India + Maharashtra; needs ≥2,000 Cr; costs 2,000 Cr</td></tr>
-          <tr><td class="feat">Arvind Kejriwal</td><td>Anti-Corruption Raid</td><td>free if no tokens held</td><td>steals 50% of opponent's cash; costs 15pt of <i>own</i> share in opponent's home state</td></tr>
+          <tr><td class="feat">Arvind Kejriwal</td><td>Anti-Corruption Raid</td><td>free if no tokens held</td><td>seizes 50% of opponent's cash (destroyed, not transferred); costs 15pt of <i>own</i> share in opponent's home state</td></tr>
           <tr><td class="feat">Nitish Kumar</td><td>Alliance Switch</td><td>value depended on opponent's last move</td><td>+7% self / −7% opponent, nationwide; costs 1,000 Cr + 2 tokens</td></tr>
           <tr><td class="feat">Jawaharlal Nehru</td><td>Non-Alignment</td><td>worthless if opponent already used their power</td><td>secretly nullifies opponent's power, or grants 2,000 Cr if too late — the gamble itself is the cost</td></tr>
         </tbody>
@@ -443,18 +459,33 @@ boost_bps(tap) = tap ≤ 20 : round(500 − (tap−1) × 300/19)          // 500
       <h4>Reference point</h4>
       <p>Vajpayee's <b>Pokhran Test</b> (+10% nationwide, zero extra cost beyond the 6-token craft) is a deliberate outlier — exactly double Nationwide Rally's boost for half the token cost — kept on purpose as the roster's one standout "signature" play, and used to sanity-check every other power's magnitude during the rework pass.</p>
 
+      <div class="example">
+        <p class="label">The 4 celebrity/film-persona powers were rebalanced 2026-07-28 — agenda kits left untouched</p>
+        <p>Decided 2026-07-25: Tendulkar, Hema Malini, Rajinikanth, and Bachchan are meant to be stronger and quirkier than the political roster, not balance-equal to it — each carries a distinctive mechanic shape (a 30%-floor effect, a stacked nationwide+home bonus, an asymmetric dual-region bonus, an "Others"-only source) and is explicitly allowed to out-scale a political-roster power in the same region. But a 2026-07-28 balance pass found these 4, plus film-persona pick Sivaji Rao, had <i>both</i> a top-tier agenda kit (national avg 13–16, roster-highest) <b>and</b> a strong/free power stacked on top — an unintentional tuning error, not the design intent. Rebalanced on the <b>power only</b> — cost, timing, or magnitude — never the agenda kit, which stays a deliberate thematic match:</p>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Politician</th><th>Before</th><th>After (current)</th></tr></thead>
+          <tbody>
+            <tr><td class="feat">Amitabh Bachchan</td><td>+12% nationwide (Others-only) / 1,000 Cr / no gate</td><td>+6% / 2,000 Cr / <code>requiresMinPhase: 6</code></td></tr>
+            <tr><td class="feat">Hema Malini</td><td>+8% nationwide / 500 Cr</td><td>+2% nationwide + 14% home (16% total at home, unchanged) / 2,500 Cr</td></tr>
+            <tr><td class="feat">Rajinikanth</td><td>+25% South India / +18% Maharashtra, no popularity-side cost</td><td>unchanged benefit, now also costs −8% Hindi Heartland</td></tr>
+            <tr><td class="feat">Sivaji Rao</td><td>100%-home-state effect, zero cost of any kind</td><td>unchanged benefit, now costs all future rally-token income for the rest of the match</td></tr>
+          </tbody>
+        </table></div>
+        <p style="font-size:13px;color:var(--ink-soft)">Two methodology lessons from tuning this: a single-politician change must be re-tested <i>isolated</i> (that politician's data changed, every other politician held at the exact same committed state) before trusting a before/after win-rate comparison — a batch where other politicians also changed is confounded by "strength of schedule." And a single lever (cost, timing, <i>or</i> magnitude alone) hits diminishing returns fast — Bachchan's cost/timing changes alone moved his win rate by exactly 0% until paired with the magnitude cut.</p>
+      </div>
+
       <h4>Verb variety at a glance</h4>
       <div class="table-wrap"><table>
         <thead><tr><th>Verb</th><th>Politicians</th></tr></thead>
         <tbody>
-          <tr><td class="feat">Damage opponent's funds</td><td>Modi (Demonetization), Kejriwal (steal 50%)</td></tr>
+          <tr><td class="feat">Damage opponent's funds</td><td>Modi (freeze), Kejriwal (seize 50%), Indira Gandhi (seize 100% + tokens)</td></tr>
           <tr><td class="feat">Convert own popularity → funds</td><td>Manmohan Singh, Rajiv Gandhi (Telecom Revolution)</td></tr>
           <tr><td class="feat">Region-scoped popularity push</td><td>Rahul Gandhi, Mamata Banerjee, Ambedkar, Jayalalithaa, Shastri, Rajinikanth</td></tr>
           <tr><td class="feat">Nationwide popularity push</td><td>Vajpayee, Nitish Kumar, Tendulkar, Hema Malini, Bachchan, Indira Gandhi</td></tr>
-          <tr><td class="feat">Meta / conditional effect</td><td>Nehru (nullify), P.V. Narasimha Rao (replay a completed agenda), Sardar Patel (push a small UT to 70%)</td></tr>
+          <tr><td class="feat">Meta / conditional effect</td><td>Nehru (nullify), P.V. Narasimha Rao (replay a completed agenda), Ambedkar (refund all agenda spend), Sardar Patel (floor every state nationwide to 20%)</td></tr>
         </tbody>
       </table></div>
-      <p style="font-size:13px;color:var(--ink-soft);font-family:var(--sans)">Interpreter lives in <code>mobile/game.js:347-442</code> (<code>activatePower()</code>) — a small effect DSL (<code>funds</code>, <code>stealFundsPct</code>, <code>tokens</code>, <code>nullifyOpponentPower</code>, <code>replayAgenda</code>, <code>popularity</code> with a <code>scope</code>) reads each politician's <code>power.costs</code>/<code>power.benefits</code> arrays, so a new power is a data edit, not a code change.</p>
+      <p style="font-size:13px;color:var(--ink-soft);font-family:var(--sans)">Interpreter lives in <code>mobile/game.js</code>'s <code>activatePower()</code> — a small effect DSL (<code>funds</code>, <code>freezeFunds</code>, <code>stopTokenIncome</code>, <code>stealFundsPct</code>/<code>stealTokens</code>, <code>seizeFundsPct</code>/<code>seizeTokens</code>, <code>refundAgendaSpend</code>, <code>lowerSeatsToWin</code>, <code>tokens</code>, <code>nullifyOpponentPower</code>, <code>replayAgenda</code>, <code>popularity</code> with a <code>scope</code>) reads each politician's <code>power.costs</code>/<code>power.benefits</code> arrays, so a new power is a data edit, not a code change.</p>
     </section>
 
     <!-- ======================================================== -->
@@ -479,8 +510,12 @@ payout(group) = 5 Cr × (sum of seats across every state in the group)</pre>
     <section id="roster">
       <p class="kicker">Play — the cast</p>
       <h2>Politicians &amp; agendas</h2>
-      <p class="dek">20 politicians (16 historical/current + 4 celebrities with real political ties), each with 4 agendas drawn from the shared 24-policy pool plus their 1 unique power. "Exclusive" just means only one politician's list happens to reference a given policy — there's no exclusivity flag in the data.</p>
-      <p>Source of truth is <code>data/politicians-data.json</code> + <code>data/policy-tags.json</code> directly — this wiki doesn't keep a second copy of the roster that could drift out of sync. Roughly half the roster (10 of 20) don't yet have a portrait image in <code>assets/images/</code>; the select screen falls back to a colored circle with the politician's initial.</p>
+      <p class="dek">21 politicians, each with 4 agendas drawn from the shared 25-policy pool plus their 1 unique power. "Exclusive" just means only one politician's list happens to reference a given policy — there's no exclusivity flag in the data.</p>
+      <p>Source of truth is <code>data/politicians-data.json</code> + <code>data/policy-tags.json</code> directly — this wiki doesn't keep a second copy of the roster that could drift out of sync. All 21 now resolve a real portrait image in <code>assets/images/</code> (confirmed 2026-07-28 by checking every politician's <code>image</code> field directly) — the select screen's colored-initial-circle fallback (<code>setPortrait()</code> in <code>mobile/main.js</code>) still exists in code but currently has nothing left to fall back for. See <a href="#div-11">Divergence 11</a>.</p>
+      <div class="example">
+        <p class="label">Select carousel &amp; end-game screen use Booth Ink's own "ballot card" identity, not a holo-foil card</p>
+        <p>The politician-select carousel and results screen carry a light-theme ink/brass/stamp/paper visual language (tricolor stripe, brass-ringed seal, ticket-stub die-cut, decree box) — deliberately not a literal Pokémon-style holo card, and not a dark theme, since the app has no dark mode anywhere else (a first dark-card-stock draft was rejected 2026-07-24 for exactly that clash). Raw per-politician agenda bonus numbers were removed from this screen the same day as meaningless post-revamp; the replacement is a tap-to-expand region-effect breakdown (<code>agendaEffectChips()</code> in <code>main.js</code>, shared with the in-game agenda-info panel) reading real <code>policy-tags.json</code> data instead of a flat bonus number.</p>
+      </div>
     </section>
 
     <!-- ======================================================== -->
@@ -495,15 +530,16 @@ payout(group) = 5 Cr × (sum of seats across every state in the group)</pre>
 ├── game.js     <span class="dim">— the mutable `game` object: phases, player actions, the AI (`runAI`* fns).</span>
 │               <span class="dim">  Built on top of engine.js's math; never touches the page.</span>
 ├── main.js     <span class="dim">— the only file that touches the DOM. Reads `game`, calls game.js's actions.</span>
-├── simulate.js <span class="dim">— Node-only smoke test: 5 full games + all 20 power activations.</span>
+├── simulate.js <span class="dim">— Node-only smoke test: 5 full games + all 21 power activations.</span>
+├── balance-sim.js <span class="dim">— politician/agenda balance harness: real AI vs. real AI, N seeds per pair.</span>
 ├── sw.js       <span class="dim">— service worker, explicit-filename precache (see note below).</span>
 ├── manifest.json <span class="dim">— PWA manifest, standalone display, SVG icon.</span>
 └── index.html  <span class="hi">← the real, playable build</span>
 
 data/
 ├── states_data.json      <span class="dim">— 36 states/UTs: seats, svgId, region-group tags. Leading BOM.</span>
-├── policy-tags.json      <span class="dim">— 24-policy pool: {tagEffects: {region: signedMagnitude}} or nationwideBonus.</span>
-├── politicians-data.json <span class="dim">— 20 politicians: homeState, 4 policies, 1 power (cost/benefit DSL).</span>
+├── policy-tags.json      <span class="dim">— 25-policy pool: {tagEffects: {region: signedMagnitude}} or nationwideBonus.</span>
+├── politicians-data.json <span class="dim">— 21 politicians: homeState (+secondaryHomeStates), 4 policies, 1 power (cost/benefit DSL).</span>
 └── game-config.json      <span class="dim">— mobileEconomy{} namespace = mobile's real, canonical constants.</span>
 
 index.html / styles.css / js/*.js  <span class="dim">← legacy desktop-ported skin, superseded, not touched by mobile work.</span>
@@ -531,8 +567,16 @@ flowchart LR
         <p>The UI is DOM/CSS/SVG-heavy (an interactive map, CSS animations) and the game itself is turn/phase-based with no native-performance requirement — a native-framework rewrite buys nothing. Capacitor wraps this codebase almost unchanged for an iOS/Android store listing instead, if that's ever pursued.</p>
       </div>
       <div class="note">
-        <p class="label">Why there's no live human matchmaking</p>
-        <p>Player 2 is always the local AI in this build. Real matchmaking needs a Firebase/Supabase backend — an external service account nobody has asked to stand up (ADR-0001/0002). Out of scope until requested.</p>
+        <p class="label">Why there's no live human matchmaking (yet)</p>
+        <p>Player 2 is always the local AI in this build. Real matchmaking needs a Firebase/Supabase backend — an external service account nobody has asked to stand up (ADR-0001/0002) — so it's still out of scope until requested. But it's no longer undesigned: <code>design/multiplayer-implementation-plan.md</code> (written 2026-07-28) is a full implementation-ready plan — event-sourced action-log sync over Firebase Realtime DB, reusing <code>game.js</code>'s action functions as-is since they're already pure/playerKey-agnostic (see <a href="#ai">The AI opponent</a>'s note on <code>Game.setupAI</code>). A future session can implement directly from that file instead of re-deriving the architecture.</p>
+      </div>
+      <div class="note">
+        <p class="label">The real entry point is a welcome screen, not the politician-select carousel</p>
+        <p>Added 2026-07-25: <code>#welcomeOverlay</code> in <code>mobile/index.html</code> is a full-bleed poster background with a "Begin Campaign" button that reveals <code>#selectOverlay</code>. It also does double duty as the first real user gesture in the app — <code>unlockSounds()</code> (<code>main.js</code>) plays-then-pauses every <code>&lt;audio&gt;</code> element there, since iOS Safari blocks <code>.play()</code> on any element that hasn't been played from a gesture at least once, and several sounds (game-over, phase-reset) only ever fire from a <code>setInterval</code> callback, never a tap.</p>
+      </div>
+      <div class="note">
+        <p class="label">Two HUD redesign prototypes exist alongside the shipped build</p>
+        <p><code>mobile/index-redesign-a.html</code> and <code>index-redesign-c.html</code> (added on the current <code>mobile-ui-overhaul</code> branch) are alternate takes on the in-game HUD chrome, each wired to the same <code>engine.js</code>/<code>game.js</code>. Redesign A is on a production track, not a disposable sketch — treat changes to it with the same care as <code>mobile/index.html</code> itself until a decision says otherwise.</p>
       </div>
     </section>
 
@@ -571,8 +615,16 @@ flowchart LR
         <p>Picked randomly per match so games don't all play out the same shape: <b>aggressive-investor</b> (1 agenda tap/policy/phase, crafts tokens), <b>policy-rusher</b> (4 taps/policy/phase), <b>rally-spammer</b> (never crafts, just plays tokens), <b>group-bonus-rusher</b> (crafts tokens + scores investment with a bonus for states one step from completing a regional-dominance group). None are adversarially tuned against a human's actual play — a personality difference, not a difficulty ladder.</p>
       </div>
       <div class="example">
-        <p class="label">The headroom-scoring fix</p>
-        <p>Early versions scored an investment target by raw <code>boost/cost</code>, which kept favoring the cheapest state in a group regardless of how close it already was to 100% — the AI would dump funds into an already-maxed state forever instead of spreading across the group, so it could never actually clear a regional-dominance bar. Fixed by scoring on effective remaining headroom, <code>min(boost, 10000 − currentShare) / cost</code>, in <code>scoreInvestState()</code> (<code>mobile/game.js:501-515</code>).</p>
+        <p class="label">Two rounds of scoring fixes in <code>scoreInvestState()</code></p>
+        <p>Early versions scored an investment target by raw <code>boost/cost</code>, which kept favoring the cheapest state in a group regardless of how close it already was to 100% — the AI would dump funds into an already-maxed state forever instead of spreading across the group, so it could never actually clear a regional-dominance bar. Fixed 2026-07-23 by scoring on effective remaining headroom, <code>min(boost, 10000 − currentShare) / cost</code>. A second, distinct failure mode surfaced 2026-07-25: the score was still raw %-per-Cr, unnormalized by seats — cost scales with a state's seat count but the % boost per tap doesn't, so a 1-seat UT scored 20–50 against Uttar Pradesh's 0.25–0.6 even on UP's very first, most-boosted tap. The AI (and a human chasing the same "biggest % shown" intuition) hammered tiny states instead of spreading nationwide the way the design doc's cost-per-seat invariance claim assumes. Fixed as part of the broader AI investment-targeting rework the same day.</p>
+      </div>
+      <div class="example">
+        <p class="label">Even, human-comparable pacing — no instant catch-up burst</p>
+        <p>An early fix for the AI leaving funds unspent by phase end used an instant full-phase catch-up (<code>runAIFull()</code>) right before each phase closed. Rejected 2026-07-25 as unfair machine-speed cheating: AI strength should come from decision quality, never from acting faster than a human physically can. <code>mobile/main.js</code>'s <code>planAITickPacing()</code> throttles the browser AI to a human-comparable pace (~20 actions/min) across the whole phase instead — this is also why headless simulation (<code>runAIFull()</code>, no pacing limit) is an upper bound on AI strength, not a match for the real opponent; a throttled-vs-unthrottled comparison once found the throttled AI leaving up to 68% of its lifetime budget unspent before the pacing fix landed.</p>
+      </div>
+      <div class="example">
+        <p class="label">Balance testing: both seats play as real AI, not a naive strategy</p>
+        <p><code>mobile/balance-sim.js</code> is the tool for politician/agenda balance questions — every politician as P1 against every other politician as P2, both sides driven by the actual AI (<code>Game.setupAI(game, playerKey, rng)</code> + <code>Game.runAIFull()</code>, so a new <code>playerKey</code>/<code>oppKey</code> parameter on <code>aiStep</code>/<code>runAIFull</code> and their scoring helpers no longer hardcodes <code>'p2'</code>), logged to <code>mobile/balance-log.jsonl</code> across N seeds per ordered pair. <b>Read win rate as the primary metric, not average final seats</b> — a hung parliament counts as a 0.5/0.5 draw in the tally, matching the game's own rule, and avg seats doesn't map cleanly onto how often a kit actually wins. A 1,260-game batch confirmed Rahul Gandhi, Mamata Banerjee, and Manmohan Singh as genuinely bottom-tier (avg final seats 172.5 / 170.7 / 196.5 vs. Hema Malini's roster-best 261.7), each for a different structural reason — see <code>findings.md</code>. Re-run after any politician/agenda tweak (<code>node mobile/balance-sim.js 5</code>, higher for more confidence).</p>
       </div>
     </section>
 
@@ -585,12 +637,20 @@ flowchart LR
         <thead><tr><th>Script</th><th>What it checks</th></tr></thead>
         <tbody>
           <tr><td class="feat"><code>node mobile/engine.js</code></td><td>Self-check of the pure math: the design doc's own worked examples (the 20/30/50 tap, the 10/10/80 overdraw, the 3-seat apportionment) reproduced exactly, plus 2,000 randomized apportionment splits and the home-state-tie nullification.</td></tr>
-          <tr><td class="feat"><code>node mobile/simulate.js</code></td><td>5 full 10-phase games (a scripted P1 vs. the real AI) plus all 20 politicians' powers activated in isolation, asserting every state's three shares sum to exactly 10,000 bps and funds/tokens never go negative, throughout.</td></tr>
+          <tr><td class="feat"><code>node mobile/simulate.js</code></td><td>5 full 10-phase games (a scripted P1 vs. the real AI) plus all 21 politicians' powers activated in isolation, asserting every state's three shares sum to exactly 10,000 bps and funds/tokens never go negative, throughout.</td></tr>
         </tbody>
       </table></div>
       <div class="note">
-        <p class="label">Confirmed passing while writing this page</p>
-        <p>Both scripts ran clean: all assertions passed, all 20 powers activated cleanly, invariants held across every phase of all 5 simulated games. The project convention after touching AI aggressiveness specifically is to also stress-test cheap/tiny states directly, not just run the normal suite — a more aggressive AI can drive a state to exactly 100% for the first time, which is exactly how a real zero-denominator bug in <code>loseAt()</code> was caught before.</p>
+        <p class="label">Confirmed passing 2026-07-28</p>
+        <p>Both scripts still run clean against the current roster of 21: all assertions passed, every power activated cleanly, invariants held across every phase of all 5 simulated games. The project convention after touching AI aggressiveness specifically is to also stress-test cheap/tiny states directly, not just run the normal suite — a more aggressive AI can drive a state to exactly 100% for the first time, which is exactly how a real zero-denominator bug in <code>loseAt()</code> was caught before.</p>
+      </div>
+      <div class="example">
+        <p class="label"><code>npm test</code> alone won't catch a duration/timing bug — write a diagnostic script that exercises the real sequence</p>
+        <p>Modi's Demonetization (a one-phase funds freeze) shipped with an off-by-one: <code>fundsFrozenUntilPhase = game.phase + 1</code> instead of <code>game.phase</code>, which let the AI opponent invest/tap normally for the rest of the phase the power was used in, before the freeze actually bit the <i>following</i> phase — the opposite of "one phase" as advertised. Neither <code>npm test</code> script would ever exercise this, since neither activates a power mid-phase and then checks whether the very next action in the same phase is blocked. Found 2026-07-28 by a small standalone script directly calling <code>investCash</code>/<code>tapAgenda</code>/<code>aiStep</code> around the activation point. General rule for any one-phase-duration power: the expiry field must be set to the current <code>game.phase</code> at activation, never <code>+1</code> — the effect self-clears the moment <code>game.phase</code> moves past it, which requires it to already be active during the activation phase itself.</p>
+      </div>
+      <div class="example">
+        <p class="label">Balance conclusions need an isolated re-test, not a before/after full-batch diff</p>
+        <p>Comparing <code>mobile/balance-sim.js</code> win rates across two full batch runs where <i>other</i> politicians' data also changed is confounded by "strength of schedule" — a nerf can appear to backfire (win rate goes <i>up</i>) purely because 2–3 of that politician's 20 simulated opponents got weaker in the same batch. Toggle one politician's data, hold every other politician at the exact same committed state, and re-run before trusting a specific before/after comparison.</p>
       </div>
     </section>
 
@@ -598,7 +658,7 @@ flowchart LR
     <section id="divergence-log">
       <p class="kicker">Review — flagged for a human decision</p>
       <h2>Divergence log</h2>
-      <p class="dek">Seven places where <code>design/economy-status-map.md</code> and the actual <code>mobile/</code> code disagreed, found while cross-checking every mechanic above against both sources directly. <b>All seven were reviewed and resolved on 2026-07-24</b> — six by direct decision, one (special-power balance wording) caught and fixed as a bonus find during the same pass. Each card below records what the doc said, what the code actually showed, and the decision that was locked in.</p>
+      <p class="dek">Eleven places where <code>design/economy-status-map.md</code> and the actual <code>mobile/</code> code disagreed, found while cross-checking every mechanic above against both sources directly. <b>The first seven were reviewed and resolved on 2026-07-24.</b> <b>Four more (8–11) turned up in the 2026-07-28 refresh</b> — in every one of them, the code and CLAUDE.md's decision record agree with each other; it's <code>design/economy-status-map.md</code>'s own prose that hadn't caught up, in some cases despite being edited that same day for other sections. Each card below records what the doc said, what the code actually showed, and the decision that was locked in.</p>
 
       <div class="divergence resolved" id="div-1">
         <div class="dhead"><span class="dtitle">1 · Economy scale: design doc's numbers were half the real, current ones</span><span class="sev">✓ resolved 2026-07-24</span></div>
@@ -652,6 +712,35 @@ flowchart LR
         <p class="verdict"><b>Decision locked in:</b> flipped the pill from <code>gap</code> to <code>decided</code> — pure doc housekeeping, no code implication either way.</p>
         <p class="cite">design/economy-status-map.md:517 vs. §553 ("migrated 2026-07-22") and data/policy-tags.json</p>
       </div>
+
+      <div class="divergence resolved" id="div-8">
+        <div class="dhead"><span class="dtitle">8 · Design doc still describes the superseded ADR-0006 hung-parliament rule</span><span class="sev">✓ resolved (in code) 2026-07-28</span></div>
+        <p>The design doc's "Hung parliament resolution — decided 2026-07-22" callout still states the asymmetric rule: a draw against a human, a loss against the AI fallback. <code>mobile/game.js</code>'s <code>finalizeGame()</code> has implemented ADR-0010's revision — hung parliament is <b>always</b> a draw, regardless of opponent — since 2026-07-28, and the file was touched that same day for unrelated edits (balance-sim methodology, funds-freeze fix) without this callout being updated to match.</p>
+        <p class="verdict"><b>Decision locked in:</b> this wiki's <a href="#core-loop">core-loop section</a> now describes ADR-0010's rule as current. The design doc's own prose is still stale as of this pass — flagging here rather than silently editing a file this page doesn't own.</p>
+        <p class="cite">design/economy-status-map.md:208-209 vs. mobile/game.js finalizeGame() and docs/adr/0010-hung-parliament-always-a-draw.md</p>
+      </div>
+
+      <div class="divergence resolved" id="div-9">
+        <div class="dhead"><span class="dtitle">9 · Public Sector's tag-direction fix shipped in data; design doc still calls it "flagged, unresolved"</span><span class="sev">✓ resolved (in code) 2026-07-26</span></div>
+        <p>The design doc's "Remaining net-negative audit" section explicitly leaves Public Sector's tag direction as "a separate finding, not fixed... worth a human call," and its policy-ranking table still lists Public Sector 20th at −7.0 with a "tag direction flagged" note. Reading <code>data/policy-tags.json</code> directly shows the fix already shipped: Public Sector now supports <code>IndustrialCorridor</code>/<code>Manufacturing</code>/<code>TribalLands</code> and opposes <code>AgriculturalRegion</code> — the reverse of what the design doc describes, and matching CLAUDE.md's 2026-07-26 record of the decision exactly. Re-running <code>node recompute_policy_ranking.js</code> confirms Public Sector is now net-<i>positive</i> (+11.1, rank 10 of 25), not the worst-tier policy the doc's table still shows.</p>
+        <p>The doc's Regional Dominance worked example is separately stale in the same section — it still cites "a player's entire 12,500 Cr lifetime budget," the pre-2026-07-24 figure superseded by Divergence 1's own resolution in the same document.</p>
+        <p class="verdict"><b>Decision locked in:</b> this wiki's <a href="#economy">policy ranking table</a> now reflects the current, correct <code>policy-tags.json</code> data and a fresh <code>recompute_policy_ranking.js</code> run, and the <a href="#open-questions">open questions</a> no longer lists Public Sector's direction as unresolved. Design doc still needs its own sync pass.</p>
+        <p class="cite">design/economy-status-map.md:626, 652, 688 vs. data/policy-tags.json ("Public Sector") and CLAUDE.md's Game design principles section</p>
+      </div>
+
+      <div class="divergence resolved" id="div-10">
+        <div class="dhead"><span class="dtitle">10 · Policy pool grew from 24 to 25 without any prose update</span><span class="sev">✓ resolved 2026-07-28</span></div>
+        <p>Both the design doc and the pre-refresh version of this wiki describe "the shared 24-policy pool" throughout. <code>data/policy-tags.json</code> now has 25 top-level keys — a <code>Film and TV</code> entry was added at some point for the film-persona politicians (Rajinikanth, Sivaji Rao), with no corresponding decision recorded in CLAUDE.md or a prose update anywhere.</p>
+        <p class="verdict"><b>Decision locked in:</b> every "24-policy pool" reference on this page updated to 25. The design doc's own count is unchanged as of this pass.</p>
+        <p class="cite">data/policy-tags.json (25 keys) vs. design/economy-status-map.md's "shared 24-policy pool" language throughout</p>
+      </div>
+
+      <div class="divergence resolved" id="div-11">
+        <div class="dhead"><span class="dtitle">11 · Portrait-coverage claim ("11 of 20 missing") is stale by at least one asset commit</span><span class="sev">✓ resolved 2026-07-28</span></div>
+        <p>CLAUDE.md and a code comment in <code>mobile/main.js</code>'s <code>setPortrait()</code> both state 11 of 20 politician portraits don't exist. Directly checking every politician's <code>image</code> field against the filesystem (<code>fs.existsSync</code>, all 21 entries) shows every one resolves to a real PNG in <code>assets/images/</code> — a 2026-07-26 commit added 12 portraits in one batch (Amitabh Bachchan, Bhimrao Ambedkar, Hema Malini, Indira Gandhi, Jawaharlal Nehru, Jayalalithaa, Lal Bahadur Shastri, P.V. Narasimha Rao, Rajinikanth, Rajiv Gandhi, Sachin Tendulkar, Sardar Patel), closing the gap that the "11 missing" figure (and this wiki's own pre-refresh "10 of 20") still describes.</p>
+        <p class="verdict"><b>Decision locked in:</b> this wiki's <a href="#roster">roster section</a> now states all 21 resolve a real portrait. CLAUDE.md and the <code>main.js</code> comment are outside this page's scope to edit but are stale on this specific point as of 2026-07-28.</p>
+        <p class="cite">CLAUDE.md ("11 of 20 politician portrait images... don't exist") and mobile/main.js:35 vs. assets/images/*.png + data/politicians-data.json's image fields</p>
+      </div>
     </section>
 
     <!-- ======================================================== -->
@@ -660,15 +749,15 @@ flowchart LR
       <h2>Open design questions</h2>
       <p class="dek">Carried over from the design doc's own Still-open list — these aren't divergences, they're places the design itself hasn't landed yet.</p>
       <div class="flow-grid">
-        <div class="flow-card"><h4>⚖️ Power balance pass</h4><div class="step">All 20 powers have numbers now (see Divergence 4), but none have been simulated/playtested for balance against each other.</div></div>
+        <div class="flow-card"><h4>⚖️ Power balance pass</h4><div class="step">In progress via <code>mobile/balance-sim.js</code>, not finished — 5 politicians rebalanced so far (the 4 celebrity/film-persona powers, plus ongoing work on the confirmed bottom-tier three: Rahul Gandhi, Mamata Banerjee, Manmohan Singh). Most of the roster still hasn't had an isolated pass.</div></div>
         <div class="flow-card"><h4>🗺️ Per-region tuning</h4><div class="step">Every policy region still defaults to the old shared 12/8/4 tier magnitude; the redesign's actual point — different regions reacting at different strengths — hasn't had its hand-tuning pass.</div></div>
         <div class="flow-card"><h4>🤝 Two-active-player ceiling</h4><div class="step">Every plausibility number (now further complicated by Divergence 1's budget change) assumes a passive opponent. Nobody has modeled two players actively contesting the same states.</div></div>
-        <div class="flow-card"><h4>🏛️ Public Sector's tag direction</h4><div class="step">Supports agricultural regions, opposes industrial ones — the reverse of where India's real PSU workforce actually concentrates. Flagged, not fixed; a judgment call outside a stray-tag audit's scope.</div></div>
+        <div class="flow-card"><h4>📱 Responsive layout</h4><div class="step"><code>design/viewport-migration-plan.md</code> (written 2026-07-25) is a phased plan to add a real <code>&lt;meta viewport&gt;</code> tag and stop relying on the no-viewport-tag ~980px canvas fallback — confirmed broken on any width/height ratio other than iPhone-14's. Plan only; no code changed yet.</div></div>
       </div>
     </section>
 
     <footer>
-      <p>Compiled 2026-07-24 by cross-referencing <code>design/economy-status-map.md</code> against <code>mobile/engine.js</code>, <code>mobile/game.js</code>, <code>mobile/main.js</code>, <code>data/*.json</code>, and a live <code>npm test</code> run — not from the design doc alone. Treat this page as a snapshot: re-verify code citations before relying on a specific line number, the same discipline this page applied to the design doc itself.</p>
+      <p>First compiled 2026-07-24, refreshed 2026-07-28, by cross-referencing <code>design/economy-status-map.md</code> and <code>CLAUDE.md</code> against <code>mobile/engine.js</code>, <code>mobile/game.js</code>, <code>mobile/main.js</code>, <code>data/*.json</code>, a live <code>npm test</code> run, and a live <code>node recompute_policy_ranking.js</code> run — not from the design doc alone. Treat this page as a snapshot: re-verify code citations before relying on a specific line number, the same discipline this page applied to the design doc itself.</p>
     </footer>
   </main>
 </div>

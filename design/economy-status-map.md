@@ -1,5 +1,5 @@
-<title>PME Design Reference — What's Actually Decided</title>
-<meta name="description" content="The single authoritative reference for how Pradhan Mantri Elections Mobile is supposed to work, per finalized design decisions. The build should target this document.">
+<title>PME Design Reference — What's Actually Decided (deprecated 2026-07-29)</title>
+<meta name="description" content="DEPRECATED 2026-07-29 — superseded by docs/wiki.html. Kept as a dated historical decision log (the tag-cancellation audits, the funds-bump rationale, etc.); no longer treated as the build target.">
 
 <style>
 :root{
@@ -146,10 +146,15 @@ td.num{ font-family:var(--mono); font-size:13px; }
 footer{ border-top:1px solid var(--rule-strong); padding-top:20px; color:var(--ink-soft); font-size:12.5px; }
 </style>
 
+<div style="background:var(--open-bg);color:var(--open-fg);border:1px solid var(--open-line);border-radius:10px;padding:16px 20px;margin:24px 0 0;font-family:var(--sans);">
+  <p style="margin:0 0 6px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;font-size:12px;">⚠ Deprecated 2026-07-29</p>
+  <p style="margin:0;font-size:14.5px;line-height:1.55;">This document is no longer the authoritative build target — <b><code>docs/wiki.html</code> is.</b> This page's own prose fell behind shipped decisions in several places (hung-parliament resolution, Public Sector's tag direction, the funds-budget figure) even while other sections of it were being actively edited, which is what prompted the switch — see <code>docs/wiki.html</code>'s divergence log, entries 8–11. Kept here as a dated historical decision log (the tag-cancellation audits, the seat-apportionment worked example, the funds-bump rationale) — treat any mechanic/number claim on this page as unverified until cross-checked against <code>docs/wiki.html</code> or the real code.</p>
+</div>
+
 <header>
-  <p class="eyebrow">Design reference · single source of truth</p>
+  <p class="eyebrow">Design reference · historical, superseded by docs/wiki.html</p>
   <h1>What Pradhan Mantri Elections Mobile is supposed to do</h1>
-  <p class="subtitle">Every finalized mechanic, formula, and number in the game's design, consolidated from <code>design/plan.md</code>, <code>CHANGELOG.md</code>, <code>findings.md</code>, and direct design decisions — in one place, so the build cycle has a single document to target instead of four. As of 2026-07-23, everything marked <span class="pill decided" style="vertical-align:1px;">decided</span> is settled and should be built to; anything else is flagged with exactly what's still missing. <b>2026-07-23:</b> <code>design/plan.md</code> is now fully merged and deprecated — its still-relevant reference material lives in the Build status section near the end of this document; the rest was a pre-build roadmap now superseded by the finished mobile engine (see CLAUDE.md).</p>
+  <p class="subtitle">Every finalized mechanic, formula, and number in the game's design, consolidated from <code>design/plan.md</code>, <code>CHANGELOG.md</code>, <code>findings.md</code>, and direct design decisions — in one place, so the build cycle had a single document to target instead of four. As of 2026-07-23, everything marked <span class="pill decided" style="vertical-align:1px;">decided</span> was settled and built to; anything else was flagged with exactly what was still missing. <b>2026-07-23:</b> <code>design/plan.md</code> was fully merged and deprecated into this document; <b>2026-07-29: this document itself was deprecated in turn, superseded by <code>docs/wiki.html</code></b> (see the notice above).</p>
 </header>
 
 <section id="legend">
