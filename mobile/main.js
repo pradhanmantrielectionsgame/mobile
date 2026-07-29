@@ -66,7 +66,7 @@
     ALL_UTS: { icon: '🏛️', label: 'Small UTs', ids: G.SMALL_UT_IDS.filter(function (id) { return id !== 'INDL' && id !== 'INGA'; }) },
     ALL_NE: { icon: '🌄', label: 'Northeast 8', ids: G.NORTHEAST_IDS }
   };
-  var timerHandle = null, timeLeft = 0, lastLogShown = 0, timerPaused = false;
+  var timerHandle = null, timeLeft = 0, timerPaused = false;
   var lastMapTapId = null, lastMapTapTime = 0, lastBtnTapId = null, lastBtnTapTime = 0;
   var DOUBLE_TAP_MS = 400;
 
@@ -227,14 +227,23 @@
 
   function syncNewsFeed() {
     var track = $('newsTrack');
-    var entries = game.log.slice(0, Math.max(0, game.log.length - lastLogShown)).slice(0, 6).reverse();
-    lastLogShown = game.log.length;
-    if (!entries.length && !track.dataset.inited) {
-      entries = [{ msg: 'Welcome to Booth Ink — the campaign trail begins.' }];
+    // Ticker-eligible entries from the CURRENT phase only (agenda
+    // completions, group dominance, state/nationwide rallies, special
+    // power use) — not the full game history.
+    var phaseEntries = game.log.filter(function (e) { return e.ticker && e.phase === game.phase; }).slice(0, 6);
+    var items;
+    if (phaseEntries.length) {
+      items = phaseEntries.map(function (e) { return e.msg; });
+    } else if (!track.dataset.inited) {
+      items = ['Welcome to Pradhanmantri Elections — the campaign trail begins.'];
+    } else {
+      // Nothing current this phase — no news is not itself a headline, so
+      // the ticker just goes quiet rather than announcing its own silence.
+      track.dataset.inited = '1';
+      track.innerHTML = '';
+      return;
     }
     track.dataset.inited = '1';
-    var items = game.log.slice(0, 6).map(function (e) { return e.msg; });
-    if (!items.length) items = ['Welcome to Booth Ink — the campaign trail begins.'];
     var html = items.map(function (m) { return '<span>' + m + '</span>'; }).join('<span aria-hidden="true">&nbsp;&nbsp;•&nbsp;&nbsp;</span>');
     track.innerHTML = html + '<span aria-hidden="true">&nbsp;&nbsp;•&nbsp;&nbsp;</span>' + html;
   }
@@ -425,7 +434,6 @@
     $('p1Name').textContent = game.players.p1.politician.name;
     $('p2Name').textContent = game.players.p2.politician.name;
 
-    lastLogShown = 0;
     armed = null; activeGroup = null; groupPinned = false; activeAgenda = null; activeAction = null; activeCluster = null;
     lastMapTapId = null; lastBtnTapId = null; timerPaused = false;
     $('pauseToggleBtn').textContent = '⏸'; $('pauseToggleBtn').title = 'Pause';
@@ -551,8 +559,7 @@
     if (game.winner === 'p1') { seal = '🏆'; headline = 'You won the election'; sub = 'You crossed 272 seats.'; }
     else if (game.hungParliament) {
       seal = '⚖️';
-      var vsAI = game.players.p2.isAI;
-      headline = vsAI ? 'Hung parliament — you lose' : 'Hung parliament';
+      headline = 'Hung parliament — a draw';
       sub = 'Neither side reached 272 seats.';
     }
     else { seal = '💔'; headline = 'You lost the election'; sub = game.players.p2.politician.name + ' crossed 272 seats.'; }

@@ -114,6 +114,7 @@
       isAI: !!isAI,
       aiProfile: aiProfile || null,
       fundsCr: cfg.startingFundsCr,
+      tokenIncomeStopped: false,
       tokens: { stateRally: 0 },
       tokensSpentThisPhase: 0,
       craftedSpecial: false, usedSpecial: false,
@@ -127,6 +128,24 @@
       aiRalliedThisPhase: false,
       aiAgendaTapsThisPhase: {}
     };
+  }
+
+  // Flags a player slot as AI-controlled and gives it a personality profile
+  // + a committed state-group target, same setup createGame always does for
+  // p2. Exposed so a headless test/simulation can also drive p1 with the
+  // real aiStep() logic (a symmetric "AI vs AI" match) instead of p1 always
+  // being the unflagged human seat — see mobile/balance-sim.js.
+  function setupAI(game, playerKey, rng) {
+    var pl = game.players[playerKey];
+    pl.isAI = true;
+    pl.aiProfile = pickAIProfile(rng);
+    // AI commits to one randomly-chosen state group for the whole match and
+    // hammers every state in it toward regional dominance, instead of
+    // round-robining across all groups — a simpler, harder-to-read-around
+    // opponent than cycling through the full group list.
+    if (game.groups.length) {
+      pl.aiTargetGroup = game.groups[Math.floor(rng() * game.groups.length)];
+    }
   }
 
   function createGame(data, p1PoliticianId, p2PoliticianId, rng) {
@@ -157,21 +176,20 @@
       winner: null,
       hungParliament: false,
       finalSeats: null,
-      players: { p1: makePlayer(p1Pol, data.cfg, false), p2: makePlayer(p2Pol, data.cfg, true, pickAIProfile(rng)) }
+      players: { p1: makePlayer(p1Pol, data.cfg, false), p2: makePlayer(p2Pol, data.cfg, false) }
     };
-    // AI commits to one randomly-chosen state group for the whole match and
-    // hammers every state in it toward regional dominance, instead of
-    // round-robining across all groups — a simpler, harder-to-read-around
-    // opponent than cycling through the full group list.
-    if (game.groups.length) {
-      game.players.p2.aiTargetGroup = game.groups[Math.floor(rng() * game.groups.length)];
-    }
+    setupAI(game, 'p2', rng);
     startPhase(game);
     return game;
   }
 
-  function pushLog(game, msg) {
-    game.log.unshift({ phase: game.phase, msg: msg });
+  // ticker: eligible for the "BREAKING" news marquee (main.js syncNewsFeed) —
+  // only agenda completions, group dominance payouts, state rallies,
+  // nationwide rallies, and special power use (Nehru's excepted — his
+  // Non-Alignment power is secret by design). Everything else still lands
+  // in game.log for the full history, just not surfaced in the ticker.
+  function pushLog(game, msg, ticker) {
+    game.log.unshift({ phase: game.phase, msg: msg, ticker: !!ticker });
     if (game.log.length > 40) game.log.pop();
   }
 
@@ -198,7 +216,7 @@
         if (active && !game.dominanceHeld[key]) {
           var payout = E.dominancePayoutCr(g, game.states, game.cfg.regionalDominance);
           game.players[pk].fundsCr += payout;
-          pushLog(game, '💰 ' + (pk === 'p1' ? 'You' : 'Opponent') + ' hold ' + g.label + ' — +₹' + payout + 'Cr regional dominance');
+          pushLog(game, '💰 ' + (pk === 'p1' ? 'You' : 'Opponent') + ' hold ' + g.label + ' — +₹' + payout + 'Cr regional dominance', true);
         }
         game.dominanceHeld[key] = active;
       });
@@ -211,7 +229,7 @@
     ['p1', 'p2'].forEach(function (pk) {
       var pl = game.players[pk];
       pl.fundsCr += game.cfg.fundsRefreshPerPhaseCr;
-      pl.tokens.stateRally += game.cfg.rally.tokenIncomePerPhase;
+      if (!pl.tokenIncomeStopped) pl.tokens.stateRally += game.cfg.rally.tokenIncomePerPhase;
       pl.tokensSpentThisPhase = 0;
       if (pl.isAI) { pl.aiAgendaTapsThisPhase = {}; pl.aiRalliedThisPhase = false; }
     });
@@ -237,10 +255,15 @@
     if (seats.p1 >= p1Threshold) { game.winner = 'p1'; }
     else if (seats.p2 >= p2Threshold) { game.winner = 'p2'; }
     else {
-      // Hung parliament — decided 2026-07-22 (ADR-0006): draw vs a human
-      // opponent, loss vs the AI fallback. This build is always vs-AI.
+      // Hung parliament is always a draw — revised 2026-07-28, superseding
+      // ADR-0006's "loss vs the AI fallback". With the roster now tuned to
+      // be harder to win outright (hung parliament rate 48-98% per
+      // mobile/balance-sim.js), defaulting every undecided match to an AI
+      // win would make a draw the de facto normal outcome disguised as a
+      // loss. Neither side reaching a majority is genuinely a draw,
+      // regardless of who the opponent is.
       game.hungParliament = true;
-      game.winner = game.players.p2.isAI ? 'p2' : 'draw';
+      game.winner = 'draw';
     }
   }
 
@@ -298,7 +321,7 @@
     pl.tokensSpentThisPhase += 1;
     game.rallyPlaysByState[svgId] = plays.concat([playerKey]);
     var gained = E.gainAt(game.pop[svgId], playerKey, game.cfg.rally.tokenBoostBps, 'both');
-    pushLog(game, '📢 ' + who(game, playerKey) + ' held a State Rally in ' + game.statesById[svgId].name);
+    pushLog(game, '📢 ' + who(game, playerKey) + ' held a State Rally in ' + game.statesById[svgId].name, true);
     applyRegionalDominancePayouts(game);
     return { ok: true, gained: gained };
   }
@@ -329,7 +352,7 @@
     pl.usedNationwide = true;
     var boost = game.cfg.rally.nationwideRallyBoostBps;
     game.states.forEach(function (s) { applyBigAction(game, playerKey, s.svgId, boost); });
-    pushLog(game, '🇮🇳 BREAKING: ' + who(game, playerKey) + ' launched a Nationwide Rally — every state feels it');
+    pushLog(game, '🇮🇳 BREAKING: ' + who(game, playerKey) + ' launched a Nationwide Rally — every state feels it', true);
     applyRegionalDominancePayouts(game);
     return { ok: true };
   }
@@ -359,7 +382,7 @@
         pl.tokens.stateRally += grant;
         pl.agendaTokenBonusEarned = bonusSoFar + grant;
       }
-      pushLog(game, '📜 BREAKING: ' + who(game, playerKey) + ' fully committed the ' + policyName + ' agenda');
+      pushLog(game, '📜 BREAKING: ' + who(game, playerKey) + ' fully committed the ' + policyName + ' agenda', true);
     }
     applyRegionalDominancePayouts(game);
     return { ok: true, completed: completed };
@@ -443,6 +466,13 @@
         who4.fundsFrozenUntilPhase = game.phase;
         pushLog(game, '🧊 ' + who4.politician.name +
           '\'s funds are frozen for the rest of this phase — no investing, agenda taps, or funded powers');
+      } else if (e.kind === 'stopTokenIncome') {
+        // Self only — a permanent cost (not phase-limited like freezeFunds),
+        // spends all of the activator's future rally-token income in
+        // exchange for the power's benefit. Tokens already banked stay
+        // spendable; only the per-phase income stops.
+        pl.tokenIncomeStopped = true;
+        pushLog(game, '🛑 ' + pl.politician.name + ' stops earning rally tokens for the rest of the match');
       } else if (e.kind === 'stealFundsPct') {
         var amt = Math.round(oppPl.fundsCr * e.pct / 100);
         oppPl.fundsCr -= amt; pl.fundsCr += amt;
@@ -496,7 +526,9 @@
     }
     (power.costs || []).forEach(runEffect);
     (power.benefits || []).forEach(runEffect);
-    pushLog(game, '⚡ BREAKING: ' + who(game, playerKey) + ' invoked ' + power.name);
+    // Nehru's Non-Alignment is secret by design — every other politician's
+    // power use is real breaking news, his never is.
+    pushLog(game, '⚡ BREAKING: ' + who(game, playerKey) + ' invoked ' + power.name, pl.politician.id !== 'jawaharlal-nehru');
     applyRegionalDominancePayouts(game);
     return { ok: true };
   }
@@ -520,20 +552,20 @@
     return top10[Math.floor(game.rng() * top10.length)].svgId;
   }
 
-  function pickAIPowerTarget(game, power) {
+  function pickAIPowerTarget(game, power, playerKey, oppKey) {
     var effect = power.benefits[0];
     var constraint = effect.constraint;
     var pool = constraint === 'smallUT' ? game.states.filter(function (s) { return SMALL_UT_IDS.indexOf(s.svgId) !== -1; }) : game.states;
     var best = null, bestVal = -1;
     pool.forEach(function (s) {
-      var val = effect.target === 'opponent' ? game.pop[s.svgId].p1 : (10000 - game.pop[s.svgId].p2);
+      var val = effect.target === 'opponent' ? game.pop[s.svgId][oppKey] : (10000 - game.pop[s.svgId][playerKey]);
       if (val > bestVal) { bestVal = val; best = s; }
     });
     return best ? best.svgId : null;
   }
 
-  function pickAICompletedAgenda(game) {
-    var pl = game.players.p2;
+  function pickAICompletedAgenda(game, playerKey) {
+    var pl = game.players[playerKey];
     var done = Object.keys(pl.agendaProgress).filter(function (k) { return pl.agendaProgress[k] >= game.cfg.agenda.tapsToComplete; });
     if (!done.length) return null;
     done.sort(function (a, b) { return totalNetEffect(game, b) - totalNetEffect(game, a); });
@@ -542,14 +574,14 @@
 
   // groupFocus profile bonus: push a laggard state that's the only thing
   // standing between the AI and a regional-dominance payout.
-  function groupFocusBonus(game, state) {
+  function groupFocusBonus(game, state, playerKey) {
     var bonus = 0;
     state.tags.forEach(function (tag) {
       var members = game.states.filter(function (s) { return s.tags.indexOf(tag) !== -1; });
       if (!members.length) return;
-      var thisQualifies = game.pop[state.svgId].p2 >= game.cfg.regionalDominance.thresholdBps;
+      var thisQualifies = game.pop[state.svgId][playerKey] >= game.cfg.regionalDominance.thresholdBps;
       if (thisQualifies) return;
-      var qualifying = members.filter(function (s) { return game.pop[s.svgId].p2 >= game.cfg.regionalDominance.thresholdBps; }).length;
+      var qualifying = members.filter(function (s) { return game.pop[s.svgId][playerKey] >= game.cfg.regionalDominance.thresholdBps; }).length;
       if (qualifying >= members.length - 2) bonus += 0.5;
     });
     return bonus;
@@ -560,7 +592,7 @@
   // the whole match, instead of chasing whatever single state scores best
   // nationwide — that scattered spend never concentrated enough in one
   // place to clear the 50% regional-dominance bar.
-  function scoreInvestState(game, pl, profile, s) {
+  function scoreInvestState(game, pl, profile, s, playerKey, oppKey) {
     var cost = E.investmentCostCr(s.seats, game.cfg.investment);
     if (cost > pl.fundsCr) return null;
     var tapNum = (pl.investmentTaps[s.svgId] || 0) + 1;
@@ -569,34 +601,34 @@
     // keeps dumping funds into an already-near-100% state forever (0 real
     // gain) instead of moving on to the next state in its target group,
     // which meant a group could never actually clear regional dominance.
-    var effectiveGain = Math.min(boost, 10000 - game.pop[s.svgId].p2);
+    var effectiveGain = Math.min(boost, 10000 - game.pop[s.svgId][playerKey]);
     if (effectiveGain <= 0) return null;
-    var score = effectiveGain / cost + (game.pop[s.svgId].p1 - game.pop[s.svgId].p2) / 100000;
-    if (profile && profile.groupFocus) score += groupFocusBonus(game, s);
+    var score = effectiveGain / cost + (game.pop[s.svgId][oppKey] - game.pop[s.svgId][playerKey]) / 100000;
+    if (profile && profile.groupFocus) score += groupFocusBonus(game, s, playerKey);
     return score;
   }
 
-  function bestInPool(game, pl, profile, pool) {
+  function bestInPool(game, pl, profile, pool, playerKey, oppKey) {
     var best = null, bestScore = -Infinity;
     pool.forEach(function (s) {
-      var score = scoreInvestState(game, pl, profile, s);
+      var score = scoreInvestState(game, pl, profile, s, playerKey, oppKey);
       if (score !== null && score > bestScore) { bestScore = score; best = s; }
     });
     return best;
   }
 
-  function pickAIInvestmentTarget(game, profile) {
-    var pl = game.players.p2;
+  function pickAIInvestmentTarget(game, profile, playerKey, oppKey) {
+    var pl = game.players[playerKey];
     var group = pl.aiTargetGroup;
-    if (!group) return bestInPool(game, pl, profile, game.states);
+    if (!group) return bestInPool(game, pl, profile, game.states, playerKey, oppKey);
 
     var pool = game.states.filter(function (s) { return s.tags.indexOf(group.key) !== -1; });
-    var best = bestInPool(game, pl, profile, pool);
+    var best = bestInPool(game, pl, profile, pool, playerKey, oppKey);
     if (best) return best;
     // nothing affordable/left with headroom in the target group right now
     // (fully dominant, or momentarily unaffordable) — spend elsewhere
     // rather than stall; next tick re-checks the target group first
-    return bestInPool(game, pl, profile, game.states);
+    return bestInPool(game, pl, profile, game.states, playerKey, oppKey);
   }
 
   // Performs exactly one AI action (rally play, token craft, power/nationwide
@@ -606,8 +638,17 @@
   // nothing to do. Called repeatedly — once per tick in the browser
   // (main.js paces ticks to ~20/min), or in a tight loop by runAIFull() for
   // Node tests, which don't care about real-time pacing.
-  function aiStep(game) {
-    var pl = game.players.p2;
+  // playerKey defaults to 'p2' — the browser and every existing call site
+  // (main.js, runAIFull below) call aiStep(game) with no second argument,
+  // so this default preserves their exact prior behavior. A second AI-
+  // controlled seat (e.g. a headless "AI vs AI" balance simulation, which
+  // needs a symmetric opponent instead of a naive/random p1 stand-in) can
+  // drive p1 the same way by passing 'p1' explicitly and flagging
+  // game.players.p1.isAI/.aiProfile/.aiTargetGroup itself first.
+  function aiStep(game, playerKey) {
+    playerKey = playerKey || 'p2';
+    var oppKey = playerKey === 'p2' ? 'p1' : 'p2';
+    var pl = game.players[playerKey];
     if (!pl.isAI || game.winner) return null;
     var profile = pl.aiProfile || AI_PROFILES[0];
 
@@ -618,7 +659,7 @@
     if (!pl.aiRalliedThisPhase && pl.tokensSpentThisPhase < game.cfg.rally.maxTokenSpendPerPhase && pl.tokens.stateRally > 0) {
       pl.aiRalliedThisPhase = true;
       var rallyTarget = pickAIRallyTarget(game);
-      if (rallyTarget && playRallyToken(game, 'p2', rallyTarget).ok) {
+      if (rallyTarget && playRallyToken(game, playerKey, rallyTarget).ok) {
         return { type: 'rally', svgId: rallyTarget, costCr: null };
       }
     }
@@ -628,9 +669,9 @@
     // reliably gets its own power online instead of draining tokens on
     // individual rally plays and never reaching the threshold.
     if (!pl.craftedSpecial && !pl.usedSpecial && pl.tokens.stateRally >= game.cfg.rally.specialPowerupCraftCost) {
-      if (craftToken(game, 'p2', 'special').ok) return { type: 'craftSpecial', svgId: null, costCr: null };
+      if (craftToken(game, playerKey, 'special').ok) return { type: 'craftSpecial', svgId: null, costCr: null };
     }
-    if (profile.craftsTokens && craftToken(game, 'p2', 'nationwide').ok) {
+    if (profile.craftsTokens && craftToken(game, playerKey, 'nationwide').ok) {
       return { type: 'craftNationwide', svgId: null, costCr: null };
     }
 
@@ -641,18 +682,18 @@
         pl.fundsCr >= powerFundsCost(power);
       if (canPay) {
         var opts = {};
-        if (power.requiresTargetState) opts.targetStateSvgId = pickAIPowerTarget(game, power);
-        if (power.requiresCompletedAgenda) opts.targetAgendaName = pickAICompletedAgenda(game);
+        if (power.requiresTargetState) opts.targetStateSvgId = pickAIPowerTarget(game, power, playerKey, oppKey);
+        if (power.requiresCompletedAgenda) opts.targetAgendaName = pickAICompletedAgenda(game, playerKey);
         var targetsOk = (!power.requiresTargetState || opts.targetStateSvgId) &&
           (!power.requiresCompletedAgenda || opts.targetAgendaName);
-        if (targetsOk && activatePower(game, 'p2', opts).ok) {
+        if (targetsOk && activatePower(game, playerKey, opts).ok) {
           return { type: 'power', svgId: opts.targetStateSvgId || null, costCr: null };
         }
       }
     }
 
     if (pl.craftedNationwide && !pl.usedNationwide) {
-      if (activateNationwideRally(game, 'p2').ok) return { type: 'nationwide', svgId: null, costCr: null };
+      if (activateNationwideRally(game, playerKey).ok) return { type: 'nationwide', svgId: null, costCr: null };
     }
 
     var ranked = pl.politician.policies.map(function (p) { return p.name; })
@@ -663,15 +704,15 @@
       if (tapsThisPhase >= profile.agendaTapCapPerPolicyPerPhase) continue;
       if ((pl.agendaProgress[name] || 0) >= game.cfg.agenda.tapsToComplete) continue;
       if (pl.fundsCr < game.cfg.agenda.costPerTapCr) continue;
-      if (tapAgenda(game, 'p2', name).ok) {
+      if (tapAgenda(game, playerKey, name).ok) {
         pl.aiAgendaTapsThisPhase[name] = tapsThisPhase + 1;
         return { type: 'agenda', svgId: null, costCr: game.cfg.agenda.costPerTapCr };
       }
     }
 
-    var investTarget = pl.fundsCr >= game.cfg.investment.costPerSeatCr ? pickAIInvestmentTarget(game, profile) : null;
+    var investTarget = pl.fundsCr >= game.cfg.investment.costPerSeatCr ? pickAIInvestmentTarget(game, profile, playerKey, oppKey) : null;
     if (investTarget) {
-      var investResult = investCash(game, 'p2', investTarget.svgId);
+      var investResult = investCash(game, playerKey, investTarget.svgId);
       if (investResult.ok) return { type: 'invest', svgId: investTarget.svgId, costCr: investResult.cost };
     }
 
@@ -681,9 +722,9 @@
   // Fast-forwards the AI's whole turn in one call — for Node tests/
   // simulation only, which don't need real-time pacing. The browser never
   // calls this; it ticks aiStep() on a timer instead (see main.js).
-  function runAIFull(game) {
+  function runAIFull(game, playerKey) {
     var guard = 0;
-    while (aiStep(game) && guard++ < 2000) {}
+    while (aiStep(game, playerKey) && guard++ < 2000) {}
   }
 
   var API = {
@@ -694,6 +735,7 @@
     loadGameData: loadGameData,
     loadGameDataSync: loadGameDataSync,
     createGame: createGame,
+    setupAI: setupAI,
     startPhase: startPhase,
     endPhase: endPhase,
     finalizeGame: finalizeGame,

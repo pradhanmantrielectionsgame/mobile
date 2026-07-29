@@ -6,6 +6,49 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### 🎮 Politician Rebalancing & AI Generalization for Multiplayer — 2026-07-28
+
+#### AI Engine Generalization for Network Sync
+- **GENERALIZED**: `mobile/game.js` `aiStep()` and `runAIFull()` to accept a `playerKey` parameter (defaults to `'p2'`), replacing hardcoded player-2-only logic. All helper functions (`pickAIPowerTarget`, `scoreInvestState`, etc.) now take explicit `playerKey`/`oppKey` parameters. Enables symmetric AI-vs-AI testing and groundwork for future network-multiplayer support [C1]
+- **ADDED**: `mobile/game.js` `setupAI(game, playerKey, rng)` helper to flag an arbitrary seat as AI-controlled (profile + target group), enabling symmetric AI-vs-AI simulation [C1]
+- **ADDED**: `mobile/game.js` `stopTokenIncome` cost kind + `tokenIncomeStopped` player flag, checked in `startPhase()`, enabling special powers to permanently halt rally-token income [C2]
+
+#### Balance Measurement Tool & Symmetric AI Testing
+- **REWRITTEN**: `mobile/balance-sim.js` — now drives both p1 and p2 via real AI (using generalized `Game.setupAI()` + `Game.runAIFull()`), replacing asymmetric naive-p1-vs-AI-p2 test. Scores hung parliament as 0.5/0.5 (neutral). Runs every politician (p1) vs. every other politician's real AI (p2) across N seeds/ordered pair, logging to `mobile/balance-log.jsonl`, reporting win-rate / avg final seats / avg home-state-popularity aggregates [C3]
+  - **Usage**: `node mobile/balance-sim.js [gamesPerOrderedPair]` (default 1; use 3-5 for more confidence)
+  - **Discovery**: Identified Rahul Gandhi, Mamata Banerjee, Manmohan Singh as empirically bottom-tier (avg final seats 172.5 / 170.7 / 196.5 vs. roster leader Hema Malini 261.7), each with different structural root cause
+
+#### Regular Politician Agenda Rebalancing (Targeting Bottom-Tier Win Rate)
+- **SWAPPED**: `data/politicians-data.json` — three regular politicians' agenda assignments, scope explicitly limited per user direction:
+  - Manmohan Singh: Public Sector → Press Freedom [C4]
+  - Rahul Gandhi: Judicial Activism → Anti-Corruption [C4]
+  - Mamata Banerjee: Agricultural Reforms → Healthcare [C4]
+  - (A broader rebalancing was tested then rejected; only these 3 swaps retained as final scope)
+
+#### Celebrity Politician Special Power Rebalancing (Deliberately Over-Powerful)
+- **REBALANCED**: `data/politicians-data.json` — four celebrity/non-politician special powers via cost/magnitude/timing only (agendas left unchanged per design intent):
+  - **Amitabh Bachchan (Celebrity Endorsement)**: nationwide swing 12%→6%, cost ₹1,000cr→₹2,000cr, added `requiresMinPhase: 6` [C5]
+  - **Hema Malini (Star Power Rally)**: nationwide swing 8%→2% (home bonus kept at 16% total), cost ₹500cr→₹2,500cr [C6]
+  - **Rajinikanth (Thalaivar Announcement)**: added -8% popularity cost in Hindi Heartland (previously zero downside) [C7]
+  - **Sivaji Rao (One-Day Ordinance)**: added cost — permanently stops future rally-token income (previously completely free) [C8]
+  - **Rationale**: These 4 are deliberately stronger/quirkier than political roster per design ("celebrities don't have traditional politician appeal"), not weaker. Rebalancing targets power only, never agenda kit, since their thematic fit is correct.
+
+#### News Ticker & Hung Parliament Tie Resolution
+- **UPDATED**: `mobile/game.js` + `mobile/main.js` `pushLog()` — now takes ticker-eligibility flag; only agenda completions, group dominance payouts, state rallies, nationwide rallies, and special power use (except Nehru's—secret) are ticker-eligible [C9]
+- **UPDATED**: `mobile/main.js` `syncNewsFeed()` — filters ticker entries to current phase only (not full game history); removed `lastLogShown` variable; shows empty ticker when nothing current [C10]
+- **CHANGED**: Welcome screen ticker message to "Welcome to Pradhanmantri Elections — the campaign trail begins." [C11]
+- **IMPLEMENTED**: `mobile/game.js` `finalizeGame()` hung parliament now always resolves as `'draw'` (replaces ADR-0006's AI-win/human-draw split); `mobile/main.js` `showEndOverlay()` unified to always show "Hung parliament — a draw" (fixed redundant independent logic that was re-deriving old rule without reading `game.winner`) [C12–C13]
+
+#### Architecture Decisions & Documentation Updates
+- **SUPERSEDED**: `docs/adr/0006-hung-parliament-tie-resolution.md` — Status marked "Superseded by ADR-0010" [C14]
+- **CREATED**: `docs/adr/0010-hung-parliament-always-a-draw.md` — formalizes hung parliament always drawing (replaces ADR-0006; measurements showed hung parliaments occur in 48-98% of games, making old rule's "AI wins ties" the de facto normal outcome) [C15]
+- **UPDATED**: `CLAUDE.md` — 4 directly-approved updates: aiStep/runAIFull generalization note, celebrity rebalance scope + power numbers, hung-parliament-always-draw rule, balance-sim.js methodology refinements [C16]
+
+#### Context
+Primary focus: rebalance politician roster targeting identified bottom-tier performers (balance-sim.js measurements showed Rahul Gandhi, Mamata Banerjee, Manmohan Singh as structurally weakest) and implement hung-parliament-always-a-draw rule (high frequency ~48-98% made ADR-0006's AI-favored tie-break the de facto normal outcome). Secondary: generalize AI engine to accept explicit playerKey parameter, enabling symmetric AI-vs-AI testing and groundwork for future network-multiplayer support. All changes maintain single-player-vs-AI scope; multiplayer backend deferred per ADR-0007.
+
+---
+
 ### 🎯 Multiplayer Architecture Plan — Implementation-Ready Design — 2026-07-28
 
 #### Multiplayer Plan Document

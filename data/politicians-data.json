@@ -67,7 +67,7 @@
           "bonus": 40
         },
         {
-          "name": "Public Sector",
+          "name": "Press Freedom",
           "bonus": 40
         },
         {
@@ -122,7 +122,7 @@
           "bonus": 40
         },
         {
-          "name": "Judicial Activism",
+          "name": "Anti-Corruption",
           "bonus": 30
         },
         {
@@ -285,7 +285,7 @@
           "bonus": 30
         },
         {
-          "name": "Agricultural Reforms",
+          "name": "Healthcare",
           "bonus": 30
         }
       ],
@@ -907,18 +907,19 @@
       ],
       "specialPower": {
         "name": "Celebrity Endorsement",
-        "effect": "+12% popularity nationwide, pulled only from undecided (\"Others\") voters — never taken from the opponent, so it's capped by how much Others is actually left in each state",
-        "cost": "₹1,000 crores"
+        "effect": "+6% popularity nationwide, pulled only from undecided (\"Others\") voters — never taken from the opponent, so it's capped by how much Others is actually left in each state. Usable from phase 6 onward.",
+        "cost": "₹2,000 crores"
       },
       "power": {
         "name": "Celebrity Endorsement",
-        "description": "+12% popularity nationwide, converted only from undecided (\"Others\") voters — never taken from the opponent; costs funds.",
+        "description": "+6% popularity nationwide, converted only from undecided (\"Others\") voters — never taken from the opponent; costs funds. Only pays off once the race is close and undecided voters are still up for grabs late in the campaign, so it isn't usable until phase 6.",
+        "requiresMinPhase": 6,
         "benefits": [
           {
             "kind": "popularity",
             "target": "self",
             "scope": "nationwide",
-            "bps": 1200,
+            "bps": 600,
             "source": "others"
           }
         ],
@@ -926,7 +927,7 @@
           {
             "kind": "funds",
             "target": "self",
-            "amountCr": -1000
+            "amountCr": -2000
           }
         ]
       }
@@ -1015,25 +1016,25 @@
       ],
       "specialPower": {
         "name": "Star Power Rally",
-        "effect": "+8% popularity nationwide, plus another +8% (16% total) in each of her home states, Uttar Pradesh and Tamil Nadu — the crowd goes wildest where they know her best",
-        "cost": "₹500 crores"
+        "effect": "+2% popularity nationwide, but 16% total in each of her home states, Uttar Pradesh and Tamil Nadu — the crowd goes wildest where they know her best, and barely notices her anywhere else",
+        "cost": "₹2,500 crores"
       },
       "power": {
         "name": "Star Power Rally",
-        "description": "+8% popularity nationwide, plus another +8% in each of her home states (Uttar Pradesh and Tamil Nadu); costs 500 Cr instantly.",
+        "description": "+2% popularity nationwide, plus another +14% in each of her home states (Uttar Pradesh and Tamil Nadu, 16% total there); costs 2,500 Cr instantly.",
         "benefits": [
           {
             "kind": "popularity",
             "target": "self",
             "scope": "nationwide",
-            "bps": 800,
+            "bps": 200,
             "source": "both"
           },
           {
             "kind": "popularity",
             "target": "self",
             "scope": "home",
-            "bps": 800,
+            "bps": 1400,
             "source": "both"
           }
         ],
@@ -1041,7 +1042,7 @@
           {
             "kind": "funds",
             "target": "self",
-            "amountCr": -500
+            "amountCr": -2500
           }
         ],
         "requiresMinFundsCr": 500
@@ -1076,12 +1077,12 @@
       ],
       "specialPower": {
         "name": "Thalaivar Announcement",
-        "effect": "+25% popularity in South India (Thalaivar's home turf), +18% in Maharashtra (Bollywood) — bigger where the cult following actually is",
+        "effect": "+25% popularity in South India (Thalaivar's home turf), +18% in Maharashtra (Bollywood) — bigger where the cult following actually is, at the cost of -8% in the Hindi Heartland, where the Thalaivar mystique doesn't carry",
         "cost": "₹2,000 crores"
       },
       "power": {
         "name": "Thalaivar Announcement",
-        "description": "+25% popularity in South India, +18% in Maharashtra; costs 2,000 Cr instantly.",
+        "description": "+25% popularity in South India, +18% in Maharashtra; costs 2,000 Cr instantly, plus -8% popularity in the Hindi Heartland, where his cult following doesn't reach.",
         "benefits": [
           {
             "kind": "popularity",
@@ -1107,6 +1108,15 @@
             "kind": "funds",
             "target": "self",
             "amountCr": -2000
+          },
+          {
+            "kind": "popularity",
+            "target": "self",
+            "scope": "tags",
+            "tags": [
+              "HindiHeartland"
+            ],
+            "bps": -800
           }
         ],
         "requiresMinFundsCr": 2000
@@ -1141,12 +1151,12 @@
       ],
       "specialPower": {
         "name": "One-Day Ordinance",
-        "effect": "Instantly sets your popularity to 100% in your home state (Maharashtra)",
-        "cost": "None"
+        "effect": "Instantly sets your popularity to 100% in your home state (Maharashtra) — but you burn all your remaining political capital on it: no more rally tokens for the rest of the match",
+        "cost": "No more rally tokens for the rest of the game"
       },
       "power": {
         "name": "One-Day Ordinance",
-        "description": "Instantly sets your popularity to 100% in your home state (Maharashtra). Free — no cost beyond the craft.",
+        "description": "Instantly sets your popularity to 100% in your home state (Maharashtra). Costs every future rally token you'd otherwise earn — tokens already banked still spend normally, but the per-phase income stops for good the moment this is used.",
         "benefits": [
           {
             "kind": "popularity",
@@ -1156,7 +1166,12 @@
             "source": "both"
           }
         ],
-        "costs": []
+        "costs": [
+          {
+            "kind": "stopTokenIncome",
+            "target": "self"
+          }
+        ]
       }
     }
   ]
