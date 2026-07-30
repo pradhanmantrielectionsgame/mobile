@@ -154,7 +154,9 @@ See the "Key Architectural Decisions" table above for framework selection, multi
 - **Phase 3:** Presence/reconnect + grace-period AI takeover (deferred, needs `aiStep` refactor)
 - **Phase 4+:** Capacitor wrapping, session persistence, competitive/ranked mode (if multiplayer gains traction)
 
-See `design/economy-status-map.md`'s "Build status & roadmap" section for current tech stack, deployment status, and open items.
+See `docs/wiki.html`'s "Architecture" section for current tech stack, deployment status, and open items.
+
+**Live deployment:** the mobile build ships from a dedicated repo, `github.com/pradhanmantrielectionsgame/mobile` (GitHub Pages, served at `pradhanmantrielectionsgame.github.io/mobile/`) — separate from this repo's own `origin` remote, which is a live Pages site still serving the legacy desktop game and is never merged into.
 
 ## Known Limitations
 
