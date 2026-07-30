@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### 🚀 Mobile Build Deployment to a Dedicated Repo — 2026-07-29
+
+- **RESOLVED**: The GitHub push-auth blocker from 2026-07-28 (pushing to the `pradhanmantrielectionsgame` account hung on interactive OAuth / defaulted to the wrong cached account). Fixed by generating a classic PAT with `repo` scope and storing it non-interactively via `git credential-manager-core store`, bypassing the interactive prompt entirely. [C1]
+- **ADDED**: Mobile build now deploys from a new dedicated repo, `github.com/pradhanmantrielectionsgame/mobile` (GitHub Pages from root), served at `pradhanmantrielectionsgame.github.io/mobile/` — kept separate from this repo's own `origin` (`pradhanmantrielectionsgame.github.io`), which stays a live Pages site for the legacy desktop game and is not merged into. [C1]
+- **ADDED**: New repo's root `index.html` is a copy of `mobile/index-redesign-a.html` plus a single `<base href="mobile/">` tag, so it serves the real game directly (no redirect hop) with zero changes to `engine.js`/`game.js`/`main.js`/`sw.js`. Must be manually re-copied after future edits to `index-redesign-a.html` — documented in `docs/wiki.html` and `CLAUDE.md`. [C2]
+
+See `findings.md`'s 2026-07-29 "Resolved the second-GitHub-account push blocker" entry for the full root-cause chain.
+
 ### 📚 Documentation Audit & Authoritative Reference Consolidation — 2026-07-29
 
 #### Design Documentation Restructuring

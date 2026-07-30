@@ -533,8 +533,9 @@ payout(group) = 5 Cr × (sum of seats across every state in the group)</pre>
 ├── simulate.js <span class="dim">— Node-only smoke test: 5 full games + all 21 power activations.</span>
 ├── balance-sim.js <span class="dim">— politician/agenda balance harness: real AI vs. real AI, N seeds per pair.</span>
 ├── sw.js       <span class="dim">— service worker, explicit-filename precache (see note below).</span>
-├── manifest.json <span class="dim">— PWA manifest, standalone display, SVG icon.</span>
-└── index.html  <span class="hi">← the real, playable build</span>
+├── manifest.json <span class="dim">— PWA manifest, standalone display, SVG icon. (deprecated index.html's manifest)</span>
+├── index.html  <span class="dim">← deprecated 2026-07-29, superseded by index-redesign-a.html below.</span>
+└── index-redesign-a.html <span class="hi">← the real, playable build ("Refined Booth Ink")</span>
 
 data/
 ├── states_data.json      <span class="dim">— 36 states/UTs: seats, svgId, region-group tags. Leading BOM.</span>
@@ -544,6 +545,11 @@ data/
 
 index.html / styles.css / js/*.js  <span class="dim">← legacy desktop-ported skin, superseded, not touched by mobile work.</span>
 design/prototypes/pme-mobile-sheet.html  <span class="dim">← frozen design-reference prototype (demo logic only, don't edit).</span></div>
+
+      <div class="note">
+        <p class="label">Live deployment: a separate repo, not this one's `main`</p>
+        <p>This repo's `origin` remote is a live GitHub Pages site (`pradhanmantrielectionsgame.github.io`) already serving the legacy desktop skin from `main` with no staging step — merging `mobile-ui-overhaul` into it would delete/replace that desktop game, not add the mobile build alongside it. Instead, the mobile build ships from a dedicated fresh repo (<code>github.com/pradhanmantrielectionsgame/mobile</code>, Pages serving root) at <code>pradhanmantrielectionsgame.github.io/mobile/</code>. Since GitHub Pages only serves a repo's root (or `/docs`), that repo's root `index.html` is a byte copy of `index-redesign-a.html` plus one added `&lt;base href="mobile/"&gt;` tag — the `<base>` tag alone makes every existing relative path (`script src="engine.js"`, `../assets/...`, `game.js`'s `basePath='../data/'`) resolve correctly with zero changes to `engine.js`/`game.js`/`main.js`/`sw.js`. That root `index.html` must be manually re-copied (re-adding the `<base>` tag) after every future edit to `index-redesign-a.html`, or the live deploy silently drifts out of sync.</p>
+      </div>
 
       <div class="diagram">
 <pre class="mermaid">
@@ -558,7 +564,7 @@ flowchart LR
   N --> Eng["engine.js<br/>pure math, no DOM"]
   Eng --> Game["game.js<br/>mutable game state + actions + AI"]
   Game --> Main["main.js<br/>DOM only"]
-  Main --> HTML["mobile/index.html"]
+  Main --> HTML["mobile/index-redesign-a.html"]
 </pre>
       </div>
 
@@ -575,8 +581,8 @@ flowchart LR
         <p>Added 2026-07-25: <code>#welcomeOverlay</code> in <code>mobile/index.html</code> is a full-bleed poster background with a "Begin Campaign" button that reveals <code>#selectOverlay</code>. It also does double duty as the first real user gesture in the app — <code>unlockSounds()</code> (<code>main.js</code>) plays-then-pauses every <code>&lt;audio&gt;</code> element there, since iOS Safari blocks <code>.play()</code> on any element that hasn't been played from a gesture at least once, and several sounds (game-over, phase-reset) only ever fire from a <code>setInterval</code> callback, never a tap.</p>
       </div>
       <div class="note">
-        <p class="label">Two HUD redesign prototypes exist alongside the shipped build</p>
-        <p><code>mobile/index-redesign-a.html</code> and <code>index-redesign-c.html</code> (added on the current <code>mobile-ui-overhaul</code> branch) are alternate takes on the in-game HUD chrome, each wired to the same <code>engine.js</code>/<code>game.js</code>. Redesign A is on a production track, not a disposable sketch — treat changes to it with the same care as <code>mobile/index.html</code> itself until a decision says otherwise.</p>
+        <p class="label">Redesign A is confirmed canonical; index-redesign-c is a comparison prototype</p>
+        <p><code>mobile/index-redesign-a.html</code> ("Refined Booth Ink") was confirmed 2026-07-29 as the real, shipped mobile build, superseding <code>mobile/index.html</code> — see the deployment note above. <code>index-redesign-c.html</code> (added on the current <code>mobile-ui-overhaul</code> branch) remains a dark-theme comparison prototype only, both wired to the same <code>engine.js</code>/<code>game.js</code>.</p>
       </div>
     </section>
 
