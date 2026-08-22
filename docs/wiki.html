@@ -549,9 +549,8 @@ payout(group) = 5 Cr × (sum of seats across every state in the group)</pre>
 ├── simulate.js <span class="dim">— Node-only smoke test: 5 full games + all 21 power activations.</span>
 ├── balance-sim.js <span class="dim">— politician/agenda balance harness: real AI vs. real AI, N seeds per pair.</span>
 ├── sw.js       <span class="dim">— service worker, explicit-filename precache (see note below).</span>
-├── manifest.json <span class="dim">— PWA manifest, standalone display, SVG icon. (deprecated index.html's manifest)</span>
-├── index.html  <span class="dim">← deprecated 2026-07-29, superseded by index-redesign-a.html below.</span>
-└── index-redesign-a.html <span class="hi">← the real, playable build ("Refined Booth Ink")</span>
+├── manifest.json <span class="dim">— PWA manifest, standalone display.</span>
+└── index.html  <span class="hi">← the real, playable build ("Refined Booth Ink"). Renamed 2026-08-22 from index-redesign-a.html — this is the only index.html in mobile/ now.</span>
 
 data/
 ├── states_data.json      <span class="dim">— 36 states/UTs: seats, svgId, region-group tags. Leading BOM.</span>
@@ -564,7 +563,7 @@ design/prototypes/pme-mobile-sheet.html  <span class="dim">← frozen design-ref
 
       <div class="note">
         <p class="label">Live deployment: a separate repo, not this one's `main`</p>
-        <p>This repo's `origin` remote is a live GitHub Pages site (`pradhanmantrielectionsgame.github.io`) already serving the legacy desktop skin from `main` with no staging step — merging `mobile-ui-overhaul` into it would delete/replace that desktop game, not add the mobile build alongside it. Instead, the mobile build ships from a dedicated fresh repo (<code>github.com/pradhanmantrielectionsgame/mobile</code>, Pages serving root) at <code>pradhanmantrielectionsgame.github.io/mobile/</code>. Since GitHub Pages only serves a repo's root (or `/docs`), that repo's root `index.html` is a byte copy of `index-redesign-a.html` plus one added `&lt;base href="mobile/"&gt;` tag — the `<base>` tag alone makes every existing relative path (`script src="engine.js"`, `../assets/...`, `game.js`'s `basePath='../data/'`) resolve correctly with zero changes to `engine.js`/`game.js`/`main.js`/`sw.js`. That root `index.html` must be manually re-copied (re-adding the `<base>` tag) after every future edit to `index-redesign-a.html`, or the live deploy silently drifts out of sync.</p>
+        <p>This repo's `origin` remote is a live GitHub Pages site (`pradhanmantrielectionsgame.github.io`) already serving the legacy desktop skin from `main` with no staging step — merging `mobile-ui-overhaul` into it would delete/replace that desktop game, not add the mobile build alongside it. Instead, the mobile build ships from a dedicated fresh repo (<code>github.com/pradhanmantrielectionsgame/mobile</code>, Pages serving root) at <code>pradhanmantrielectionsgame.github.io/mobile/</code>. <b>Update 2026-08-22:</b> deploys are no longer a manual byte-copy. <code>scripts/deploy-mobile.js</code> builds a filtered, flattened copy of just the runtime files (<code>mobile/index.html</code> → repo-root <code>index.html</code>, <code>engine.js</code>, <code>game.js</code>, <code>main.js</code>, <code>sw.js</code>, <code>manifest.json</code>, <code>html2canvas.min.js</code>, plus <code>assets/</code>, <code>data/</code>, <code>sounds/</code>, and a short deploy-only README) into a git worktree tracking the <code>mobile</code> remote's <code>main</code>, rewriting each copied file's <code>../assets/</code>/<code>../data/</code>/<code>../sounds/</code> references to drop the <code>../</code> since these files are now siblings of those folders instead of nested a level below — then commits and pushes. No `<base>` tag, no manual copy, and none of the legacy `js/`/`design/`/`docs/` baggage ships publicly anymore.</p>
       </div>
 
       <div class="diagram">
@@ -580,7 +579,7 @@ flowchart LR
   N --> Eng["engine.js<br/>pure math, no DOM"]
   Eng --> Game["game.js<br/>mutable game state + actions + AI"]
   Game --> Main["main.js<br/>DOM only"]
-  Main --> HTML["mobile/index-redesign-a.html"]
+  Main --> HTML["mobile/index.html"]
 </pre>
       </div>
 
@@ -598,7 +597,7 @@ flowchart LR
       </div>
       <div class="note">
         <p class="label">Redesign A is confirmed canonical; index-redesign-c is a comparison prototype</p>
-        <p><code>mobile/index-redesign-a.html</code> ("Refined Booth Ink") was confirmed 2026-07-29 as the real, shipped mobile build, superseding <code>mobile/index.html</code> — see the deployment note above. <code>index-redesign-c.html</code> (added on the current <code>mobile-ui-overhaul</code> branch) remains a dark-theme comparison prototype only, both wired to the same <code>engine.js</code>/<code>game.js</code>.</p>
+        <p>"Refined Booth Ink" was confirmed 2026-07-29 as the real, shipped mobile build, superseding the old <code>mobile/index.html</code> it replaced — see the deployment note above. It was authored as <code>mobile/index-redesign-a.html</code> during that comparison period; once confirmed permanent, it was renamed 2026-08-22 back to <code>mobile/index.html</code> (there being no other file left to disambiguate from). <code>index-redesign-c.html</code> (added on the current <code>mobile-ui-overhaul</code> branch) remains a dark-theme comparison prototype only, under its own name, both wired to the same <code>engine.js</code>/<code>game.js</code>.</p>
       </div>
     </section>
 

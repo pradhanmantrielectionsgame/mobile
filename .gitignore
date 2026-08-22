@@ -2,3 +2,4 @@
 
 node_modules/
 mobile/balance-log.jsonl
+.deploy-worktree/

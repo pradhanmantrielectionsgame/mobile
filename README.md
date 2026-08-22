@@ -18,13 +18,13 @@ A turn-based election simulation game on a mobile-first interactive India map. P
    ```
 
 3. **Play the game:**
-   - Open `http://localhost:8000/mobile/index-redesign-a.html` in your browser, or add to iPhone home screen via `http://<your-machine-ip>:8000/mobile/index-redesign-a.html`
-   - Game runs entirely in `mobile/index-redesign-a.html` (Booth Ink UI) wired to the real engine in `mobile/engine.js` and `mobile/game.js`
+   - Open `http://localhost:8000/mobile/index.html` in your browser, or add to iPhone home screen via `http://<your-machine-ip>:8000/mobile/index.html`
+   - Game runs entirely in `mobile/index.html` (Booth Ink UI) wired to the real engine in `mobile/engine.js` and `mobile/game.js`
    - Start from the welcome screen (full-bleed poster background, "Begin Campaign" button), then select your politician, then play vs. AI or hand the phone to Player 2 for local hotseat mode
    - Tap states to invest funds, use rally tokens for regional boosts, activate special powers, and pursue regional dominance bonuses
    - First player to 272/543 seats wins
 
-**Current build:** `mobile/index-redesign-a.html` (Booth Ink UI "Refined Booth Ink" redesign, fully engine-integrated). The legacy `mobile/index.html` and root `index.html` are deprecated; root `index.html` currently serves as a live-deploy copy of `index-redesign-a.html` plus `<base href="mobile/">` tag for the fresh-repo GitHub Pages site.
+**Current build:** `mobile/index.html` (Booth Ink UI "Refined Booth Ink" redesign, fully engine-integrated — this filename was `index-redesign-a.html` until 2026-08-22, when it was promoted to be the one and only `mobile/index.html`). Deploys to the public fresh repo (`github.com/pradhanmantrielectionsgame/mobile`) are built by `scripts/deploy-mobile.js`, which assembles a filtered copy (game files + assets/data/sounds only, no legacy desktop code) into a git worktree and pushes it — see that script for details.
 
 ## Installation
 
