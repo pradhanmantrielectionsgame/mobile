@@ -6,6 +6,34 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### 🚀 Mobile Deployment Restructuring: Fresh Repo & Automated Deploy Script — 2026-08-22
+
+#### File Restructuring & Canonical Build Elevation
+- **RENAMED**: `mobile/index-redesign-a.html` → `mobile/index.html` (elevated to sole canonical build; old `mobile/index.html` deleted first) [C1]
+- **RENAMED**: `mobile/manifest-redesign-a.json` → `mobile/manifest.json` (fixed stale `start_url` that would have 404'd on Add to Home Screen) [C2]
+- **UPDATED**: `mobile/index.html` — `<link rel="manifest">` corrected to point at `manifest.json` (was pointing at now-nonexistent `manifest-redesign-a.json`) [C3]
+- **DELETED**: Root-level `index.html` (the old manual base-href copy of `index-redesign-a.html` for the fresh GitHub Pages deploy, made obsolete by the new deploy script) [C5]
+
+#### Service Worker & Build Cache
+- **BUMPED**: `mobile/sw.js` cache version `v2` → `v3` (content set changed due to file renames) [C4]
+
+#### Automated Deployment Script
+- **CREATED**: `scripts/deploy-mobile.js` — builds a filtered, flattened copy of runtime files (mobile/index.html, engine.js, game.js, main.js, sw.js, manifest.json, html2canvas.min.js, plus assets/, data/, sounds/ directories) into a local `.deploy-worktree` git worktree tracking the `mobile` remote; rewrites relative-path references (`../assets/` → `assets/`, etc.) at copy time; commits locally always; pushes to `mobile` remote's `main` only with `--push` flag [C6]
+- **UPDATED**: `.gitignore` — added `.deploy-worktree/` (regenerable deploy output) [C7]
+
+#### Documentation & Deployment Verification
+- **UPDATED**: `CLAUDE.md`, `README.md`, `docs/wiki.html` — replaced stale prose about the manual byte-copy process with accurate description of the new `scripts/deploy-mobile.js` mechanism [C8]
+- **DEPLOYED**: Ran `node scripts/deploy-mobile.js --push` — pushed built output live to `github.com/pradhanmantrielectionsgame/mobile`'s `main` branch; verified via curl + GitHub Pages rebuild that all assets now resolve 200 at `https://pradhanmantrielectionsgame.github.io/mobile/`, catching live site up from stale 2026-07-29 snapshot [C9]
+
+#### Design Decisions
+- **[D1] Restructured fresh "mobile" deploy repo to ship only runtime files, not the entire monorepo.** Context: User called the byte-copy-to-root mechanism "weird" and asked to fix it. Root cause: the fresh repo was a full copy of the whole codebase (including legacy desktop js/, design/, docs/), and nothing had been pushed to it since 2026-07-29 despite 8 local commits. Solution: new `scripts/deploy-mobile.js` builds a fully filtered+flattened tree into a git worktree, eliminating manual-copy drift (the actual root cause of the three-week-stale live site) and shipping nothing the static site doesn't need. Rationale: zero new dependencies (uses only `fs.cpSync` and literal string substitution); fully eliminates the "must remember to re-copy and push" failure mode.
+- **[D2] Renamed mobile/index-redesign-a.html to mobile/index.html, making it the permanent canonical file.** Context: User's explicit direction ("the point is we should elevate redesign-a as the default... then we only work with index.html not redesign-a") when asked how future edits should reach the deployed copy. Rationale: matches user's stated preference for day-to-day editing against a file literally named `index.html` with no second name to keep track of; also incidentally fixed a latent bug where `npm run serve`'s default `/` route was pointing at the deprecated build instead of the canonical one.
+
+#### Context
+Session focused on fixing the mobile deployment pipeline: the fresh `mobile` repo was three weeks stale, the manual byte-copy process had failed to push, and a cleaner automated alternative was needed. Restructured to ship only runtime files (mobile/index.html + siblings + assets/data/sounds) into the deploy repo's root instead of a full monorepo copy. New `scripts/deploy-mobile.js` script rewrites relative paths at copy time, eliminates manual sync steps, and connects the two separate decisions: final elevation of redesign-a as `mobile/index.html` (permanent) and automation of the deploy process (eliminating the drift that was silently accumulating). Live site verified working end-to-end via curl + Playwright (zero console errors, zero failed requests) before pushing.
+
+---
+
 ### 🎮 Special-Power Scope System: svgIds for Button-Group Targeting — 2026-08-22
 
 #### Engine & Data Changes

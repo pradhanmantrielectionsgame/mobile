@@ -1,5 +1,15 @@
 # Findings
 
+## 2026-08-22 — The fresh "mobile" deploy repo had not been pushed to since 2026-07-29, three weeks and 8 local commits stale
+**Finding:** `git ls-remote --heads mobile main` showed the live deploy repo's `main` sitting at commit `1bb7314` ("verify GitHub Pages deployment live 2026-07-29"), while the local `deploy-mobile-fresh-repo` branch had moved 8 commits ahead — including the entire 2026-08-21 agenda-pack rebalance, the share-result feature, and this session's Kejriwal/Mamata changes. None of it had ever reached `pradhanmantrielectionsgame.github.io/mobile/`.
+**Context:** User questioned why the deploy setup (a manual byte-copy of `mobile/index-redesign-a.html` to a root `index.html` plus a `<base href="mobile/">` tag) felt "weird"; comparing remote vs. local branch heads directly (rather than trusting the doc's description of the mechanism) surfaced the actual staleness.
+**Implication:** A manual "must remember to re-copy and push" deploy step will eventually get forgotten — confirmed here, not hypothetical. The replacement, `scripts/deploy-mobile.js --push`, must be run explicitly after any `mobile/`-affecting change meant to go live; there is still no automatic trigger.
+
+## 2026-08-22 — mobile/manifest-redesign-a.json's start_url pointed at a filename that would 404 on Add to Home Screen
+**Finding:** The manifest's `start_url` was `./index-redesign-a.html`, and its `description` field literally said "separate manifest so Add to Home Screen doesn't point back at the real app's index.html" — both artifacts of when this file was a side-by-side comparison prototype, left unnoticed once redesign-a became the sole real build.
+**Context:** Grepped every `index-redesign-a`/`manifest-redesign-a` reference across the repo before renaming the file to `mobile/index.html`, specifically to catch self-referential paths a simple `git mv` wouldn't touch.
+**Implication:** When retiring/renaming a canonical file in this project, check JSON configs (manifests, service-worker precache lists) for filename strings embedded as data, not just `<script src>`/`<link href>` markup — those are easy to miss since they don't show up as a broken relative path until a user actually tries the affected flow (here, installing the PWA).
+
 ## 2026-08-21 — CSS grid containers with 1fr tracks inside a shrink-to-fit parent silently fail to hold a declared button size
 **Finding:** Building the agenda tray's 2x2 grid layout, an initial `grid-template-columns:1fr 1fr` on an auto-width (shrink-to-fit) `.ne-actions`/`.action-block` container reproduced the exact CSS-grid pitfall already documented elsewhere in this project's CLAUDE.md — switching to explicit `100px 100px` column tracks fixed it immediately.
 **Context:** Reshaping the AGENDA and RALLY trays from single-column stacks into 2x2 grids per user request.
