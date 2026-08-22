@@ -18,13 +18,13 @@ A turn-based election simulation game on a mobile-first interactive India map. P
    ```
 
 3. **Play the game:**
-   - Open `http://localhost:8000` in your browser, or add to iPhone home screen via `http://<your-machine-ip>:8000`
-   - Game runs entirely in `mobile/index.html` (Booth Ink UI) wired to the real engine in `mobile/engine.js` and `mobile/game.js`
+   - Open `http://localhost:8000/mobile/index-redesign-a.html` in your browser, or add to iPhone home screen via `http://<your-machine-ip>:8000/mobile/index-redesign-a.html`
+   - Game runs entirely in `mobile/index-redesign-a.html` (Booth Ink UI) wired to the real engine in `mobile/engine.js` and `mobile/game.js`
    - Start from the welcome screen (full-bleed poster background, "Begin Campaign" button), then select your politician, then play vs. AI or hand the phone to Player 2 for local hotseat mode
    - Tap states to invest funds, use rally tokens for regional boosts, activate special powers, and pursue regional dominance bonuses
    - First player to 272/543 seats wins
 
-**Current build:** `mobile/index.html` (Booth Ink UI, fully engine-integrated). The legacy `index.html` at project root is the old desktop-ported skin and is no longer maintained.
+**Current build:** `mobile/index-redesign-a.html` (Booth Ink UI "Refined Booth Ink" redesign, fully engine-integrated). The legacy `mobile/index.html` and root `index.html` are deprecated; root `index.html` currently serves as a live-deploy copy of `index-redesign-a.html` plus `<base href="mobile/">` tag for the fresh-repo GitHub Pages site.
 
 ## Installation
 

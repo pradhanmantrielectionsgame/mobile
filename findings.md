@@ -1,5 +1,20 @@
 # Findings
 
+## 2026-08-21 — CSS grid containers with 1fr tracks inside a shrink-to-fit parent silently fail to hold a declared button size
+**Finding:** Building the agenda tray's 2x2 grid layout, an initial `grid-template-columns:1fr 1fr` on an auto-width (shrink-to-fit) `.ne-actions`/`.action-block` container reproduced the exact CSS-grid pitfall already documented elsewhere in this project's CLAUDE.md — switching to explicit `100px 100px` column tracks fixed it immediately.
+**Context:** Reshaping the AGENDA and RALLY trays from single-column stacks into 2x2 grids per user request.
+**Implication:** Any future grid-based tray/panel in this codebase should use explicit px column tracks, not `1fr`, unless the grid container itself has a definite (non-auto) width.
+
+## 2026-08-21 — The end-of-game declare-card overflowed the viewport specifically on a win, not on a loss or draw
+**Finding:** Measured via Playwright at the iPhone-14 viewport: the win-only code path (which adds a winner-portrait block absent on loss/draw) pushed card content to 2048px against a 1668px viewport, cutting off the last stat rows and both footer buttons. Trimming spacing across the seal/portrait/parliament-chart/ledger/stats/footer brought it to 1533px, fully visible with no scrolling needed.
+**Context:** User reported the win screen was "too big for the mobile view" right after a "Clean sweeps" stat row was added to the match-stats block.
+**Implication:** Any future addition to the declare-card should be re-measured against real viewport height via Playwright before shipping, checking the win-only path specifically since it starts taller than draw/loss even before the new addition.
+
+## 2026-08-21 — previewAgendaTapSeatDelta's seat math verified exact against real tapAgenda outcomes, including net-negative taps
+**Finding:** A Node verification script comparing predicted vs actual `E.nationalSeats` delta after each real `tapAgenda` call matched exactly across 15 real taps, including two taps that netted -1 and -2 seats despite the agenda's own tags being nominally "supportive" for the tapping player.
+**Context:** User reported that depending on which states you already dominate, tapping an agenda can lose net seats rather than gain them; built a real-time seat-swing preview and verified its accuracy before shipping it in the UI.
+**Implication:** Confirms the reported bug is real (ownership caps + seat-apportionment rounding can make a nominally-positive agenda tap net-negative) and that the new preview correctly surfaces it to the player before they commit funds — safe to treat `previewAgendaTapSeatDelta` as ground truth for any future UI that wants a pre-commit projection of an agenda/investment action.
+
 ## 2026-08-21 — Three politicians shared an identical, mechanically-flat 2-tag pair before this session's agenda-pack rework
 **Finding:** Mamata Banerjee, Jayalalithaa, and Hema Malini all carried the exact same pair {Women's Empowerment, Healthcare} — both flat-`nationwideBonus` tags with zero regional signature, so tapping either did the identical thing regardless of which of the three was being played. Found via a pairwise tag-overlap script across all 21 politicians' 4-agenda kits; 6 pairs total shared >=3 of 4 tags, all concentrated in the celebrity/glamour cluster.
 **Context:** Requested analysis of "where is the agenda pack thematically weak" across the full roster, ahead of a broader thematic-distinctiveness pass.

@@ -6,6 +6,41 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### 🎨 End-of-Game UI Redesign: Seat-Swing Previews & Tray Reorganization — 2026-08-21
+
+#### End-of-Game Card & Match Stats
+- **ADDED**: `mobile/main.js` `cleanSweepsBy(pk)` live-derived stat; added "Clean sweeps" row to end-game match-stats block [C1]
+- **TRIMMED**: `mobile/index-redesign-a.html` declare-card CSS (seal, portrait, parliament chart, ledger, stats, footer spacing) to fit the viewport on a win (from 2048px overflow to 1533px, fully visible with zero scrolling) [C2]
+
+#### Agenda Tap Seat-Swing Preview System
+- **ADDED**: `mobile/game.js` `previewAgendaTapSeatDelta(game, playerKey, policyName)` — pure seat-swing preview via scratch per-state popularity clone and real apportionment (E.apportionSeats), verified accurate against real tapAgenda outcomes including net-negative taps [C3]
+- **ADDED**: `mobile/main.js` `renderAgendaCard()` now shows live "next tap ~+N seats" projection (colored green for gain, red for loss), using the preview function above [C4]
+
+#### Agenda Tray Redesign (Single-Column → 2x2 Grid)
+- **RESHAPED**: `mobile/main.js` + `mobile/index-redesign-a.html` agenda tray from single-column stack to 2x2 grid (explicit `grid-template-columns: 100px 100px`, CSS-grid 1fr pitfall avoided) [C5]
+- **REPLACED**: Agenda tray progress badge (left side) with a vertical 4-pip health bar (one pip per agenda, representing total tap % via `buildAgendaTray()` + `renderAgendas()`) [C5]
+- **ADDED**: Vertical progress indicator (4 dots) on the left edge of each agenda button, styled as a mini health-bar [C6]
+
+#### Rally Tray Redesign (Single-Column → 2x2 Grid)
+- **RESHAPED**: `mobile/index-redesign-a.html` + `mobile/main.js` rally token tray (#tokenTray) from single-column stack to 2x2 grid, row 1 is rallyBtn+nationwideBtn, row 2 is specialBtn spanning both columns as `.action-btn-wide` with "Special Ability" text label [C9]
+
+#### Special-Power Info Panel (Reuses Ballot-Card Markup)
+- **REWIRED**: `mobile/main.js` `renderActionInfo()` special-power branch to render the full `.pol-power` block (seal/benefit/cost/unlock), reusing politician-select ballot-card markup/CSS via `pol.specialPower` and `power.requiresMinPhase` instead of the raw engine description paragraph [C7]
+- **RESIZED**: `mobile/index-redesign-a.html` `.pol-power { width:100% }` so power block renders full-width in the bottom info panel's flex row [C8]
+
+#### Root Deploy Copy Re-sync
+- **RESYNCED**: `index.html` (root) — byte-copy of `mobile/index-redesign-a.html` plus `<base href="mobile/">` tag, per existing fresh-repo GitHub Pages deploy convention [C10]
+
+#### Design Decisions
+- **[D1] Seat-swing preview computed via full seat apportionment, not raw bps sum.** Rationale: User reported tapping an agenda can lose net seats depending on which states already dominated — totalNetEffect's bps sum doesn't capture this ownership-cap / seat-apportionment-rounding non-linearity. Solution: pure scratch-clone function (`previewAgendaTapSeatDelta`) mirrors tapAgenda's own net-first-apply-once math against a real apportionment pass, giving exact preview with zero game-state mutation risk.
+- **[D2] Agenda & Rally trays both reshaped to 2x2 grids using explicit px column tracks, not 1fr.** Rationale: First attempt widened single-column trays (to make pip health bar legible); user asked to undo that and go 2x2 with vertical dots instead. CSS-grid 1fr on shrink-to-fit container would silently override button sizes (documented project pitfall); explicit `100px 100px` tracks keep buttons at normal size while panel goes wide-and-short instead of tall, avoiding overlap with panel below.
+- **[D3] Special-power bottom info panel reuses exact .pol-power markup from politician-select card.** Rationale: User wanted the same cost/benefit/unlock details shown on select card to appear in-game too. Reusing identical DOM structure guarantees the two views always agree and look consistent, free of maintenance burden and drift risk.
+
+#### Context
+Session focused on final end-of-game UI polish: added "Clean sweeps" stat to match-stats block, trimmed viewport overflow on win screen, built live seat-swing preview system to surface the ownership-cap non-linearity users were experiencing, and reorganized both agenda and rally token trays into 2x2 grids with clearer progress indicators. Special-power display now reuses ballot-card styling for consistency. Root `index.html` re-copied to stay in sync with `mobile/index-redesign-a.html`. All changes CSS/HTML/UI only, no engine modifications; maintains single-player-vs-AI scope.
+
+---
+
 ### 📊 Agenda Pack Expansion & Politician Rebalancing — 2026-08-21
 
 #### Agenda System Expansion
