@@ -45,11 +45,14 @@
 
   // Deliberate exception to the instant-only rule for special powers (see
   // Modi's Demonetization) — a documented one-off, not a pattern to reuse
-  // casually. Blocks every funds-spending action for the remainder of the
-  // current phase, self-clearing once game.phase moves past it — no
-  // separate cleanup step, and no delayed "starts next phase" trigger
-  // (that pattern is explicitly banned, see design/economy-status-map.md).
-  function fundsFrozen(pl, game) { return pl.fundsFrozenUntilPhase === game.phase; }
+  // casually. Blocks every funds-spending action through the rest of the
+  // activation phase plus the following phase (2 phases total), self-clearing
+  // once game.phase moves past fundsFrozenUntilPhase — no separate cleanup
+  // step, and no delayed "starts next phase" trigger for a single-phase
+  // freeze (that pattern is explicitly banned, see
+  // design/economy-status-map.md) — this is a genuine 2-phase duration, not
+  // that banned off-by-one.
+  function fundsFrozen(pl, game) { return game.phase <= pl.fundsFrozenUntilPhase; }
 
   // ---------------------------------------------------------------------
   // Data loading / normalization (browser: fetch; Node: fs, for tests)
@@ -117,6 +120,7 @@
       tokenIncomeStopped: false,
       tokens: { stateRally: 0 },
       tokensSpentThisPhase: 0,
+      tokensSpentTotal: 0,
       craftedSpecial: false, usedSpecial: false,
       craftedNationwide: false, usedNationwide: false,
       powerNullified: false,
@@ -172,6 +176,7 @@
       bigActionsThisPhase: [],
       phaseStartSnapshot: null,
       dominanceHeld: {},
+      cleanSweepHeld: {},
       log: [],
       winner: null,
       hungParliament: false,
@@ -223,6 +228,30 @@
     });
   }
 
+  // Same instant/held/re-payable shape as regional dominance above, scoped
+  // to a single state instead of a whole group: pays the moment a player's
+  // share of one state hits a literal 100% (opponent + Others both at 0),
+  // again if a seize/steal power knocks them off it and they re-sweep it.
+  function applyCleanSweepPayouts(game) {
+    game.states.forEach(function (s) {
+      ['p1', 'p2'].forEach(function (pk) {
+        var key = s.svgId + '|' + pk;
+        var active = game.pop[s.svgId][pk] === E.BPS;
+        if (active && !game.cleanSweepHeld[key]) {
+          var payout = s.seats * game.cfg.cleanSweep.payoutCrPerSeat;
+          game.players[pk].fundsCr += payout;
+          pushLog(game, '🎯 ' + (pk === 'p1' ? 'You' : 'Opponent') + ' swept ' + s.name + ' 100% — +₹' + payout + 'Cr clean sweep bonus', true);
+        }
+        game.cleanSweepHeld[key] = active;
+      });
+    });
+  }
+
+  function applyPayouts(game) {
+    applyRegionalDominancePayouts(game);
+    applyCleanSweepPayouts(game);
+  }
+
   function startPhase(game) {
     game.phaseStartSnapshot = deepCopyPop(game.pop);
     game.bigActionsThisPhase = [];
@@ -233,7 +262,7 @@
       pl.tokensSpentThisPhase = 0;
       if (pl.isAI) { pl.aiAgendaTapsThisPhase = {}; pl.aiRalliedThisPhase = false; }
     });
-    applyRegionalDominancePayouts(game);
+    applyPayouts(game);
     // AI no longer auto-resolves its whole turn here — it acts one move at a
     // time via aiStep(), paced by the caller (main.js throttles to ~20/min;
     // runAIFull() fast-forwards it for Node tests/simulation).
@@ -303,7 +332,7 @@
     pl.investmentTaps[svgId] = tapNum;
     var boost = E.investmentBoostBps(tapNum, game.cfg.investment);
     var gained = E.gainAt(game.pop[svgId], playerKey, boost, 'both');
-    applyRegionalDominancePayouts(game);
+    applyPayouts(game);
     return { ok: true, gained: gained, cost: cost };
   }
 
@@ -319,10 +348,11 @@
     if (plays.length >= game.cfg.rally.maxPlaysPerStateShared) return { ok: false, reason: 'state_cap' };
     pl.tokens.stateRally -= 1;
     pl.tokensSpentThisPhase += 1;
+    pl.tokensSpentTotal += 1;
     game.rallyPlaysByState[svgId] = plays.concat([playerKey]);
     var gained = E.gainAt(game.pop[svgId], playerKey, game.cfg.rally.tokenBoostBps, 'both');
     pushLog(game, '📢 ' + who(game, playerKey) + ' held a State Rally in ' + game.statesById[svgId].name, true);
-    applyRegionalDominancePayouts(game);
+    applyPayouts(game);
     return { ok: true, gained: gained };
   }
 
@@ -340,6 +370,7 @@
     if (game.phase < minPhase) return { ok: false, reason: 'too_early' };
     if (pl.tokens.stateRally < cost) return { ok: false, reason: 'insufficient_tokens' };
     pl.tokens.stateRally -= cost;
+    pl.tokensSpentTotal += cost;
     pl[craftedFlag] = true;
     pushLog(game, (flavor === 'special' ? '⭐ ' : '🇮🇳 ') + who(game, playerKey) +
       ' crafted ' + (flavor === 'special' ? 'a Special Powerup' : 'a Nationwide Rally') + ' — ready to activate');
@@ -353,7 +384,7 @@
     var boost = game.cfg.rally.nationwideRallyBoostBps;
     game.states.forEach(function (s) { applyBigAction(game, playerKey, s.svgId, boost); });
     pushLog(game, '🇮🇳 BREAKING: ' + who(game, playerKey) + ' launched a Nationwide Rally — every state feels it', true);
-    applyRegionalDominancePayouts(game);
+    applyPayouts(game);
     return { ok: true };
   }
 
@@ -384,7 +415,7 @@
       }
       pushLog(game, '📜 BREAKING: ' + who(game, playerKey) + ' fully committed the ' + policyName + ' agenda', true);
     }
-    applyRegionalDominancePayouts(game);
+    applyPayouts(game);
     return { ok: true, completed: completed };
   }
 
@@ -463,9 +494,9 @@
         who.fundsCr = Math.max(0, who.fundsCr + e.amountCr);
       } else if (e.kind === 'freezeFunds') {
         var who4 = e.target === 'self' ? pl : oppPl;
-        who4.fundsFrozenUntilPhase = game.phase;
+        who4.fundsFrozenUntilPhase = game.phase + 1;
         pushLog(game, '🧊 ' + who4.politician.name +
-          '\'s funds are frozen for the rest of this phase — no investing, agenda taps, or funded powers');
+          '\'s funds are frozen for the rest of this phase and all of the next — no investing, agenda taps, or funded powers');
       } else if (e.kind === 'stopTokenIncome') {
         // Self only — a permanent cost (not phase-limited like freezeFunds),
         // spends all of the activator's future rally-token income in
@@ -495,6 +526,11 @@
         var totalTaps = 0;
         Object.keys(pl.agendaProgress).forEach(function (k) { totalTaps += pl.agendaProgress[k]; });
         pl.fundsCr += totalTaps * game.cfg.agenda.costPerTapCr;
+      } else if (e.kind === 'refundTokensSpent') {
+        // Refunds every rally token the activator has spent this match (on
+        // rallies + crafting), self only — same "derive from a running
+        // counter" shape as refundAgendaSpend above.
+        pl.tokens.stateRally += pl.tokensSpentTotal;
       } else if (e.kind === 'lowerSeatsToWin') {
         pl.seatsToWinOverride = e.seatsToWin;
       } else if (e.kind === 'tokens') {
@@ -529,7 +565,7 @@
     // Nehru's Non-Alignment is secret by design — every other politician's
     // power use is real breaking news, his never is.
     pushLog(game, '⚡ BREAKING: ' + who(game, playerKey) + ' invoked ' + power.name, pl.politician.id !== 'jawaharlal-nehru');
-    applyRegionalDominancePayouts(game);
+    applyPayouts(game);
     return { ok: true };
   }
 

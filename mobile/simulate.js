@@ -105,8 +105,16 @@ data.politicians.forEach((pol, i) => {
       for (let t = 0; t < 4; t++) Game.tapAgenda(g, 'p1', name);
       opts.targetAgendaName = name;
     }
+    const preTokens = g.players.p1.tokens.stateRally;
+    const spentTotal = g.players.p1.tokensSpentTotal;
     const res = Game.activatePower(g, 'p1', opts);
     if (!res.ok) throw new Error('activatePower not ok: ' + res.reason);
+    if (pol.id === 'rajiv-gandhi') {
+      const gained = g.players.p1.tokens.stateRally - preTokens;
+      if (gained !== spentTotal) {
+        throw new Error(`refundTokensSpent gave back ${gained}, expected exactly ${spentTotal} (tokens spent so far)`);
+      }
+    }
     checkInvariants(g, `power test ${pol.id}`);
   } catch (e) {
     powerFailures.push(pol.id + ': ' + e.message);
@@ -117,4 +125,47 @@ if (powerFailures.length) {
   process.exit(1);
 }
 console.log(`All ${data.politicians.length} politician powers activate cleanly.`);
+
+// Clean-sweep bonus: pays once when a state hits a literal 100% share, not
+// again while held, and again if lost + re-swept — same held/active shape
+// as regional dominance (see applyCleanSweepPayouts in game.js).
+{
+  const g = Game.createGame(data, data.politicians[0].id, data.politicians[1].id, mulberry32(7));
+  const s = g.states[0];
+  // A fresh rally target each call — playRallyToken caps at 2 plays/state
+  // (maxPlaysPerStateShared), and a rejected call returns early *before*
+  // reaching applyPayouts, which would silently invalidate this test.
+  const others = g.states.slice(1, 5);
+  let pokeIdx = 0;
+  const rate = g.cfg.cleanSweep.payoutCrPerSeat;
+  const expectedPayout = s.seats * rate;
+  g.players.p1.tokens.stateRally = 20;
+
+  function poke() {
+    g.players.p1.tokensSpentThisPhase = 0;
+    const r = Game.playRallyToken(g, 'p1', others[pokeIdx++].svgId);
+    assert.ok(r.ok, 'poke rally token rejected: ' + r.reason);
+  }
+
+  g.pop[s.svgId] = { p1: 10000, p2: 0, others: 0 };
+  let before = g.players.p1.fundsCr;
+  poke();
+  let gained = g.players.p1.fundsCr - before;
+  assert.strictEqual(gained, expectedPayout, `clean sweep first payout: got ${gained}, expected ${expectedPayout}`);
+
+  before = g.players.p1.fundsCr;
+  poke();
+  gained = g.players.p1.fundsCr - before;
+  assert.strictEqual(gained, 0, 'clean sweep repaid while still held (should not)');
+
+  g.pop[s.svgId] = { p1: 9000, p2: 1000, others: 0 }; // opponent knocks them off 100%
+  poke();
+  g.pop[s.svgId] = { p1: 10000, p2: 0, others: 0 }; // re-swept
+  before = g.players.p1.fundsCr;
+  poke();
+  gained = g.players.p1.fundsCr - before;
+  assert.strictEqual(gained, expectedPayout, 'clean sweep did not repay after losing + re-sweeping');
+}
+console.log('Clean-sweep bonus: pays once on sweep, not while held, and again after losing + re-sweeping.');
+
 console.log(`mobile/simulate.js: all invariants held across 5 full games + ${data.politicians.length} isolated power activations.`);

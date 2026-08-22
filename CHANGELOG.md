@@ -6,6 +6,40 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### 📊 Agenda Pack Expansion & Politician Rebalancing — 2026-08-21
+
+#### Agenda System Expansion
+- **ADDED**: `data/policy-tags.json` — 7 new agenda tags (Coastal Economy, Food Security, Heritage and Tourism, Environmental Conservation, Sports and Entertainment, Nationalization, Foreign Policy & Diplomacy), expanding the shared policy pool from 25 to 32 tags [C1]
+- **REPURPOSED**: `data/policy-tags.json` — "Judicial Activism" → "Administrative Reform" (new `tagEffects`: Education +8, IndustrialCorridor +6, Manufacturing +6, TribalLands -4, AgriculturalRegion -4) [C2]
+
+#### Politician Agenda Kit Rebalancing
+- **UPDATED**: `data/politicians-data.json` — 12 of 21 politicians' 4-agenda kits refreshed for thematic distinctiveness and balance (Mamata Banerjee, Manmohan Singh, Jayalalithaa, Amitabh Bachchan, Sachin Tendulkar, Rajinikanth, Indira Gandhi, Hema Malini, P.V. Narasimha Rao, Sardar Patel, B.R. Ambedkar, Rahul Gandhi) — see CLAUDE.md 2026-08-21 decision bullet for full kit assignments [C3]
+
+#### Special Power Rebalancing
+- **REWORKED**: `data/politicians-data.json` + `mobile/game.js` — Narendra Modi's "Demonetization" power: from 1-phase freeze (with -5% popularity cost) to genuine 2-phase freeze (no separate cost) plus flat +4% nationwide popularity benefit (unconditional, no cost line); structural change to move from denial-only to combined benefit/denial mechanic [C4]
+- **REBALANCED**: `data/politicians-data.json` — Rajinikanth's "Thalaivar Announcement" power: magnitude trimmed +25%/+18% → +22%/+15%, Hindi Heartland cost deepened -8% → -14%, fund cost ₹2,000cr (unchanged after a same-session reversal from ₹3,000cr) [C5]
+
+#### Engine & Game-Logic Changes
+- **UPDATED**: `mobile/game.js` `fundsFrozen()` — changed from equality check (`=== game.phase`) to range check (`game.phase <= pl.fundsFrozenUntilPhase`); `freezeFunds` benefit now sets `fundsFrozenUntilPhase = game.phase + 1` for genuine 2-phase duration (comment updated to explain this is NOT the previously-banned off-by-one pattern) [C6]
+
+#### Documentation & Reference Updates
+- **UPDATED**: `docs/wiki.html` — agenda pool count synced throughout (25→32 entries); "Full policy ranking" table regenerated via `node recompute_policy_ranking.js` with current 32-tag numbers; Special powers section got dated example block documenting Modi/Rajinikanth 2026-08-21 power reworks and new AI-undervaluation methodology note [C7]
+- **UPDATED**: `design/testing-and-balance-notes.md` — added third documented methodology trap (balance-sim.js's AI-vs-AI win rates systematically undervalue conditional/exploit-dependent special powers relative to unconditional/guaranteed ones) [C8]
+- **UPDATED**: `CLAUDE.md` — agenda pool count synced (24→32 entries); added full 2026-08-21 decision bullet for agenda-pack overhaul; updated Rajinikanth's stated power numbers (were stale post-rebalance); added clarifying note on Demonetization's now-legitimate 2-phase duration vs. previously-banned off-by-one pattern; added new standing rule bullet ("don't mint a new agenda tag for just one politician — needs 2+ real distinct biography fits") [C9]
+
+#### Design Decisions
+- **[D1] Retired "Judicial Activism" tag, repurposed into "Administrative Reform."** Rationale: User wants to avoid one-off agenda tags (used by only 1 politician) unless truly unique. Judicial Activism was only held by Ambedkar and was a stretch fit even for him. Repurposing gets 2 real users (Ambedkar's constitution-drafting/civil-service framework, Patel's founding of modern IAS) without growing the pool.
+- **[D2] Rebalance Modi and Rajinikanth's win rates via special-power changes only, never their agenda kits.** Rationale: Agenda kits were independently judged thematically solid; project convention already bans touching celebrity agenda kits for balance, only their powers.
+- **[D3] Modi's Demonetization needed a structural rework (added a direct benefit), not just cost/duration tuning.** Rationale: Two independent single-lever changes (cost and duration) each moved win rate by ~0%, confirming the power's problem was its shape (pure denial, AI doesn't reliably capitalize on it), not magnitude. A guaranteed, unconditional benefit pays off regardless of AI play quality.
+- **[D4] Simplified Demonetization's benefit/cost from separate +6%/-2% to clean +4% with no cost line.** Rationale: Net effect identical; simpler is clearer, matches other no-cost powers already in the roster.
+- **[D5] Declined to add a "Farmers' Issues" agenda tag.** Rationale: User judged existing "Agricultural Reforms" broad/interpretable enough to already cover that ground; declined per the no-one-off/limited-value-add principle.
+- **[D6] Declined to touch Nehru's kit despite an initial "Infrastructure is generic" flag.** Rationale: User pointed out Nehru's Infrastructure (Bhakra Nangal, "temples of modern India") is a genuinely strong real fit, not generic filler. Preferred leaving a settled, well-regarded kit untouched over forcing in a new tag.
+
+#### Context
+Session focused on expanding the shared agenda-tag pool for thematic distinctiveness and refreshing 12 of 21 politicians' kits to avoid duplicate/overlapping pairs (3-of-4-tag overlap found between Mamata/Jayalalithaa/Hema). Separately rebalanced Modi and Rajinikanth's special powers targeting identified structural issues (Modi's denial-only mechanic, Rajinikanth's outlier win rate) via power-only changes per project convention. Updated wiki/design-doc/CLAUDE.md with new pool size, methodology notes, and decision rationale. All changes maintain single-player-vs-AI scope.
+
+---
+
 ### 🎯 Share Result Feature — Image Capture & Deep-Link Fallback — 2026-08-21
 
 #### Share Functionality Redesign

@@ -113,6 +113,11 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
 .india-map{ position:absolute; inset:0; width:100%; height:100%; transform:scale(1.06); transform-origin:center; }
 .india-map path, .india-map circle{ fill:var(--map-base); stroke:var(--map-stroke); stroke-width:1.1; cursor:pointer; transition:fill-opacity .25s ease, fill .2s ease; }
 .india-map path.selected, .india-map circle.selected{ stroke:var(--accent); stroke-width:3; stroke-dasharray:5 3; animation:march .7s linear infinite; }
+/* Clean-sweep glow — a state a player holds at a literal 100% share. Two
+   stacked drop-shadows (tight bright core + soft wide halo) since box-shadow
+   doesn't apply to SVG shapes; filter does. */
+.india-map path.swept-p1, .india-map circle.swept-p1{ filter:drop-shadow(0 0 6px var(--p1)) drop-shadow(0 0 16px var(--p1)); }
+.india-map path.swept-p2, .india-map circle.swept-p2{ filter:drop-shadow(0 0 6px var(--p2)) drop-shadow(0 0 16px var(--p2)); }
 @keyframes march{ to{ stroke-dashoffset:-8; } }
 .india-map path#INLD, .india-map path#INAN, .india-map rect#bbox-lakshadweep{ display:none; }
 
@@ -363,27 +368,40 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
 
 /* ---- end-of-game "declaration" card — same ballot-card materials as the
    select screen's, so the game opens and closes inside one visual world. ---- */
-.end-overlay{ align-items:center; justify-content:center; text-align:center; gap:0; padding:50px; }
-.declare-card{ width:100%; max-width:950px; background:var(--paper); color:var(--ink); border-radius:45px; border:3px solid var(--ink);
+.end-overlay{ align-items:center; justify-content:flex-start; text-align:center; gap:0; padding:20px; }
+.declare-card{ width:100%; background:var(--paper); color:var(--ink); border-radius:45px; border:3px solid var(--ink);
   box-shadow:6px 6px 0 var(--ink); overflow:hidden; display:flex; flex-direction:column; align-items:center; }
-.declare-seal{ margin-top:45px; width:160px; height:160px; border-radius:50%; background:var(--ink); border:3px solid #C9A227;
-  display:flex; align-items:center; justify-content:center; font-size:75px; box-shadow:0 0 0 3px rgba(0,0,0,.12); }
+.declare-seal{ margin-top:45px; width:130px; height:130px; border-radius:50%; background:var(--ink); border:3px solid #C9A227;
+  display:flex; align-items:center; justify-content:center; font-size:60px; box-shadow:0 0 0 3px rgba(0,0,0,.12); flex:0 0 auto; }
+.end-winner-portrait{ margin-top:25px; width:200px; height:200px; border-radius:50%; object-fit:cover; background:#ccc;
+  border:4px solid #C9A227; box-shadow:0 0 0 3px rgba(0,0,0,.12); flex:0 0 auto; }
 .end-overlay .headline{ font-family:var(--font-display); font-size:53px; font-weight:700; margin:35px 50px 10px; }
-.end-overlay .sub{ color:rgba(20,22,28,.65); font-size:34px; max-width:30ch; margin:0 50px 40px; }
-.end-parliament{ width:100%; max-width:850px; padding:0 40px; }
+.end-overlay .sub{ color:rgba(20,22,28,.65); font-size:34px; max-width:34ch; margin:0 50px 40px; }
+.end-parliament{ width:100%; max-width:900px; padding:0 40px; }
 .end-parliament svg{ width:100%; height:auto; display:block; }
 .end-parliament circle{ transition:fill .4s ease; }
-.declare-ledger{ width:100%; padding:35px 55px 10px; }
-.ledger-row{ display:flex; align-items:center; gap:25px; padding:18px 0; border-bottom:1px dashed rgba(20,22,28,.16); font-family:var(--font-mono); font-size:34px; }
+.declare-ledger{ width:100%; padding:35px 40px 10px; }
+.ledger-row{ display:flex; align-items:center; gap:20px; padding:18px 0; border-bottom:1px dashed rgba(20,22,28,.16); font-family:var(--font-mono); font-size:32px; }
 .ledger-row:last-child{ border-bottom:none; }
 .ledger-row.winner{ font-weight:700; }
-.ledger-dot{ width:25px; height:25px; border-radius:50%; flex:0 0 auto; }
+.ledger-row.others{ color:var(--ink-soft); font-style:italic; }
+.ledger-portrait{ width:70px; height:70px; border-radius:50%; object-fit:cover; border:2.5px solid var(--ink); background:#ccc; flex:0 0 auto; }
+.ledger-dot{ width:22px; height:22px; border-radius:50%; flex:0 0 auto; }
 .ledger-name{ flex:1; text-align:left; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.ledger-seats{ font-weight:700; font-variant-numeric:tabular-nums; }
-.declare-footer{ width:100%; border-top:1px solid rgba(20,22,28,.18); margin-top:35px; padding:35px 50px 50px; }
-.end-overlay button{ width:100%; font-family:var(--font-display); background:var(--accent); color:#fff; font-weight:700;
-  padding:33px 55px; border-radius:100px; font-size:36px; border:2px solid var(--ink); box-shadow:3px 3px 0 var(--ink); }
+.ledger-type{ color:var(--ink-soft); font-weight:600; font-size:24px; }
+.ledger-seats{ font-weight:700; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.declare-stats{ width:100%; padding:5px 40px 10px; }
+.declare-stats .pol-section-label{ text-align:left; }
+.stat-row{ display:flex; align-items:center; gap:15px; padding:14px 0; border-bottom:1px dashed rgba(20,22,28,.16); font-family:var(--font-mono); font-size:28px; }
+.stat-row:last-child{ border-bottom:none; }
+.stat-label{ flex:1; text-align:center; color:var(--ink-soft); }
+.stat-val{ font-weight:700; text-align:center; min-width:110px; font-variant-numeric:tabular-nums; }
+.stat-val.p1{ color:var(--p1); } .stat-val.p2{ color:var(--p2); }
+.declare-footer{ width:100%; display:flex; gap:20px; border-top:1px solid rgba(20,22,28,.18); margin-top:35px; padding:35px 50px 50px; }
+.end-overlay button{ flex:1; font-family:var(--font-display); background:var(--accent); color:#fff; font-weight:700;
+  padding:33px 30px; border-radius:100px; font-size:36px; border:2px solid var(--ink); box-shadow:3px 3px 0 var(--ink); }
 .end-overlay button:active{ transform:translate(3px,3px); box-shadow:none; }
+.end-overlay button.secondary{ background:var(--paper-dim); color:var(--ink); }
 .target-banner{ position:fixed; top:0; left:0; right:0; z-index:60; background:var(--stamp); color:#fff; text-align:center; font-size:12.5px; font-weight:700; padding:8px; }
 .target-banner[hidden]{ display:none; }
 
@@ -392,6 +410,31 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
 .settings-row{ background:var(--surface); border:1px solid var(--rule); border-radius:19px; padding:35px 40px; font-size:36px; font-weight:600; text-align:left; display:block; width:100%; }
 .settings-help{ background:var(--surface2); border-radius:19px; padding:35px 40px; font-size:30px; color:var(--ink-soft); line-height:1.5; }
 .settings-help b{ display:block; margin-bottom:6px; color:var(--ink); }
+
+/* ---- share sheet — a real iOS-style bottom action sheet (slide up, app
+   icon row, Cancel), not another full-page overlay like settings. Shown
+   whenever native file-attachment sharing (the result-card image) isn't
+   available — desktop, older Android, or a plain-http origin, since the Web
+   Share API's `files` capability needs a secure context. A capable phone
+   over https instead gets the real OS share sheet with the image attached. ---- */
+.share-overlay{ position:fixed; inset:0; z-index:70; display:flex; align-items:flex-end; justify-content:center; }
+.share-overlay[hidden]{ display:none; }
+.share-backdrop{ position:absolute; inset:0; background:rgba(0,0,0,.45); }
+.share-sheet{ position:relative; width:100%; background:var(--surface); border-radius:40px 40px 0 0;
+  padding:20px 30px calc(env(safe-area-inset-bottom,0px) + 30px); box-shadow:0 -4px 20px rgba(0,0,0,.2);
+  animation:shareSheetUp .22s ease-out; }
+@keyframes shareSheetUp{ from{ transform:translateY(100%); } to{ transform:translateY(0); } }
+.share-sheet-handle{ width:70px; height:8px; border-radius:5px; background:var(--rule); margin:0 auto 25px; }
+.share-apps{ display:flex; gap:24px; overflow-x:auto; padding:5px 5px 30px; -webkit-overflow-scrolling:touch; }
+.share-app{ display:flex; flex-direction:column; align-items:center; gap:12px; flex:0 0 auto; width:130px;
+  font-family:var(--font); font-size:26px; font-weight:600; text-decoration:none; color:var(--ink);
+  background:none; border:none; padding:0; }
+.share-app[hidden]{ display:none; }
+.share-app-icon{ width:100px; height:100px; border-radius:26px; display:flex; align-items:center; justify-content:center;
+  font-size:50px; color:#fff; box-shadow:var(--shadow-sm); }
+.share-cancel{ width:100%; background:var(--surface2); border-radius:24px; padding:30px; font-size:36px; font-weight:700;
+  font-family:var(--font); color:var(--ink); border:none; }
+.share-cancel:active{ opacity:.7; }
 
 /* ---- feedback fx layer: viewport-fixed so it works over both the map and
    the corner UT buttons alike (design doc "Touch interaction & feedback") ---- */
@@ -462,17 +505,39 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
   <div class="declare-card">
     <div class="tricolor"><span class="saffron"></span><span class="white"></span><span class="green"></span></div>
     <div class="declare-seal" id="declareSeal">🏆</div>
+    <img class="end-winner-portrait" id="endWinnerPortrait" alt="" hidden>
     <div class="headline" id="endHeadline">—</div>
     <div class="sub" id="endSub">—</div>
     <div class="end-parliament" id="endParliamentChart"></div>
     <div class="declare-ledger" id="endSeats"></div>
-    <div class="declare-footer"><button id="playAgainBtn">Play again</button></div>
+    <div class="declare-stats" id="endStats"></div>
+    <div class="declare-footer"><button id="shareResultBtn" class="secondary">📤 Share result</button><button id="playAgainBtn">Play again</button></div>
   </div>
 </div>
 
 <div class="target-banner" id="targetBanner" hidden>Tap a state to target</div>
 <div class="rally-token-layer" id="rallyTokenLayer"></div>
 <div class="fx-layer" id="fxLayer"></div>
+
+<div class="share-overlay" id="shareOverlay" hidden>
+  <div class="share-backdrop" id="shareBackdrop"></div>
+  <div class="share-sheet">
+    <div class="share-sheet-handle"></div>
+    <div class="share-apps">
+      <a class="share-app" id="shareWhatsapp" href="#" target="_blank" rel="noopener">
+        <span class="share-app-icon" style="background:#25D366">💬</span>WhatsApp</a>
+      <a class="share-app" id="shareX" href="#" target="_blank" rel="noopener">
+        <span class="share-app-icon" style="background:#000">𝕏</span>X</a>
+      <a class="share-app" id="shareSms" href="#">
+        <span class="share-app-icon" style="background:#0B93F6">✉️</span>Messages</a>
+      <button class="share-app" id="shareCopyBtn">
+        <span class="share-app-icon" style="background:#8E8E93">🔗</span>Copy</button>
+      <a class="share-app" id="shareSaveImageBtn" href="#" download="pme-result.png" hidden>
+        <span class="share-app-icon" style="background:#5856D6">🖼️</span>Save image</a>
+    </div>
+    <button class="share-cancel" id="closeShareBtn">Cancel</button>
+  </div>
+</div>
 
 <div class="overlay settings-overlay" id="settingsOverlay" hidden>
   <div class="overlay-header"><h1>Settings</h1></div>
@@ -732,6 +797,7 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
   </div>
 </div>
 
+<script src="html2canvas.min.js"></script>
 <script src="engine.js"></script>
 <script src="game.js"></script>
 <script src="main.js"></script>

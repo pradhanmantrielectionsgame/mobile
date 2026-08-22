@@ -139,7 +139,7 @@ See the "Key Architectural Decisions" table above for framework selection, multi
 - `data/game-config.json` — extended with `mobileEconomy` namespace (phases=10, starting funds, refresh rate, costs, rally boost, dominance payout)
 - `data/politicians-data.json` — all 20 politicians with 4 signature agendas + 1 special power each; powers have concrete cost/benefit tradeoffs
 - `data/states_data.json` — 28 states + 8 UTs, 15 regional groups, live-fetched by the game
-- `data/policy-tags.json` — 24 policies with per-region effect magnitudes (after tagEffects migration), consistency-checked via `check_data_consistency.js`
+- `data/policy-tags.json` — 32 policies with per-region effect magnitudes (after tagEffects migration and 2026-08-21 expansion), consistency-checked via `check_data_consistency.js`
 
 **UI (Complete for MVP):** `mobile/index.html` (Booth Ink skin) wired to real engine; includes politician select (with dynamic player colors), end-game overlay, fixed corner-right action buttons (agenda/rally/special power), bottom info panel toggle (state detail ↔ group LED grid), persistent rally-token map markers, AI action animations.
 

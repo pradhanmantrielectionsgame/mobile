@@ -29,26 +29,26 @@
       ],
       "specialPower": {
         "name": "Demonetization",
-        "effect": "Opponent's funds are frozen — they can't invest, tap agendas, or activate their own special power (if it costs funds) for one full phase",
-        "cost": "-5% popularity nationwide"
+        "effect": "Freezes opponent's funds for 2 phases; +4% popularity nationwide",
+        "cost": "None"
       },
       "power": {
         "name": "Demonetization",
-        "description": "Freezes the opponent's funds for one full phase — they can't invest, tap agendas, or activate a funds-costing special power; costs -5% of your own popularity nationwide.",
+        "description": "Freezes the opponent's funds for two full phases — they can't invest, tap agendas, or activate a funds-costing special power; also +4% popularity nationwide from the anti-corruption framing. No separate cost beyond the political risk of the disruption itself.",
         "benefits": [
           {
             "kind": "freezeFunds",
             "target": "opponent"
-          }
-        ],
-        "costs": [
+          },
           {
             "kind": "popularity",
             "target": "self",
             "scope": "nationwide",
-            "bps": -500
+            "bps": 400,
+            "source": "both"
           }
         ],
+        "costs": [],
         "requiresMinPhase": 3
       }
     },
@@ -67,7 +67,7 @@
           "bonus": 40
         },
         {
-          "name": "Press Freedom",
+          "name": "Food Security",
           "bonus": 40
         },
         {
@@ -81,7 +81,7 @@
       ],
       "specialPower": {
         "name": "Economic Reform",
-        "effect": "Instant 2,500 Cr funds gain",
+        "effect": "+₹2,500 Cr instantly",
         "cost": "-8% popularity in Agricultural Region states"
       },
       "power": {
@@ -122,7 +122,7 @@
           "bonus": 40
         },
         {
-          "name": "Anti-Corruption",
+          "name": "Press Freedom",
           "bonus": 30
         },
         {
@@ -137,7 +137,7 @@
       "specialPower": {
         "name": "Bharat Jodo Yatra",
         "effect": "+12% popularity in Minority Areas states",
-        "cost": "₹1,500 crores"
+        "cost": "₹1,500 Cr"
       },
       "power": {
         "name": "Bharat Jodo Yatra",
@@ -240,8 +240,8 @@
       ],
       "specialPower": {
         "name": "Anti-Corruption Raid",
-        "effect": "Reduces the opponent's cash on hand by 50% (seized/frozen by the raid, not transferred to you)",
-        "cost": "-15% popularity in the opponent's home state"
+        "effect": "Seizes 50% of opponent's cash on hand (destroyed, not transferred)",
+        "cost": "-15% popularity in opponent's home state"
       },
       "power": {
         "name": "Anti-Corruption Raid",
@@ -285,24 +285,32 @@
           "bonus": 30
         },
         {
-          "name": "Healthcare",
+          "name": "Coastal Economy",
           "bonus": 30
         }
       ],
       "specialPower": {
         "name": "State Autonomy Stand",
-        "effect": "+15% popularity in your home state",
-        "cost": "₹1,500 crores"
+        "effect": "+8% popularity in Eastern Border and South India states, +7% more (15% total) in home state",
+        "cost": "₹2,000 Cr"
       },
       "power": {
         "name": "State Autonomy Stand",
-        "description": "Instant popularity boost in your home state, funded by an upfront spend.",
+        "description": "+8% popularity in Eastern Border and South India states, +7% more (15% total) in home state; costs 2,000 Cr instantly.",
         "benefits": [
           {
             "kind": "popularity",
             "target": "self",
+            "scope": "tags",
+            "tags": ["EasternBorder", "SouthIndia"],
+            "bps": 800,
+            "source": "both"
+          },
+          {
+            "kind": "popularity",
+            "target": "self",
             "scope": "home",
-            "bps": 1500,
+            "bps": 700,
             "source": "both"
           }
         ],
@@ -310,7 +318,7 @@
           {
             "kind": "funds",
             "target": "self",
-            "amountCr": -1500
+            "amountCr": -2000
           }
         ]
       }
@@ -344,8 +352,8 @@
       ],
       "specialPower": {
         "name": "Alliance Switch",
-        "effect": "+7% popularity nationwide for you, -7% popularity nationwide for your opponent",
-        "cost": "₹1,000 crores + 2 rally tokens"
+        "effect": "+7% popularity nationwide for you, -7% for opponent",
+        "cost": "₹1,000 Cr + 2 rally tokens"
       },
       "power": {
         "name": "Alliance Switch",
@@ -452,11 +460,11 @@
           "bonus": 40
         },
         {
-          "name": "Public Sector",
+          "name": "Environmental Conservation",
           "bonus": 30
         },
         {
-          "name": "Land Reforms",
+          "name": "Nationalization",
           "bonus": 30
         },
         {
@@ -466,8 +474,8 @@
       ],
       "specialPower": {
         "name": "National Emergency",
-        "effect": "Confiscates 100% of the opponent's cash on hand and all of their currently-held rally tokens (destroyed, not transferred to you)",
-        "cost": "-3% of your own popularity nationwide"
+        "effect": "Seizes 100% of opponent's cash and all held rally tokens (destroyed, not transferred)",
+        "cost": "-3% popularity nationwide"
       },
       "power": {
         "name": "National Emergency",
@@ -522,7 +530,7 @@
       ],
       "specialPower": {
         "name": "Non-Alignment",
-        "effect": "If the opponent hasn't used their special power yet, it is secretly nullified — they don't find out until they try to activate it, after already spending the tokens to craft it. If the opponent has already used their special power, gain a flat 2,000 Cr instead.",
+        "effect": "Secretly nullifies opponent's power if unused; +₹2,000 Cr if they've already used theirs",
         "cost": "None"
       },
       "power": {
@@ -562,7 +570,7 @@
           "bonus": 30
         },
         {
-          "name": "Infrastructure",
+          "name": "Administrative Reform",
           "bonus": 30
         },
         {
@@ -572,7 +580,7 @@
       ],
       "specialPower": {
         "name": "Iron Unification",
-        "effect": "Increases popularity nationwide to a 20% floor. No effect on states where popularity is already higher. Funds +1,000 crores",
+        "effect": "Raises popularity to a 20% floor nationwide; +₹1,000 Cr",
         "cost": "None"
       },
       "power": {
@@ -611,7 +619,7 @@
           "bonus": 40
         },
         {
-          "name": "Judicial Activism",
+          "name": "Administrative Reform",
           "bonus": 40
         },
         {
@@ -625,8 +633,8 @@
       ],
       "specialPower": {
         "name": "Constitutional Reform",
-        "effect": "+10% popularity in Minority Areas, +10% in Tribal Lands, plus a full refund of every Cr spent tapping agendas so far this match — the reforms pay for themselves",
-        "cost": "₹2,500 crores"
+        "effect": "+10% popularity in Minority Areas and Tribal Lands; refunds all Cr spent on agendas",
+        "cost": "₹2,500 Cr"
       },
       "power": {
         "name": "Constitutional Reform",
@@ -681,7 +689,7 @@
           "bonus": 30
         },
         {
-          "name": "Women's Empowerment",
+          "name": "Food Security",
           "bonus": 30
         },
         {
@@ -692,7 +700,7 @@
       "specialPower": {
         "name": "Amma Welfare Scheme",
         "effect": "+18% popularity in South India",
-        "cost": "₹2,500 crores"
+        "cost": "₹2,500 Cr"
       },
       "power": {
         "name": "Amma Welfare Scheme",
@@ -747,8 +755,8 @@
       ],
       "specialPower": {
         "name": "Jai Jawan Jai Kisan",
-        "effect": "Popularity boost in Eastern Border/Western Border AND Agricultural Region states at once",
-        "cost": "₹1,500 crores"
+        "effect": "+10% popularity in Eastern Border, Western Border, and Agricultural Region states",
+        "cost": "₹1,500 Cr"
       },
       "power": {
         "name": "Jai Jawan Jai Kisan",
@@ -791,7 +799,7 @@
           "bonus": 40
         },
         {
-          "name": "Judicial Activism",
+          "name": "Foreign Policy & Diplomacy",
           "bonus": 30
         },
         {
@@ -805,8 +813,8 @@
       ],
       "specialPower": {
         "name": "Minority Government Survival",
-        "effect": "For the rest of the match, you only need 250 seats to win instead of 272 — governing without a full majority, like his real 1991-96 government",
-        "cost": "₹2,000 crores"
+        "effect": "Lowers seats needed to win to 250 (from 272) for the rest of the match",
+        "cost": "₹2,000 Cr"
       },
       "power": {
         "name": "Minority Government Survival",
@@ -856,17 +864,15 @@
       ],
       "specialPower": {
         "name": "Telecom Revolution",
-        "effect": "Instant 2,000 Cr funds rebate",
-        "cost": "₹1,000 crores"
+        "effect": "Refunds every rally token spent so far this match",
+        "cost": "₹1,000 Cr"
       },
       "power": {
         "name": "Telecom Revolution",
-        "description": "An instant rebate representing a permanent discount, reframed as a one-time payout since duration-based effects aren’t allowed; costs an upfront spend.",
+        "description": "Refunds every rally token the activator has spent this match (on state rallies and crafted powerups) — scales with how much rally activity has already happened; costs an upfront spend.",
         "benefits": [
           {
-            "kind": "funds",
-            "target": "self",
-            "amountCr": 2000
+            "kind": "refundTokensSpent"
           }
         ],
         "costs": [
@@ -889,11 +895,11 @@
       "primaryColor": "#B8860B",
       "policies": [
         {
-          "name": "Press Freedom",
+          "name": "Hindi Language",
           "bonus": 40
         },
         {
-          "name": "Digital Transformation",
+          "name": "Healthcare",
           "bonus": 30
         },
         {
@@ -901,14 +907,14 @@
           "bonus": 30
         },
         {
-          "name": "Healthcare",
+          "name": "Heritage and Tourism",
           "bonus": 30
         }
       ],
       "specialPower": {
         "name": "Celebrity Endorsement",
-        "effect": "+6% popularity nationwide, pulled only from undecided (\"Others\") voters — never taken from the opponent, so it's capped by how much Others is actually left in each state. Usable from phase 6 onward.",
-        "cost": "₹2,000 crores"
+        "effect": "+6% popularity nationwide, pulled only from undecided voters",
+        "cost": "₹2,000 Cr"
       },
       "power": {
         "name": "Celebrity Endorsement",
@@ -943,7 +949,7 @@
       "primaryColor": "#004BA0",
       "policies": [
         {
-          "name": "Film and TV",
+          "name": "Water and Mineral Rights",
           "bonus": 40
         },
         {
@@ -951,7 +957,7 @@
           "bonus": 30
         },
         {
-          "name": "Infrastructure",
+          "name": "Sports and Entertainment",
           "bonus": 30
         },
         {
@@ -961,8 +967,8 @@
       ],
       "specialPower": {
         "name": "National Icon",
-        "effect": "Raises your popularity to a 30% floor in every state nationwide — no effect anywhere you're already above it, huge everywhere you're not",
-        "cost": "₹1,000 crores"
+        "effect": "Raises popularity to a 30% floor nationwide",
+        "cost": "₹1,000 Cr"
       },
       "power": {
         "name": "National Icon",
@@ -1002,11 +1008,11 @@
           "bonus": 40
         },
         {
-          "name": "Healthcare",
+          "name": "Environmental Conservation",
           "bonus": 30
         },
         {
-          "name": "Infrastructure",
+          "name": "Heritage and Tourism",
           "bonus": 30
         },
         {
@@ -1016,8 +1022,8 @@
       ],
       "specialPower": {
         "name": "Star Power Rally",
-        "effect": "+2% popularity nationwide, but 16% total in each of her home states, Uttar Pradesh and Tamil Nadu — the crowd goes wildest where they know her best, and barely notices her anywhere else",
-        "cost": "₹2,500 crores"
+        "effect": "+2% popularity nationwide, +14% more (16% total) in home states Uttar Pradesh and Tamil Nadu",
+        "cost": "₹2,500 Cr"
       },
       "power": {
         "name": "Star Power Rally",
@@ -1063,11 +1069,11 @@
           "bonus": 40
         },
         {
-          "name": "Press Freedom",
+          "name": "Sports and Entertainment",
           "bonus": 30
         },
         {
-          "name": "Digital Transformation",
+          "name": "Coastal Economy",
           "bonus": 30
         },
         {
@@ -1077,12 +1083,12 @@
       ],
       "specialPower": {
         "name": "Thalaivar Announcement",
-        "effect": "+25% popularity in South India (Thalaivar's home turf), +18% in Maharashtra (Bollywood) — bigger where the cult following actually is, at the cost of -8% in the Hindi Heartland, where the Thalaivar mystique doesn't carry",
-        "cost": "₹2,000 crores"
+        "effect": "+22% popularity in South India, +15% in Maharashtra",
+        "cost": "₹2,000 Cr, -14% popularity in Hindi Heartland"
       },
       "power": {
         "name": "Thalaivar Announcement",
-        "description": "+25% popularity in South India, +18% in Maharashtra; costs 2,000 Cr instantly, plus -8% popularity in the Hindi Heartland, where his cult following doesn't reach.",
+        "description": "+22% popularity in South India, +15% in Maharashtra; costs 2,000 Cr instantly, plus -14% popularity in the Hindi Heartland, where his cult following doesn't reach.",
         "benefits": [
           {
             "kind": "popularity",
@@ -1091,7 +1097,7 @@
             "tags": [
               "SouthIndia"
             ],
-            "bps": 2500,
+            "bps": 2200,
             "source": "both"
           },
           {
@@ -1099,7 +1105,7 @@
             "target": "self",
             "scope": "state",
             "stateName": "Maharashtra",
-            "bps": 1800,
+            "bps": 1500,
             "source": "both"
           }
         ],
@@ -1116,7 +1122,7 @@
             "tags": [
               "HindiHeartland"
             ],
-            "bps": -800
+            "bps": -1400
           }
         ],
         "requiresMinFundsCr": 2000
@@ -1151,7 +1157,7 @@
       ],
       "specialPower": {
         "name": "One-Day Ordinance",
-        "effect": "Instantly sets your popularity to 100% in your home state (Maharashtra) — but you burn all your remaining political capital on it: no more rally tokens for the rest of the match",
+        "effect": "Sets popularity to 100% in home state (Maharashtra)",
         "cost": "No more rally tokens for the rest of the game"
       },
       "power": {

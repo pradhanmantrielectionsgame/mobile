@@ -1,5 +1,20 @@
 # Findings
 
+## 2026-08-21 — Three politicians shared an identical, mechanically-flat 2-tag pair before this session's agenda-pack rework
+**Finding:** Mamata Banerjee, Jayalalithaa, and Hema Malini all carried the exact same pair {Women's Empowerment, Healthcare} — both flat-`nationwideBonus` tags with zero regional signature, so tapping either did the identical thing regardless of which of the three was being played. Found via a pairwise tag-overlap script across all 21 politicians' 4-agenda kits; 6 pairs total shared >=3 of 4 tags, all concentrated in the celebrity/glamour cluster.
+**Context:** Requested analysis of "where is the agenda pack thematically weak" across the full roster, ahead of a broader thematic-distinctiveness pass.
+**Implication:** When auditing or adding agenda kits going forward, flag any politician pair sharing 3+ of 4 tags as a priority fix, and treat flat-nationwide-bonus tags (no regional shape) as the least mechanically distinctive slot to check first — they're indistinguishable from each other regardless of theme.
+
+## 2026-08-21 — 4 real region tags in states_data.json were almost entirely unused across the policy-tags.json pool
+**Finding:** `CoastalIndia` (1 policy used it), `TravelAndTourism` (1, negative-only), `Pilgrimage` (3), and `NationalParksWildlife` (0 — completely unused) sat idle despite being real fields on every state record.
+**Context:** Checked tag-usage frequency across the pool while designing new thematically-grounded agenda tags, to find open design space grounded in real (not invented) region data.
+**Implication:** These are the region tags with the most remaining headroom for any future agenda-tag expansion — new tags leaning on them get real regional shape "for free" instead of competing for already-saturated tags like IndustrialCorridor/Manufacturing/AgriculturalRegion.
+
+## 2026-08-21 — balance-sim.js's AI-vs-AI win rates systematically undervalue conditional/exploit-dependent special powers
+**Finding:** Narendra Modi's Demonetization (pure denial — freezes the opponent's funds, no direct benefit to Modi) moved his win rate by ~0% across two independent single-lever changes (cost -5%→-2%; duration 1→2 phases). Adding a flat, unconditional +6% (then simplified to +4%) nationwide popularity benefit alongside the same freeze moved his win rate 8+ points immediately (43.5%→54%).
+**Context:** User asked to boost Modi's bottom-tier win rate after a fresh `balance-sim.js` run; two lever attempts on the existing denial-only power both failed to move the number before the power's benefit *shape* was identified as the actual problem.
+**Implication:** Any power whose payoff depends on the AI noticing and capitalizing on an opponent's disadvantage (timing, targeting) will likely show an artificially low win rate versus what a skilled human could extract from it — treat such win rates as a floor, not a ceiling, before nerfing. Recorded as a third methodology trap in `design/testing-and-balance-notes.md`; Yogi's Bulldozer Action and Nehru's Non-Alignment flagged as candidates worth re-examining under this lens later.
+
 ## 2026-08-21 — Chocolatey needs admin elevation on this machine; winget isn't installed; a portable binary download sidesteps both
 **Finding:** `winget install` failed outright (command not found — winget isn't installed on this machine at all). `choco install cloudflared -y` failed with "Access to the path ... is denied" — Chocolatey itself is present but package installs require an elevated (admin) shell, which this session doesn't have and shouldn't grab without being asked. Downloading the standalone `cloudflared-windows-amd64.exe` directly from Cloudflare's GitHub releases (no installer, no admin) worked as a drop-in substitute for `cloudflared tunnel --url ...`.
 **Context:** Needed an HTTPS tunnel to the local dev server so a phone could test a Web-Share-API feature that requires a secure context; the CLAUDE.md-documented cloudflared pattern assumed the binary was already available.

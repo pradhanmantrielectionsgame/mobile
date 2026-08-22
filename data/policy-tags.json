@@ -39,8 +39,8 @@
     "Anti-Corruption": {
       "nationwideBonus": 4
     },
-    "Judicial Activism": {
-      "tagEffects": { "Education": 8, "MinorityAreas": 4, "TribalLands": 4, "IndustrialCorridor": -4, "Manufacturing": -4 }
+    "Administrative Reform": {
+      "tagEffects": { "Education": 8, "IndustrialCorridor": 6, "Manufacturing": 6, "TribalLands": -4, "AgriculturalRegion": -4 }
     },
     "Press Freedom": {
       "tagEffects": { "Education": 8, "MinorityAreas": 8, "TribalLands": 4 }
@@ -74,6 +74,27 @@
     },
     "Film and TV": {
       "tagEffects": { "Education": 8, "TribalLands": 12 }
+    },
+    "Coastal Economy": {
+      "tagEffects": { "CoastalIndia": 10, "NaturalResources": 6, "AgriculturalRegion": -4 }
+    },
+    "Food Security": {
+      "tagEffects": { "AgriculturalRegion": 8, "SouthIndia": 6, "MinorityAreas": 4 }
+    },
+    "Heritage and Tourism": {
+      "tagEffects": { "TravelAndTourism": 10, "Pilgrimage": 6 }
+    },
+    "Environmental Conservation": {
+      "tagEffects": { "NationalParksWildlife": 10, "TribalLands": 8, "Manufacturing": -8, "IndustrialCorridor": -6 }
+    },
+    "Sports and Entertainment": {
+      "tagEffects": { "Education": 6, "TravelAndTourism": 6, "Manufacturing": 4 }
+    },
+    "Nationalization": {
+      "tagEffects": { "AgriculturalRegion": 8, "IndustrialCorridor": 8, "Manufacturing": 8, "CoastalIndia": -6 }
+    },
+    "Foreign Policy & Diplomacy": {
+      "nationwideBonus": 4
     }
   }
 }

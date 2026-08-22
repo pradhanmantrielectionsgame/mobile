@@ -398,7 +398,7 @@ boost_bps(tap) = tap ≤ 20 : round(500 − (tap−1) × 300/19)          // 500
       </div>
 
       <h3>Agenda commitment</h3>
-      <p>Each politician carries 4 agendas drawn from a shared 25-policy pool (<code>data/policy-tags.json</code> — 24 originally, plus a later <code>Film and TV</code> addition for the film-persona politicians that isn't yet called out in the design doc's prose). Each agenda costs <b>500 Cr per tap, flat</b>, 4 taps to max (2,000 Cr/agenda, 8,000 Cr to max all 4 — <b>27% of the 30,000 Cr lifetime budget</b>, per the recomputed figure the design doc now also states (see Divergence 1). Agendas aren't a race — each player only ever funds their own 4; there's no way to contest a policy away from an opponent.</p>
+      <p>Each politician carries 4 agendas drawn from a shared 32-policy pool (<code>data/policy-tags.json</code> — 25 as of the last count, plus 7 new tags added 2026-08-21 in a thematic-distinctiveness pass: Coastal Economy, Food Security, Heritage and Tourism, Environmental Conservation, Sports and Entertainment, Nationalization, Foreign Policy &amp; Diplomacy. The same pass retired Judicial Activism — it had no real signature fit for anyone but Ambedkar, and even that was a stretch — repurposing its pool slot into <code>Administrative Reform</code>, now held by Ambedkar and Sardar Patel). Each agenda costs <b>500 Cr per tap, flat</b>, 4 taps to max (2,000 Cr/agenda, 8,000 Cr to max all 4 — <b>27% of the 30,000 Cr lifetime budget</b>, per the recomputed figure the design doc now also states (see Divergence 1). Agendas aren't a race — each player only ever funds their own 4; there's no way to contest a policy away from an opponent.</p>
       <div class="example">
         <p class="label">Net-first, apply-once — the rule every agenda tap follows</p>
         <p>A state can carry several of a policy's region tags at once, some supporting, some opposing, each at its own signed strength. The engine sums every matching tag into <b>one net value</b> for that state <i>before</i> touching the redistribution engine — never applies each tag as a separate transaction. National Defense supports the border regions and used to also (accidentally) oppose Hindi Heartland; six of the largest states carried both tags and canceled to exactly zero, quietly zeroing out states that should have been the policy's strongest supporters. Fixed 2026-07-22 by dropping the stray oppose tag.</p>
@@ -409,17 +409,21 @@ boost_bps(tap) = tap ≤ 20 : round(500 − (tap−1) × 300/19)          // 500
       <div class="table-wrap"><table>
         <thead><tr><th>Rank</th><th>Policy</th><th>Seat-eq.</th></tr></thead>
         <tbody>
-          <tr><td class="num">1</td><td class="feat">Education</td><td class="num">+33.0</td></tr>
-          <tr><td class="num">2</td><td class="feat">Press Freedom</td><td class="num">+28.9</td></tr>
-          <tr><td class="num">3</td><td class="feat">Film and TV <span style="color:var(--ink-soft)">(new, added since the last policy count)</span></td><td class="num">+28.3</td></tr>
-          <tr><td class="num">4</td><td class="feat">National Defense</td><td class="num">+27.7</td></tr>
-          <tr><td class="num">5</td><td class="feat">Economic Liberalization</td><td class="num">+26.2</td></tr>
-          <tr><td class="num">6–8</td><td class="feat">Women's Empowerment / Healthcare / Anti-Corruption <span style="color:var(--ink-soft)">(flat nationwide)</span></td><td class="num">+21.7</td></tr>
-          <tr><td class="num">…</td><td class="feat">— 17 more, mid-pack — Public Sector (+11.1) and Caste Reservation (+8.1) both now sit here, not among the net-negatives</td><td class="num">…</td></tr>
-          <tr><td class="num">25</td><td class="feat">Secularism <span style="color:var(--ink-soft)">(worst pick, real polarization — Bengal/Kerala gains vs. UP/Bihar/MP/Rajasthan losses)</span></td><td class="num">−20.3</td></tr>
+          <tr><td class="num">1</td><td class="feat">Nationalization <span style="color:var(--ink-soft)">(new 2026-08-21 — a clear outlier, more than double the next positive-magnitude non-flat tier)</span></td><td class="num">+42.4</td></tr>
+          <tr><td class="num">2</td><td class="feat">Heritage and Tourism <span style="color:var(--ink-soft)">(new 2026-08-21)</span></td><td class="num">+34.6</td></tr>
+          <tr><td class="num">3</td><td class="feat">Food Security <span style="color:var(--ink-soft)">(new 2026-08-21)</span></td><td class="num">+34.0</td></tr>
+          <tr><td class="num">4</td><td class="feat">Education</td><td class="num">+33.0</td></tr>
+          <tr><td class="num">5</td><td class="feat">Sports and Entertainment <span style="color:var(--ink-soft)">(new 2026-08-21)</span></td><td class="num">+32.2</td></tr>
+          <tr><td class="num">6–7</td><td class="feat">Press Freedom / Film and TV</td><td class="num">+28.9 / +28.3</td></tr>
+          <tr><td class="num">8–9</td><td class="feat">Administrative Reform <span style="color:var(--ink-soft)">(renamed from Judicial Activism 2026-08-21)</span> / Coastal Economy <span style="color:var(--ink-soft)">(new)</span></td><td class="num">+28.1 / +27.8</td></tr>
+          <tr><td class="num">10–11</td><td class="feat">National Defense / Economic Liberalization</td><td class="num">+27.7 / +26.2</td></tr>
+          <tr><td class="num">12–15</td><td class="feat">Women's Empowerment / Healthcare / Anti-Corruption / Foreign Policy &amp; Diplomacy <span style="color:var(--ink-soft)">(flat nationwide, latter new 2026-08-21)</span></td><td class="num">+21.7</td></tr>
+          <tr><td class="num">…</td><td class="feat">— 15 more, mid-pack</td><td class="num">…</td></tr>
+          <tr><td class="num">30</td><td class="feat">Environmental Conservation <span style="color:var(--ink-soft)">(new 2026-08-21 — net-negative nationally; its NationalParksWildlife/TribalLands upside is concentrated in fewer, smaller states than its Manufacturing/IndustrialCorridor downside)</span></td><td class="num">−10.9</td></tr>
+          <tr><td class="num">32</td><td class="feat">Secularism <span style="color:var(--ink-soft)">(worst pick, real polarization — Bengal/Kerala gains vs. UP/Bihar/MP/Rajasthan losses)</span></td><td class="num">−20.3</td></tr>
         </tbody>
       </table></div>
-      <p style="font-size:13px;color:var(--ink-soft);font-family:var(--sans)">Full 25-row table reproducible any time via <code>node recompute_policy_ranking.js</code> (run 2026-07-28 for this page — the numbers above come directly from that run, not the design doc's table, which is stale — see <a href="#div-9">Divergence 9</a>). Only <b>4 of 25</b> are net-negative nationally now, down from 7 of 24 in the 2026-07-24 pass: Indigenous Rights (−2.5), Hindi Language (−8.9), Agricultural Reforms (−14.1), and Secularism (−20.3, still worst). Land Reforms, Public Sector, and Caste Reservation all flipped positive once their region-tag directions were corrected 2026-07-26 (Public Sector in particular: industrial/manufacturing/tribal-lands now support it, agricultural regions oppose it — the reverse of the direction both this page and the design doc described as of the last pass).</p>
+      <p style="font-size:13px;color:var(--ink-soft);font-family:var(--sans)">Full 32-row table reproducible any time via <code>node recompute_policy_ranking.js</code> (run 2026-08-21 for this page, after the 7-tag thematic-distinctiveness pass and the Judicial Activism→Administrative Reform rename — the numbers above supersede the 2026-07-28 run). <b>5 of 32</b> are net-negative nationally: Indigenous Rights (−2.5), Hindi Language (−8.9), Environmental Conservation (−10.9, new), Agricultural Reforms (−14.1), and Secularism (−20.3, still worst). Nationalization's +42.4 is a real outlier worth watching if it starts showing up in future win-rate imbalances — it's currently only assigned to Indira Gandhi, so hasn't yet been isolated as a win-rate driver the way individual politicians have.</p>
     </section>
 
     <!-- ======================================================== -->
@@ -463,7 +467,7 @@ boost_bps(tap) = tap ≤ 20 : round(500 − (tap−1) × 300/19)          // 500
         <p class="label">The 4 celebrity/film-persona powers were rebalanced 2026-07-28 — agenda kits left untouched</p>
         <p>Decided 2026-07-25: Tendulkar, Hema Malini, Rajinikanth, and Bachchan are meant to be stronger and quirkier than the political roster, not balance-equal to it — each carries a distinctive mechanic shape (a 30%-floor effect, a stacked nationwide+home bonus, an asymmetric dual-region bonus, an "Others"-only source) and is explicitly allowed to out-scale a political-roster power in the same region. But a 2026-07-28 balance pass found these 4, plus film-persona pick Sivaji Rao, had <i>both</i> a top-tier agenda kit (national avg 13–16, roster-highest) <b>and</b> a strong/free power stacked on top — an unintentional tuning error, not the design intent. Rebalanced on the <b>power only</b> — cost, timing, or magnitude — never the agenda kit, which stays a deliberate thematic match:</p>
         <div class="table-wrap"><table>
-          <thead><tr><th>Politician</th><th>Before</th><th>After (current)</th></tr></thead>
+          <thead><tr><th>Politician</th><th>Before</th><th>After (2026-07-28)</th></tr></thead>
           <tbody>
             <tr><td class="feat">Amitabh Bachchan</td><td>+12% nationwide (Others-only) / 1,000 Cr / no gate</td><td>+6% / 2,000 Cr / <code>requiresMinPhase: 6</code></td></tr>
             <tr><td class="feat">Hema Malini</td><td>+8% nationwide / 500 Cr</td><td>+2% nationwide + 14% home (16% total at home, unchanged) / 2,500 Cr</td></tr>
@@ -474,18 +478,26 @@ boost_bps(tap) = tap ≤ 20 : round(500 − (tap−1) × 300/19)          // 500
         <p style="font-size:13px;color:var(--ink-soft)">Two methodology lessons from tuning this: a single-politician change must be re-tested <i>isolated</i> (that politician's data changed, every other politician held at the exact same committed state) before trusting a before/after win-rate comparison — a batch where other politicians also changed is confounded by "strength of schedule." And a single lever (cost, timing, <i>or</i> magnitude alone) hits diminishing returns fast — Bachchan's cost/timing changes alone moved his win rate by exactly 0% until paired with the magnitude cut.</p>
       </div>
 
+      <div class="example">
+        <p class="label">Two more power reworks, 2026-08-21 — Modi's bottom-tier win rate, Rajinikanth's outlier win rate</p>
+        <p>A fresh <code>balance-sim.js</code> run after the 7-tag thematic pass showed Modi bottom-tier (43.5% win rate, tied lowest in the roster — thematically wrong for India's most-elected real-world PM) and Rajinikanth a sharp outlier (72.5%, ~13pt above the next-highest). Both fixed on the <b>power only</b>, same discipline as the 2026-07-28 pass above — Modi's agenda kit (Infrastructure/Hindutva/Economic Liberalization/National Defense) was already judged thematically solid, so it stayed untouched.</p>
+        <p><b>Rajinikanth — Thalaivar Announcement:</b> the existing −8% Hindi Heartland penalty wasn't enough on its own. Deepened to −14%, magnitude trimmed (+25%→+22% South India, +18%→+15% Maharashtra), fund cost tried at 3,000 Cr then reverted to 2,000 Cr once the −14%/magnitude trim alone proved sufficient. Result: 72.5% → 59%, no longer an outlier.</p>
+        <p><b>Modi — Demonetization:</b> two independent single-lever attempts (cheaper: −5%→−2% popularity cost; longer: 1 phase→2 phases, via <code>fundsFrozenUntilPhase</code> in <code>mobile/game.js</code> switching from an equality check to a range check) each moved his win rate by <b>~0%</b> — a real confirmation, not noise, that a pure-denial power's problem is its <i>shape</i>, not its cost or duration: it gives Modi nothing directly, so its payoff depends entirely on the AI capitalizing on the opponent's frozen phase, which it doesn't reliably do. Fixed by adding a direct, unconditional benefit — +4% popularity nationwide alongside the freeze, no separate cost (an earlier +6%/−2% split was simplified to a clean +4% once flagged as needless — same net effect, one line instead of two). Result: 43.5% → 54%.</p>
+        <p style="font-size:13px;color:var(--ink-soft)"><b>Methodology note for future rebalancing:</b> this session is direct evidence that <code>balance-sim.js</code>'s AI-vs-AI win rates undervalue <i>conditional/exploit-dependent</i> powers relative to <i>unconditional/guaranteed</i> ones — the AI (a greedy heuristic, not adversarially tuned; see <a href="#ai">The AI opponent</a>) doesn't reliably play around an opponent's disadvantage the way a skilled human would. Before nerfing (or writing off as weak) any power whose value depends on smart timing or targeting rather than an instant guaranteed effect — Yogi's targeted Bulldozer Action, Nehru's contingent Non-Alignment — read its measured win rate as a likely floor, not its true ceiling in human play. Full methodology lives in <code>design/testing-and-balance-notes.md</code>.</p>
+      </div>
+
       <h4>Verb variety at a glance</h4>
       <div class="table-wrap"><table>
         <thead><tr><th>Verb</th><th>Politicians</th></tr></thead>
         <tbody>
           <tr><td class="feat">Damage opponent's funds</td><td>Modi (freeze), Kejriwal (seize 50%), Indira Gandhi (seize 100% + tokens)</td></tr>
-          <tr><td class="feat">Convert own popularity → funds</td><td>Manmohan Singh, Rajiv Gandhi (Telecom Revolution)</td></tr>
+          <tr><td class="feat">Convert own popularity → funds</td><td>Manmohan Singh</td></tr>
           <tr><td class="feat">Region-scoped popularity push</td><td>Rahul Gandhi, Mamata Banerjee, Ambedkar, Jayalalithaa, Shastri, Rajinikanth</td></tr>
           <tr><td class="feat">Nationwide popularity push</td><td>Vajpayee, Nitish Kumar, Tendulkar, Hema Malini, Bachchan, Indira Gandhi</td></tr>
-          <tr><td class="feat">Meta / conditional effect</td><td>Nehru (nullify), P.V. Narasimha Rao (replay a completed agenda), Ambedkar (refund all agenda spend), Sardar Patel (floor every state nationwide to 20%)</td></tr>
+          <tr><td class="feat">Meta / conditional effect</td><td>Nehru (nullify), P.V. Narasimha Rao (replay a completed agenda), Ambedkar (refund all agenda spend), Rajiv Gandhi (refund all rally tokens spent), Sardar Patel (floor every state nationwide to 20%)</td></tr>
         </tbody>
       </table></div>
-      <p style="font-size:13px;color:var(--ink-soft);font-family:var(--sans)">Interpreter lives in <code>mobile/game.js</code>'s <code>activatePower()</code> — a small effect DSL (<code>funds</code>, <code>freezeFunds</code>, <code>stopTokenIncome</code>, <code>stealFundsPct</code>/<code>stealTokens</code>, <code>seizeFundsPct</code>/<code>seizeTokens</code>, <code>refundAgendaSpend</code>, <code>lowerSeatsToWin</code>, <code>tokens</code>, <code>nullifyOpponentPower</code>, <code>replayAgenda</code>, <code>popularity</code> with a <code>scope</code>) reads each politician's <code>power.costs</code>/<code>power.benefits</code> arrays, so a new power is a data edit, not a code change.</p>
+      <p style="font-size:13px;color:var(--ink-soft);font-family:var(--sans)">Interpreter lives in <code>mobile/game.js</code>'s <code>activatePower()</code> — a small effect DSL (<code>funds</code>, <code>freezeFunds</code>, <code>stopTokenIncome</code>, <code>stealFundsPct</code>/<code>stealTokens</code>, <code>seizeFundsPct</code>/<code>seizeTokens</code>, <code>refundAgendaSpend</code>, <code>refundTokensSpent</code>, <code>lowerSeatsToWin</code>, <code>tokens</code>, <code>nullifyOpponentPower</code>, <code>replayAgenda</code>, <code>popularity</code> with a <code>scope</code>) reads each politician's <code>power.costs</code>/<code>power.benefits</code> arrays, so a new power is a data edit, not a code change.</p>
     </section>
 
     <!-- ======================================================== -->
@@ -503,14 +515,18 @@ payout(group) = 5 Cr × (sum of seats across every state in the group)</pre>
         <p class="label">Sabotage beats conquest</p>
         <p>One state slipping under 50% zeroes the whole group's qualified status immediately — no more payouts until every member re-crosses the line. That makes "knock one state back down" a cheaper counter-play than "out-invest the leader everywhere." Deliberate, not a bug.</p>
       </div>
-      <p>Payout is <b>instant and event-based</b> (changed 2026-07-24) — it fires the moment the last member state crosses 50%, checked after every popularity-moving action, not deferred to the next phase boundary. Losing and re-earning dominance pays again in full each time. Implemented as <code>applyRegionalDominancePayouts()</code>, called from every action that can move a state's popularity.</p>
+      <p>Payout is <b>instant and event-based</b> (changed 2026-07-24) — it fires the moment the last member state crosses 50%, checked after every popularity-moving action, not deferred to the next phase boundary. Losing and re-earning dominance pays again in full each time. Implemented as <code>applyRegionalDominancePayouts()</code>, called (via the shared <code>applyPayouts()</code> wrapper — see below) from every action that can move a state's popularity.</p>
+      <div class="note">
+        <p class="label">Clean sweep bonus — one state at a literal 100%</p>
+        <p>Added 2026-08-17. A smaller, single-state sibling to regional dominance: the instant a player's share of one state hits an exact 100% (opponent and Others both at 0), they get a one-time <b>5 Cr/seat</b> payout — same rate as regional dominance's per-seat rate, same instant/held/re-payable shape (<code>applyCleanSweepPayouts()</code>, tracked in <code>game.cleanSweepHeld</code>). Both payout checks now run together from one <code>applyPayouts()</code> wrapper at every call site that used to call <code>applyRegionalDominancePayouts()</code> directly. Scaling by the state's own seat count (not a flat amount) is deliberate — a flat bonus would re-open the old "cheap tiny UTs are disproportionately attractive" AI-targeting bug (see the greedy-scoring discipline bullets in CLAUDE.md). Also drives a live visual: any state currently at 100% for a player gets a colored glow on the map (<code>.swept-p1</code>/<code>.swept-p2</code> in <code>mobile/index-redesign-a.html</code>, toggled in <code>paintMap()</code> — a live read of <code>game.pop</code>, not the payout-gating held flag, matching how the group-dominance capture badges already work).</p>
+      </div>
     </section>
 
     <!-- ======================================================== -->
     <section id="roster">
       <p class="kicker">Play — the cast</p>
       <h2>Politicians &amp; agendas</h2>
-      <p class="dek">21 politicians, each with 4 agendas drawn from the shared 25-policy pool plus their 1 unique power. "Exclusive" just means only one politician's list happens to reference a given policy — there's no exclusivity flag in the data.</p>
+      <p class="dek">21 politicians, each with 4 agendas drawn from the shared 32-policy pool plus their 1 unique power. "Exclusive" just means only one politician's list happens to reference a given policy — there's no exclusivity flag in the data.</p>
       <p>Source of truth is <code>data/politicians-data.json</code> + <code>data/policy-tags.json</code> directly — this wiki doesn't keep a second copy of the roster that could drift out of sync. All 21 now resolve a real portrait image in <code>assets/images/</code> (confirmed 2026-07-28 by checking every politician's <code>image</code> field directly) — the select screen's colored-initial-circle fallback (<code>setPortrait()</code> in <code>mobile/main.js</code>) still exists in code but currently has nothing left to fall back for. See <a href="#div-11">Divergence 11</a>.</p>
       <div class="example">
         <p class="label">Select carousel &amp; end-game screen use Booth Ink's own "ballot card" identity, not a holo-foil card</p>
@@ -539,7 +555,7 @@ payout(group) = 5 Cr × (sum of seats across every state in the group)</pre>
 
 data/
 ├── states_data.json      <span class="dim">— 36 states/UTs: seats, svgId, region-group tags. Leading BOM.</span>
-├── policy-tags.json      <span class="dim">— 25-policy pool: {tagEffects: {region: signedMagnitude}} or nationwideBonus.</span>
+├── policy-tags.json      <span class="dim">— 32-policy pool: {tagEffects: {region: signedMagnitude}} or nationwideBonus.</span>
 ├── politicians-data.json <span class="dim">— 21 politicians: homeState (+secondaryHomeStates), 4 policies, 1 power (cost/benefit DSL).</span>
 └── game-config.json      <span class="dim">— mobileEconomy{} namespace = mobile's real, canonical constants.</span>
 
@@ -755,7 +771,7 @@ flowchart LR
       <h2>Open design questions</h2>
       <p class="dek">Carried over from the design doc's own Still-open list — these aren't divergences, they're places the design itself hasn't landed yet.</p>
       <div class="flow-grid">
-        <div class="flow-card"><h4>⚖️ Power balance pass</h4><div class="step">In progress via <code>mobile/balance-sim.js</code>, not finished — 5 politicians rebalanced so far (the 4 celebrity/film-persona powers, plus ongoing work on the confirmed bottom-tier three: Rahul Gandhi, Mamata Banerjee, Manmohan Singh). Most of the roster still hasn't had an isolated pass.</div></div>
+        <div class="flow-card"><h4>⚖️ Power balance pass</h4><div class="step">In progress via <code>mobile/balance-sim.js</code>, not finished — 6 politicians rebalanced so far (the 4 celebrity/film-persona powers, Manmohan Singh, and Mamata Banerjee — the latter reworked 2026-08-18 from a home-state-only push to <code>tags: ["EasternBorder","SouthIndia"]</code> at +8% plus a +7% home kicker (15% total at home, unchanged from the original number), cost bumped ₹1,500cr→₹2,000cr to match; now mid-pack at 46.5% win rate, up from bottom-tier). Rahul Gandhi is now the confirmed bottom of the roster (42% win rate) and hasn't had its isolated rework yet. Most of the roster still hasn't had an isolated pass.</div></div>
         <div class="flow-card"><h4>🗺️ Per-region tuning</h4><div class="step">Every policy region still defaults to the old shared 12/8/4 tier magnitude; the redesign's actual point — different regions reacting at different strengths — hasn't had its hand-tuning pass.</div></div>
         <div class="flow-card"><h4>🤝 Two-active-player ceiling</h4><div class="step">Every plausibility number (now further complicated by Divergence 1's budget change) assumes a passive opponent. Nobody has modeled two players actively contesting the same states.</div></div>
         <div class="flow-card"><h4>📱 Responsive layout</h4><div class="step"><code>design/viewport-migration-plan.md</code> (written 2026-07-25) is a phased plan to add a real <code>&lt;meta viewport&gt;</code> tag and stop relying on the no-viewport-tag ~980px canvas fallback — confirmed broken on any width/height ratio other than iPhone-14's. Plan only; no code changed yet.</div></div>
