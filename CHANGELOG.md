@@ -6,6 +6,33 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### 🎯 Share Result Feature — Image Capture & Deep-Link Fallback — 2026-08-21
+
+#### Share Functionality Redesign
+- **REMOVED**: `mobile/main.js` `shareResult()` — navigator.share() text-only sharing entirely, after user real-device testing confirmed iOS WhatsApp's share extension auto-detects the URL inside the text and hands WhatsApp only the URL attachment, discarding the accompanying challenge text (a known OS/WhatsApp limitation, confirmed across two fix attempts) [C1]
+- **ADDED**: `mobile/main.js` `buildShareCardBlob()` — uses html2canvas to screenshot the actual on-screen `.declare-card` (parliament chart, portraits, ledger, match stats) with `ignoreElements` excluding footer buttons, returning a Blob ready for share-sheet attachment [C2]
+- **REWRITTEN**: `mobile/main.js` `buildShareText()` — punchy win/loss/draw copy with game name "Pradhan Mantri: Elections Game" stated explicitly in the sentence itself (not implied by URL), plus consistent "Think you can do better?" call-to-action [C3]
+- **ENHANCED**: `mobile/main.js` `openShareOverlay()` — now takes optional image blob, displays it in the share sheet, offers a "Save image" download link in the fallback bottom sheet for browsers/platforms without native share support [C4]
+
+#### Markup & Styling
+- **ADDED**: `mobile/index-redesign-a.html` — `<script src="html2canvas.min.js">` tag, new `#shareSaveImageBtn` download link in share sheet markup, `.share-app[hidden]{display:none}` CSS rule, updated share-sheet doc comment [C5]
+- **ADDED**: `mobile/html2canvas.min.js` — vendored file (html2canvas v1.4.1, ~194KB, downloaded from unpkg CDN) — no build step, no new package.json dependency, included directly as local source [C6]
+
+#### Service Worker & Deployment
+- **UPDATED**: `mobile/sw.js` — added `mobile/html2canvas.min.js` to the CORE service-worker precache list [C7]
+- **RESYNCED**: `index.html` (root) — byte-copy of `mobile/index-redesign-a.html` plus `<base href="mobile/">` tag, per existing deploy convention for the fresh-repo GitHub Pages site [C8]
+
+#### Design Decisions
+- **[D1] Removed navigator.share() text-only path entirely.** Context: User real-device testing showed WhatsApp only received the bare URL, dropping challenge text — a known OS/WebKit share-extension auto-detection behavior. Alternatives (separate `text`/`url` fields, keeping navigator.share as desktop fallback only) tried but didn't fix the WhatsApp bug. Solution: custom bottom sheet with per-app deep links (wa.me's text= param, sms: body=) — WhatsApp's own URL-scheme handler, not the generic OS share extension, so it reliably delivers the full string into the compose box.
+- **[D2] Screenshot actual .declare-card via html2canvas, not hand-drawn canvas graphic.** Context: First implementation was a compact Wordle/Duolingo-style hand-drawn card (headline, portrait, 2 ledger rows) to avoid a dependency and avoid DOM-to-image reliability issues. User tested on real phone via HTTPS tunnel, reported "only half the screenshot was delivered," and clarified they wanted the actual full on-screen result card (parliament chart + full ledger + stats), not a stripped-down substitute. Solution: html2canvas (vendored locally, ~194KB, mature and widely-used) reliably captures the real card and stays visually in sync automatically whenever CSS/layout changes. Rejects alternatives of hand-drawing every element (maintenance burden) or raw SVG foreignObject (known-fragile on iOS Safari).
+- **[D3] File-attachment sharing requires HTTPS; plain LAN IP does not qualify.** Context: Needed secure context for testing navigator.share with image attachment on real phone. Web Share API's file-attachment capability is HTTPS-only (or literal localhost), not LAN IPs even on the same machine. Solution: portable `cloudflared.exe` binary (downloaded directly, no installer/admin needed) running `cloudflared tunnel --url http://localhost:8934` provided working HTTPS trycloudflare.com URL.
+- **[D4] Share caption copy names the game explicitly with punchier tone.** Context: User asked for more interesting share text. Three tonal directions (tabloid/trash-talk/campaign-poster) were offered; user didn't pick one as-is but wanted the closest direction (trash-talk) with game name stated explicitly so recipients immediately recognize it's a game invite. Solution: punchy personal tone closest to trash-talk option, but ensured "Pradhan Mantri: Elections Game" appears in the sentence itself, not just implied by appended URL.
+
+#### Context
+Session focused on fixing real-device share functionality after user testing revealed navigator.share's generic OS path silently drops text to WhatsApp. Switched to custom deep-link bottom sheet (per-app URL handlers) for all platforms, and added an image-capture feature (html2canvas screenshot of the real on-screen result card) so recipients get visual proof of the final board state alongside the game invite. All changes maintain single-player-vs-AI scope; no engine/game-logic modifications.
+
+---
+
 ### 🚀 Mobile Build Deployment to a Dedicated Repo — 2026-07-29
 
 - **RESOLVED**: The GitHub push-auth blocker from 2026-07-28 (pushing to the `pradhanmantrielectionsgame` account hung on interactive OAuth / defaulted to the wrong cached account). Fixed by generating a classic PAT with `repo` scope and storing it non-interactively via `git credential-manager-core store`, bypassing the interactive prompt entirely. [C1]

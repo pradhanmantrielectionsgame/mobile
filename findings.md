@@ -1,5 +1,20 @@
 # Findings
 
+## 2026-08-21 — Chocolatey needs admin elevation on this machine; winget isn't installed; a portable binary download sidesteps both
+**Finding:** `winget install` failed outright (command not found — winget isn't installed on this machine at all). `choco install cloudflared -y` failed with "Access to the path ... is denied" — Chocolatey itself is present but package installs require an elevated (admin) shell, which this session doesn't have and shouldn't grab without being asked. Downloading the standalone `cloudflared-windows-amd64.exe` directly from Cloudflare's GitHub releases (no installer, no admin) worked as a drop-in substitute for `cloudflared tunnel --url ...`.
+**Context:** Needed an HTTPS tunnel to the local dev server so a phone could test a Web-Share-API feature that requires a secure context; the CLAUDE.md-documented cloudflared pattern assumed the binary was already available.
+**Implication:** On this machine, prefer downloading a portable/standalone binary directly over winget or Chocolatey for any future small CLI tool need — both package managers hit friction here.
+
+## 2026-08-21 — navigator.share's file-attachment capability requires a secure context; a LAN IP is not one
+**Finding:** `navigator.share({files: [...]})` / `navigator.canShare({files: [...]})` silently report as unsupported (no error) over a plain `http://<LAN-IP>:8934` origin accessed from a phone — the Web Share API's file-sharing capability is gated on a secure context (HTTPS, or literally `localhost`), and a LAN IP doesn't qualify even though it's the same machine.
+**Context:** Diagnosing why a newly-built image-attachment share feature couldn't be verified against the existing local dev-server + LAN testing setup used throughout this project.
+**Implication:** Any future testing of Web-Share-API file-attachment behavior on a real device needs an actual HTTPS origin — the cloudflared tunnel pattern (portable-binary workaround above) or the deployed GitHub Pages site, not the plain-http LAN address alone.
+
+## 2026-08-21 — iOS's Web Share API silently drops accompanying text when sharing to WhatsApp, regardless of payload shape
+**Finding:** Calling `navigator.share({text: "...challenge line... https://..."})` on a real iOS device shared *only* the bare URL to WhatsApp, dropping the preceding challenge text — confirmed via real-device testing across two separate fix attempts (not reproducible in headless Chromium, where `navigator.share` is simply `undefined`). WebKit's share sheet appears to auto-detect the URL substring inside the shared text and hand WhatsApp's share extension a URL-only attachment; WhatsApp then discards everything else. Passing `text` and `url` as two separate fields (a commonly-suggested online workaround) did not fix it either.
+**Context:** User reported "sharing functionality does not work well" on their phone; first fix attempt (dropping the separate `url` field) didn't resolve it, confirming the bug is in the OS/WhatsApp share-extension layer, not the navigator.share payload shape.
+**Implication:** Never route this game's share text through `navigator.share`'s own text field for WhatsApp specifically. Use WhatsApp's own `https://wa.me/?text=` deep link instead (its own URL-scheme handler, not the generic OS share extension) — it reliably carries the full string. `mobile/main.js`'s `openShareOverlay()` now always uses per-app deep links rather than ever calling `navigator.share` for text-only sharing.
+
 ## 2026-07-29 — GitHub Pages deployment confirmed live at pradhanmantrielectionsgame.github.io/mobile/
 **Finding:** The fresh-repo deploy (`github.com/pradhanmantrielectionsgame/mobile`, documented in the entry below) is confirmed live and playable — GitHub Pages is serving the site at `https://pradhanmantrielectionsgame.github.io/mobile/`.
 **Context:** User reported this after clearing session context, needing a checkpoint since the prior session ended without one.
