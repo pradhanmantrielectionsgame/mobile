@@ -1,8 +1,8 @@
 // PME Mobile — minimal cache-first service worker for offline/installable
 // play. Precaches the app shell; everything else (data/*.json, sounds/*,
 // images) is cached opportunistically the first time it's fetched.
-var CACHE = 'pme-mobile-v2';
-var CORE = ['./index.html', './engine.js', './game.js', './main.js', './manifest.json'];
+var CACHE = 'pme-mobile-v3';
+var CORE = ['./index.html', './engine.js', './game.js', './main.js', './html2canvas.min.js', './manifest.json'];
 
 self.addEventListener('install', function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(CORE); }));

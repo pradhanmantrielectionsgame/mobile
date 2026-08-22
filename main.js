@@ -21,7 +21,7 @@
     if (p.partyLogo) {
       var img = document.createElement('img');
       img.alt = p.party;
-      img.src = '../' + p.partyLogo;
+      img.src = p.partyLogo;
       img.onerror = function () { wrap.textContent = partySymbol(p.party); };
       wrap.appendChild(img);
     } else {
@@ -36,7 +36,7 @@
   function setPortrait(imgEl, p) {
     imgEl.alt = p.name;
     imgEl.style.background = p.primaryColor || '#ccc';
-    imgEl.src = '../' + p.image;
+    imgEl.src = p.image;
     imgEl.onerror = function () {
       var w = imgEl.clientWidth || 34;
       var span = document.createElement('span');
@@ -76,9 +76,9 @@
   var soundEnabled = true, musicEnabled = true;
   var sounds = {};
   ['cash_added', 'money_spent', 'invalid_action', 'fanfare', 'game_over', 'phase_reset', 'rally_sound']
-    .forEach(function (name) { sounds[name] = new Audio('../sounds/' + name + '.mp3'); });
-  sounds.bg_music = new Audio('../sounds/bg_music.mp3');
-  sounds.intro_music = new Audio('../sounds/saare_jahan_se_accha.mp3');
+    .forEach(function (name) { sounds[name] = new Audio('sounds/' + name + '.mp3'); });
+  sounds.bg_music = new Audio('sounds/bg_music.mp3');
+  sounds.intro_music = new Audio('sounds/saare_jahan_se_accha.mp3');
   var LOOP_TRACKS = ['bg_music', 'intro_music'];
   var BG_MUSIC_VOLUME = 0.35, BG_MUSIC_DUCKED_VOLUME = 0;
   LOOP_TRACKS.forEach(function (name) { sounds[name].loop = true; sounds[name].volume = BG_MUSIC_VOLUME; });
@@ -128,7 +128,7 @@
   function playPowerSound(politicianName) {
     if (!soundEnabled) return;
     var key = politicianName.replace(/\s+/g, '_');
-    if (!powerSounds[key]) powerSounds[key] = new Audio('../sounds/' + key + '.mp3');
+    if (!powerSounds[key]) powerSounds[key] = new Audio('sounds/' + key + '.mp3');
     var a = powerSounds[key];
     if (!powerGains[key]) {
       try {
@@ -278,7 +278,7 @@
   // the ballot card's photo window, where a small circular avatar wouldn't.
   function setArtPortrait(imgEl, p) {
     imgEl.alt = p.name;
-    imgEl.src = '../' + p.image;
+    imgEl.src = p.image;
     imgEl.onerror = function () {
       var fallback = document.createElement('div');
       fallback.className = 'pol-art-fallback';
@@ -318,7 +318,7 @@
         '<div class="pol-power"><div class="pow-seal">⚡</div><div class="pow-name">' + p.power.name + '</div>' +
           '<div class="pow-benefit">Benefit: ' + p.specialPower.effect + '</div>' +
           '<div class="pow-cost">Cost: ' + p.specialPower.cost + '</div>' +
-          (p.power.requiresMinPhase ? '<div class="pow-unlock">Unlocks at: Phase ' + p.power.requiresMinPhase + '</div>' : '') +
+          '<div class="pow-unlock">Unlocks at: Phase ' + (p.power.requiresMinPhase || 1) + '</div>' +
         '</div>' +
       '</div>' +
       '<div class="pol-footer"></div>';
@@ -566,24 +566,168 @@
     $('declareSeal').textContent = seal;
     $('endHeadline').textContent = headline;
     $('endSub').textContent = sub;
+    renderEndWinnerPortrait();
     renderEndLedger(seats);
     renderParliamentChart(seats);
+    renderEndStats();
     $('playAgainBtn').style.background = COLORS.p1;
     $('endOverlay').hidden = false;
     sounds.bg_music.pause();
   }
 
+  // Framed as a challenge to a friend, not a stats dump — the point is to
+  // get them to go play, not just report the score.
+  function buildShareText() {
+    var seats = game.finalSeats;
+    var me = game.players.p1.politician.name;
+    var opp = game.players.p2.politician.name;
+    var url = location.href.split('#')[0];
+    var line;
+    if (game.winner === 'p1') {
+      line = 'I just won India as ' + me + ' in Pradhan Mantri: Elections Game (' + seats.p1 + '-' + seats.p2 + ')! Think you can do better?';
+    } else if (game.winner === 'p2') {
+      line = opp + ' just beat me ' + seats.p2 + '-' + seats.p1 + ' in Pradhan Mantri: Elections Game. Think you can do better?';
+    } else {
+      line = 'Hung parliament! ' + me + ' and ' + opp + ' tied ' + seats.p1 + '-' + seats.p2 + ' in Pradhan Mantri: Elections Game. Think you can do better?';
+    }
+    return line + ' ' + url;
+  }
+
+  function shareResult() {
+    var text = buildShareText();
+    buildShareCardBlob(function (blob) {
+      var file = blob && new File([blob], 'pme-result.png', { type: 'image/png' });
+      // File-attachment sharing needs a secure context (https, or literal
+      // localhost) — silently absent over a plain-http LAN address, which
+      // is why this must fall through to the link-only sheet in that case
+      // rather than erroring.
+      if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+        navigator.share({ files: [file], text: text, title: 'Pradhan Mantri: Elections Game' }).catch(function () {});
+      } else {
+        openShareOverlay(text, blob);
+      }
+    });
+  }
+
+  // A real screenshot of the actual on-screen declare-card (headline,
+  // portrait, parliament chart, ledger, match stats) via html2canvas —
+  // not a redrawn approximation, so it always matches whatever's actually
+  // shown, including future edits to that card. The Play again/Share
+  // buttons are excluded (ignoreElements) since they're UI chrome, not
+  // part of the result. Calls back with a PNG Blob, or null on failure.
+  function buildShareCardBlob(callback) {
+    if (typeof html2canvas !== 'function') { callback(null); return; }
+    html2canvas(document.querySelector('.declare-card'), {
+      backgroundColor: '#FBF8EF',
+      useCORS: true,
+      ignoreElements: function (el) { return el.classList && el.classList.contains('declare-footer'); }
+    }).then(function (canvas) {
+      canvas.toBlob(function (blob) { callback(blob); }, 'image/png');
+    }).catch(function () { callback(null); });
+  }
+
+  // Fallback sheet — used whenever native file-sharing isn't available
+  // (desktop, older Android, or a plain-http origin that can't reach the
+  // secure-context-gated Web Share API at all). Every deep link here embeds
+  // the full challenge text directly (wa.me's `text=`, the SMS `body=`),
+  // which — unlike routing the same string through navigator.share's own
+  // `text` field on iOS — reliably survives into WhatsApp: going through
+  // the OS share sheet lets it auto-detect the URL inside the string and
+  // hand WhatsApp's extension a bare URL attachment, dropping everything
+  // else, a known OS/WhatsApp limitation confirmed via real-device testing.
+  function openShareOverlay(full, blob) {
+    var enc = encodeURIComponent(full);
+    $('shareWhatsapp').href = 'https://wa.me/?text=' + enc;
+    $('shareX').href = 'https://twitter.com/intent/tweet?text=' + enc;
+    $('shareSms').href = 'sms:&body=' + enc;
+    $('shareCopyBtn').onclick = function () {
+      $('shareOverlay').hidden = true;
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(full).then(function () {
+          showToast('Result copied to clipboard');
+        }).catch(function () { window.prompt('Copy your result:', full); });
+      } else {
+        window.prompt('Copy your result:', full);
+      }
+    };
+    var saveBtn = $('shareSaveImageBtn');
+    if (blob) {
+      saveBtn.hidden = false;
+      saveBtn.href = URL.createObjectURL(blob);
+      saveBtn.download = 'pme-result.png';
+    } else {
+      saveBtn.hidden = true;
+    }
+    $('shareOverlay').hidden = false;
+  }
+
+  // Only shown for a clean win — a hung parliament has no winner to portray.
+  function renderEndWinnerPortrait() {
+    var img = $('endWinnerPortrait');
+    if (game.winner !== 'p1' && game.winner !== 'p2') { img.hidden = true; return; }
+    img.hidden = false;
+    setPortrait(img, game.players[game.winner].politician);
+  }
+
   function renderEndLedger(seats) {
     var rows = [
-      { name: 'You', n: seats.p1, color: COLORS.p1, win: game.winner === 'p1' },
-      { name: game.players.p2.politician.name, n: seats.p2, color: COLORS.p2, win: game.winner === 'p2' },
-      { name: 'Others', n: seats.others, color: COLORS.others, win: false }
+      { pol: game.players.p1.politician, type: 'You', n: seats.p1, color: COLORS.p1, win: game.winner === 'p1' },
+      { pol: game.players.p2.politician, type: 'AI', n: seats.p2, color: COLORS.p2, win: game.winner === 'p2' }
     ];
     $('endSeats').innerHTML = rows.map(function (r) {
       return '<div class="ledger-row' + (r.win ? ' winner' : '') + '">' +
+        '<img class="ledger-portrait" data-ledger-pol="' + r.pol.id + '" alt="">' +
         '<span class="ledger-dot" style="background:' + r.color + '"></span>' +
-        '<span class="ledger-name">' + r.name + '</span>' +
-        '<span class="ledger-seats">' + r.n + '</span></div>';
+        '<span class="ledger-name">' + r.pol.name + ' <span class="ledger-type">(' + r.type + ')</span></span>' +
+        '<span class="ledger-seats">' + r.n + ' seats</span></div>';
+    }).join('') +
+      '<div class="ledger-row others">' +
+      '<span class="ledger-dot" style="background:' + COLORS.others + '"></span>' +
+      '<span class="ledger-name">Others</span>' +
+      '<span class="ledger-seats">' + seats.others + ' seats</span></div>';
+    rows.forEach(function (r) {
+      var img = document.querySelector('[data-ledger-pol="' + r.pol.id + '"]');
+      if (img) setPortrait(img, r.pol);
+    });
+  }
+
+  // Rally/dominance/agenda counts are derived from live match state rather
+  // than tracked as separate running counters, matching this project's
+  // existing pattern (e.g. renderGroupCaptureBadges reading E.dominanceActive
+  // live instead of a stored flag).
+  function ralliesDeployedBy(pk) {
+    var n = 0;
+    Object.keys(game.rallyPlaysByState).forEach(function (svgId) {
+      (game.rallyPlaysByState[svgId] || []).forEach(function (k) { if (k === pk) n++; });
+    });
+    return n;
+  }
+  function groupsDominatedBy(pk) {
+    var threshold = game.cfg.regionalDominance.thresholdBps;
+    return game.groups.filter(function (g) { return E.dominanceActive(g, game.states, game.pop, pk, threshold); }).length;
+  }
+  function agendasCompletedBy(pk) {
+    var pl = game.players[pk];
+    return Object.keys(pl.agendaProgress).filter(function (k) { return pl.agendaProgress[k] >= game.cfg.agenda.tapsToComplete; }).length;
+  }
+  function cleanSweepsBy(pk) {
+    return game.states.filter(function (s) { return game.pop[s.svgId][pk] === E.BPS; }).length;
+  }
+
+  function renderEndStats() {
+    var stats = [
+      { label: 'Rallies deployed', p1: ralliesDeployedBy('p1'), p2: ralliesDeployedBy('p2') },
+      { label: 'Regions dominated', p1: groupsDominatedBy('p1'), p2: groupsDominatedBy('p2') },
+      { label: 'Clean sweeps', p1: cleanSweepsBy('p1'), p2: cleanSweepsBy('p2') },
+      { label: 'Agendas completed', p1: agendasCompletedBy('p1'), p2: agendasCompletedBy('p2') },
+      { label: 'Special power used', p1: game.players.p1.usedSpecial ? 'Yes' : 'No', p2: game.players.p2.usedSpecial ? 'Yes' : 'No' },
+      { label: 'Nationwide rally used', p1: game.players.p1.usedNationwide ? 'Yes' : 'No', p2: game.players.p2.usedNationwide ? 'Yes' : 'No' }
+    ];
+    $('endStats').innerHTML = '<div class="pol-section-label">Match stats</div>' + stats.map(function (s) {
+      return '<div class="stat-row">' +
+        '<span class="stat-val p1">' + s.p1 + '</span>' +
+        '<span class="stat-label">' + s.label + '</span>' +
+        '<span class="stat-val p2">' + s.p2 + '</span></div>';
     }).join('');
   }
 
@@ -619,7 +763,7 @@
       });
     }
     if (parliamentSvgText) { paint(parliamentSvgText); return; }
-    fetch('../assets/icons/Parliament_diagram.svg')
+    fetch('assets/icons/Parliament_diagram.svg')
       .then(function (r) { return r.text(); })
       .then(paint)
       .catch(function () { container.innerHTML = ''; });
@@ -636,9 +780,15 @@
     var intensity = Math.min(1, Math.abs(p.p1 - p.p2) / 10000);
     return mixHex(COLORS.others, leader, intensity);
   }
+  // Clean-sweep glow is a live readout (like renderGroupCaptureBadges' own
+  // dominance check) rather than reading game.cleanSweepHeld — that flag
+  // exists only to gate the one-time payout, not to drive this visual.
   function paintMap() {
     document.querySelectorAll('.india-map path[id], .india-map circle[id]').forEach(function (el) {
       el.style.fill = leaderColor(el.id);
+      var p = game.pop[el.id];
+      el.classList.toggle('swept-p1', !!p && p.p1 === E.BPS);
+      el.classList.toggle('swept-p2', !!p && p.p2 === E.BPS);
     });
   }
 
@@ -699,11 +849,18 @@
         rc.nationwideRallyMinPhase + '+), one-time use. Activating gives +' + (rc.nationwideRallyBoostBps / 100) +
         '% popularity in every state at once.';
     } else if (kind === 'special') {
-      var power = game.players.p1.politician.power, sState = craftSlotState('special');
+      var pol = game.players.p1.politician, power = pol.power, sState = craftSlotState('special');
       $('cardName').textContent = '⭐ ' + power.name;
       $('cardSeats').textContent = sState === 'used' ? 'Used' : sState === 'ready' ? 'Ready' :
         game.players.p1.tokens.stateRally + '/' + rc.specialPowerupCraftCost + ' tokens';
-      el.textContent = power.description || '';
+      // Same pol-power block (seal + benefit/cost/unlock) as the politician
+      // select card, reused verbatim rather than the raw engine description
+      // text, so the two places a player checks a power's details agree.
+      el.className = 'pol-power';
+      el.innerHTML = '<div class="pow-seal">⚡</div><div class="pow-name">' + power.name + '</div>' +
+        '<div class="pow-benefit">Benefit: ' + pol.specialPower.effect + '</div>' +
+        '<div class="pow-cost">Cost: ' + pol.specialPower.cost + '</div>' +
+        '<div class="pow-unlock">Unlocks at: Phase ' + (power.requiresMinPhase || 1) + '</div>';
     }
   }
 
@@ -718,8 +875,16 @@
     $('cardName').textContent = (AGENDA_ICONS[name] || '📜') + ' ' + name;
     var taps = game.players.p1.agendaProgress[name] || 0;
     var done = taps >= game.cfg.agenda.tapsToComplete;
-    var pct = Math.round(taps / game.cfg.agenda.tapsToComplete * 100);
-    $('cardSeats').textContent = done ? 'Maxed' : pct + '% committed';
+    var seatsEl = $('cardSeats');
+    if (done) {
+      seatsEl.textContent = 'Maxed';
+    } else {
+      var seatDelta = G.previewAgendaTapSeatDelta(game, 'p1', name);
+      var cls = seatDelta > 0 ? 'gain' : seatDelta < 0 ? 'loss' : '';
+      var sign = seatDelta > 0 ? '+' : '';
+      seatsEl.innerHTML = taps + '/' + game.cfg.agenda.tapsToComplete + ' committed · next tap ~<span class="seat-preview ' +
+        cls + '">' + sign + seatDelta + ' seats</span>';
+    }
     var el = $('cardGroups');
     el.className = 'led-grid';
     el.innerHTML = '';
@@ -886,15 +1051,23 @@
   // Agenda tray (built per-politician — see design doc: agendas are drawn
   // from a shared 24-policy pool, 4 per politician, not a fixed set)
   // ---------------------------------------------------------------------
+  // Progress toward tapsToComplete is a small number of discrete steps (not
+  // a smooth percentage), so a segmented health-bar (one pip per tap) reads
+  // its state at a glance better than a "75%" badge — decided after the
+  // percentage badge was reported as fiddly to parse mid-game.
   function buildAgendaTray() {
     var tray = $('agendaTray');
     tray.innerHTML = '';
+    var pipCount = game.cfg.agenda.tapsToComplete;
+    var pips = '';
+    for (var i = 0; i < pipCount; i++) pips += '<span class="pip"></span>';
     game.players.p1.politician.policies.forEach(function (policy) {
       var name = policy.name, safeId = 'agenda' + name.replace(/[^a-zA-Z0-9]/g, '');
       var btn = document.createElement('button');
       btn.className = 'action-btn'; btn.id = safeId; btn.title = name;
       btn.innerHTML = (AGENDA_ICONS[name] || '📜') +
-        '<span class="badge" id="' + safeId + 'Badge">0%</span>';
+        '<span class="badge" id="' + safeId + 'Badge" hidden>✓</span>' +
+        '<span class="agenda-bar" id="' + safeId + 'Bar">' + pips + '</span>';
       btn.addEventListener('click', function () { handleAgendaTap(name); });
       tray.appendChild(btn);
     });
@@ -905,10 +1078,13 @@
     policies.forEach(function (policy) {
       var name = policy.name, safeId = 'agenda' + name.replace(/[^a-zA-Z0-9]/g, '');
       var taps = game.players.p1.agendaProgress[name] || 0;
-      var pct = Math.round(taps / game.cfg.agenda.tapsToComplete * 100);
       var done = taps >= game.cfg.agenda.tapsToComplete;
-      var badgeEl = $(safeId + 'Badge'), btnEl = $(safeId);
-      if (badgeEl) badgeEl.textContent = done ? '✓' : pct + '%';
+      var badgeEl = $(safeId + 'Badge'), btnEl = $(safeId), barEl = $(safeId + 'Bar');
+      if (badgeEl) badgeEl.hidden = !done;
+      if (barEl) {
+        var pipEls = barEl.querySelectorAll('.pip');
+        for (var i = 0; i < pipEls.length; i++) pipEls[i].classList.toggle('filled', i < taps);
+      }
       if (btnEl) btnEl.classList.toggle('agenda-done', done);
     });
   }
@@ -1203,6 +1379,9 @@
     $('selectOverlay').hidden = false;
     switchMusic('intro_music');
   });
+  $('shareResultBtn').addEventListener('click', shareResult);
+  $('closeShareBtn').addEventListener('click', function () { $('shareOverlay').hidden = true; });
+  $('shareBackdrop').addEventListener('click', function () { $('shareOverlay').hidden = true; });
 
   $('settingsBtn').addEventListener('click', function () { $('settingsOverlay').hidden = false; });
   $('closeSettingsBtn').addEventListener('click', function () { $('settingsOverlay').hidden = true; });
@@ -1237,7 +1416,7 @@
 
   scheduleAITick();
 
-  G.loadGameData('../data/').then(function (d) {
+  G.loadGameData('data/').then(function (d) {
     data = d;
     renderPolGrid();
   }).catch(function (err) {
