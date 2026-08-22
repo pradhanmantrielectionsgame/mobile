@@ -6,6 +6,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### 🎮 Special-Power Scope System: svgIds for Button-Group Targeting — 2026-08-22
+
+#### Engine & Data Changes
+- **REWORKED**: `data/politicians-data.json` — Arvind Kejriwal's agenda kit: "Water and Mineral Rights" → "Secularism" (bonus 30, unchanged) [C1]
+- **REWORKED**: `data/politicians-data.json` — Mamata Banerjee's "State Autonomy Stand" power: +8% South India (tags scope), +8% Northeast-8 via new `svgIds` scope (INNL/INMN/INMZ/INTR/INML/INSK/INAR/INAS), +16% home state West Bengal (flat, replacing previous 700bps add-on) [C2]
+
+#### Engine Mechanism
+- **ADDED**: `mobile/game.js` `resolvePowerScope()` — new `svgIds` scope type accepting explicit state-ID array (`effect.ids`) for powers targeting specific state lists (e.g. quick-invest button groups) rather than broader `tags` scopes [C3]
+
+#### Documentation & Convention
+- **ADDED**: `CLAUDE.md` — new bullet under "Game design principles" documenting `svgIds` scope convention: use it when a power targets the exact states in one of the mobile HUD's quick-invest button groups, passing the same explicit svgId list the button uses; prefer `tags` scope for effects genuinely about a `states_data.json` region property [C4]
+
+#### Design Decision
+- **[D1] Mamata's Northeast bonus targets the exact NE-8 quick-invest button group, not the broader EasternBorder tag.** Context: EasternBorder includes 14 states total (Bihar, UP, Uttarakhand, Himachal, West Bengal, plus the core NE-8), too wide for the button's 8-state scope. Solution: new `svgIds` scope reuses the same ID list the button hardcodes (`NORTHEAST_IDS`), guaranteeing coverage always matches button behavior with zero drift risk. Side effect: West Bengal now gets flat 16% home-state bonus (instead of stacking 15% regional + 700bps add-on), since it's not in the Northeast-8 list and `SouthIndia:false` means it doesn't auto-receive regional bonuses.
+
+#### Context
+Session focused on fixing Mamata Banerjee's special power to target the game's real Northeast-8 quick-invest button group instead of the broader EasternBorder tag, requiring a new `svgIds` scope mechanism in the power resolution engine. Also refreshed Kejriwal's agenda kit for thematic distinctiveness. `npm test` passed cleanly (all 21 politician powers activate, invariants held); `check_data_consistency.js` showed 3 pre-existing failures in legacy desktop js/ files (unrelated). All changes maintain single-player-vs-AI scope.
+
+---
+
 ### 🎨 End-of-Game UI Redesign: Seat-Swing Previews & Tray Reorganization — 2026-08-21
 
 #### End-of-Game Card & Match Stats

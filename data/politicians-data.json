@@ -234,7 +234,7 @@
           "bonus": 30
         },
         {
-          "name": "Water and Mineral Rights",
+          "name": "Secularism",
           "bonus": 30
         }
       ],
@@ -291,18 +291,26 @@
       ],
       "specialPower": {
         "name": "State Autonomy Stand",
-        "effect": "+8% popularity in Eastern Border and South India states, +7% more (15% total) in home state",
+        "effect": "+8% popularity in South India states, +8% in the Northeast 8 states, +16% in home state",
         "cost": "₹2,000 Cr"
       },
       "power": {
         "name": "State Autonomy Stand",
-        "description": "+8% popularity in Eastern Border and South India states, +7% more (15% total) in home state; costs 2,000 Cr instantly.",
+        "description": "+8% popularity in South India states, +8% in the Northeast 8 states, +16% in home state; costs 2,000 Cr instantly.",
         "benefits": [
           {
             "kind": "popularity",
             "target": "self",
             "scope": "tags",
-            "tags": ["EasternBorder", "SouthIndia"],
+            "tags": ["SouthIndia"],
+            "bps": 800,
+            "source": "both"
+          },
+          {
+            "kind": "popularity",
+            "target": "self",
+            "scope": "svgIds",
+            "ids": ["INNL", "INMN", "INMZ", "INTR", "INML", "INSK", "INAR", "INAS"],
             "bps": 800,
             "source": "both"
           },
@@ -310,7 +318,7 @@
             "kind": "popularity",
             "target": "self",
             "scope": "home",
-            "bps": 700,
+            "bps": 1600,
             "source": "both"
           }
         ],

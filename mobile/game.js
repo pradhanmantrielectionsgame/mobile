@@ -419,6 +419,36 @@
     return { ok: true, completed: completed };
   }
 
+  // Rough real-time seat-swing preview for the *next* tap of an agenda —
+  // read-only, mirrors tapAgenda's own math (net-first-apply-once, per-tap
+  // proration) against a scratch copy of each affected state's pop instead
+  // of the live one. Seats, not raw bps, are what a player actually cares
+  // about, and the two can diverge: a state you already dominate has little
+  // headroom left to gain but full room to lose, so a naive bps sum
+  // (totalNetEffect) can look positive while the real seat swing is
+  // negative once apportionment and the ownership cap are applied.
+  function previewAgendaTapSeatDelta(game, playerKey, policyName) {
+    var pl = game.players[playerKey];
+    var policy = game.policiesByName[policyName];
+    if (!policy) return 0;
+    var progress = pl.agendaProgress[policyName] || 0;
+    if (progress >= game.cfg.agenda.tapsToComplete) return 0;
+    var seatDelta = 0;
+    game.states.forEach(function (s) {
+      var net = E.netAgendaEffectBps(s, policy);
+      if (net === 0) return;
+      var tapDelta = E.agendaTapDelta(net, progress, game.cfg.agenda.tapsToComplete);
+      if (tapDelta === 0) return;
+      var before = game.pop[s.svgId];
+      var seatsBefore = E.apportionSeats(s.seats, before)[playerKey];
+      var after = { p1: before.p1, p2: before.p2, others: before.others };
+      E.applySigned(after, playerKey, tapDelta, 'both');
+      var seatsAfter = E.apportionSeats(s.seats, after)[playerKey];
+      seatDelta += seatsAfter - seatsBefore;
+    });
+    return seatDelta;
+  }
+
   function totalNetEffect(game, policyName) {
     var policy = game.policiesByName[policyName];
     if (!policy) return 0;
@@ -448,6 +478,7 @@
     if (effect.scope === 'state') {
       return game.states.filter(function (s) { return s.name === effect.stateName; }).map(function (s) { return s.svgId; });
     }
+    if (effect.scope === 'svgIds') return effect.ids.slice();
     if (effect.scope === 'targetState') return opts.targetStateSvgId ? [opts.targetStateSvgId] : [];
     return [];
   }
@@ -783,6 +814,7 @@
     activatePower: activatePower,
     canActivatePower: canActivatePower,
     totalNetEffect: totalNetEffect,
+    previewAgendaTapSeatDelta: previewAgendaTapSeatDelta,
     pushLog: pushLog,
     aiStep: aiStep,
     runAIFull: runAIFull

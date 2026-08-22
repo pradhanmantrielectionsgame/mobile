@@ -710,11 +710,15 @@
     var pl = game.players[pk];
     return Object.keys(pl.agendaProgress).filter(function (k) { return pl.agendaProgress[k] >= game.cfg.agenda.tapsToComplete; }).length;
   }
+  function cleanSweepsBy(pk) {
+    return game.states.filter(function (s) { return game.pop[s.svgId][pk] === E.BPS; }).length;
+  }
 
   function renderEndStats() {
     var stats = [
       { label: 'Rallies deployed', p1: ralliesDeployedBy('p1'), p2: ralliesDeployedBy('p2') },
       { label: 'Regions dominated', p1: groupsDominatedBy('p1'), p2: groupsDominatedBy('p2') },
+      { label: 'Clean sweeps', p1: cleanSweepsBy('p1'), p2: cleanSweepsBy('p2') },
       { label: 'Agendas completed', p1: agendasCompletedBy('p1'), p2: agendasCompletedBy('p2') },
       { label: 'Special power used', p1: game.players.p1.usedSpecial ? 'Yes' : 'No', p2: game.players.p2.usedSpecial ? 'Yes' : 'No' },
       { label: 'Nationwide rally used', p1: game.players.p1.usedNationwide ? 'Yes' : 'No', p2: game.players.p2.usedNationwide ? 'Yes' : 'No' }
@@ -845,11 +849,18 @@
         rc.nationwideRallyMinPhase + '+), one-time use. Activating gives +' + (rc.nationwideRallyBoostBps / 100) +
         '% popularity in every state at once.';
     } else if (kind === 'special') {
-      var power = game.players.p1.politician.power, sState = craftSlotState('special');
+      var pol = game.players.p1.politician, power = pol.power, sState = craftSlotState('special');
       $('cardName').textContent = '⭐ ' + power.name;
       $('cardSeats').textContent = sState === 'used' ? 'Used' : sState === 'ready' ? 'Ready' :
         game.players.p1.tokens.stateRally + '/' + rc.specialPowerupCraftCost + ' tokens';
-      el.textContent = power.description || '';
+      // Same pol-power block (seal + benefit/cost/unlock) as the politician
+      // select card, reused verbatim rather than the raw engine description
+      // text, so the two places a player checks a power's details agree.
+      el.className = 'pol-power';
+      el.innerHTML = '<div class="pow-seal">⚡</div><div class="pow-name">' + power.name + '</div>' +
+        '<div class="pow-benefit">Benefit: ' + pol.specialPower.effect + '</div>' +
+        '<div class="pow-cost">Cost: ' + pol.specialPower.cost + '</div>' +
+        '<div class="pow-unlock">Unlocks at: Phase ' + (power.requiresMinPhase || 1) + '</div>';
     }
   }
 
@@ -864,8 +875,16 @@
     $('cardName').textContent = (AGENDA_ICONS[name] || '📜') + ' ' + name;
     var taps = game.players.p1.agendaProgress[name] || 0;
     var done = taps >= game.cfg.agenda.tapsToComplete;
-    var pct = Math.round(taps / game.cfg.agenda.tapsToComplete * 100);
-    $('cardSeats').textContent = done ? 'Maxed' : pct + '% committed';
+    var seatsEl = $('cardSeats');
+    if (done) {
+      seatsEl.textContent = 'Maxed';
+    } else {
+      var seatDelta = G.previewAgendaTapSeatDelta(game, 'p1', name);
+      var cls = seatDelta > 0 ? 'gain' : seatDelta < 0 ? 'loss' : '';
+      var sign = seatDelta > 0 ? '+' : '';
+      seatsEl.innerHTML = taps + '/' + game.cfg.agenda.tapsToComplete + ' committed · next tap ~<span class="seat-preview ' +
+        cls + '">' + sign + seatDelta + ' seats</span>';
+    }
     var el = $('cardGroups');
     el.className = 'led-grid';
     el.innerHTML = '';
@@ -1032,15 +1051,23 @@
   // Agenda tray (built per-politician — see design doc: agendas are drawn
   // from a shared 24-policy pool, 4 per politician, not a fixed set)
   // ---------------------------------------------------------------------
+  // Progress toward tapsToComplete is a small number of discrete steps (not
+  // a smooth percentage), so a segmented health-bar (one pip per tap) reads
+  // its state at a glance better than a "75%" badge — decided after the
+  // percentage badge was reported as fiddly to parse mid-game.
   function buildAgendaTray() {
     var tray = $('agendaTray');
     tray.innerHTML = '';
+    var pipCount = game.cfg.agenda.tapsToComplete;
+    var pips = '';
+    for (var i = 0; i < pipCount; i++) pips += '<span class="pip"></span>';
     game.players.p1.politician.policies.forEach(function (policy) {
       var name = policy.name, safeId = 'agenda' + name.replace(/[^a-zA-Z0-9]/g, '');
       var btn = document.createElement('button');
       btn.className = 'action-btn'; btn.id = safeId; btn.title = name;
       btn.innerHTML = (AGENDA_ICONS[name] || '📜') +
-        '<span class="badge" id="' + safeId + 'Badge">0%</span>';
+        '<span class="badge" id="' + safeId + 'Badge" hidden>✓</span>' +
+        '<span class="agenda-bar" id="' + safeId + 'Bar">' + pips + '</span>';
       btn.addEventListener('click', function () { handleAgendaTap(name); });
       tray.appendChild(btn);
     });
@@ -1051,10 +1078,13 @@
     policies.forEach(function (policy) {
       var name = policy.name, safeId = 'agenda' + name.replace(/[^a-zA-Z0-9]/g, '');
       var taps = game.players.p1.agendaProgress[name] || 0;
-      var pct = Math.round(taps / game.cfg.agenda.tapsToComplete * 100);
       var done = taps >= game.cfg.agenda.tapsToComplete;
-      var badgeEl = $(safeId + 'Badge'), btnEl = $(safeId);
-      if (badgeEl) badgeEl.textContent = done ? '✓' : pct + '%';
+      var badgeEl = $(safeId + 'Badge'), btnEl = $(safeId), barEl = $(safeId + 'Bar');
+      if (badgeEl) badgeEl.hidden = !done;
+      if (barEl) {
+        var pipEls = barEl.querySelectorAll('.pip');
+        for (var i = 0; i < pipEls.length; i++) pipEls[i].classList.toggle('filled', i < taps);
+      }
       if (btnEl) btnEl.classList.toggle('agenda-done', done);
     });
   }

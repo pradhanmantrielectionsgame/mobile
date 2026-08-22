@@ -160,14 +160,22 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
    a plain vertical rounded-rectangle strip in each dead zone, same button
    system as everywhere else (radius-md, shadow-sm), just floating with a
    small inset instead of glued flush to the corner. */
-.ne-actions{ position:absolute; top:165px; right:14px; z-index:7; width:23%;
+.ne-actions{ position:absolute; top:165px; right:14px; z-index:7;
   background:var(--surface); border:1px solid var(--rule); border-radius:var(--radius-md); box-shadow:var(--shadow-sm);
   display:flex; flex-direction:column; align-items:center; padding:12px; }
-.se-actions{ position:absolute; bottom:225px; right:14px; z-index:7; width:23%;
+.se-actions{ position:absolute; bottom:225px; right:14px; z-index:7;
   background:var(--surface); border:1px solid var(--rule); border-radius:var(--radius-md); box-shadow:var(--shadow-sm);
   display:flex; flex-direction:column; align-items:center; padding:12px; }
-.ne-actions .action-block, .se-actions .action-block{ width:100px; }
+.ne-actions .action-block, .se-actions .action-block{ width:208px; }
 .ne-actions .action-btn, .se-actions .action-btn{ font-size:50px; }
+/* AGENDA and RALLY trays: 2x2 grid instead of the single-column stack —
+   buttons stay their normal small size, the panel goes wide-and-short
+   instead of tall, which also keeps the two panels clear of each other.
+   Explicit px column tracks, not 1fr — a shrink-to-fit grid container
+   with 1fr tracks won't hold a declared button size (see CLAUDE.md's
+   icon-grid note). RALLY's second row is a single button spanning both
+   columns (.action-btn-wide) instead of a 4th same-size button. */
+#agendaTray, #tokenTray{ display:grid; grid-template-columns:100px 100px; gap:8px; }
 
 /* UT quick-invest buttons — bar matched to .player-strip's width, but the
    buttons themselves stay a fixed, modest size and spread out across that
@@ -189,10 +197,18 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
   display:flex; align-items:center; justify-content:center; font-size:64px;
   transition:transform .1s ease, box-shadow .1s ease; }
 .action-btn:active{ transform:translate(4px,4px); box-shadow:none; }
-.action-btn-wide{ aspect-ratio:.7; }
+.action-btn-wide{ grid-column:1 / -1; aspect-ratio:2.5; gap:12px; padding:0 16px; }
+.action-btn-wide.action-btn{ font-size:42px; }
+.action-btn-wide .special-label{ font-family:var(--font-display); font-weight:800; font-size:23px; line-height:1.15;
+  text-align:left; color:var(--ink); }
 .action-btn .badge{ position:absolute; top:-13px; right:-13px; min-width:34px; height:34px; padding:0 6px;
   border-radius:17px; background:var(--ink); color:var(--page); font-family:var(--font-mono); font-size:16px;
   font-weight:800; display:flex; align-items:center; justify-content:center; line-height:1; }
+.action-btn .badge[hidden]{ display:none; }
+.action-btn .agenda-bar{ position:absolute; left:9px; top:12px; bottom:12px; display:flex; flex-direction:column; justify-content:space-between; align-items:center; }
+.action-btn .agenda-bar .pip{ width:11px; height:11px; border-radius:50%; background:var(--track); border:1.5px solid var(--line); flex:none; }
+.action-btn .agenda-bar .pip.filled{ background:var(--accent); border-color:var(--accent); }
+.action-btn.agenda-done .agenda-bar .pip.filled{ background:var(--stamp); border-color:var(--stamp); }
 .action-btn.armed{ background:var(--accent); border-color:var(--accent); color:#fff; }
 .action-btn.depleted, .action-btn.locked{ opacity:.45; }
 .action-btn.locked .badge{ background:var(--ink-faint); }
@@ -238,6 +254,9 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
 .info-row{ display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
 .info-row h3{ margin:0; font-size:var(--fs-6); font-weight:800; letter-spacing:-.01em; }
 .info-row .seats{ font-family:var(--font-mono); font-size:var(--fs-3); color:var(--ink-soft); font-weight:600; white-space:nowrap; }
+.seat-preview{ font-weight:800; }
+.seat-preview.gain{ color:#1C8A4B; }
+.seat-preview.loss{ color:var(--stamp); }
 
 /* Floats in the panel's own bottom-right corner (reserved gutter above via
    info-panel's right padding) instead of squeezed inline next to the name —
@@ -351,7 +370,7 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
 .pol-eff-chip{ padding:8px 20px; border-radius:100px; background:var(--paper-dim); border:1.3px solid var(--rule); font-family:var(--font-mono); font-weight:700; font-size:25px; }
 .pol-eff-chip.eff-pos{ border-color:#1C8A4B; color:#1C8A4B; }
 .pol-eff-chip.eff-neg{ border-color:var(--stamp); color:var(--stamp); }
-.pol-power{ position:relative; background:rgba(179,49,29,.06); border:1.3px solid rgba(179,49,29,.4); border-radius:25px; padding:18px 30px 18px 100px; margin-bottom:18px; }
+.pol-power{ position:relative; width:100%; background:rgba(179,49,29,.06); border:1.3px solid rgba(179,49,29,.4); border-radius:25px; padding:18px 30px 18px 100px; margin-bottom:18px; }
 .pow-seal{ position:absolute; left:22px; top:18px; width:55px; height:55px; border-radius:50%; background:var(--stamp); display:flex; align-items:center; justify-content:center; font-size:28px; transform:rotate(-8deg); box-shadow:0 2px 4px rgba(20,22,28,.3); }
 .pow-name{ font-family:var(--font-display); font-weight:700; font-size:34px; margin-bottom:6px; }
 .pow-benefit{ font-family:var(--font-mono); font-size:25px; color:var(--seal-green); font-weight:700; text-transform:uppercase; letter-spacing:.02em; margin-bottom:6px; }
@@ -370,17 +389,17 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
 .end-overlay{ align-items:center; justify-content:flex-start; text-align:center; gap:0; padding:20px; }
 .declare-card{ width:100%; background:var(--paper); color:var(--ink); border-radius:45px; border:3px solid var(--ink);
   box-shadow:6px 6px 0 var(--ink); overflow:hidden; display:flex; flex-direction:column; align-items:center; }
-.declare-seal{ margin-top:45px; width:130px; height:130px; border-radius:50%; background:var(--ink); border:3px solid #C9A227;
-  display:flex; align-items:center; justify-content:center; font-size:60px; box-shadow:0 0 0 3px rgba(0,0,0,.12); flex:0 0 auto; }
-.end-winner-portrait{ margin-top:25px; width:200px; height:200px; border-radius:50%; object-fit:cover; background:#ccc;
+.declare-seal{ margin-top:20px; width:110px; height:110px; border-radius:50%; background:var(--ink); border:3px solid #C9A227;
+  display:flex; align-items:center; justify-content:center; font-size:52px; box-shadow:0 0 0 3px rgba(0,0,0,.12); flex:0 0 auto; }
+.end-winner-portrait{ margin-top:10px; width:120px; height:120px; border-radius:50%; object-fit:cover; background:#ccc;
   border:4px solid #C9A227; box-shadow:0 0 0 3px rgba(0,0,0,.12); flex:0 0 auto; }
-.end-overlay .headline{ font-family:var(--font-display); font-size:53px; font-weight:700; margin:35px 50px 10px; }
-.end-overlay .sub{ color:rgba(20,22,28,.65); font-size:34px; max-width:34ch; margin:0 50px 40px; }
-.end-parliament{ width:100%; max-width:900px; padding:0 40px; }
+.end-overlay .headline{ font-family:var(--font-display); font-size:53px; font-weight:700; margin:18px 50px 6px; }
+.end-overlay .sub{ color:rgba(20,22,28,.65); font-size:34px; max-width:34ch; margin:0 50px 20px; }
+.end-parliament{ width:100%; max-width:620px; padding:0 40px; }
 .end-parliament svg{ width:100%; height:auto; display:block; }
 .end-parliament circle{ transition:fill .4s ease; }
-.declare-ledger{ width:100%; padding:35px 40px 10px; }
-.ledger-row{ display:flex; align-items:center; gap:20px; padding:18px 0; border-bottom:1px dashed rgba(20,22,28,.16); font-family:var(--font-mono); font-size:32px; }
+.declare-ledger{ width:100%; padding:18px 40px 6px; }
+.ledger-row{ display:flex; align-items:center; gap:20px; padding:12px 0; border-bottom:1px dashed rgba(20,22,28,.16); font-family:var(--font-mono); font-size:32px; }
 .ledger-row:last-child{ border-bottom:none; }
 .ledger-row.winner{ font-weight:700; }
 .ledger-row.others{ color:var(--ink-soft); font-style:italic; }
@@ -389,16 +408,16 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
 .ledger-name{ flex:1; text-align:left; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .ledger-type{ color:var(--ink-soft); font-weight:600; font-size:24px; }
 .ledger-seats{ font-weight:700; font-variant-numeric:tabular-nums; white-space:nowrap; }
-.declare-stats{ width:100%; padding:5px 40px 10px; }
+.declare-stats{ width:100%; padding:5px 40px 6px; }
 .declare-stats .pol-section-label{ text-align:left; }
-.stat-row{ display:flex; align-items:center; gap:15px; padding:14px 0; border-bottom:1px dashed rgba(20,22,28,.16); font-family:var(--font-mono); font-size:28px; }
+.stat-row{ display:flex; align-items:center; gap:15px; padding:9px 0; border-bottom:1px dashed rgba(20,22,28,.16); font-family:var(--font-mono); font-size:28px; }
 .stat-row:last-child{ border-bottom:none; }
 .stat-label{ flex:1; text-align:center; color:var(--ink-soft); }
 .stat-val{ font-weight:700; text-align:center; min-width:110px; font-variant-numeric:tabular-nums; }
 .stat-val.p1{ color:var(--p1); } .stat-val.p2{ color:var(--p2); }
-.declare-footer{ width:100%; display:flex; gap:20px; border-top:1px solid rgba(20,22,28,.18); margin-top:35px; padding:35px 50px 50px; }
+.declare-footer{ width:100%; display:flex; gap:20px; border-top:1px solid rgba(20,22,28,.18); margin-top:18px; padding:20px 50px 30px; }
 .end-overlay button{ flex:1; font-family:var(--font-display); background:var(--accent); color:#fff; font-weight:700;
-  padding:33px 30px; border-radius:100px; font-size:36px; border:2px solid var(--ink); box-shadow:3px 3px 0 var(--ink); }
+  padding:24px 30px; border-radius:100px; font-size:36px; border:2px solid var(--ink); box-shadow:3px 3px 0 var(--ink); }
 .end-overlay button:active{ transform:translate(3px,3px); box-shadow:none; }
 .end-overlay button.secondary{ background:var(--paper-dim); color:var(--ink); }
 .target-banner{ position:fixed; top:0; left:0; right:0; z-index:60; background:var(--stamp); color:#fff; text-align:center; font-size:12.5px; font-weight:700; padding:8px; }
@@ -762,7 +781,7 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
       <div class="action-group" id="tokenTray">
         <button class="action-btn" id="rallyBtn" title="State Rally">📢<span class="badge" id="rallyBadge">5</span></button>
         <button class="action-btn" id="nationwideBtn" title="Nationwide Rally">🇮🇳<span class="badge" id="nationwideBadge">5/12</span></button>
-        <button class="action-btn action-btn-wide" id="specialBtn" title="Special Powerup">⭐<span class="badge" id="specialBadge">5/6</span></button>
+        <button class="action-btn action-btn-wide" id="specialBtn" title="Special Powerup">⭐<span class="special-label">Special Ability</span><span class="badge" id="specialBadge">5/6</span></button>
       </div>
     </div>
 
