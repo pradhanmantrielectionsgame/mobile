@@ -6,6 +6,45 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### 🎓 Interactive Tutorial System: Welcome & In-Game Guided Walkthrough — 2026-08-22
+
+#### Welcome Screen Tutorial (5 Steps)
+- **ADDED**: `mobile/index.html` + `mobile/main.js` — new "How to Play" entry button on welcome screen, launching a 5-step select-screen tutorial [C1]
+- **ADDED**: Tutorial steps guide players through (1) browsing the politician roster, (2) tapping an agenda to see its effects, (3) reviewing a special power's unlock gate, (4) reviewing Play-button locking until tutorial completion [C1]
+- **ADDED**: `mobile/main.js` persistent Back/Next tutorial navigation button pair, JS-relocated via `appendChild` into whichever overlay is currently active (not viewport-fixed, to avoid collision with `.ut-bar` small-UT buttons and select-screen Play button) [C2]
+
+#### In-Game Tutorial (19 Steps)
+- **ADDED**: `mobile/main.js` + `mobile/index.html` — full 19-step in-game tutorial gating new players through core mechanics: phase counter, funds display, direct investment to a target state (guided to 70% then 100%), rally-token deployment (per-phase and per-state cap), agenda tap-to-completion with rally-token rewards, state-group regional-dominance walkthrough via Western Border group [C3]
+- **ADDED**: `mobile/main.js` `startStageTutorial()`/`finishStageTutorial()` — phase timer and AI opponent auto-pause for the full tutorial duration, so new players aren't rushed or acted against while reading [C4]
+- **ADDED**: `mobile/index.html` brass glow-ring pulse-highlight system (`tutorial-*-pulse` keyframes) reused across every coaching target — HUD text, map states, agenda chips, buttons, group chips [C5]
+
+#### Tutorial Infrastructure & Gating
+- **ADDED**: `mobile/main.js` `updateTutorialCounter()` — global "Step N/24" counter shown inline in Back/Next nav row, shared across both tutorial engines [C10]
+- **ADDED**: `mobile/main.js` `estimateInvestCostToReach()` — side-effect-free clone-and-replay of `investCash`'s own cost math, summed across every under-threshold group member, used to compute dynamic tutorial funds grants instead of a flat ₹10,000cr number that failed in ~1/3 of seeds [C9]
+- **ADDED**: `mobile/main.js` live game-state gating checks (real popularity/funds/agenda-progress/rally-play counts), not scripted timers — ensures tutorial never locks if player skips a step or diverges from the expected path [C3]
+- **CHANGED**: Tutorial target group switched from Eastern Border (14 states/197 seats, only succeeds ~67% of seeds) to Western Border (5 states/70 seats, succeeds 100% across all tested seeds) per user request [C11]
+
+#### UI Fixes & Refinements
+- **FIXED**: `mobile/index.html` — `#toast` was nested inside `.stage` (invisible before a game starts, since `.stage` is `hidden` until then); moved to a page-level fixed element so it works on welcome/select screens [C6]
+- **HIDDEN**: `mobile/index.html` `#endPhaseBtn` ("End phase now" skip button) globally via `display:none` — was a testing artifact that let players accidentally skip a phase early [C7]
+- **RENAMED**: `mobile/index.html` + `mobile/main.js` ballot-card section labels "Manifesto"→"Agenda" and "Special Power"→"Special Ability" app-wide, matching the in-game token tray's existing wording [C8]
+
+#### Documentation Updates
+- **UPDATED**: `CLAUDE.md` — two new durable rules documented and user-approved [C12]:
+  - Under "Data & config conventions": "`mobile/engine.js` has no `module.exports`; Node scripts must read `global.PMEEngine` after requiring it for the side effect"
+  - Under "Frontend technical rules": "A new fixed-position UI element must be checked against `.ut-bar` and `.pol-footer` before assuming corners/bottom are free"
+
+#### Design Decisions
+- **[D1] Persistent tutorial Back/Next buttons dock in-flow within active overlays, not fixed to viewport corners.** Context: `.ut-bar` (stage HUD, bottom strip) and select-screen scrollable cards (Play button position depends on scroll/height) both claim screen corners. Solution: single JS-relocated button pair stays inside whichever card/overlay is active, moves between screens (minor inconsistency) vs. fixed corner collision (hard conflict). Rationale: zero collision risk anywhere, at the cost of button position changing across screens.
+- **[D2] Tutorial's "complete an agenda" gate targets National Defense, not "Hindi Heartland."** Context: User originally specified "Hindi Heartland," but that's a state-group region tag in `states_data.json`, not an agenda name in `data/policy-tags.json` — Modi's 4 agendas are Infrastructure/Hindutva/Economic Liberalization/National Defense. A gate checking a nonexistent agenda would never fire. Solution: verified against real data files before wiring the gate, flagged the mismatch, user picked National Defense directly.
+- **[D3] Tutorial's state-group-dominance walkthrough targets Western Border, not Eastern Border.** Context: User requested the swap directly, citing difficulty (Eastern Border has 197 seats including UP's 80 and West Bengal's 42). Solution: verified via real engine simulation across 7 random seeds — Western Border (70 seats total) succeeds 100% with grants of 1,020-4,230cr; Eastern Border fails in ~1/3 of seeds even with dynamic computation.
+- **[D4] Tutorial funds grant is computed dynamically per-playthrough, not a fixed flat number.** Context: Original spec said "give 10,000 crores, tutorial mode only." Direct engine simulation showed flat grants leave player stranded in ~1/3 of random seeds (probability wasn't guessed, it was measured). Solution: `estimateInvestCostToReach()` clones the target popularity state and replays the real cost math per seed, always provably sufficient regardless of RNG draw.
+
+#### Context
+Session focused on building an interactive, multi-stage tutorial system for onboarding new players: a 5-step select-screen walkthrough, a 19-step in-game guided tour with AI auto-pause and live game-state gating (not scripted timers), dynamic funds computation to eliminate probabilistic failure modes, and persistent in-flow tutorial navigation that avoids collision with existing mobile HUD. Two new CLAUDE.md rules were also documented (engine.js module-pattern gotcha, fixed-position-UI collision check) as standing guardrails against similar issues in future work. All changes maintain single-player-vs-AI scope.
+
+---
+
 ### 🚀 Mobile Deployment Restructuring: Fresh Repo & Automated Deploy Script — 2026-08-22
 
 #### File Restructuring & Canonical Build Elevation

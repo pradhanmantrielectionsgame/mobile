@@ -80,6 +80,17 @@ npm test              # Runs simulate.js regression suite
 - **Win condition** — first player to 272/543 seats (majority) wins the election; checked at phase end
 - **Dominance bonus** — controlling all states in a region (50%+ popularity in every state) earns a one-time lump-sum bonus
 
+### Interactive Tutorial
+
+New players can opt into a multi-stage guided tutorial that walks through the core mechanics:
+
+- **Select-screen tutorial** (5 steps) — introduced via a "How to Play" entry button; covers browsing politicians, tapping agendas, reviewing special powers, and a gated first play
+- **In-game tutorial** (19 steps) — activates automatically on your first game; gates actions sequentially with live game-state checks (direct cash investment in a target state, rally tokens, agenda commitment, regional dominance strategy)
+- **Automatic pacing** — phase timer and AI opponent auto-pause during tutorial steps, so you're never rushed while learning
+- **Deterministic path** — always takes the same starting-position draw and uses dynamic funds grants to ensure success regardless of random RNG
+
+Both tutorials are fully optional — skip by completing the final step or closing the tutorial overlay. Tutorial mechanics (seeded RNG, dynamic grants) are only active in tutorial mode; regular games play with normal randomized starts.
+
 ### Board State
 
 - **Header** — player politician names + party symbols, funds, seats held, current phase

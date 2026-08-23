@@ -59,6 +59,357 @@
   };
 
   var data = null, game = null, selectedId = 'INUP', armed = null; // armed: null | 'stateRally' | 'powerTarget'
+  var tutorialMode = false; // true between "How to Play" and starting the tutorial game — locks select screen to Modi only
+  var TUTORIAL_POL_ID = 'narendra-modi';
+  // Two step types:
+  //  'slide'  — the opaque full-screen card (used only for the welcome step)
+  //  'coach'  — a banner overlaid on the real, live select screen underneath.
+  //             freeze locks carousel swipe (and snaps back to Modi first);
+  //             pulse highlights either the agenda chips or the power block;
+  //             requireAgendaTap gates Next until a real chip tap on Modi's card.
+  var TUTORIAL_STEPS = [
+    {
+      type: 'slide',
+      title: 'Welcome to the Pradhan Mantri Elections Game!',
+      body: "You are campaigning to become India's next Prime Minister. Your goal is to cross 272 seats (out of a possible 543) in India's Lok Sabha (the people's house)."
+    },
+    {
+      type: 'coach', freeze: false,
+      title: 'Choose your candidate',
+      body: 'Each candidate has their own unique strengths, agendas, and special ability. Browse through the different available options.'
+    },
+    {
+      type: 'coach', freeze: true, pulse: 'agendas', requireAgendaTap: true,
+      body: "For this tutorial, you'll be playing as Modi. Click on each agenda item to find out more."
+    },
+    {
+      type: 'coach', freeze: true, pulse: 'power',
+      body: 'Each candidate also has a special ability — Modi\'s is Demonetization.'
+    },
+    {
+      type: 'coach', freeze: true, pulse: 'play',
+      body: 'Click "Play as Modi" to begin your campaign!'
+    }
+  ];
+  var TUTORIAL_LAST_STEP = TUTORIAL_STEPS.length - 1; // the "click Play as Modi" step — forward from here happens by tapping the real button, not Next
+  var tutorialStep = 0;
+  var tutorialAgendaTapped = false; // set once any agenda chip is tapped during a requireAgendaTap step
+
+  // Shared across both step engines (select-screen + in-game) so playtesting
+  // and player-facing progress both read one continuous "Step N/total" count.
+  function updateTutorialCounter(current) {
+    var text = 'Step ' + current + '/' + (TUTORIAL_STEPS.length + TUTORIAL_STAGE_STEPS.length);
+    $('tutorialStepCounterA').textContent = text;
+    $('tutorialStepCounterB').textContent = text;
+  }
+
+  function scrollCarouselToModi(behavior) {
+    var track = $('polCarousel');
+    var idx = data ? data.politicians.findIndex(function (p) { return p.id === TUTORIAL_POL_ID; }) : 0;
+    track.scrollTo({ left: Math.max(idx, 0) * track.clientWidth, behavior: behavior });
+  }
+
+  // Renders whichever step tutorialStep points at (the welcome slide, a coach
+  // banner over the live select screen, or free browsing past the last step)
+  // and updates the persistent nav buttons — single source of truth so
+  // Back/Next never fall out of sync with what's shown.
+  function renderTutorialStep() {
+    var step = TUTORIAL_STEPS[tutorialStep]; // undefined once we're past the last step (free browsing)
+    var isSlide = step && step.type === 'slide';
+    var isCoach = step && step.type === 'coach';
+
+    $('tutorialOverlay').hidden = !isSlide;
+    $('tutorialCoach').hidden = !isCoach;
+    $('polCarousel').classList.toggle('tutorial-frozen', !!(isCoach && step.freeze));
+    $('polCarousel').classList.toggle('tutorial-pulse-agendas', !!(isCoach && step.pulse === 'agendas'));
+    $('polCarousel').classList.toggle('tutorial-pulse-power', !!(isCoach && step.pulse === 'power'));
+    $('polCarousel').classList.toggle('tutorial-pulse-play', !!(isCoach && step.pulse === 'play'));
+    $('selectOverlay').classList.toggle('tutorial-modi-locked', tutorialStep < TUTORIAL_LAST_STEP);
+    updateTutorialCounter(tutorialStep + 1);
+
+    if (isSlide) {
+      $('tutorialSlideTitle').textContent = step.title;
+      $('tutorialSlideBody').textContent = step.body;
+      $('tutorialSlide').appendChild($('tutorialNavRow')); // Back/Next dock to whichever card is showing, not a fixed corner
+    } else if (isCoach) {
+      $('tutorialCoachTitle').textContent = step.title || '';
+      $('tutorialCoachTitle').hidden = !step.title;
+      $('tutorialCoachBody').textContent = step.body;
+      $('tutorialCoach').appendChild($('tutorialNavRow'));
+    }
+
+    $('tutorialBackBtn').disabled = (tutorialStep === 0);
+    var needsTap = isCoach && step.requireAgendaTap && !tutorialAgendaTapped;
+    $('tutorialNextBtn').disabled = !step || needsTap || tutorialStep === TUTORIAL_LAST_STEP;
+  }
+
+  function goTutorialStep(delta) {
+    var next = tutorialStep + delta;
+    if (next < 0 || next > TUTORIAL_LAST_STEP) return;
+    tutorialStep = next;
+    var step = TUTORIAL_STEPS[tutorialStep];
+    if (step && step.type === 'coach' && step.freeze) scrollCarouselToModi('auto'); // browsing (previous step) may have swiped away from Modi
+    if (step && step.type === 'coach' && step.requireAgendaTap) tutorialAgendaTapped = false;
+    renderTutorialStep();
+  }
+
+  function onTutorialAgendaTap() {
+    var step = TUTORIAL_STEPS[tutorialStep];
+    if (!tutorialAgendaTapped && step && step.type === 'coach' && step.requireAgendaTap) {
+      tutorialAgendaTapped = true;
+      renderTutorialStep();
+    }
+  }
+
+  // In-game coaching, once the tutorial game itself starts. Same pulse +
+  // Back/Next pattern as the select-screen coach steps, but the nav buttons
+  // live inside the banner itself (not a fixed top bar) — the stage's three
+  // regions (topstrip/map/info-panel) already fill the whole screen with no
+  // free space, so anything fixed would cover the very element being highlighted.
+  var TUTORIAL_GUJARAT_ID = 'INGJ';
+  var TUTORIAL_GROUP_KEY = 'WesternBorder'; // much smaller/cheaper than Eastern Border (5 states/70 seats vs 14/197) — Gujarat, already heavily invested by this point, is a member too
+  var TUTORIAL_STAGE_STEPS = [
+    { pulse: 'phase', body: 'The game is played in 10 phases.' },
+    { pulse: 'clock', body: 'Each phase lasts 45 seconds of clock time.' },
+    { pulse: 'funds', body: 'This is your starting funds.' },
+    {
+      pulse: 'info', requireMapTap: true,
+      body: "Each territory on the map is colored by popularity — Modi's is orange. The stronger the lead, the more intense the color. Tap any state and you can see your popularity score (as well as your opponent's) in the info bar on the bottom of the screen."
+    },
+    {
+      pulse: 'gujarat', requireInvestGujarat: true,
+      body: 'There are a few ways to increase your popularity. Option 1: direct investment. Double tap on Gujarat to invest funds.'
+    },
+    {
+      pulse: 'gujarat', requireGujaratPopularityBps: 7000,
+      body: 'Each double tap deducts funds in proportion to the number of Lok Sabha seats that state or union territory contributes — larger states cost more, smaller states cost less. Keep investing in Gujarat until your popularity there is above 70%.'
+    },
+    {
+      pulse: 'seats',
+      body: 'Higher popularity in any territory means more seats in the Lok Sabha. Keep investing in Gujarat to watch your projected seats climb.'
+    },
+    {
+      pulse: 'rally',
+      body: 'Option 2: Rallies. Rallies are a cheap way to increase your popularity in any given region. You receive 2 free rally tokens per phase.'
+    },
+    {
+      pulse: 'rally', requireRallyPlaysInGujarat: 1,
+      body: 'Click on rally tokens and then click on Gujarat to hold a rally there. Each rally gives a 5% popularity boost.'
+    },
+    {
+      pulse: 'gujarat', requireRallyPlaysInGujarat: 2,
+      body: 'Place another rally token in Gujarat. You may only place 2 rally tokens in any given phase of the game.'
+    },
+    {
+      pulse: 'gujarat',
+      body: 'Any single state can have a maximum of 2 rallies per game — this includes any rallies your opponent holds in that state. Use them strategically.'
+    },
+    {
+      pulse: 'agendatray',
+      body: 'To gain additional rally tokens, click on different agenda items.'
+    },
+    {
+      pulse: 'targetagenda', targetAgendaName: 'National Defense', requireAgendaComplete: 'National Defense',
+      body: 'Each agenda costs 500cr per tap (2000cr total investment). Completing an agenda gives you 2 extra rally tokens for free. Tap on National Defense until that agenda is completed.'
+    },
+    {
+      pulse: 'gujarat', requireGujaratPopularityBps: 10000,
+      body: 'Keep investing in Gujarat until your popularity hits 100%. Once hit, you receive a small cash bonus for achieving a clean sweep.'
+    },
+    {
+      pulse: 'groups', requireGroupClick: true,
+      body: 'State groups: Notice the buttons on your left. Each button corresponds to a different group of states (or UTs). Click on a few and check the bottom info bar to see which states belong to which group.'
+    },
+    {
+      body: 'Controlling a state group unlocks additional funds for your campaign. Large state groups (in terms of number of seats) are harder to control but unlock more funds for your campaign.'
+    },
+    {
+      body: 'Controlling a state group requires you to achieve a popularity of 50% or greater in each territory within that group.'
+    },
+    {
+      pulse: 'targetgroup', targetGroupKey: TUTORIAL_GROUP_KEY, requireGroupDominance: TUTORIAL_GROUP_KEY,
+      body: "Let's try to get control over the Western Border group. Here are some additional funds. Keep investing in all the territories in the Western Border group until you achieve 50% or higher in every territory within the group."
+    },
+    {
+      pulse: 'targetgroup', targetGroupKey: TUTORIAL_GROUP_KEY,
+      body: 'Once control is achieved you receive a cash bonus and the group button lights up with your player color.'
+    }
+  ];
+  var tutorialStageStep = 0;
+  var tutorialMapTapped = false;
+  var tutorialGujaratInvested = false;
+  var tutorialGroupClicked = false;
+  var tutorialGroupFundsGranted = false;
+
+  function startStageTutorial() {
+    timerPaused = true;
+    clearInterval(timerHandle);
+    $('pauseToggleBtn').textContent = '▶'; $('pauseToggleBtn').title = 'Resume';
+    tutorialStageStep = 0;
+    tutorialMapTapped = false;
+    tutorialGujaratInvested = false;
+    tutorialGroupClicked = false;
+    tutorialGroupFundsGranted = false;
+    $('tutorialCoachStage').hidden = false;
+    renderTutorialStageStep();
+  }
+
+  function finishStageTutorial() {
+    tutorialMode = false;
+    $('tutorialCoachStage').hidden = true;
+    $('stage').classList.remove('tutorial-pulse-phase', 'tutorial-pulse-clock', 'tutorial-pulse-funds', 'tutorial-pulse-info',
+      'tutorial-pulse-seats', 'tutorial-pulse-rally', 'tutorial-pulse-agendatray', 'tutorial-pulse-groups');
+    var gj = document.getElementById(TUTORIAL_GUJARAT_ID);
+    if (gj) gj.classList.remove('tutorial-target');
+    var prevAgendaBtn = document.querySelector('#agendaTray .tutorial-target');
+    if (prevAgendaBtn) prevAgendaBtn.classList.remove('tutorial-target');
+    var prevGroupChip = document.querySelector('.gchip.tutorial-target');
+    if (prevGroupChip) prevGroupChip.classList.remove('tutorial-target');
+    timerPaused = false;
+    resumePhaseTimer();
+    $('pauseToggleBtn').textContent = '⏸'; $('pauseToggleBtn').title = 'Pause';
+  }
+
+  // Simulates investCash's own math (tap boost + gainAt redistribution) on a
+  // cloned pop object — no side effects — to compute the real Cr cost of
+  // bringing one state's p1 share up to a target, so the group funds grant
+  // below can be sized exactly instead of a guessed flat number.
+  function estimateInvestCostToReach(svgId, targetBps) {
+    var real = game.pop[svgId];
+    var sim = { p1: real.p1, p2: real.p2, others: real.others };
+    var tapNum = game.players.p1.investmentTaps[svgId] || 0;
+    var costPerTap = game.statesById[svgId].seats * game.cfg.investment.costPerSeatCr;
+    var totalCost = 0, guard = 0;
+    while (sim.p1 < targetBps && guard++ < 300) {
+      tapNum++;
+      E.gainAt(sim, 'p1', E.investmentBoostBps(tapNum, game.cfg.investment), 'both');
+      totalCost += costPerTap;
+    }
+    return totalCost;
+  }
+
+  // One-time setup when the player reaches the target-group step (from
+  // either direction) — pins the group card open so progress is visible
+  // while investing, and grants exactly the funds needed to bring every
+  // member state to 50%, not a flat guess: a flat ₹10,000cr grant failed in
+  // real testing against the (much bigger) Eastern Border group — Western
+  // Border is cheaper, but this stays generic/exact rather than re-guessing
+  // a new flat number for whichever group TUTORIAL_GROUP_KEY points at.
+  function enterTargetGroupStep() {
+    activeGroup = TUTORIAL_GROUP_KEY; groupPinned = true;
+    document.querySelectorAll('.gchip').forEach(function (x) { x.classList.toggle('on', x.dataset.key === activeGroup); });
+    applyGroupHighlight();
+    updateCard();
+    if (tutorialGroupFundsGranted) return;
+    tutorialGroupFundsGranted = true;
+    var members = game.states.filter(function (s) { return s.tags.indexOf(TUTORIAL_GROUP_KEY) !== -1; });
+    var needed = 0;
+    members.forEach(function (s) {
+      if (game.pop[s.svgId].p1 < game.cfg.regionalDominance.thresholdBps) {
+        needed += estimateInvestCostToReach(s.svgId, game.cfg.regionalDominance.thresholdBps);
+      }
+    });
+    var grant = needed + 1000; // small buffer for rounding
+    game.players.p1.fundsCr += grant;
+    showToast('🎁 +₹' + grant + 'Cr tutorial bonus funds');
+    renderAll();
+  }
+
+  function tutorialStageStepSatisfied(step) {
+    if (step.requireMapTap) return tutorialMapTapped;
+    if (step.requireInvestGujarat) return tutorialGujaratInvested;
+    if (step.requireGujaratPopularityBps) return (game.pop[TUTORIAL_GUJARAT_ID].p1 >= step.requireGujaratPopularityBps);
+    if (step.requireRallyPlaysInGujarat) return (game.rallyPlaysByState[TUTORIAL_GUJARAT_ID] || []).length >= step.requireRallyPlaysInGujarat;
+    if (step.requireAgendaComplete) return (game.players.p1.agendaProgress[step.requireAgendaComplete] || 0) >= game.cfg.agenda.tapsToComplete;
+    if (step.requireGroupClick) return tutorialGroupClicked;
+    if (step.requireGroupDominance) {
+      var group = game.groups.filter(function (g) { return g.key === step.requireGroupDominance; })[0];
+      return group ? E.dominanceActive(group, game.states, game.pop, 'p1', game.cfg.regionalDominance.thresholdBps) : false;
+    }
+    return true;
+  }
+
+  function renderTutorialStageStep() {
+    var step = TUTORIAL_STAGE_STEPS[tutorialStageStep];
+    $('tutorialCoachStageTitle').hidden = true;
+    $('tutorialCoachStageBody').textContent = step.body;
+    updateTutorialCounter(TUTORIAL_STEPS.length + tutorialStageStep + 1);
+    var stageEl = $('stage');
+    stageEl.classList.toggle('tutorial-pulse-phase', step.pulse === 'phase');
+    stageEl.classList.toggle('tutorial-pulse-clock', step.pulse === 'clock');
+    stageEl.classList.toggle('tutorial-pulse-funds', step.pulse === 'funds');
+    stageEl.classList.toggle('tutorial-pulse-info', step.pulse === 'info');
+    stageEl.classList.toggle('tutorial-pulse-seats', step.pulse === 'seats');
+    stageEl.classList.toggle('tutorial-pulse-rally', step.pulse === 'rally');
+    stageEl.classList.toggle('tutorial-pulse-agendatray', step.pulse === 'agendatray');
+    stageEl.classList.toggle('tutorial-pulse-groups', step.pulse === 'groups');
+    var gj = document.getElementById(TUTORIAL_GUJARAT_ID);
+    if (gj) gj.classList.toggle('tutorial-target', step.pulse === 'gujarat');
+    var prevAgendaBtn = document.querySelector('#agendaTray .tutorial-target');
+    if (prevAgendaBtn) prevAgendaBtn.classList.remove('tutorial-target');
+    if (step.pulse === 'targetagenda') {
+      var safeId = 'agenda' + step.targetAgendaName.replace(/[^a-zA-Z0-9]/g, '');
+      var btn = $(safeId);
+      if (btn) btn.classList.add('tutorial-target');
+    }
+    var prevGroupChip = document.querySelector('.gchip.tutorial-target');
+    if (prevGroupChip) prevGroupChip.classList.remove('tutorial-target');
+    if (step.pulse === 'targetgroup') {
+      var groupChip = document.querySelector('.gchip[data-key="' + step.targetGroupKey + '"]');
+      if (groupChip) groupChip.classList.add('tutorial-target');
+    }
+    $('tutorialStageBackBtn').disabled = (tutorialStageStep === 0);
+    $('tutorialStageNextBtn').disabled = !tutorialStageStepSatisfied(step);
+    $('tutorialStageNextBtn').textContent = (tutorialStageStep === TUTORIAL_STAGE_STEPS.length - 1) ? "Let's play →" : 'Next →';
+  }
+
+  function goTutorialStageStep(delta) {
+    var next = tutorialStageStep + delta;
+    if (next < 0) return;
+    if (next >= TUTORIAL_STAGE_STEPS.length) { finishStageTutorial(); return; }
+    tutorialStageStep = next;
+    var step = TUTORIAL_STAGE_STEPS[tutorialStageStep];
+    if (step.requireGroupClick) tutorialGroupClicked = false; // re-arm each time this step is (re-)entered, same as the agenda-tap gate
+    if (step.pulse === 'targetgroup') enterTargetGroupStep();
+    renderTutorialStageStep();
+  }
+
+  function onTutorialMapTap() {
+    var step = TUTORIAL_STAGE_STEPS[tutorialStageStep];
+    if (!tutorialMapTapped && step && step.requireMapTap) {
+      tutorialMapTapped = true;
+      renderTutorialStageStep();
+    }
+  }
+
+  function onTutorialInvest(svgId) {
+    if (!tutorialMode || tutorialStageStep >= TUTORIAL_STAGE_STEPS.length) return;
+    if (svgId === TUTORIAL_GUJARAT_ID) tutorialGujaratInvested = true;
+    var step = TUTORIAL_STAGE_STEPS[tutorialStageStep];
+    if (step.requireInvestGujarat || step.requireGujaratPopularityBps || step.requireGroupDominance) renderTutorialStageStep();
+  }
+
+  // These gates are all computed live from game state (rally plays, agenda
+  // progress, group dominance) rather than a one-time flag, so re-rendering
+  // after any relevant action is enough to keep Next's disabled state correct.
+  function onTutorialRally(svgId) {
+    if (!tutorialMode) return;
+    var step = TUTORIAL_STAGE_STEPS[tutorialStageStep];
+    if (step && step.requireRallyPlaysInGujarat) renderTutorialStageStep();
+  }
+
+  function onTutorialAgendaInvest(name) {
+    if (!tutorialMode) return;
+    var step = TUTORIAL_STAGE_STEPS[tutorialStageStep];
+    if (step && step.requireAgendaComplete === name) renderTutorialStageStep();
+  }
+
+  function onTutorialGroupClick(key) {
+    if (!tutorialMode) return;
+    tutorialGroupClicked = true;
+    var step = TUTORIAL_STAGE_STEPS[tutorialStageStep];
+    if (step && step.requireGroupClick) renderTutorialStageStep();
+  }
   var activeAgenda = null; // agenda name currently shown in the info panel, or null
   var activeAction = null; // 'rally' | 'nationwide' | 'special' currently shown in the info panel, or null
   var activeCluster = null; // 'ALL_UTS' | 'ALL_NE' currently shown in the info panel, or null
@@ -312,9 +663,9 @@
       '<div class="pol-bio">' +
         '<div class="pol-name-row"><div class="pol-name">' + p.name + '</div><div class="pol-seal-slot"></div></div>' +
         '<div class="pol-meta"><span class="pol-party-pill">' + p.party + '</span><span>🏠 ' + [p.homeState].concat(p.secondaryHomeStates || []).join(' + ') + '</span></div>' +
-        '<div class="pol-section-label">Manifesto</div>' +
+        '<div class="pol-section-label">Agenda</div>' +
         '<div class="pol-agendas"></div>' +
-        '<div class="pol-section-label">Special Power</div>' +
+        '<div class="pol-section-label">Special Ability</div>' +
         '<div class="pol-power"><div class="pow-seal">⚡</div><div class="pow-name">' + p.power.name + '</div>' +
           '<div class="pow-benefit">Benefit: ' + p.specialPower.effect + '</div>' +
           '<div class="pow-cost">Cost: ' + p.specialPower.cost + '</div>' +
@@ -350,6 +701,7 @@
         detail.appendChild(pill);
       });
       chip.addEventListener('click', function () {
+        if (tutorialMode) onTutorialAgendaTap();
         if (openChip && openChip.chip === chip) {
           chip.classList.remove('active');
           detail.classList.remove('show');
@@ -365,11 +717,23 @@
       agList.appendChild(detail);
     });
 
+    card.setAttribute('data-pol-id', p.id);
+
     var btn = document.createElement('button');
     btn.className = 'pol-play-btn';
     btn.style.background = color;
     btn.textContent = 'Play as ' + p.name.split(' ').slice(-1)[0];
-    btn.addEventListener('click', function () { startGame(p.id); });
+    btn.addEventListener('click', function () {
+      if (tutorialMode && p.id !== TUTORIAL_POL_ID) {
+        showToast('The tutorial plays as Modi — swipe back to select him');
+        return;
+      }
+      if (tutorialMode && tutorialStep < TUTORIAL_LAST_STEP) {
+        showToast('Finish the tutorial steps first — tap Next to continue');
+        return;
+      }
+      startGame(p.id);
+    });
     ballot.querySelector('.pol-footer').appendChild(btn);
 
     card.appendChild(ballot);
@@ -442,6 +806,7 @@
     $('selectOverlay').hidden = true;
     $('endOverlay').hidden = true;
     $('stage').hidden = false;
+    $('tutorialNavbar').hidden = true; // select-screen's fixed nav is done; in-game coaching (if any) uses its own in-flow banner instead
 
     buildGroupsBox();
     buildAgendaTray();
@@ -449,6 +814,7 @@
     selectState(selectedId);
     renderAll();
     startPhaseTimer();
+    if (tutorialMode) startStageTutorial();
     switchMusic('bg_music');
     playSound('phase_reset');
   }
@@ -1007,6 +1373,7 @@
     updateCard();
   }
   function setActiveGroup(key) {
+    if (tutorialMode) onTutorialGroupClick(key);
     activeAgenda = null; activeAction = null; activeCluster = null; // picking a group drills out of agenda/action-info mode too
     if (activeGroup === key) { exitGroupMode(); } else {
       activeGroup = key;
@@ -1120,6 +1487,7 @@
     if (r.completed) playSound('fanfare');
     showToast((r.completed ? name + ' agenda completed!' : 'Invested in ' + name));
     renderAll();
+    if (tutorialMode) onTutorialAgendaInvest(name);
   }
 
   // ---------------------------------------------------------------------
@@ -1228,6 +1596,7 @@
     var r = G.investCash(game, 'p1', svgId);
     if (!r.ok) { showToast('Insufficient funds'); shakeInvalid(el); return; }
     renderAll();
+    if (tutorialMode) onTutorialInvest(svgId);
     if (el && el.animate) el.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.03)' }, { transform: 'scale(1)' }], { duration: 220 });
     spawnFlash(pt.x, pt.y);
     spawnMoneyText(pt.x, pt.y, r.cost, -1);
@@ -1239,6 +1608,7 @@
   // Armed states (rally target / power target) resolve on a single tap,
   // since that's targeting an action already in flight, not a fresh invest.
   function handleMapTap(svgId, point) {
+    if (tutorialMode) onTutorialMapTap();
     if (armed === 'stateRally' || armed === 'powerTarget') { onMapTap(svgId, point); return; }
     var now = Date.now();
     if (lastMapTapId === svgId && (now - lastMapTapTime) < DOUBLE_TAP_MS) {
@@ -1255,7 +1625,9 @@
     if (armed === 'stateRally') {
       var r = G.playRallyToken(game, 'p1', svgId);
       if (!r.ok) { showToast(r.reason === 'state_cap' ? 'This state is capped at 2 rally plays' : 'Spend cap reached this phase'); shakeInvalid(document.getElementById(svgId)); return; }
-      showToast('📢 State Rally deployed'); playSound('rally_sound'); armed = null; renderAll(); return;
+      showToast('📢 State Rally deployed'); playSound('rally_sound'); armed = null; renderAll();
+      if (tutorialMode) onTutorialRally(svgId);
+      return;
     }
     if (armed === 'powerTarget') {
       finishActivatePower({ targetStateSvgId: svgId });
@@ -1407,12 +1779,36 @@
     navigator.serviceWorker.register('sw.js').catch(function () {});
   }
 
+  function setTutorialMode(on) {
+    tutorialMode = on;
+    $('selectOverlay').classList.toggle('tutorial-locked', on);
+    $('tutorialNavbar').hidden = !on;
+  }
+
   $('welcomeStartBtn').addEventListener('click', function () {
     unlockSounds();
+    setTutorialMode(false);
     $('welcomeOverlay').hidden = true;
     $('selectOverlay').hidden = false;
     switchMusic('intro_music');
   });
+
+  $('howToPlayBtn').addEventListener('click', function () {
+    unlockSounds();
+    setTutorialMode(true);
+    $('welcomeOverlay').hidden = true;
+    $('selectOverlay').hidden = false;
+    scrollCarouselToModi('auto');
+    switchMusic('intro_music');
+
+    tutorialStep = 0;
+    renderTutorialStep();
+  });
+
+  $('tutorialBackBtn').addEventListener('click', function () { goTutorialStep(-1); });
+  $('tutorialNextBtn').addEventListener('click', function () { goTutorialStep(1); });
+  $('tutorialStageBackBtn').addEventListener('click', function () { goTutorialStageStep(-1); });
+  $('tutorialStageNextBtn').addEventListener('click', function () { goTutorialStageStep(1); });
 
   scheduleAITick();
 
