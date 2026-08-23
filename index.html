@@ -55,11 +55,12 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
 .topstrip-row{ display:flex; align-items:center; justify-content:space-between; }
 .phase-chip{ font-family:var(--font-mono); font-size:var(--fs-5); font-weight:700; color:var(--ink-soft); letter-spacing:.01em; }
 .phase-chip b{ color:var(--accent); }
-.top-actions{ display:flex; gap:12px; }
+.top-actions{ display:flex; align-items:center; gap:12px; }
+.ver-badge{ font-family:var(--font-mono); font-size:20px; color:var(--ink-soft); opacity:.55; }
+.ver-badge-stage{ margin-right:2px; }
+.ver-badge-end{ display:block; margin:0 0 8px; }
 .iconbtn{ width:66px; height:66px; border-radius:var(--radius-md); background:var(--surface); border:3px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:var(--fs-4); color:var(--ink); box-shadow:var(--shadow-md); }
 .iconbtn:active{ transform:translate(4px,4px); box-shadow:none; }
-#endPhaseBtn{ display:none; } /* testing artifact — lets a player accidentally skip a phase before they're ready */
-
 .players-mini{ display:flex; justify-content:space-between; gap:14px; margin-top:10px; }
 .pmini{ display:flex; flex-direction:column; gap:6px; font-weight:700; font-family:var(--font-mono); min-width:0; max-width:48%; }
 .pmini.p1{ color:var(--p1); align-items:flex-start; } .pmini.p2{ color:var(--p2); align-items:flex-end; }
@@ -349,6 +350,7 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
   background:var(--paper-dim); border-radius:100px; border:2px solid var(--ink); box-shadow:3px 3px 0 var(--ink); }
 .welcome-howto-btn:active{ transform:translate(3px,3px); box-shadow:none; }
 .welcome-start-btn:active{ transform:translate(3px,3px); box-shadow:none; }
+.welcome-content .ver-badge{ margin-top:16px; color:#fff; }
 
 /* ---- politician carousel: a "ballot card" per candidate (trading-card
    structure — art window, stat masthead, attack box — built from Booth
@@ -614,6 +616,7 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
     <h1>Pradhan Mantri Elections</h1>
     <button class="welcome-start-btn" id="welcomeStartBtn">Begin Campaign</button>
     <button class="welcome-howto-btn" id="howToPlayBtn">How to Play</button>
+    <span class="ver-badge" id="welcomeVersion"></span>
   </div>
 </div>
 
@@ -674,6 +677,7 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
     <div class="declare-ledger" id="endSeats"></div>
     <div class="declare-stats" id="endStats"></div>
     <div class="declare-footer"><button id="shareResultBtn" class="secondary">📤 Share result</button><button id="playAgainBtn">Play again</button></div>
+    <span class="ver-badge ver-badge-end" id="endVersion"></span>
   </div>
 </div>
 
@@ -720,6 +724,7 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
     <div class="topstrip-row">
       <div class="phase-chip">PHASE <b id="phaseNum">1/10</b> &nbsp;&middot;&nbsp; <span id="phaseTimer">00:45</span></div>
       <div class="top-actions">
+        <span class="ver-badge ver-badge-stage" id="stageVersion"></span>
         <button class="iconbtn" id="pauseToggleBtn" title="Pause">⏸</button>
         <button class="iconbtn" id="settingsBtn" title="Settings">⚙️</button>
         <button class="iconbtn" id="endPhaseBtn" title="End phase now">⏭</button>
