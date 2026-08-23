@@ -243,7 +243,17 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
 .news-ticker .feed .track span{ font-family:var(--font-mono); font-size:var(--fs-3); font-weight:700; color:var(--page); }
 @keyframes ticker-scroll{ from{ transform:translateX(0); } to{ transform:translateX(-50%); } }
 
-.toast{ position:fixed; left:50%; top:21px; transform:translate(-50%,0); z-index:65; background:var(--ink); color:var(--page); font-size:var(--fs-3); font-weight:700; padding:18px 33px; border-radius:var(--radius-md); box-shadow:4px 4px 0 var(--accent); opacity:0; pointer-events:none; transition:opacity .25s ease; }
+/* top:195px is only the pre-game fallback (before the map/Ladakh exists to
+   measure) — main.js's showToast() overrides this per-call, anchored just
+   above Ladakh's live getBoundingClientRect() top, since toast height
+   varies with message length (one line vs. a wrapped two-line payout
+   message) and a fixed pixel value can't clear both the topstrip above
+   (~161px) and Ladakh below (~311px) at once. Confirmed via Playwright on
+   the iPhone 14 profile 2026-08-23 — this app's missing viewport meta puts
+   every fixed-position value in the ~980px virtual-canvas coordinate
+   space, not real device px. max-width keeps most messages to one line so
+   the anchor doesn't have to grow upward as often. */
+.toast{ position:fixed; left:50%; top:195px; transform:translate(-50%,0); z-index:65; background:var(--ink); color:var(--page); font-size:var(--fs-3); font-weight:700; padding:18px 33px; border-radius:var(--radius-md); box-shadow:4px 4px 0 var(--accent); opacity:0; pointer-events:none; transition:opacity .25s ease; max-width:min(920px,94vw); width:max-content; text-align:center; }
 .toast.show{ opacity:1; }
 
 /* ---- info panel: fixed, non-interactive readout for the tapped state, kept
@@ -253,7 +263,12 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
    happens by tapping the map directly. ---- */
 .info-panel{ position:relative; flex:0 0 auto; zoom:1.15; padding:27px calc(27px + 90px) calc(env(safe-area-inset-bottom,0px) + 27px) 27px; background:var(--surface); border-top:3px solid var(--line); }
 .info-row{ display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
-.info-row h3{ margin:0; font-size:var(--fs-6); font-weight:800; letter-spacing:-.01em; }
+/* flex-shrink:0 — for the one or two longest state names, this drops
+   "seats" onto its own line below the name instead of squeezing the name
+   itself into an awkward internal wrap (mid-word, shrunk) to make room for
+   both on one line. Every other (shorter) name already fits with seats
+   alongside it, so this only ever changes the outlier cases. */
+.info-row h3{ margin:0; font-size:var(--fs-6); font-weight:800; letter-spacing:-.01em; flex-shrink:0; }
 .info-row .seats{ font-family:var(--font-mono); font-size:var(--fs-3); color:var(--ink-soft); font-weight:600; white-space:nowrap; }
 .seat-preview{ font-weight:800; }
 .seat-preview.gain{ color:#1C8A4B; }
@@ -271,7 +286,13 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
 .pin-btn.on{ background:var(--accent); border-color:var(--accent); color:#fff; }
 .pin-btn[hidden]{ display:none; }
 
-.info-groups{ display:flex; flex-wrap:wrap; gap:10px; margin-left:auto; }
+/* Always its own row below the name/seats line (never squeezed inline next
+   to them) — a state's name length and its number of group tags both vary
+   independently, so sharing a row with them made the panel wrap to a
+   different row count (2 or 3) depending on the state, which also made the
+   map above it resize taller/shorter every tap. Fixed row structure now:
+   name+seats, then groups, then the popularity meter, always in that order. */
+.info-groups{ display:flex; flex-wrap:wrap; gap:10px; width:100%; margin-top:14px; }
 .info-groups .chip{ width:48px; height:48px; display:flex; align-items:center; justify-content:center; font-size:31px; background:var(--surface2); border-radius:11px; }
 .info-groups .none{ font-size:24px; color:var(--ink-faint); line-height:48px; }
 
@@ -319,7 +340,7 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
 .welcome-overlay{ position:fixed; inset:0; z-index:55; display:flex; flex-direction:column; justify-content:flex-end; overflow:hidden; }
 .welcome-overlay[hidden]{ display:none; }
 .welcome-bg{ position:absolute; inset:0; width:100%; height:100%; object-fit:contain; object-position:top center; background:var(--ink); }
-.welcome-scrim{ position:absolute; inset:0; background:linear-gradient(to bottom, rgba(20,22,28,0) 30%, rgba(20,22,28,.75) 55%, rgba(20,22,28,.98) 68%, var(--ink) 78%); }
+.welcome-scrim{ position:absolute; inset:0; background:linear-gradient(to bottom, rgba(20,22,28,0) 30%, rgba(20,22,28,.5) 55%, rgba(20,22,28,.7) 68%, rgba(20,22,28,.85) 78%); }
 .welcome-content{ position:relative; z-index:1; padding:0 28px calc(env(safe-area-inset-bottom,0px) + 40px); text-align:center; }
 .welcome-content h1{ color:#fff; font-size:48px; margin:16px 0 26px; text-shadow:0 3px 14px rgba(0,0,0,.55); }
 .welcome-start-btn{ width:100%; max-width:440px; font-family:var(--font-display); color:#fff; font-weight:700; font-size:32px; padding:20px 32px;
@@ -936,8 +957,8 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
     <div class="info-row">
       <h3 id="cardName">Uttar Pradesh</h3><span class="seats" id="cardSeats">80 seats</span>
       <button class="pin-btn" id="cardPinBtn" title="Pin this group's view open" hidden>📌</button>
-      <div class="info-groups" id="cardGroups"></div>
     </div>
+    <div class="info-groups" id="cardGroups"></div>
     <div class="vs-bar" id="cardVsBar">
       <span class="vs-label p1"><span id="cardP1Symbol">🪷</span> <span id="cardP1Pct">—</span></span>
       <div class="vs-track"><div class="vs-seg p1" id="cardP1Fill"></div><div class="vs-seg oth" id="cardOthFill"></div><div class="vs-seg p2" id="cardP2Fill"></div></div>

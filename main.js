@@ -682,10 +682,31 @@
   }
 
   function showToast(msg) {
+    clearTimeout(showToastSequence._h); // a plain toast cancels any pending part-2 handoff from a prior sequence
     var t = $('toast');
-    t.textContent = msg; t.classList.add('show');
+    t.textContent = msg;
+    // Anchor above Ladakh's actual on-screen top edge rather than a fixed
+    // pixel offset — toast height varies with message length (a short one
+    // is one line, a real payout message like the clean-sweep bonus wraps
+    // to two), and a fixed value either sits on the phase timer (too high)
+    // or overlaps the tappable map (too low). Falls back to a fixed spot
+    // pre-game, when the map/Ladakh isn't on screen yet to measure.
+    var ladakh = document.getElementById('INLA');
+    var lr = ladakh && ladakh.getBoundingClientRect();
+    t.style.top = (lr && lr.height ? Math.max(170, lr.top - 12 - t.offsetHeight) : 195) + 'px';
+    t.classList.add('show');
     clearTimeout(showToast._h);
     showToast._h = setTimeout(function () { t.classList.remove('show'); }, 1600);
+  }
+
+  // Two short toasts back-to-back instead of one long one — a combined
+  // payout line like "You swept Uttar Pradesh 100% — +₹800Cr clean sweep
+  // bonus" wraps to two lines, which is too tall for the space between the
+  // topstrip and Ladakh (see showToast's positioning comment).
+  function showToastSequence(parts) {
+    showToast(parts[0]);
+    clearTimeout(showToastSequence._h);
+    showToastSequence._h = setTimeout(function () { showToast(parts[1]); }, 900);
   }
 
   function syncNewsFeed() {
@@ -694,6 +715,15 @@
     // completions, group dominance, state/nationwide rallies, special
     // power use) — not the full game history.
     var phaseEntries = game.log.filter(function (e) { return e.ticker && e.phase === game.phase; }).slice(0, 6);
+    // Payout events (clean sweep, regional dominance) have no other UI
+    // feedback the moment they land — pop them as a toast too, not just the
+    // scrolling marquee, so they're not easy to miss mid-game.
+    phaseEntries.forEach(function (e) {
+      if (e.instant && !e.toasted) {
+        e.toasted = true;
+        if (e.toastParts) showToastSequence(e.toastParts); else showToast(e.msg);
+      }
+    });
     var items;
     if (phaseEntries.length) {
       items = phaseEntries.map(function (e) { return e.msg; });
@@ -703,12 +733,24 @@
       // Nothing current this phase — no news is not itself a headline, so
       // the ticker just goes quiet rather than announcing its own silence.
       track.dataset.inited = '1';
-      track.innerHTML = '';
+      if (track.dataset.key) { track.dataset.key = ''; track.innerHTML = ''; }
       return;
     }
     track.dataset.inited = '1';
+    // syncNewsFeed runs on every render, not just when news actually
+    // changes — skip the rebuild (and the animation restart below) unless
+    // the item set is actually different, so a mid-scroll headline isn't
+    // constantly yanked back to the start by unrelated re-renders.
+    var key = items.join('|');
+    if (track.dataset.key === key) return;
+    track.dataset.key = key;
     var html = items.map(function (m) { return '<span>' + m + '</span>'; }).join('<span aria-hidden="true">&nbsp;&nbsp;•&nbsp;&nbsp;</span>');
     track.innerHTML = html + '<span aria-hidden="true">&nbsp;&nbsp;•&nbsp;&nbsp;</span>' + html;
+    // Restart the scroll from the right edge so a new headline doesn't wait
+    // out however much of the 22s loop is left — it enters view right away.
+    track.style.animation = 'none';
+    void track.offsetWidth;
+    track.style.animation = '';
   }
 
   // ---------------------------------------------------------------------
@@ -1303,17 +1345,31 @@
   // Persistent colored dot per rally token played on a state (as opposed to
   // the transient fx-flash/money-text effects), so it stays visible as a
   // reminder of which states are capped out vs still open for a rally.
+  // Delhi/Goa/Kerala are still real (small but non-zero) shapes on the map,
+  // just too small/narrow to TAP reliably — the whole reason they get a
+  // corner button instead. A token dot at their real map position is
+  // therefore easy to miss, same problem the button exists to solve — so
+  // always anchor their dot to the button, not the map shape underneath it.
+  var SMALL_STATE_BTN_ID = { INDL: 'delhiBtn', INGA: 'goaBtn', INKL: 'keralaBtn' };
   function renderRallyTokens() {
     var layer = $('rallyTokenLayer');
     layer.innerHTML = '';
     Object.keys(game.rallyPlaysByState).forEach(function (svgId) {
       var plays = game.rallyPlaysByState[svgId];
       if (!plays || !plays.length) return;
-      var el = document.getElementById(svgId);
-      if (!el) return;
-      var r = el.getBoundingClientRect();
-      if (!r.width || !r.height) return; // hidden map element (e.g. a dropped small UT)
-      var cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+      var cx, cy;
+      var btnId = SMALL_STATE_BTN_ID[svgId];
+      if (btnId) {
+        var br = $(btnId).getBoundingClientRect();
+        if (!br.width) return;
+        cx = br.right - 12; cy = br.top + 12; // top-right corner, clear of the icon/label
+      } else {
+        var el = document.getElementById(svgId);
+        if (!el) return;
+        var r = el.getBoundingClientRect();
+        if (!r.width || !r.height) return; // hidden map element (e.g. a dropped small UT)
+        cx = r.left + r.width / 2; cy = r.top + r.height / 2;
+      }
       plays.forEach(function (pk, i) {
         var dot = document.createElement('div');
         dot.className = 'rally-token';
@@ -1738,13 +1794,18 @@
     var el = document.getElementById(svgId);
     var pt = point || viewportPoint(el);
     var r = G.investCash(game, 'p1', svgId);
-    if (!r.ok) { showToast('Insufficient funds'); shakeInvalid(el); return; }
+    if (!r.ok) { showToast('Not enough funds'); shakeInvalid(el); return; }
     renderAll();
     if (tutorialMode) onTutorialInvest(svgId);
     if (el && el.animate) el.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.03)' }, { transform: 'scale(1)' }], { duration: 220 });
     spawnFlash(pt.x, pt.y);
     spawnMoneyText(pt.x, pt.y, r.cost, -1);
     playSound('money_spent');
+    // Still a valid, spendable tap (a real campaign doesn't always know when
+    // to stop) — engine.js's gainAt already clamps the actual boost to 0
+    // once a state is fully owned, so r.gained===0 is exactly "that money
+    // just bought nothing." Warn rather than block.
+    if (r.gained === 0) showToast('⚠️ ' + game.statesById[svgId].name + ' already maxed out');
   }
 
   // Single tap selects (shows detail panel); double tap (within DOUBLE_TAP_MS
@@ -1858,7 +1919,7 @@
       });
       renderAll();
       if (any) { spawnFlash(pt.x, pt.y); spawnMoneyText(pt.x, pt.y, totalCost, -1); playSound('money_spent'); showToast('Invested in all Small UTs'); }
-      else { shakeInvalid($('utsBtn')); showToast('Insufficient funds'); }
+      else { shakeInvalid($('utsBtn')); showToast('Not enough funds'); }
     });
   });
   $('neBtn').addEventListener('click', function () {
@@ -1871,21 +1932,23 @@
       });
       renderAll();
       if (any) { spawnFlash(pt.x, pt.y); spawnMoneyText(pt.x, pt.y, totalCost, -1); playSound('money_spent'); showToast('Invested in all Northeast states'); }
-      else { shakeInvalid($('neBtn')); showToast('Insufficient funds'); }
+      else { shakeInvalid($('neBtn')); showToast('Not enough funds'); }
     });
   });
-  $('delhiBtn').addEventListener('click', function () {
-    selectState('INDL');
-    handleButtonTap('INDL', function () { investPaid('INDL', viewportPoint($('delhiBtn'))); });
-  });
-  $('goaBtn').addEventListener('click', function () {
-    selectState('INGA');
-    handleButtonTap('INGA', function () { investPaid('INGA', viewportPoint($('goaBtn'))); });
-  });
-  if ($('keralaBtn')) $('keralaBtn').addEventListener('click', function () {
-    selectState('INKL');
-    handleButtonTap('INKL', function () { investPaid('INKL', viewportPoint($('keralaBtn'))); });
-  });
+  // Delhi/Goa/Kerala route through these buttons instead of a direct map tap
+  // (too small to hit reliably), but they're still single states, not a
+  // cluster batch — so like a real map tap, an armed rally/power target
+  // resolves on the first tap here too, same as handleMapTap. Only then does
+  // an unarmed tap fall back to the existing select/double-tap-invest flow.
+  function smallStateBtnTap(svgId, btn) {
+    var pt = viewportPoint(btn);
+    if (armed === 'stateRally' || armed === 'powerTarget') { onMapTap(svgId, pt); return; }
+    selectState(svgId);
+    handleButtonTap(svgId, function () { investPaid(svgId, pt); });
+  }
+  $('delhiBtn').addEventListener('click', function () { smallStateBtnTap('INDL', $('delhiBtn')); });
+  $('goaBtn').addEventListener('click', function () { smallStateBtnTap('INGA', $('goaBtn')); });
+  if ($('keralaBtn')) $('keralaBtn').addEventListener('click', function () { smallStateBtnTap('INKL', $('keralaBtn')); });
   $('rallyBtn').addEventListener('click', onRallyBtn);
   $('specialBtn').addEventListener('click', onSpecialBtn);
   $('nationwideBtn').addEventListener('click', onNationwideBtn);
@@ -1893,11 +1956,10 @@
   $('playAgainBtn').addEventListener('click', function () {
     $('endOverlay').hidden = true;
     $('selectOverlay').hidden = false;
-    // A tutorial game already flips tutorialMode off mid-match (finishStageTutorial,
-    // around phase 6), but that never clears the select screen's own
-    // .tutorial-locked class (only setTutorialMode does) — without this, Play
-    // Again after a tutorial run left every non-Modi "Play as X" button
-    // dimmed/unplayable even though the player is no longer in the tutorial.
+    // A tutorial game already flips tutorialMode off mid-match
+    // (finishStageTutorial, around phase 6), but that alone leaves several
+    // select-screen classes from the tutorial's coaching steps stuck —
+    // setTutorialMode(false) clears all of them (see there for detail).
     setTutorialMode(false);
     switchMusic('intro_music');
   });
@@ -1933,6 +1995,22 @@
     tutorialMode = on;
     $('selectOverlay').classList.toggle('tutorial-locked', on);
     $('tutorialNavbar').hidden = !on;
+    if (!on) {
+      // A completed tutorial run's last coaching step freezes the carousel
+      // on Modi's card and pulses his Play button (TUTORIAL_STEPS' freeze/
+      // pulse:'play') — renderTutorialStep() never runs again after the
+      // game starts, so those classes otherwise stay stuck through the
+      // whole match. Without clearing them here, Play Again reopens the
+      // select screen still frozen on Modi instead of a free pick.
+      $('selectOverlay').classList.remove('tutorial-modi-locked');
+      $('polCarousel').classList.remove('tutorial-frozen', 'tutorial-pulse-agendas', 'tutorial-pulse-power', 'tutorial-pulse-play');
+      // The tutorial's last step is a coach banner ("Click 'Play as Modi' to
+      // begin your campaign!") left showing (renderTutorialStep() only runs
+      // during the tutorial itself, never again after) — without this, Play
+      // Again reopens the select screen with that stale banner still up.
+      $('tutorialCoach').hidden = true;
+      $('tutorialOverlay').hidden = true;
+    }
   }
 
   $('welcomeStartBtn').addEventListener('click', function () {
