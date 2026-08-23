@@ -193,8 +193,16 @@
   // nationwide rallies, and special power use (Nehru's excepted — his
   // Non-Alignment power is secret by design). Everything else still lands
   // in game.log for the full history, just not surfaced in the ticker.
-  function pushLog(game, msg, ticker) {
-    game.log.unshift({ phase: game.phase, msg: msg, ticker: !!ticker });
+  // instant: also pop an immediate toast (main.js syncNewsFeed), not just the
+  // scrolling ticker — for payouts (regional dominance, clean sweep) that have
+  // no other UI feedback at the moment they land, unlike a rally/agenda/power
+  // action which the player already sees toasted at the point of tapping it.
+  // toastParts: optional [headline, amount] pair — the toast shows these as
+  // two short back-to-back popups instead of one long one, since the combined
+  // "You swept Uttar Pradesh 100% — +₹800Cr clean sweep bonus" line wraps to
+  // two lines in a single toast (too tall for the space above the map).
+  function pushLog(game, msg, ticker, instant, toastParts) {
+    game.log.unshift({ phase: game.phase, msg: msg, ticker: !!ticker, instant: !!instant, toastParts: toastParts });
     if (game.log.length > 40) game.log.pop();
   }
 
@@ -221,7 +229,9 @@
         if (active && !game.dominanceHeld[key]) {
           var payout = E.dominancePayoutCr(g, game.states, game.cfg.regionalDominance);
           game.players[pk].fundsCr += payout;
-          pushLog(game, '💰 ' + (pk === 'p1' ? 'You' : 'Opponent') + ' hold ' + g.label + ' — +₹' + payout + 'Cr regional dominance', true);
+          var domWho = pk === 'p1' ? 'You' : 'Opponent';
+          pushLog(game, '💰 ' + domWho + ' hold ' + g.label + ' — +₹' + payout + 'Cr regional dominance', true, true,
+            ['💰 ' + domWho + ' hold ' + g.label, '+₹' + payout + 'Cr regional dominance']);
         }
         game.dominanceHeld[key] = active;
       });
@@ -240,7 +250,9 @@
         if (active && !game.cleanSweepHeld[key]) {
           var payout = s.seats * game.cfg.cleanSweep.payoutCrPerSeat;
           game.players[pk].fundsCr += payout;
-          pushLog(game, '🎯 ' + (pk === 'p1' ? 'You' : 'Opponent') + ' swept ' + s.name + ' 100% — +₹' + payout + 'Cr clean sweep bonus', true);
+          var sweepWho = pk === 'p1' ? 'You' : 'Opponent';
+          pushLog(game, '🎯 ' + sweepWho + ' swept ' + s.name + ' 100% — +₹' + payout + 'Cr clean sweep bonus', true, true,
+            ['🎯 ' + sweepWho + ' swept ' + s.name, '+₹' + payout + 'Cr clean sweep bonus']);
         }
         game.cleanSweepHeld[key] = active;
       });
