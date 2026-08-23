@@ -59,6 +59,7 @@
 ## Local development & testing
 
 - See `design/testing-and-balance-notes.md` for local dev-server/LAN setup, the manifest `start_url` gotcha, Artifact-bundling limitations, AI-testing caveats (headless-vs-real, instant-diff blindness to fund/token transfers, the p1/p2 object-swap trap), and the numbered Playwright testing notes — moved out of this always-loaded file since it only matters when doing dev-server/Playwright/testing work.
+- **When handing the user a URL to test `npm run serve` (port 8934) on a phone or other device, never give a bare `localhost` URL — it only resolves on this machine, not the device testing it.** Default to a `cloudflared tunnel --url http://localhost:8934` (`npx -y cloudflared tunnel --url http://localhost:8934` — no install needed, works over any network) and hand back the `https://*.trycloudflare.com` URL it prints. Only fall back to the machine's LAN IPv4 (`ipconfig`, the Wi-Fi adapter, not the `vEthernet`/WSL one) if cloudflared isn't available — and if LAN IP still doesn't reach the phone, check `design/testing-and-balance-notes.md`'s Windows network-category (Private vs Public) note before assuming it's a firewall/port problem. Confirmed 2026-08-23 after defaulting to `localhost` first and the user having to ask for this explicitly.
 
 ## Frontend technical rules
 

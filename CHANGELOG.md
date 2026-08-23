@@ -6,6 +6,43 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### 🔔 Toast Notifications, Small-State Targeting & Investment Safeguards — 2026-08-23
+
+#### Toast System & News Feed Improvements
+- **REFACTORED**: `mobile/game.js` `pushLog()` — gained optional `instant` and `toastParts` parameters; clean-sweep and regional-dominance payouts now fire a toast, split into two sequential short messages (headline on first toast, amount on second) instead of a single wrapped line [C1]
+- **REWIRED**: `mobile/main.js` `showToast()` — now anchors the toast's vertical position dynamically off Ladakh's live `getBoundingClientRect()` instead of a fixed pixel value, since the free space between the news ticker and Ladakh is mostly occupied by `.player-strip` (only ~20px genuinely clear), making no single fixed top safe for content that wraps to 2+ lines [C2]
+- **ADDED**: `mobile/main.js` `showToastSequence()` — fires two toasts in sequence (brief pause between) for multi-part messages; `syncNewsFeed()` uses this for entries carrying `toastParts` array [C3]
+- **OPTIMIZED**: `mobile/main.js` `syncNewsFeed()` — only rewrites the news ticker DOM and restarts its scroll animation when the headline text actually changed (tracked via a dataset key), so a new headline always scrolls in from the start instead of joining mid-scroll [C5]
+- **STYLED**: `mobile/index.html` `.toast` — gained `max-width:max-content` to force most messages to stay one line; updated positioning comment to describe dynamic JS anchor pattern [C4]
+
+#### State Display & Data Updates
+- **RESTRUCTURED**: `mobile/index.html` state info-panel (#cardGroups group-tag chips) — moved from inside `.info-row` to its own full-width row below name/seats; `h3` got `flex-shrink:0` so long state names drop "seats" label to a sub-line instead of wrapping internally [C8]
+- **MUTED**: `mobile/index.html` `.welcome-scrim` gradient opacity — reduced from max `.98/solid` to `.85` at bottom (other stops scaled proportionally) so more of the welcome poster art shows through [C7]
+- **RENAMED**: `data/states_data.json` — "Andaman And Nicobar Islands" state field → "Andaman and Nicobar" (single source feeding all displays of that name) [C9]
+
+#### Small-State Button & Investment Safeguards
+- **ADDED**: `mobile/main.js` `smallStateBtnTap()` — Delhi/Goa/Kerala corner buttons now resolve an armed State Rally or Special Power target on a single tap (matching direct map-tap behavior), falling back to the existing double-tap-invest flow when no power/rally is armed [C11]
+- **REROUTED**: `mobile/main.js` `renderRallyTokens()` — deployed rally-token dots on Delhi/Goa/Kerala now anchor to their corner button's top-right corner (via `SMALL_STATE_BTN_ID` lookup) instead of the map shape underneath, which is small and easily missed [C12]
+- **ADDED**: `mobile/main.js` `investPaid()` — now shows a "⚠️ <State> already maxed out" toast when `G.investCash()` returns `gained:0` (state already at 100% for that player); investment still proceeds and spends money, just warns [C10]
+- **STANDARDIZED**: `mobile/main.js` all "Insufficient funds" toast text → "Not enough funds" (4 call sites: single-state invest, Small UTs batch invest, NE8 batch invest; agenda tap already used the new wording) [C13]
+
+#### Documentation & Deployment
+- **UPDATED**: `CLAUDE.md` — added standing rule under "Local development & testing": "When handing the user a URL to test npm run serve on a phone, never give a bare localhost URL — default to a cloudflared quick tunnel (npx -y cloudflared tunnel --url http://localhost:8934)" [C14]
+- **DEPLOYED**: Ran `node scripts/deploy-mobile.js --push` at session start to push previously-uncommitted tutorial-extension commits (543775a, 2cc833b) to the live mobile site [C15]
+
+#### Design Decisions
+- **[D1] Split long toast payout messages into two sequential short toasts instead of a single wrapped message.** Context: A single combined toast (e.g. "You swept Uttar Pradesh 100% — +₹800Cr clean sweep bonus") wrapped to 2 lines, too tall to fit between ticker and Ladakh without overlapping. Alternatives: speed up the news ticker, shrink toast font/redesign the layout. Rationale: Reused existing `showToast()`/`pushLog()` infrastructure almost unchanged; user explicitly requested the two-part split after seeing the wrapped version.
+- **[D2] Anchor toast's vertical position dynamically off Ladakh's live bounding rect, not a fixed pixel value.** Context: Playwright measurements showed only ~20px genuinely free between ticker and Ladakh (`.player-strip` occupies most of the space between them), and real payout messages vary between 1 and 2 wrapped lines. Alternatives: fixed pixel top (tried first, broke for 2-line messages), shrink toast font to force everything into the gap. Rationale: Only approach that provably clears both landmarks (phase timer, Ladakh) regardless of message length.
+- **[D3] Consolidated tutorial-mode cleanup into `setTutorialMode(false)` setter as single funnel.** Context: Two separate stuck-UI bugs (frozen carousel, stale coach banner) both traced to state set once during tutorial, never revisited when tutorial ended. Alternatives: add one-off fixes at each symptom site. Rationale: Centralizing means any future tutorial visual gets cleanup for free; prevents similar leaks.
+- **[D4] Delhi/Goa/Kerala buttons resolve armed rally/power target on single tap (matching map-tap behavior).** Context: Rally tokens could only deploy via direct map taps, not via the buttons that exist specifically because these states are hard to tap. Alternatives: separate "deploy here" affordance. Rationale: Mirrors `handleMapTap()` armed-check pattern exactly — smallest change, consistent behavior.
+- **[D5] Maxed-out investment (100% for that player) still proceeds with funds spent — only a warning toast added.** Context: Direct user design call ("logically consistent since a politician doesn't know when to stop spending"). Alternatives: block the tap. Rationale: User's explicit gameplay decision.
+- **[D6] Maxed-out warning and rally-on-button scoped to single-state actions only, not batch-invest buttons.** Context: User confirmed this scoping explicitly ("No it doesn't apply for the group"). Rationale: Batch invest across many states has no clean single state to name/target for either warning or rally drop.
+
+#### Context
+Session focused on improving notification visibility and small-state targeting: split long payout toasts into short sequential messages, anchored the toast position dynamically off Ladakh to clear both the ticker above and Ladakh below, optimized news-feed re-rendering to avoid mid-scroll insertions, and wired Delhi/Goa/Kerala corner buttons to deploy rally tokens or resolve special powers on single tap (matching direct map-tap behavior). Also added an investment-cap warning and standardized "not enough funds" messaging. Documented the cloudflared tunnel pattern as a standing rule for device testing URLs. Deployed the previous session's tutorial work to the live site. Five new findings (toast positioning, small-state map elements, tutorial cleanup, phase-timer reset, token-grant routing) and one tutorial-state-sync bug fix documented in findings.md. All changes maintain single-player-vs-AI scope.
+
+---
+
 ### 🎓 Interactive Tutorial System: Phase Progression & Sign-Off (Phases 2–10) — 2026-08-23
 
 #### In-Game Tutorial Extension (Steps 25–35)
