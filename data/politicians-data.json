@@ -425,18 +425,18 @@
       ],
       "specialPower": {
         "name": "Bulldozer Action",
-        "effect": "-20% opponent popularity in one target state",
+        "effect": "-50% opponent popularity in one target state",
         "cost": "-6% popularity in Minority Areas states"
       },
       "power": {
         "name": "Bulldozer Action",
-        "description": "-20% opponent popularity in one state you choose; costs you -6% popularity in Minority Areas states.",
+        "description": "-50% opponent popularity in one state you choose; costs you -6% popularity in Minority Areas states.",
         "benefits": [
           {
             "kind": "popularity",
             "target": "opponent",
             "scope": "targetState",
-            "bps": -2000
+            "bps": -5000
           }
         ],
         "costs": [
@@ -1138,7 +1138,7 @@
     },
     {
       "id": "sivaji-rao",
-      "name": "Sivaji Rao",
+      "name": "Sivaji Rao (Nayak)",
       "party": "Lokahit",
       "archetype": "THE PEOPLE'S ONE-DAY CM",
       "homeState": "Maharashtra",

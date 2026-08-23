@@ -6,6 +6,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-08-23
+
+### Versioning reset
+This project now follows SemVer (`package.json`'s `version` field is the source of truth), restarting clean at 1.0.0 as of this session — see CLAUDE.md's "Versioning" section for the bump convention (patch = small fix, minor = new feature, major = overhaul). The older `[2.0.0]`–`[2.0.5]` entries further down this file are retained as historical record under the previous ad-hoc numbering; that sequence does not continue. This first tracked release ships as 1.0.1 (one patch past the 1.0.0 baseline) since a couple of small fixes landed in the same session as the reset itself.
+
+### Added
+- **ADDED**: `v1.0.1`-style version badge on the welcome screen, in-game HUD top strip, and end-of-game declare card (`#welcomeVersion`/`#stageVersion`/`#endVersion`), driven by `mobile/main.js`'s `GAME_VERSION` constant
+- **RESTORED**: "End phase now" (⏭) button in the stage HUD — was wired up but hidden via `display:none`; re-enabled for faster local testing
+
+### Changed
+- **REBALANCED**: Yogi Adityanath's Bulldozer Action special power — opponent popularity hit in the target state deepened from -20% to -50% (`data/politicians-data.json`)
+- **RENAMED**: Sivaji Rao → "Sivaji Rao (Nayak)" across the politician card, crediting the *Nayak* film character he's based on
+
+### Fixed
+- **FIXED**: Politician-select "Play as X" button showed "Play as (Nayak)" for Sivaji Rao — `mobile/main.js`'s surname derivation now strips a trailing parenthetical before taking the last word
+
+### Documentation
+- **CORRECTED**: README/CLAUDE.md's stale "11/20 portraits missing" claim — verified all 20/20 exist on disk; replaced with the real, still-open gap (16/20 politicians lack a dedicated power-activation sound clip, only Modi/Bachchan/Rajinikanth/Tendulkar have one)
+- **REMOVED**: README's "SVG map undersized (~27% wasted viewBox)" limitation — traced to the deprecated desktop-only SVG asset (`js/app.js`), not the live mobile build, whose own viewBox was already confirmed tight
+
 ### 🔔 Toast Notifications, Small-State Targeting & Investment Safeguards — 2026-08-23
 
 #### Toast System & News Feed Improvements

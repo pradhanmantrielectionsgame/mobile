@@ -173,10 +173,9 @@ See `docs/wiki.html`'s "Architecture" section for current tech stack, deployment
 
 - **Single-player vs. AI only** — no live human multiplayer backend yet (Phase 0, planned for later); local hotseat available via pass-the-phone
 - **No session persistence** — game state lives only in memory during a single session; no save/resume or stats tracking across sessions
-- **No politician portrait images** — politician select screen uses placeholder styling; portrait images are out of scope for MVP
+- **16 of 20 politicians lack a dedicated power-activation sound clip** — falls back to a generic fanfare sound instead
 - **Special-power balance provisional** — all 20 politicians have powers with magnitude numbers assigned; these are first-pass numbers pending real playtesting and balance refinement
 - **Small UTs require dedicated buttons** — Delhi, Chandigarh, Puducherry, Lakshadweep, Andaman & Nicobar, Dadra & Nagar Haveli/Daman & Diu are not directly tappable on the map (too small); they route through button-cluster pattern at bottom-left (confirmed production-ready)
-- **SVG map undersized** — `assets/icons/INDIA_V3_smaller_viewbox.svg` wastes ~27% of viewBox area; tightened viewBox would render 27% larger with zero crop risk (not performance-critical, deferred)
 
 ## Mobile Development Notes
 
@@ -194,7 +193,7 @@ See `docs/wiki.html`'s "Architecture" section for current tech stack, deployment
 - **Phase 1** — Wire Player 2 selection screen to real matchmaking queue; implement human-vs-AI detection and connection handling
 - **Phase 2** — Capacitor wrapping + iOS/Android app store build pipeline
 - **Phase 3** — Session persistence, stats tracking, player profiles (if multiplayer proves sticky)
-- **Phase 4** — Politician portrait images, balance tuning via real playtesting, edge-case error handling (disconnects mid-game, etc.)
+- **Phase 4** — Dedicated power-activation sound clips (16 of 20 still missing), balance tuning via real playtesting, edge-case error handling (disconnects mid-game, etc.)
 - **Phase 5+** — Consider adding: a tutorial/onboarding flow, replay viewer, leaderboards, seasonal events (if multiplayer takes off)
 
 ## Troubleshooting

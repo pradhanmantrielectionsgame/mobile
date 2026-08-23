@@ -3,6 +3,11 @@
 (function () {
   'use strict';
   var E = window.PMEEngine, G = window.PMEGame;
+  var GAME_VERSION = '1.0.1';
+  ['welcomeVersion', 'stageVersion', 'endVersion'].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = 'v' + GAME_VERSION;
+  });
 
   // p1/p2 default to placeholder colors here but are overwritten in
   // startGame() with each politician's real party color (primaryColor).
@@ -876,7 +881,7 @@
     var btn = document.createElement('button');
     btn.className = 'pol-play-btn';
     btn.style.background = color;
-    btn.textContent = 'Play as ' + p.name.split(' ').slice(-1)[0];
+    btn.textContent = 'Play as ' + p.name.replace(/\s*\([^)]*\)\s*$/, '').split(' ').slice(-1)[0];
     btn.addEventListener('click', function () {
       if (tutorialMode && p.id !== TUTORIAL_POL_ID) {
         showToast('The tutorial plays as Modi — swipe back to select him');
