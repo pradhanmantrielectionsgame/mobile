@@ -6,6 +6,43 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### 🎓 Interactive Tutorial System: Phase Progression & Sign-Off (Phases 2–10) — 2026-08-23
+
+#### In-Game Tutorial Extension (Steps 25–35)
+- **ADDED**: `mobile/main.js` tutorial steps 25–27 — coaching through small-UT and Northeast-8 quick-invest button clusters, then "try on your own" free-play announcement that unpauses the game [C1]
+- **ADDED**: `mobile/index.html` CSS `.tutorial-pulse-hardstates`, `.tutorial-pulse-utsne` pulse-highlight animations (glow rings via `@keyframes`) for UT quick-invest button callouts [C2]
+- **ADDED**: `mobile/main.js` waitForPhase-based pause/resume tutorial-gate mechanism (`enterTutorialPhaseWait`, `checkTutorialPhaseGate`) — allows post-step-27 coaching to pause the tutorial, let the game run live, then resume coaching automatically when `game.phase` reaches a target (enabling "play phases 2+ naturally, coaching resumes when phase ends") [C3]
+- **ADDED**: `mobile/main.js` tutorial steps 28–31 — AI-awareness message at phase 2 start, special-power walkthrough at phase 3 (grants rally tokens, gates on power activation) [C4]
+- **ADDED**: `mobile/main.js` tutorial steps for nationwide rally at phase 6 (announcement, token grant + launch gate, closing momentum message); generalized `grantTutorialTokens(need)` helper reused by both special-power and nationwide-rally grants [C6]
+- **ADDED**: `mobile/index.html` + `mobile/main.js` — `#tutorialSignoffOverlay` "Well done!" sign-off card shown once phase 10 ends for a tutorial-started match, reusing tutorial-slide/tricolor/tutorial-nav-btn styling, counted as tutorial step 35 with a third step-counter span (#tutorialStepCounterC) [C14–C15]
+
+#### Tutorial Flow & State Management
+- **SPLIT**: `mobile/main.js` `startPhaseTimer()` into `resetPhaseTimer()` (clock + AI-pacing reset only) and `resumePhaseTimer()` (interval-starting); `doEndPhase()` now calls `resetPhaseTimer()` unconditionally on every phase transition, only conditionally skips `resumePhaseTimer()` when a tutorial gate pauses [C7]
+- **MOVED**: `mobile/main.js` token-grant calls (`grantSpecialTokens`/`grantNationwideTokens`) from `checkTutorialPhaseGate()` into `enterTutorialStageStep()` so they fire regardless of entry path (plain Next click or phase-gate resolver) [C8]
+- **UPDATED**: `mobile/main.js` tutorial step "control achieved" (Western Border group) now sets `unpinGroupOnEnter`, automatically unpinning the group card [C9]
+- **FIXED**: `mobile/main.js` `playAgainBtn` handler now explicitly calls `setTutorialMode(false)`, clearing the `.tutorial-locked` select-screen lockout class that persisted after a tutorial game ended [C17]
+- **PINNED**: `mobile/main.js` `startGame()` always pins tutorial opponent to Rahul Gandhi instead of random pick (prevents nullification of tutorial's special-power gate if opponent has a nullify-power) [C5]
+- **DISABLED**: `mobile/main.js` `startGame()` sets `game.players.p2.usedSpecial = true` when tutorialMode, disabling the AI opponent's special power for the whole tutorial match [C10]
+
+#### UI Refinements
+- **RESTYLED**: `mobile/index.html` step-1 tutorial welcome slide (`.tutorial-slide`) to use app's ballot-card visual system (paper background, ink border, offset shadow, full-width flush tricolor stripe) instead of plain text; enlarged it (removed max-width cap, bumped `h2` 56→78px, body 36→46px) [C11]
+- **RESIZED**: `mobile/index.html` "How to Play" welcome-screen button to match "Begin Campaign" (font-size 26→32px, padding 14px→20px vertical) [C12]
+- **SWAPPED**: `mobile/main.js` tutorial steps 11 and 12 — seats-climb message now shown before the 70%-popularity-threshold gated message [C13]
+- **FIXED**: `mobile/index.html` CSS specificity bug where `.tutorial-signoff-nav{justify-content:center}` lost to later-declared `.tutorial-coach-nav{justify-content:space-between}` at equal specificity — rewrote as compound selector `.tutorial-coach-nav.tutorial-signoff-nav` [C16]
+
+#### Design Decisions
+- **[D1] Tutorial opponent always Rahul Gandhi, never random.** Context: A random opponent could have a nullify-power (e.g. a hypothetical politician with nullifyOpponentPower mechanic) and nullify Modi's special before the tutorial's "activate your power" gate, leaving that gate stuck forever. Alternatives: Keep random opponent and add timeout/fallback for stuck nullified-power gate. Rationale: Pinning is far simpler, costs nothing (Rahul Gandhi satisfies the existing same-party-exclusion rule), Rahul's real power is plain popularity bonus with no nullify mechanic.
+- **[D2] AI opponent's special power disabled via pre-set `game.players.p2.usedSpecial = true` (one-time at game start).** Context: `aiStep()`'s entire special-power block (auto-craft at 6 tokens, activate) is already fully gated behind `!pl.usedSpecial` in two places — marking it pre-used short-circuits both without touching AI behavior code. Alternatives: Add tutorialMode-aware branch inside `aiStep()`. Rationale: Zero game.js changes, reuses existing flag exactly as intended, no side effects (the only other read is an honest "Special power used" end-game stat, which correctly shows "No").
+- **[D3] Tutorial step token grants live in `enterTutorialStageStep()`, not `checkTutorialPhaseGate()` alone.** Context: Nationwide-rally grant step has no waitForPhase of its own (its gate lives on the preceding step), so it's always reached via plain Next click and never touches the phase gate. Alternatives: Give grant step its own redundant waitForPhase. Rationale: Smaller, more correct fix — also means any future step needing a grant/side-effect-on-entry works correctly regardless of entry path.
+- **[D4] Phase-timer reset is separate from interval-start (`resetPhaseTimer` vs. `resumePhaseTimer`); `doEndPhase` always calls reset before deciding whether to skip the interval.** Context: Original single `startPhaseTimer()` did both at once; `checkTutorialPhaseGate()` short-circuited it entirely when firing, leaving `timeLeft` at ~0, causing instant `doEndPhase` re-trigger on resume. Alternatives: Have `checkTutorialPhaseGate()` perform reset inline. Rationale: Splitting keeps the "every new phase gets a full clock" invariant guaranteed at the one place phases transition, not duplicated in tutorial-specific code.
+- **[D5] End-of-tutorial sign-off card counts as tutorial step 35, not a separate uncounted screen.** Context: User explicitly asked for this to read as "step 35/35" in the tutorial's numbering. Alternatives: Standalone modal with no step-counter. Rationale: Matches the tutorial's established convention (every coached moment shows "Step N/total") and reuses existing style system with zero new visual language.
+- **[D6] `playAgainBtn` always calls `setTutorialMode(false)` explicitly.** Context: `finishStageTutorial()` sets the `tutorialMode` variable directly, not through the setter — and only the setter clears the `.tutorial-locked` CSS class, a separate piece of state. Alternatives: Have `finishStageTutorial()` call the setter. Rationale: Fixing at Play Again (where a fresh, fully-unlocked select screen is actually required) is correct regardless of which code paths might flip `tutorialMode` mid-session.
+
+#### Context
+Session focused on extending the in-game tutorial from phases 1–1 coaching (step 24) through phase 10 end, adding AI-awareness messaging, special-power walkthrough, nationwide-rally coaching, and a sign-off card; also fixing three infrastructure bugs discovered during implementation (phase-timer reset short-circuit, token-grant routing inconsistency, tutorial-mode CSS state sync). New findings (three tutorial subsystem bugs) documented in findings.md. All changes maintain single-player-vs-AI scope.
+
+---
+
 ### 🎓 Interactive Tutorial System: Welcome & In-Game Guided Walkthrough — 2026-08-22
 
 #### Welcome Screen Tutorial (5 Steps)
