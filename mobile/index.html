@@ -324,7 +324,7 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
 .welcome-content h1{ color:#fff; font-size:48px; margin:16px 0 26px; text-shadow:0 3px 14px rgba(0,0,0,.55); }
 .welcome-start-btn{ width:100%; max-width:440px; font-family:var(--font-display); color:#fff; font-weight:700; font-size:32px; padding:20px 32px;
   background:var(--accent); border-radius:100px; border:2px solid var(--ink); box-shadow:3px 3px 0 var(--ink); }
-.welcome-howto-btn{ width:100%; max-width:440px; margin-top:16px; font-family:var(--font-display); color:var(--ink); font-weight:700; font-size:26px; padding:14px 32px;
+.welcome-howto-btn{ width:100%; max-width:440px; margin-top:16px; font-family:var(--font-display); color:var(--ink); font-weight:700; font-size:32px; padding:20px 32px;
   background:var(--paper-dim); border-radius:100px; border:2px solid var(--ink); box-shadow:3px 3px 0 var(--ink); }
 .welcome-howto-btn:active{ transform:translate(3px,3px); box-shadow:none; }
 .welcome-start-btn:active{ transform:translate(3px,3px); box-shadow:none; }
@@ -447,10 +447,17 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
 .tutorial-overlay{ position:fixed; inset:0; z-index:58; background:var(--page); display:flex; align-items:center; justify-content:center;
   padding:40px; padding-top:calc(env(safe-area-inset-top,0px) + 90px); }
 .tutorial-overlay[hidden]{ display:none; }
-.tutorial-slide{ max-width:520px; text-align:center; }
-.tutorial-slide .tricolor{ margin:0 auto 22px; width:110px; }
-.tutorial-slide h2{ font-family:var(--font-display); font-size:56px; margin:0 0 22px; }
-.tutorial-slide p{ font-size:36px; color:var(--ink); line-height:1.5; margin:0; }
+/* Same ballot-card materials as the select-screen card and the end-of-game
+   declare-card (paper stock, ink border, offset shadow, flush tricolor
+   stripe) — this welcome slide is the very first screen a player sees, so
+   it should already look like the rest of the game, not plain text on the
+   page background. */
+.tutorial-slide{ width:100%; text-align:center; background:var(--paper); color:var(--ink);
+  border-radius:45px; border:3px solid var(--ink); box-shadow:8px 8px 0 var(--ink); overflow:hidden; }
+.tutorial-slide h2{ font-family:var(--font-display); font-size:78px; margin:70px 55px 34px; }
+.tutorial-slide p{ font-size:46px; color:var(--ink); line-height:1.55; margin:0 55px 70px; }
+.tutorial-slide .tutorial-coach-nav{ margin:0 55px 60px; }
+.tutorial-coach-nav.tutorial-signoff-nav{ justify-content:center; }
 
 #selectOverlay.tutorial-locked .overlay-header{ padding-top:calc(env(safe-area-inset-top,0px) + 90px); }
 .tutorial-coach{ flex:0 0 auto; margin:0 24px 14px; padding:22px 28px; background:var(--paper-dim); color:var(--ink);
@@ -495,6 +502,10 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
 #agendaTray .action-btn.tutorial-target{ animation:tutorial-btn-pulse 1s ease-in-out infinite; }
 #stage.tutorial-pulse-groups #groupsBox .gchip .hex{ animation:tutorial-btn-pulse 1s ease-in-out infinite; }
 .gchip.tutorial-target .hex{ animation:tutorial-btn-pulse 1s ease-in-out infinite; }
+#stage.tutorial-pulse-hardstates #delhiBtn, #stage.tutorial-pulse-hardstates #goaBtn, #stage.tutorial-pulse-hardstates #keralaBtn{ animation:tutorial-btn-pulse 1s ease-in-out infinite; }
+#stage.tutorial-pulse-utsne #utsBtn, #stage.tutorial-pulse-utsne #neBtn{ animation:tutorial-btn-pulse 1s ease-in-out infinite; }
+#stage.tutorial-pulse-special #specialBtn{ animation:tutorial-btn-pulse 1s ease-in-out infinite; }
+#stage.tutorial-pulse-nationwide #nationwideBtn{ animation:tutorial-btn-pulse 1s ease-in-out infinite; }
 
 /* ---- settings overlay ---- */
 .settings-body{ padding:40px; display:flex; flex-direction:column; gap:25px; width:100%; }
@@ -612,6 +623,22 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
     <div class="tricolor"><span class="saffron"></span><span class="white"></span><span class="green"></span></div>
     <h2 id="tutorialSlideTitle"></h2>
     <p id="tutorialSlideBody"></p>
+  </div>
+</div>
+
+<!-- One-shot sign-off shown once phase 10 ends, only for a match that started
+     as a tutorial (wasTutorialGame in main.js) — same ballot-card materials
+     as tutorialSlide/tutorialOverlay above, just a single Continue button
+     instead of the multi-step Back/Next coach machinery. -->
+<div class="tutorial-overlay" id="tutorialSignoffOverlay" hidden>
+  <div class="tutorial-slide">
+    <div class="tricolor"><span class="saffron"></span><span class="white"></span><span class="green"></span></div>
+    <h2>Well done!</h2>
+    <p>You've successfully mastered all the skills to play the game. Good luck with your campaign to win over India!</p>
+    <div class="tutorial-coach-nav tutorial-signoff-nav">
+      <span class="tutorial-step-counter" id="tutorialStepCounterC"></span>
+      <button class="tutorial-nav-btn" id="tutorialSignoffContinueBtn">Continue →</button>
+    </div>
   </div>
 </div>
 

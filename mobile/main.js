@@ -97,10 +97,15 @@
 
   // Shared across both step engines (select-screen + in-game) so playtesting
   // and player-facing progress both read one continuous "Step N/total" count.
+  // +1 for the phase-10 sign-off card, which isn't part of either step array
+  // but is still counted as the final step of the tutorial. Computed inside
+  // the function (not as a top-level const) since TUTORIAL_STAGE_STEPS isn't
+  // declared yet at this point in the file.
   function updateTutorialCounter(current) {
-    var text = 'Step ' + current + '/' + (TUTORIAL_STEPS.length + TUTORIAL_STAGE_STEPS.length);
+    var text = 'Step ' + current + '/' + (TUTORIAL_STEPS.length + TUTORIAL_STAGE_STEPS.length + 1);
     $('tutorialStepCounterA').textContent = text;
     $('tutorialStepCounterB').textContent = text;
+    $('tutorialStepCounterC').textContent = text;
   }
 
   function scrollCarouselToModi(behavior) {
@@ -181,12 +186,12 @@
       body: 'There are a few ways to increase your popularity. Option 1: direct investment. Double tap on Gujarat to invest funds.'
     },
     {
-      pulse: 'gujarat', requireGujaratPopularityBps: 7000,
-      body: 'Each double tap deducts funds in proportion to the number of Lok Sabha seats that state or union territory contributes — larger states cost more, smaller states cost less. Keep investing in Gujarat until your popularity there is above 70%.'
-    },
-    {
       pulse: 'seats',
       body: 'Higher popularity in any territory means more seats in the Lok Sabha. Keep investing in Gujarat to watch your projected seats climb.'
+    },
+    {
+      pulse: 'gujarat', requireGujaratPopularityBps: 7000,
+      body: 'Each double tap deducts funds in proportion to the number of Lok Sabha seats that state or union territory contributes — larger states cost more, smaller states cost less. Keep investing in Gujarat until your popularity there is above 70%.'
     },
     {
       pulse: 'rally',
@@ -231,8 +236,44 @@
       body: "Let's try to get control over the Western Border group. Here are some additional funds. Keep investing in all the territories in the Western Border group until you achieve 50% or higher in every territory within the group."
     },
     {
-      pulse: 'targetgroup', targetGroupKey: TUTORIAL_GROUP_KEY,
+      pulse: 'targetgroup', targetGroupKey: TUTORIAL_GROUP_KEY, unpinGroupOnEnter: true,
       body: 'Once control is achieved you receive a cash bonus and the group button lights up with your player color.'
+    },
+    {
+      pulse: 'hardstates',
+      body: 'Some hard to reach states can be accessed via the buttons below. Click on Goa, Delhi or Kerala to invest funds there.'
+    },
+    {
+      pulse: 'utsne',
+      body: 'Small UTs and the Northeast 8 have their own buttons as well.'
+    },
+    {
+      body: 'Try playing the game on your own. Keep investing funds, conducting rallies and trying to control as many state groups as you can.'
+    },
+    {
+      waitForPhase: 2,
+      body: 'You may have noticed the AI player has been playing on the same game board.'
+    },
+    {
+      body: "The AI player will try to stop you from achieving a majority of seats. Observe your opponent's actions carefully and change your strategy accordingly. Press next to continue."
+    },
+    {
+      pulse: 'special', waitForPhase: 3, grantSpecialTokens: true, requirePowerActivated: true,
+      body: "Modi's special ability unlocks at phase 3 and requires 6 unspent rally tokens. Here are some extra tokens — use the special ability now!"
+    },
+    {
+      body: "Great move! You just implemented Demonetization. This freezes your opponent's funds for 2 phases. Act quickly and try to control as many states as you can!"
+    },
+    {
+      waitForPhase: 6,
+      body: 'A nationwide rally can be unlocked at phase 6. And requires 12 unspent tokens.'
+    },
+    {
+      pulse: 'nationwide', grantNationwideTokens: true, requireNationwideRally: true,
+      body: "Here's some extra tokens to help you out. Launch a nationwide rally now!"
+    },
+    {
+      body: 'A nationwide rally gives you a big popularity boost — 5% in every state and territory all at once. Keep the momentum going and go for the win!'
     }
   ];
   var tutorialStageStep = 0;
@@ -240,6 +281,10 @@
   var tutorialGujaratInvested = false;
   var tutorialGroupClicked = false;
   var tutorialGroupFundsGranted = false;
+  var tutorialWaitingForPhase = false; // true while coach is hidden and the game is running live, waiting for game.phase to reach a waitForPhase step's target
+  var tutorialPowerActivated = false;
+  var tutorialNationwideRallyLaunched = false;
+  var wasTutorialGame = false; // sticky for the whole match, unlike tutorialMode which turns off mid-game once coaching finishes
 
   function startStageTutorial() {
     timerPaused = true;
@@ -250,6 +295,9 @@
     tutorialGujaratInvested = false;
     tutorialGroupClicked = false;
     tutorialGroupFundsGranted = false;
+    tutorialWaitingForPhase = false;
+    tutorialPowerActivated = false;
+    tutorialNationwideRallyLaunched = false;
     $('tutorialCoachStage').hidden = false;
     renderTutorialStageStep();
   }
@@ -258,7 +306,9 @@
     tutorialMode = false;
     $('tutorialCoachStage').hidden = true;
     $('stage').classList.remove('tutorial-pulse-phase', 'tutorial-pulse-clock', 'tutorial-pulse-funds', 'tutorial-pulse-info',
-      'tutorial-pulse-seats', 'tutorial-pulse-rally', 'tutorial-pulse-agendatray', 'tutorial-pulse-groups');
+      'tutorial-pulse-seats', 'tutorial-pulse-rally', 'tutorial-pulse-agendatray', 'tutorial-pulse-groups',
+      'tutorial-pulse-hardstates', 'tutorial-pulse-utsne', 'tutorial-pulse-special', 'tutorial-pulse-nationwide');
+    tutorialWaitingForPhase = false;
     var gj = document.getElementById(TUTORIAL_GUJARAT_ID);
     if (gj) gj.classList.remove('tutorial-target');
     var prevAgendaBtn = document.querySelector('#agendaTray .tutorial-target');
@@ -326,7 +376,21 @@
       var group = game.groups.filter(function (g) { return g.key === step.requireGroupDominance; })[0];
       return group ? E.dominanceActive(group, game.states, game.pop, 'p1', game.cfg.regionalDominance.thresholdBps) : false;
     }
+    if (step.requirePowerActivated) return tutorialPowerActivated;
+    if (step.requireNationwideRally) return tutorialNationwideRallyLaunched;
     return true;
+  }
+
+  // Tops up loose rally tokens to exactly `need` — reuses the exact-not-flat
+  // sizing approach from the group funds grant above, since the player may
+  // already hold a few tokens. Shared by the special-power and nationwide-
+  // rally token grants (different craft costs, same top-up logic).
+  function grantTutorialTokens(need) {
+    var have = game.players.p1.tokens.stateRally;
+    if (have >= need) return;
+    game.players.p1.tokens.stateRally += (need - have);
+    showToast('🎁 +' + (need - have) + ' tutorial rally tokens');
+    renderAll();
   }
 
   function renderTutorialStageStep() {
@@ -343,6 +407,10 @@
     stageEl.classList.toggle('tutorial-pulse-rally', step.pulse === 'rally');
     stageEl.classList.toggle('tutorial-pulse-agendatray', step.pulse === 'agendatray');
     stageEl.classList.toggle('tutorial-pulse-groups', step.pulse === 'groups');
+    stageEl.classList.toggle('tutorial-pulse-hardstates', step.pulse === 'hardstates');
+    stageEl.classList.toggle('tutorial-pulse-utsne', step.pulse === 'utsne');
+    stageEl.classList.toggle('tutorial-pulse-special', step.pulse === 'special');
+    stageEl.classList.toggle('tutorial-pulse-nationwide', step.pulse === 'nationwide');
     var gj = document.getElementById(TUTORIAL_GUJARAT_ID);
     if (gj) gj.classList.toggle('tutorial-target', step.pulse === 'gujarat');
     var prevAgendaBtn = document.querySelector('#agendaTray .tutorial-target');
@@ -363,15 +431,59 @@
     $('tutorialStageNextBtn').textContent = (tutorialStageStep === TUTORIAL_STAGE_STEPS.length - 1) ? "Let's play →" : 'Next →';
   }
 
+  // Shared by both entry paths: an immediate Next-click landing on a step,
+  // and a deferred landing once a waitForPhase gate (below) is satisfied.
+  function enterTutorialStageStep() {
+    var step = TUTORIAL_STAGE_STEPS[tutorialStageStep];
+    if (step.requireGroupClick) tutorialGroupClicked = false; // re-arm each time this step is (re-)entered, same as the agenda-tap gate
+    if (step.requirePowerActivated) tutorialPowerActivated = false;
+    if (step.requireNationwideRally) tutorialNationwideRallyLaunched = false;
+    if (step.pulse === 'targetgroup') enterTargetGroupStep();
+    if (step.unpinGroupOnEnter) { groupPinned = false; updateCard(); }
+    // Token grants live here (not just in the phase-gate resolver) so a step
+    // reached by a plain Next click — not a waitForPhase gate — still tops
+    // the player up; the nationwide-rally grant step is one step after its
+    // own waitForPhase:6 gate, so it's always entered this way.
+    if (step.grantSpecialTokens) grantTutorialTokens(game.cfg.rally.specialPowerupCraftCost);
+    if (step.grantNationwideTokens) grantTutorialTokens(game.cfg.rally.nationwideRallyCraftCost);
+    renderTutorialStageStep();
+  }
+
+  // Hides the coach entirely and lets the game run live (timer + AI) until
+  // game.phase reaches the pending step's waitForPhase — this is the
+  // "pause the tutorial, let the player explore" gap between coached
+  // moments, not the end of the tutorial.
+  function enterTutorialPhaseWait() {
+    tutorialWaitingForPhase = true;
+    $('tutorialCoachStage').hidden = true;
+    timerPaused = false;
+    resumePhaseTimer();
+    $('pauseToggleBtn').textContent = '⏸'; $('pauseToggleBtn').title = 'Pause';
+  }
+
+  // Called from doEndPhase once game.phase has just advanced. Returns true
+  // (and re-pauses + shows the coach) if that advance is what a waiting
+  // tutorial step was sitting on; false means normal, uncoached phase turnover.
+  function checkTutorialPhaseGate() {
+    if (!tutorialMode || !tutorialWaitingForPhase) return false;
+    var step = TUTORIAL_STAGE_STEPS[tutorialStageStep];
+    if (!step || !step.waitForPhase || game.phase < step.waitForPhase) return false;
+    tutorialWaitingForPhase = false;
+    timerPaused = true; clearInterval(timerHandle);
+    $('pauseToggleBtn').textContent = '▶'; $('pauseToggleBtn').title = 'Resume';
+    $('tutorialCoachStage').hidden = false;
+    enterTutorialStageStep();
+    return true;
+  }
+
   function goTutorialStageStep(delta) {
     var next = tutorialStageStep + delta;
     if (next < 0) return;
     if (next >= TUTORIAL_STAGE_STEPS.length) { finishStageTutorial(); return; }
     tutorialStageStep = next;
     var step = TUTORIAL_STAGE_STEPS[tutorialStageStep];
-    if (step.requireGroupClick) tutorialGroupClicked = false; // re-arm each time this step is (re-)entered, same as the agenda-tap gate
-    if (step.pulse === 'targetgroup') enterTargetGroupStep();
-    renderTutorialStageStep();
+    if (step.waitForPhase && game.phase < step.waitForPhase) { enterTutorialPhaseWait(); return; }
+    enterTutorialStageStep();
   }
 
   function onTutorialMapTap() {
@@ -777,9 +889,20 @@
     var others = data.politicians.filter(function (p) {
       return p.id !== p1Id && (p1Pol.party === 'Independent' || p.party !== p1Pol.party);
     });
-    var p2Id = others[Math.floor(Math.random() * others.length)].id;
+    // Tutorial always faces Rahul Gandhi — a random opponent could nullify
+    // Modi's power before the step-30 "use your special ability" gate, which
+    // would leave that gate stuck forever (see finishActivatePower).
+    var p2Id = tutorialMode ? 'rahul-gandhi' : others[Math.floor(Math.random() * others.length)].id;
     game = G.createGame(data, p1Id, p2Id, Math.random);
     window.__game = game; // debug/test hook — inspect live state from devtools
+    // Tutorial AI never crafts/activates its special power — aiStep's power
+    // block is entirely gated on !usedSpecial, so marking it pre-used is
+    // enough to turn it off without touching game.js's AI logic.
+    if (tutorialMode) game.players.p2.usedSpecial = true;
+    // tutorialMode itself flips false once coaching finishes (around phase
+    // 6, after the nationwide rally) — this survives to phase 10 so the
+    // end-of-game sign-off still knows the match started as a tutorial.
+    wasTutorialGame = tutorialMode;
 
     // Map/UI colors and party symbols follow whichever politicians were
     // actually picked, not a fixed p1=orange/p2=green default.
@@ -884,11 +1007,20 @@
   // ---------------------------------------------------------------------
   // Phase timer
   // ---------------------------------------------------------------------
-  function startPhaseTimer() {
+  // Resets the clock + AI pacing for a fresh phase without starting the
+  // countdown — split out of startPhaseTimer so doEndPhase can always reset
+  // on every phase transition, even when a tutorial phase-gate is about to
+  // keep the game paused (otherwise timeLeft stays at the ~0 it just hit,
+  // and resuming later instantly re-triggers doEndPhase again).
+  function resetPhaseTimer() {
     clearInterval(timerHandle);
     timeLeft = game.cfg.phaseDurationSeconds;
     $('phaseTimer').textContent = fmtClock(timeLeft);
     planAITickPacing(game);
+  }
+
+  function startPhaseTimer() {
+    resetPhaseTimer();
     resumePhaseTimer();
   }
 
@@ -911,12 +1043,22 @@
       spawnMoneyText(pt.x, pt.y, fundsGained, 1);
       playSound('cash_added');
     }
-    if (game.winner) { playSound('game_over'); renderAll(); showEndOverlay(); return; }
+    if (game.winner) {
+      playSound('game_over'); renderAll();
+      if (wasTutorialGame) {
+        wasTutorialGame = false;
+        updateTutorialCounter(TUTORIAL_STEPS.length + TUTORIAL_STAGE_STEPS.length + 1);
+        $('tutorialSignoffOverlay').hidden = false;
+      }
+      else showEndOverlay();
+      return;
+    }
     if (game.log.slice(0, 10).some(function (e) { return e.msg.indexOf('💰 You hold') === 0; })) playSound('fanfare');
     renderAll();
-    startPhaseTimer();
     playSound('phase_reset');
     showToast('Phase ' + game.phase + ' begins');
+    resetPhaseTimer(); // always give the new phase a full clock, whether or not a tutorial gate is about to pause it
+    if (!checkTutorialPhaseGate()) resumePhaseTimer();
   }
 
   function showEndOverlay() {
@@ -1568,6 +1710,7 @@
       spawnPowerBurst('p1', game.players.p1.politician.power.name, game.players.p1.politician.name);
     }
     showToast(r.nullified ? 'Your power fizzled — it had been secretly nullified' : '⚡ ' + game.players.p1.politician.power.name + ' activated');
+    if (tutorialMode && !r.nullified) { tutorialPowerActivated = true; renderTutorialStageStep(); }
   }
 
   function onNationwideBtn() {
@@ -1581,10 +1724,11 @@
       showToast(r.ok ? '🇮🇳 Nationwide Rally crafted — tap to activate' : (r.reason === 'too_early' ? 'Too early to craft (min phase ' + game.cfg.rally.nationwideRallyMinPhase + ')' : 'Cannot craft yet'));
       return;
     }
-    G.activateNationwideRally(game, 'p1');
+    var r = G.activateNationwideRally(game, 'p1');
     renderAll();
     playSound('fanfare');
     showToast('🇮🇳 Nationwide Rally activated');
+    if (tutorialMode && r.ok) { tutorialNationwideRallyLaunched = true; renderTutorialStageStep(); }
   }
 
   // ---------------------------------------------------------------------
@@ -1749,6 +1893,12 @@
   $('playAgainBtn').addEventListener('click', function () {
     $('endOverlay').hidden = true;
     $('selectOverlay').hidden = false;
+    // A tutorial game already flips tutorialMode off mid-match (finishStageTutorial,
+    // around phase 6), but that never clears the select screen's own
+    // .tutorial-locked class (only setTutorialMode does) — without this, Play
+    // Again after a tutorial run left every non-Modi "Play as X" button
+    // dimmed/unplayable even though the player is no longer in the tutorial.
+    setTutorialMode(false);
     switchMusic('intro_music');
   });
   $('shareResultBtn').addEventListener('click', shareResult);
@@ -1809,6 +1959,10 @@
   $('tutorialNextBtn').addEventListener('click', function () { goTutorialStep(1); });
   $('tutorialStageBackBtn').addEventListener('click', function () { goTutorialStageStep(-1); });
   $('tutorialStageNextBtn').addEventListener('click', function () { goTutorialStageStep(1); });
+  $('tutorialSignoffContinueBtn').addEventListener('click', function () {
+    $('tutorialSignoffOverlay').hidden = true;
+    showEndOverlay();
+  });
 
   scheduleAITick();
 
