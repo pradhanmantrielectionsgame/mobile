@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var E = window.PMEEngine, G = window.PMEGame;
-  var GAME_VERSION = '1.0.1';
+  var GAME_VERSION = '1.0.2';
   ['welcomeVersion', 'stageVersion', 'endVersion'].forEach(function (id) {
     var el = document.getElementById(id);
     if (el) el.textContent = 'v' + GAME_VERSION;
@@ -33,6 +33,25 @@
       wrap.textContent = partySymbol(p.party);
     }
     return wrap;
+  }
+
+  // Same real-logo-first fallback as partyBadge() above, but writes into an
+  // existing element instead of building a new .pol-seal wrapper — used for
+  // the in-game HUD/end-card party-symbol spans, which previously always
+  // showed the PARTY_SYMBOLS emoji even when a real partyLogo existed.
+  function setPartySymbol(el, p) {
+    el.textContent = '';
+    el.classList.remove('party-symbol-icon');
+    if (p.partyLogo) {
+      var img = document.createElement('img');
+      img.className = 'party-symbol-icon';
+      img.alt = p.party;
+      img.src = p.partyLogo;
+      img.onerror = function () { el.textContent = partySymbol(p.party); };
+      el.appendChild(img);
+    } else {
+      el.textContent = partySymbol(p.party);
+    }
   }
 
   // Sets a politician portrait <img>, falling back to a colored initial
@@ -645,14 +664,14 @@
     $('fxLayer').appendChild(el);
     setTimeout(function () { el.remove(); }, 700);
   }
-  function spawnPowerBurst(playerKey, powerName, politicianName) {
+  function spawnPowerBurst(playerKey, powerName, politicianName, emoji) {
     var el = document.createElement('div');
     el.className = 'power-burst';
     el.style.setProperty('--glow-color', playerKey === 'p2' ? COLORS.p2 : COLORS.p1);
     var glow = document.createElement('div'); glow.className = 'glow';
     var rays = document.createElement('div'); rays.className = 'rays';
     var card = document.createElement('div'); card.className = 'card';
-    var bolt = document.createElement('div'); bolt.className = 'bolt'; bolt.textContent = '⚡';
+    var bolt = document.createElement('div'); bolt.className = 'bolt'; bolt.textContent = emoji || '⚡';
     var name = document.createElement('div'); name.className = 'name'; name.textContent = powerName;
     var who = document.createElement('div'); who.className = 'who'; who.textContent = politicianName;
     card.appendChild(bolt); card.appendChild(name); card.appendChild(who);
@@ -957,12 +976,10 @@
     COLORS.p2 = game.players.p2.politician.primaryColor || '#1C8A4B';
     document.documentElement.style.setProperty('--p1', COLORS.p1);
     document.documentElement.style.setProperty('--p2', COLORS.p2);
-    var p1Symbol = partySymbol(game.players.p1.politician.party);
-    var p2Symbol = partySymbol(game.players.p2.politician.party);
-    $('p1PartySymbol').textContent = p1Symbol;
-    $('p2PartySymbol').textContent = p2Symbol;
-    $('cardP1Symbol').textContent = p1Symbol;
-    $('cardP2Symbol').textContent = p2Symbol;
+    setPartySymbol($('p1PartySymbol'), game.players.p1.politician);
+    setPartySymbol($('p2PartySymbol'), game.players.p2.politician);
+    setPartySymbol($('cardP1Symbol'), game.players.p1.politician);
+    setPartySymbol($('cardP2Symbol'), game.players.p2.politician);
     setPortrait($('p1Portrait'), game.players.p1.politician);
     setPortrait($('p2Portrait'), game.players.p2.politician);
     $('p1Name').textContent = game.players.p1.politician.name;
@@ -1044,6 +1061,9 @@
           if (action.type === 'power') {
             playPowerSound(game.players.p2.politician.name);
             spawnPowerBurst('p2', game.players.p2.politician.power.name, game.players.p2.politician.name);
+          } else if (action.type === 'nationwide') {
+            playSound('fanfare');
+            spawnPowerBurst('p2', 'Nationwide Rally', game.players.p2.politician.name, '🇮🇳');
           }
         }
       }
@@ -1788,6 +1808,7 @@
     var r = G.activateNationwideRally(game, 'p1');
     renderAll();
     playSound('fanfare');
+    spawnPowerBurst('p1', 'Nationwide Rally', game.players.p1.politician.name, '🇮🇳');
     showToast('🇮🇳 Nationwide Rally activated');
     if (tutorialMode && r.ok) { tutorialNationwideRallyLaunched = true; renderTutorialStageStep(); }
   }
