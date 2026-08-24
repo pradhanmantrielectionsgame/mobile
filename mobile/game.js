@@ -12,6 +12,16 @@
   // CLAUDE.md) plus Delhi/Goa, which get their own quick-invest buttons.
   var SMALL_UT_IDS = ['INCH', 'INDH', 'INPY', 'INLD', 'INAN', 'INDL', 'INGA'];
 
+  // The 5 of the above with no dedicated single-target button (Delhi/Goa do
+  // have their own — #delhiBtn/#goaBtn — so those two stay individually
+  // investable). The human can only ever invest in these 5 as a group via
+  // the "Small UTs" quick-invest button (mirrors main.js's utsBtn handler);
+  // the AI must be held to the same all-or-nothing constraint in aiStep
+  // below, or it can cheaply snipe just one (e.g. Puducherry) to deny a
+  // regional-dominance group for a fraction of what the human has to spend
+  // to contest it back.
+  var SMALL_UT_BATCH_IDS = SMALL_UT_IDS.filter(function (id) { return id !== 'INDL' && id !== 'INGA'; });
+
   // Northeast 8 quick-invest button (mirrors the SMALL_UT_IDS/ALL_UTS pattern) —
   // these states are individually tappable on the map, this is just a shortcut.
   var NORTHEAST_IDS = ['INNL', 'INMN', 'INMZ', 'INTR', 'INML', 'INSK', 'INAR', 'INAS'];
@@ -791,8 +801,17 @@
 
     var investTarget = pl.fundsCr >= game.cfg.investment.costPerSeatCr ? pickAIInvestmentTarget(game, profile, playerKey, oppKey) : null;
     if (investTarget) {
-      var investResult = investCash(game, playerKey, investTarget.svgId);
-      if (investResult.ok) return { type: 'invest', svgId: investTarget.svgId, costCr: investResult.cost };
+      if (SMALL_UT_BATCH_IDS.indexOf(investTarget.svgId) !== -1) {
+        var batchCost = 0, batchAny = false;
+        SMALL_UT_BATCH_IDS.forEach(function (id) {
+          var r = investCash(game, playerKey, id);
+          if (r.ok) { batchAny = true; batchCost += r.cost; }
+        });
+        if (batchAny) return { type: 'invest', svgId: investTarget.svgId, costCr: batchCost };
+      } else {
+        var investResult = investCash(game, playerKey, investTarget.svgId);
+        if (investResult.ok) return { type: 'invest', svgId: investTarget.svgId, costCr: investResult.cost };
+      }
     }
 
     return null;

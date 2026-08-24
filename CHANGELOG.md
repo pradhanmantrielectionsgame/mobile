@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-08-24
+
+### Fixed
+- **FIXED**: AI could invest in a single small UT (e.g. Puducherry) individually to cheaply deny a regional-dominance group, while the human player can only invest in that same cluster of 5 (Chandigarh/Dadra & Nagar Haveli+Daman & Diu/Puducherry/Lakshadweep/Andaman & Nicobar) as a batch via the "Small UTs" button. `mobile/game.js`'s `aiStep` now forces the AI into the same all-or-nothing batch investment for those 5 states, mirroring the human button exactly (Delhi/Goa unaffected — both sides can already target those individually via their own dedicated buttons)
+- **FIXED**: `*{touch-action:manipulation}` still allowed pinch-zoom (per spec `manipulation` only blocks double-tap-zoom), causing the page to zoom out randomly during fast two-thumb tapping; changed to `touch-action:pan-x pan-y`, which blocks pinch-zoom too while preserving the two spots that genuinely need native panning (politician-select carousel swipe, share-sheet scroll)
+- **FIXED**: Party-symbol spans in the in-game HUD and end card (`p1PartySymbol`/`p2PartySymbol`/`cardP1Symbol`/`cardP2Symbol`) always rendered the emoji fallback (✋ for Congress) even when a real party logo existed — only the politician-select carousel's badge used the real-logo-first fallback. Added a shared `setPartySymbol()` helper so all 4 spots behave like the carousel
+
+### Added
+- **ADDED**: Nationwide Rally now fires the same 5-second full-screen celebration as a special-power activation (glow + rays + card), themed with 🇮🇳 instead of ⚡ — previously only a toast/sound, and the AI's own nationwide rallies had no celebration at all
+
 ## [1.0.1] - 2026-08-23
 
 ### Versioning reset
