@@ -60,7 +60,8 @@
       "costPerSeatCr": 10,
       "boostStartBps": 500,
       "boostFloorBps": 200,
-      "boostGlidePathTaps": 20
+      "boostGlidePathTaps": 20,
+      "boostDecayRate": 0.85
     },
     "rally": {
       "tokenIncomePerPhase": 2,

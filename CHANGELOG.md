@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [1.1.2] - 2026-08-24
+
+### Fixed
+- **FIXED**: Small UTs (and other cheap 1-2 seat states) could be re-contested forever at a fixed, still-meaningful cost — investment boost decayed for the first 20 taps into a state, then locked at a permanent 200bps floor, so 10cr always bought another 2% no matter how many times either side had already fought over it. This let a state group's cheapest member act as a nearly-free, permanent veto on the whole group's regional-dominance bonus, since dominance requires every member state to cross 50% (`mobile/engine.js`'s `dominanceActive`). Fixed by letting the boost keep decaying geometrically past tap 20 instead of flattening (new `boostDecayRate: 0.85` in `game-config.json`'s `mobileEconomy.investment`) — repeated taps on the same state now keep getting weaker, so spam genuinely stops paying off (on a 1-seat UT, cost per +1% crosses a full phase's income around tap 43). AI-vs-AI simulation (1,260-game full politician matrix, same seeds before/after): avg seats gained +8.3 (p1) / +7.3 (p2), seats stuck with "Others" fell −15.6, hung-parliament rate fell 89.4%→82.1%; win rate unchanged (52% vs 53%, within noise). Doesn't address slow, occasional "strategic sniping" of a state — only sustained spam, which is what was reported.
+
 ## [1.1.1] - 2026-08-24
 
 ### Added

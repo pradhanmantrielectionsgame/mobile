@@ -239,12 +239,16 @@
   // ---------------------------------------------------------------------
   // Direct cash investment
   // ---------------------------------------------------------------------
+  // Past the glide path, boost keeps decaying geometrically (never flat-
+  // lines) so a cheap state can't be re-contested forever at a fixed,
+  // still-meaningful cost — see CLAUDE.md's small-UT dominance-veto note.
   function investmentBoostBps(tapNumber, cfg) {
     if (tapNumber <= cfg.boostGlidePathTaps) {
       var span = cfg.boostGlidePathTaps - 1;
       return Math.round(cfg.boostStartBps - (tapNumber - 1) * (cfg.boostStartBps - cfg.boostFloorBps) / span);
     }
-    return cfg.boostFloorBps;
+    var extraTaps = tapNumber - cfg.boostGlidePathTaps;
+    return Math.max(1, Math.round(cfg.boostFloorBps * Math.pow(cfg.boostDecayRate, extraTaps)));
   }
   function investmentCostCr(seats, cfg) { return seats * cfg.costPerSeatCr; }
 

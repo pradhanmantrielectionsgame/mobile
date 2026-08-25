@@ -373,14 +373,19 @@ flowchart TD
         <tbody>
           <tr><td class="num">1</td><td class="num">+5.00%</td><td>opening tap, best rate</td></tr>
           <tr><td class="num">10</td><td class="num">+3.42%</td><td>linear glide</td></tr>
-          <tr><td class="num">20</td><td class="num">+2.00%</td><td>hits the floor</td></tr>
-          <tr><td class="num">21+</td><td class="num">+2.00%</td><td>floor forever after</td></tr>
+          <tr><td class="num">20</td><td class="num">+2.00%</td><td>glide path ends</td></tr>
+          <tr><td class="num">30</td><td class="num">+0.39%</td><td>geometric decay past the glide path</td></tr>
+          <tr><td class="num">50+</td><td class="num">→0%</td><td>asymptotically worthless — never a hard floor</td></tr>
         </tbody>
       </table></div>
-      <p>Cost per tap = <code>state.seats × 10 Cr</code>. Because cost scales with seats and the decay curve is identical everywhere, cost-per-seat-gained is the same in a 5-seat state as a 40-seat state — roughly ₹200 Cr/seat on a first tap, rising to ~₹500 Cr/seat once decayed out. Big states aren't a trap; repeatedly tapping the <i>same</i> state is what gets expensive.</p>
-      <pre class="code">costPerTap(state) = state.seats × 10                              // Cr
-boost_bps(tap) = tap ≤ 20 : round(500 − (tap−1) × 300/19)          // 500 → 200 bps, linear
-                 tap  > 20 : 200                                    // floor</pre>
+      <p>Cost per tap = <code>state.seats × 10 Cr</code>, always flat — only the boost decays. For the first 20 taps the decay is linear (500→200bps); past tap 20 it used to lock at a permanent 200bps floor forever, which meant a cheap 1-seat UT could be re-contested indefinitely at a fixed, still-meaningful cost. Fixed 2026-08-24 (v1.1.2): past tap 20 the boost now keeps decaying geometrically instead of flattening, so repeated taps on the <i>same</i> state keep getting weaker with no floor. On a 1-seat state, cost per +1% crosses a full phase's income (2,500 Cr) around tap 43 — spam past that point is a real waste, not just diminishing.</p>
+      <pre class="code">costPerTap(state) = state.seats × 10                                // Cr
+boost_bps(tap) = tap ≤ 20 : round(500 − (tap−1) × 300/19)            // 500 → 200 bps, linear
+                 tap  > 20 : max(1, round(200 × 0.85^(tap−20)))      // keeps decaying, never flat</pre>
+      <div class="note">
+        <p class="label">Why this mattered: a cheap state could veto an expensive group forever</p>
+        <p>Regional dominance requires <i>every</i> member of a group at 50%+ (see below) — including groups that mix a 1-seat UT alongside 20-40-seat states. Under the old permanent floor, re-suppressing that one cheap UT cost the same 10 Cr per 2% forever, so it could deny access to a group worth hundreds of Cr in payout at near-zero ongoing cost. AI-vs-AI simulation (1,260-game full politician matrix, same seeds before/after): groups containing a small UT went from winning ~36% less often than UT-free groups (4.1% vs 6.4%) to statistically even (5.6% vs 5.7%); combined spend on the 7 smallest UTs fell ~71% per game; average final seats rose for both players (+8.3 / +7.3) as fewer seats got stuck contested with neither side ever converting them. This only stops <i>sustained</i> spam — a slow, occasional strategic snipe of the same state stays exactly as viable as before (each side's own tap-decay clock only advances on their own taps, so a low-frequency defender doesn't grind through it the way a constant attacker does).</p>
+      </div>
 
       <h3>Rally tokens</h3>
       <div class="flow-grid">
@@ -513,7 +518,7 @@ payout(group) = 5 Cr × (sum of seats across every state in the group)</pre>
       </div>
       <div class="note">
         <p class="label">Sabotage beats conquest</p>
-        <p>One state slipping under 50% zeroes the whole group's qualified status immediately — no more payouts until every member re-crosses the line. That makes "knock one state back down" a cheaper counter-play than "out-invest the leader everywhere." Deliberate, not a bug.</p>
+        <p>One state slipping under 50% zeroes the whole group's qualified status immediately — no more payouts until every member re-crosses the line. That makes "knock one state back down" a cheaper counter-play than "out-invest the leader everywhere." Deliberate, not a bug. What's no longer free (fixed 2026-08-24, v1.1.2): <i>permanently</i> re-knocking down the same cheap state, forever, at flat unchanging cost — see the investment decay-curve note above.</p>
       </div>
       <p>Payout is <b>instant and event-based</b> (changed 2026-07-24) — it fires the moment the last member state crosses 50%, checked after every popularity-moving action, not deferred to the next phase boundary. Losing and re-earning dominance pays again in full each time. Implemented as <code>applyRegionalDominancePayouts()</code>, called (via the shared <code>applyPayouts()</code> wrapper — see below) from every action that can move a state's popularity.</p>
       <div class="note">
