@@ -1,8 +1,11 @@
 // PME Mobile — minimal cache-first service worker for offline/installable
 // play. Precaches the app shell; everything else (data/*.json, sounds/*,
 // images) is cached opportunistically the first time it's fetched.
-var CACHE = 'pme-mobile-v3';
-var CORE = ['./index.html', './engine.js', './game.js', './main.js', './html2canvas.min.js', './manifest.json'];
+var CACHE = 'pme-mobile-v4';
+var CORE = [
+  './index.html', './engine.js', './game.js', './main.js', './html2canvas.min.js', './manifest.json',
+  './data/states_data.json', './data/policy-tags.json', './data/politicians-data.json', './data/game-config.json'
+];
 
 self.addEventListener('install', function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(CORE); }));
@@ -29,6 +32,15 @@ self.addEventListener('fetch', function (e) {
         caches.open(CACHE).then(function (c) { c.put(e.request, copy); });
       }
       return res;
-    }).catch(function () { return caches.match(e.request); })
+    }).catch(function () {
+      return caches.match(e.request).then(function (cached) {
+        // Bookmarked/typed URLs (bare origin, trailing slash, etc.) are a
+        // different Request URL than the precached './index.html' entry —
+        // fall back to the app shell for any offline navigation so those
+        // still load instead of failing outright.
+        if (cached) return cached;
+        if (e.request.mode === 'navigate') return caches.match('./index.html');
+      });
+    })
   );
 });

@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-08-24
+
+### Added
+- **ADDED**: Loading bar on the welcome screen — "Begin Campaign"/"How to Play" are now disabled (dimmed) with an animated "Loading…" progress bar shown in their place until the game data (`data/*.json`) finishes fetching, instead of the buttons being tappable immediately into what could be an empty politician carousel on a slow connection. Shows a persistent error state ("Couldn't load — check your connection") instead of getting stuck if the fetch fails outright
+
+## [1.1.0] - 2026-08-24
+
+### Added
+- **ADDED**: Local-only politician unlock progression — new players start with only Modi, Manmohan Singh, and Vajpayee playable; every other politician is locked (dimmed portrait, disabled "Play as X" button) until you defeat them as the AI opponent in a match. Tracked in `localStorage` only, no account/backend — a determined player can bypass it via devtools, which is an accepted tradeoff for a single-player nudge rather than real anti-cheat. Unlocked politicians always sort to the front of the select carousel, so a starter or freshly-unlocked pick is never behind a locked card. A win that unlocks someone new fires a 5-second full-screen celebration (reusing the existing special-power/nationwide-rally glow+rays effect) with the newly unlocked politician's portrait spinning into view and "🔓 New Card Unlocked!"
+- **ADDED**: The random AI-opponent draw is now weighted 70% toward still-locked politicians (`LOCKED_OPPONENT_CHANCE` in `mobile/main.js`), so unlocking the roster keeps moving instead of depending on luck — falls back to a uniform draw once everything eligible is already unlocked (or, edge case, everything eligible is still locked)
+- **ADDED**: Tip-jar link ("☕ Support the developer") on the welcome screen and end-of-game screen, pointing at a placeholder Ko-fi URL (`mobile/main.js`'s `TIP_URL`) until a real one is set up; excluded from the share-card screenshot like the other footer buttons
+
+### Fixed
+- **FIXED**: Offline play failed entirely when the game was opened via a bookmarked/typed URL without a filename (e.g. `.../mobile/`) — the service worker's cache only had an entry for `.../mobile/index.html`, a different cache key, so the exact-match lookup missed and the page failed to load even though the app shell was cached. `mobile/sw.js` now falls back to the cached shell for any failed navigation, and precaches the (small, ~72KB) data JSON files too so a fresh install doesn't need one prior online session before offline play works
+- **FIXED**: Party-logo circle ("seal") on the politician-select and end-of-game cards had an unnecessary solid black fill behind the logo/emoji — removed, so the logo now sits directly on the card's paper background inside the brass ring
+- **FIXED**: Congress and Trinamool Congress's party logos (both circular emblems with their own internal padding) looked like they didn't fill their seal circle, leaving a visible ring-within-a-ring gap — `.pol-seal img` sized up from 62px to 88px inside the 100px ring; verified this doesn't crop the non-circular BJP/AAP logos, which already reached the edge at the smaller size
+
 ## [1.0.2] - 2026-08-24
 
 ### Fixed
