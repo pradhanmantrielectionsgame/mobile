@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var E = window.PMEEngine, G = window.PMEGame;
-  var GAME_VERSION = '1.1.2';
+  var GAME_VERSION = '1.2.0';
   ['welcomeVersion', 'stageVersion', 'endVersion'].forEach(function (id) {
     var el = document.getElementById(id);
     if (el) el.textContent = 'v' + GAME_VERSION;
@@ -284,11 +284,15 @@
     },
     {
       pulse: 'agendatray',
-      body: 'To gain additional rally tokens, click on different agenda items.'
+      body: 'You can get additional tokens by fully committing to agenda items.'
     },
     {
       pulse: 'targetagenda', targetAgendaName: 'National Defense', requireAgendaComplete: 'National Defense',
-      body: 'Each agenda costs 500cr per tap (2000cr total investment). Completing an agenda gives you 2 extra rally tokens for free. Tap on National Defense until that agenda is completed.'
+      body: 'You can partially commit to an agenda by investing 500 crores. Full commitment requires 2000 crores. Tap on National Defense until that agenda is completed.'
+    },
+    {
+      pulse: 'info',
+      body: 'Not all agendas are equally popular everywhere. You can see the info bar for more information on how each agenda will affect your popularity in different parts of the country.'
     },
     {
       pulse: 'gujarat', requireGujaratPopularityBps: 10000,
@@ -313,6 +317,9 @@
       body: 'Once control is achieved you receive a cash bonus and the group button lights up with your player color.'
     },
     {
+      body: 'Keep holding a group into the next phase and you earn a smaller bonus again — sustained popularity keeps drawing fundraising, phase after phase, as long as you hold it.'
+    },
+    {
       pulse: 'hardstates',
       body: 'Some hard to reach states can be accessed via the buttons below. Click on Goa, Delhi or Kerala to invest funds there.'
     },
@@ -321,11 +328,18 @@
       body: 'Small UTs and the Northeast 8 have their own buttons as well.'
     },
     {
+      pulse: 'utexample', targetGroupKey: 'SouthIndia', targetStateSvgId: 'INPY',
+      body: "Watch out: some state groups include a Union Territory as a member. South India (shown below) includes tiny Puducherry. Losing control of just that one small UT can break your whole group's bonus — don't let the big states distract you from defending the small ones."
+    },
+    {
       body: 'Try playing the game on your own. Keep investing funds, conducting rallies and trying to control as many state groups as you can.'
     },
     {
       waitForPhase: 2,
       body: 'You may have noticed the AI player has been playing on the same game board.'
+    },
+    {
+      body: "Your opponent for this tutorial is Rahul Gandhi (INC). You'll never be paired against an opponent from your own party — worth remembering once you start unlocking politicians by defeating them, since that also decides who you might face."
     },
     {
       body: "The AI player will try to stop you from achieving a majority of seats. Observe your opponent's actions carefully and change your strategy accordingly. Press next to continue."
@@ -499,6 +513,12 @@
       var groupChip = document.querySelector('.gchip[data-key="' + step.targetGroupKey + '"]');
       if (groupChip) groupChip.classList.add('tutorial-target');
     }
+    var prevLedChip = document.querySelector('#cardGroups .led-chip.tutorial-target');
+    if (prevLedChip) prevLedChip.classList.remove('tutorial-target');
+    if (step.pulse === 'utexample') {
+      var ledChip = document.querySelector('#cardGroups .led-chip[data-svgid="' + step.targetStateSvgId + '"]');
+      if (ledChip) ledChip.classList.add('tutorial-target');
+    }
     $('tutorialStageBackBtn').disabled = (tutorialStageStep === 0);
     $('tutorialStageNextBtn').disabled = !tutorialStageStepSatisfied(step);
     $('tutorialStageNextBtn').textContent = (tutorialStageStep === TUTORIAL_STAGE_STEPS.length - 1) ? "Let's play →" : 'Next →';
@@ -512,6 +532,10 @@
     if (step.requirePowerActivated) tutorialPowerActivated = false;
     if (step.requireNationwideRally) tutorialNationwideRallyLaunched = false;
     if (step.pulse === 'targetgroup') enterTargetGroupStep();
+    // Passive illustration (no funds grant, no pin) — just auto-selects the
+    // group card so the concrete Puducherry example is visible without
+    // requiring the player to tap anything.
+    if (step.pulse === 'utexample') { activeGroup = step.targetGroupKey; updateCard(); }
     if (step.unpinGroupOnEnter) { groupPinned = false; updateCard(); }
     // Token grants live here (not just in the phase-gate resolver) so a step
     // reached by a plain Next click — not a waitForPhase gate — still tops
@@ -619,11 +643,60 @@
   var BG_MUSIC_VOLUME = 0.35, BG_MUSIC_DUCKED_VOLUME = 0;
   LOOP_TRACKS.forEach(function (name) { sounds[name].loop = true; sounds[name].volume = BG_MUSIC_VOLUME; });
   var currentMusicKey = null;
+
+  // Tap-feedback SFX (played synchronously off a real user gesture, so any
+  // latency reads directly as "the tap felt delayed") get a Web Audio
+  // AudioBufferSourceNode path instead of the plain <audio> element every
+  // other sound uses. HTMLAudioElement.play() has real, often 100ms+,
+  // hardware/session-negotiation latency on mobile — reordering JS (see the
+  // money_spent call-site fix) can't touch that, since the delay is in the
+  // browser/OS audio pipeline, not app code. A pre-decoded AudioBuffer
+  // starts a fresh voice with near-sample-accurate timing instead. Falls
+  // back to the normal <audio> path below if Web Audio is unavailable or
+  // the buffer hasn't finished decoding yet (e.g. a tap in the first
+  // second after "Begin Campaign").
+  var TAP_SFX = ['money_spent', 'rally_sound', 'invalid_action'];
+  var sfxCtx = null, sfxBuffers = {};
+  function primeTapSfx() {
+    try {
+      if (!sfxCtx) sfxCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (sfxCtx.state === 'suspended') sfxCtx.resume();
+      TAP_SFX.forEach(function (name) {
+        if (sfxBuffers[name]) return;
+        fetch('../sounds/' + name + '.mp3')
+          .then(function (r) { return r.arrayBuffer(); })
+          .then(function (buf) { return sfxCtx.decodeAudioData(buf); })
+          .then(function (decoded) { sfxBuffers[name] = decoded; })
+          .catch(function () { /* stays on the <audio> fallback below */ });
+      });
+    } catch (e) { /* Web Audio unavailable — everything stays on <audio> */ }
+  }
+  function playTapSfxBuffer(name) {
+    var buf = sfxBuffers[name];
+    // iOS Safari auto-suspends an AudioContext on any idle/background stretch
+    // — far more aggressively for a bookmarked tab than an installed
+    // standalone PWA. resume() is async; starting a source before it
+    // actually finishes produces silence, not an error, so this must
+    // confirm the context is running *right now* rather than assume
+    // resume() worked — otherwise a silent tap gets reported as a success
+    // and never falls back to the always-audible <audio> path below.
+    if (!buf || !sfxCtx || sfxCtx.state !== 'running') {
+      if (sfxCtx && sfxCtx.state === 'suspended') sfxCtx.resume(); // best-effort, helps the *next* tap
+      return false;
+    }
+    var src = sfxCtx.createBufferSource();
+    src.buffer = buf;
+    src.connect(sfxCtx.destination);
+    src.start(0);
+    return true;
+  }
+
   function playSound(name) {
     var a = sounds[name];
     if (!a) return;
     if (LOOP_TRACKS.indexOf(name) !== -1) { if (musicEnabled) a.play().catch(function () {}); return; }
     if (!soundEnabled) return;
+    if (TAP_SFX.indexOf(name) !== -1 && playTapSfxBuffer(name)) return;
     a.currentTime = 0;
     a.play().catch(function () {});
   }
@@ -649,6 +722,7 @@
       a.pause();
       a.currentTime = 0;
     });
+    primeTapSfx();
   }
 
   // Per-politician special-power sound — sounds/<Politician_Name>.mp3
@@ -973,7 +1047,7 @@
     btn.textContent = locked ? '🔒 Defeat to unlock' : 'Play as ' + p.name.replace(/\s*\([^)]*\)\s*$/, '').split(' ').slice(-1)[0];
     btn.addEventListener('click', function () {
       if (locked) {
-        showToast('Beat ' + p.name + ' in a match to unlock them');
+        showToast('Beat ' + p.name + ' in a match to unlock them — you\'re never matched against your own party, so pick someone from a different party to face them');
         return;
       }
       if (tutorialMode && p.id !== TUTORIAL_POL_ID) {
@@ -1634,6 +1708,7 @@
       var chip = document.createElement('button');
       chip.className = 'led-chip' + (isLeading ? ' led-on' : '');
       chip.title = s.name;
+      chip.dataset.svgid = s.svgId;
       chip.innerHTML = '<span class="led-dot"></span><span>' + s.svgId.slice(2) + '</span>';
       chip.addEventListener('click', function () { selectState(s.svgId); });
       ledEl.appendChild(chip);
@@ -1919,12 +1994,16 @@
     var pt = point || viewportPoint(el);
     var r = G.investCash(game, 'p1', svgId);
     if (!r.ok) { showToast('Not enough funds'); shakeInvalid(el); return; }
+    // Sound fires before the render/FX work below, not after — renderAll()
+    // forces a synchronous layout (getBoundingClientRect in
+    // renderRallyTokens) and repaints the whole map, which on real hardware
+    // is enough to make the sound audibly lag the tap if it waits behind it.
+    playSound('money_spent');
     renderAll();
     if (tutorialMode) onTutorialInvest(svgId);
     if (el && el.animate) el.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.03)' }, { transform: 'scale(1)' }], { duration: 220 });
     spawnFlash(pt.x, pt.y);
     spawnMoneyText(pt.x, pt.y, r.cost, -1);
-    playSound('money_spent');
     // Still a valid, spendable tap (a real campaign doesn't always know when
     // to stop) — engine.js's gainAt already clamps the actual boost to 0
     // once a state is fully owned, so r.gained===0 is exactly "that money
@@ -2041,8 +2120,9 @@
         var r = G.investCash(game, 'p1', id);
         if (r.ok) { any = true; totalCost += r.cost; }
       });
+      if (any) playSound('money_spent');
       renderAll();
-      if (any) { spawnFlash(pt.x, pt.y); spawnMoneyText(pt.x, pt.y, totalCost, -1); playSound('money_spent'); showToast('Invested in all Small UTs'); }
+      if (any) { spawnFlash(pt.x, pt.y); spawnMoneyText(pt.x, pt.y, totalCost, -1); showToast('Invested in all Small UTs'); }
       else { shakeInvalid($('utsBtn')); showToast('Not enough funds'); }
     });
   });
@@ -2054,8 +2134,9 @@
         var r = G.investCash(game, 'p1', id);
         if (r.ok) { any = true; totalCost += r.cost; }
       });
+      if (any) playSound('money_spent');
       renderAll();
-      if (any) { spawnFlash(pt.x, pt.y); spawnMoneyText(pt.x, pt.y, totalCost, -1); playSound('money_spent'); showToast('Invested in all Northeast states'); }
+      if (any) { spawnFlash(pt.x, pt.y); spawnMoneyText(pt.x, pt.y, totalCost, -1); showToast('Invested in all Northeast states'); }
       else { shakeInvalid($('neBtn')); showToast('Not enough funds'); }
     });
   });

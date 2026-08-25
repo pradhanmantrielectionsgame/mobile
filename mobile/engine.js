@@ -281,10 +281,20 @@
     if (!members.length) return false;
     return members.every(function (s) { return pop[s.svgId][player] >= thresholdBps; });
   }
-  function dominancePayoutCr(group, states, cfg) {
-    var seats = states.filter(function (s) { return s.tags.indexOf(group.key) !== -1; })
+  function groupSeats(group, states) {
+    return states.filter(function (s) { return s.tags.indexOf(group.key) !== -1; })
       .reduce(function (a, s) { return a + s.seats; }, 0);
-    return seats * cfg.payoutCrPerSeat;
+  }
+  function dominancePayoutCr(group, states, cfg) {
+    return groupSeats(group, states) * cfg.payoutCrPerSeat;
+  }
+  // Smaller, flat, repeats every phase a group is still held at phase start
+  // (not a one-time crossing event like dominancePayoutCr above) — the
+  // "high popularity in a region draws ongoing fundraising" bonus. Flat by
+  // design: doesn't grow the longer a group is held, so it can't compound
+  // into a late-game blowout on top of the instant bonus.
+  function dominanceHoldingPayoutCr(group, states, cfg) {
+    return groupSeats(group, states) * cfg.holdingBonusCrPerSeat;
   }
 
   root.PMEEngine = {
@@ -302,7 +312,8 @@
     netAgendaEffectBps: netAgendaEffectBps,
     agendaTapDelta: agendaTapDelta,
     dominanceActive: dominanceActive,
-    dominancePayoutCr: dominancePayoutCr
+    dominancePayoutCr: dominancePayoutCr,
+    dominanceHoldingPayoutCr: dominanceHoldingPayoutCr
   };
 })(typeof window !== 'undefined' ? window : (typeof global !== 'undefined' ? global : this));
 

@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-08-25
+
+### Added
+- **ADDED**: Group holding bonus — a group still held at the start of a phase now pays a smaller, flat, recurring fundraising bonus (`holdingBonusCrPerSeat: 5` in `game-config.json`'s `mobileEconomy.regionalDominance`, matching the instant one-time bonus 1:1, applied via a new `dominanceHoldingPayoutCr()` in `mobile/engine.js` and `applyGroupHoldingBonus()` in `mobile/game.js`, called once per phase boundary from `startPhase()` — deliberately separate from the instant/event-based `applyPayouts()` other actions call mid-phase). Flat by design, not growing the longer a group is held, so it can't compound into a late-game blowout. AI-vs-AI simulation (840-game full politician matrix per magnitude, sweeping 2-6 Cr/seat): win rate stays flat as expected for a symmetric bonus, but hung-parliament rate falls (80.4%→78.7%) and seat leads widen modestly (avg +5%, blowout games nearly double 11→21 of 840) as magnitude increases — confirms real but non-runaway effect at 5 Cr/seat.
+- **ADDED**: Three new in-match tutorial steps — explains the group holding bonus right after the "group control achieved" step; warns that some state groups include a Union Territory as a member, with a concrete worked example (auto-selects the South India group card and highlights the Puducherry pill specifically); and explains the AI opponent's party is never the same as the player's own (illustrated with the tutorial's actual opponent, Rahul Gandhi/INC), relevant to candidate selection now that defeating a politician is how you unlock them.
+- **ADDED**: A new `data-svgid` attribute on every group-card led-chip (`renderGroupCard()` in `mobile/main.js`) so tutorial/highlight code can target a specific member state's chip — not just a one-off for the Puducherry example, reusable for any future highlight need.
+
+### Changed
+- **CHANGED**: Reworded tutorial steps explaining agenda commitment (partial vs. full investment amounts) and added a new step pointing out that agendas affect popularity differently by region, via the info bar.
+
+### Fixed
+- **FIXED**: The invest-tap sound (`money_spent`) audibly lagged the tap — `investPaid()` and the two UT/Northeast batch-invest handlers called `renderAll()` (a full synchronous re-render, including a layout-forcing `getBoundingClientRect()` in `renderRallyTokens()`) *before* `playSound()`, so the sound couldn't fire until that render finished. Reordered to play the sound immediately after the invest succeeds, before any render/FX work, in all three call sites (`mobile/main.js`).
+- **FIXED**: That reorder wasn't enough on iOS Safari — `<audio>` elements have real, often 100ms+, playback-start latency baked into the browser/OS pipeline, which JS-side reordering can't touch. `money_spent`/`rally_sound`/`invalid_action` now play through the Web Audio API instead: pre-decoded into an `AudioBuffer` on the first gesture (`primeTapSfx()`), triggered via `AudioBufferSourceNode` for near-sample-accurate timing. Falls back to the original `<audio>` path if Web Audio is unavailable or a buffer isn't ready yet.
+- **FIXED**: The Web Audio path above went briefly silent on a real iPhone testing as a bookmarked (not home-screen-installed) tab — iOS Safari auto-suspends an `AudioContext` on any idle/background stretch, more aggressively for a bookmarked tab than a standalone PWA. `playTapSfxBuffer()` called `.resume()` (async, not awaited) then immediately started the buffer source and reported success regardless — so a tap landing while the context was still suspended produced silence but never fell back to the working `<audio>` path, since the caller believed it had succeeded. Fixed to only claim success when `sfxCtx.state === 'running'` is confirmed *before* starting the source; otherwise it bails out (kicking off a background `resume()` for the next tap) and `playSound()` falls through to the always-audible `<audio>` element.
+
 ## [1.1.2] - 2026-08-24
 
 ### Fixed

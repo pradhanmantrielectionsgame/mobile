@@ -274,6 +274,28 @@
     applyCleanSweepPayouts(game);
   }
 
+  // Smaller, flat bonus paid at the START of every phase a group is still
+  // held from before — thematically "sustained popularity draws ongoing
+  // fundraising," distinct from the one-time instant-crossing bonus above.
+  // No held/transition tracking like applyRegionalDominancePayouts — this
+  // is meant to repeat every phase it's still true, not fire once. Only
+  // called from startPhase() (a per-phase-boundary check), never from the
+  // shared applyPayouts() wrapper other actions call mid-phase.
+  function applyGroupHoldingBonus(game) {
+    game.groups.forEach(function (g) {
+      ['p1', 'p2'].forEach(function (pk) {
+        var active = E.dominanceActive(g, game.states, game.pop, pk, game.cfg.regionalDominance.thresholdBps);
+        if (!active) return;
+        var payout = E.dominanceHoldingPayoutCr(g, game.states, game.cfg.regionalDominance);
+        if (payout <= 0) return;
+        game.players[pk].fundsCr += payout;
+        var who = pk === 'p1' ? 'You' : 'Opponent';
+        pushLog(game, '💰 ' + who + ' continue to hold ' + g.label + ' — +₹' + payout + 'Cr fundraising bonus', true, true,
+          ['💰 ' + who + ' hold ' + g.label, '+₹' + payout + 'Cr fundraising bonus']);
+      });
+    });
+  }
+
   function startPhase(game) {
     game.phaseStartSnapshot = deepCopyPop(game.pop);
     game.bigActionsThisPhase = [];
@@ -285,6 +307,7 @@
       if (pl.isAI) { pl.aiAgendaTapsThisPhase = {}; pl.aiRalliedThisPhase = false; }
     });
     applyPayouts(game);
+    applyGroupHoldingBonus(game);
     // AI no longer auto-resolves its whole turn here — it acts one move at a
     // time via aiStep(), paced by the caller (main.js throttles to ~20/min;
     // runAIFull() fast-forwards it for Node tests/simulation).
