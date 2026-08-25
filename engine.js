@@ -239,12 +239,16 @@
   // ---------------------------------------------------------------------
   // Direct cash investment
   // ---------------------------------------------------------------------
+  // Past the glide path, boost keeps decaying geometrically (never flat-
+  // lines) so a cheap state can't be re-contested forever at a fixed,
+  // still-meaningful cost — see CLAUDE.md's small-UT dominance-veto note.
   function investmentBoostBps(tapNumber, cfg) {
     if (tapNumber <= cfg.boostGlidePathTaps) {
       var span = cfg.boostGlidePathTaps - 1;
       return Math.round(cfg.boostStartBps - (tapNumber - 1) * (cfg.boostStartBps - cfg.boostFloorBps) / span);
     }
-    return cfg.boostFloorBps;
+    var extraTaps = tapNumber - cfg.boostGlidePathTaps;
+    return Math.max(1, Math.round(cfg.boostFloorBps * Math.pow(cfg.boostDecayRate, extraTaps)));
   }
   function investmentCostCr(seats, cfg) { return seats * cfg.costPerSeatCr; }
 
@@ -277,10 +281,20 @@
     if (!members.length) return false;
     return members.every(function (s) { return pop[s.svgId][player] >= thresholdBps; });
   }
-  function dominancePayoutCr(group, states, cfg) {
-    var seats = states.filter(function (s) { return s.tags.indexOf(group.key) !== -1; })
+  function groupSeats(group, states) {
+    return states.filter(function (s) { return s.tags.indexOf(group.key) !== -1; })
       .reduce(function (a, s) { return a + s.seats; }, 0);
-    return seats * cfg.payoutCrPerSeat;
+  }
+  function dominancePayoutCr(group, states, cfg) {
+    return groupSeats(group, states) * cfg.payoutCrPerSeat;
+  }
+  // Smaller, flat, repeats every phase a group is still held at phase start
+  // (not a one-time crossing event like dominancePayoutCr above) — the
+  // "high popularity in a region draws ongoing fundraising" bonus. Flat by
+  // design: doesn't grow the longer a group is held, so it can't compound
+  // into a late-game blowout on top of the instant bonus.
+  function dominanceHoldingPayoutCr(group, states, cfg) {
+    return groupSeats(group, states) * cfg.holdingBonusCrPerSeat;
   }
 
   root.PMEEngine = {
@@ -298,7 +312,8 @@
     netAgendaEffectBps: netAgendaEffectBps,
     agendaTapDelta: agendaTapDelta,
     dominanceActive: dominanceActive,
-    dominancePayoutCr: dominancePayoutCr
+    dominancePayoutCr: dominancePayoutCr,
+    dominanceHoldingPayoutCr: dominanceHoldingPayoutCr
   };
 })(typeof window !== 'undefined' ? window : (typeof global !== 'undefined' ? global : this));
 
