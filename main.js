@@ -3,11 +3,60 @@
 (function () {
   'use strict';
   var E = window.PMEEngine, G = window.PMEGame;
-  var GAME_VERSION = '1.0.2';
+  var GAME_VERSION = '1.1.1';
   ['welcomeVersion', 'stageVersion', 'endVersion'].forEach(function (id) {
     var el = document.getElementById(id);
     if (el) el.textContent = 'v' + GAME_VERSION;
   });
+
+  // ponytail: placeholder tip-jar link — swap in a real Ko-fi/Buy Me a
+  // Coffee URL once one exists, no other code needs to change.
+  var TIP_URL = 'https://ko-fi.com/REPLACE_ME';
+  ['tipLinkWelcome', 'tipLinkEnd'].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) el.href = TIP_URL;
+  });
+
+  // Local-only politician unlock progression: start with 3, unlock the rest
+  // by beating them (as the AI opponent) in a match. Enforced client-side
+  // only (localStorage) — a determined player can edit around it via
+  // devtools, which is accepted: this is a single-player nudge, not
+  // anti-cheat, and closing that hole needs a real account/server backend.
+  var UNLOCK_KEY = 'pme_unlocked_politicians';
+  // Weighted opponent draw: this much of the time, prefer a still-locked
+  // politician as your AI opponent so unlocking the roster doesn't stall
+  // out on luck once you're down to a few remaining locked names.
+  var LOCKED_OPPONENT_CHANCE = 0.70;
+  // Fraction of politician portraits the welcome-screen loading bar waits
+  // for before letting the player in — "most", not all, so one slow
+  // straggler image doesn't hold the whole app hostage.
+  var PORTRAIT_READY_FRACTION = 0.8;
+  var STARTER_POLITICIAN_IDS = ['narendra-modi', 'manmohan-singh', 'atal-bihari-vajpayee'];
+  // Returns the unlocked-id array, or null if storage is unavailable/broken
+  // (private browsing, quota, etc.) — null means "treat everyone as
+  // unlocked" so a storage failure can't softlock the roster.
+  function loadUnlockedPoliticians() {
+    try {
+      var raw = localStorage.getItem(UNLOCK_KEY);
+      if (!raw) return STARTER_POLITICIAN_IDS.slice();
+      var arr = JSON.parse(raw);
+      return Array.isArray(arr) ? arr : STARTER_POLITICIAN_IDS.slice();
+    } catch (e) { return null; }
+  }
+  function isPoliticianUnlocked(unlockedList, id) {
+    return unlockedList === null || unlockedList.indexOf(id) !== -1;
+  }
+  // Adds id to the unlocked list if it isn't already there. Returns true if
+  // this call actually unlocked something new (so the caller can toast it).
+  function unlockPolitician(id) {
+    try {
+      var list = loadUnlockedPoliticians();
+      if (list === null || list.indexOf(id) !== -1) return false;
+      list.push(id);
+      localStorage.setItem(UNLOCK_KEY, JSON.stringify(list));
+      return true;
+    } catch (e) { return false; }
+  }
 
   // p1/p2 default to placeholder colors here but are overwritten in
   // startGame() with each politician's real party color (primaryColor).
@@ -679,6 +728,27 @@
     $('fxLayer').appendChild(el);
     setTimeout(function () { el.remove(); }, 5000);
   }
+
+  // Same full-screen glow+rays treatment as spawnPowerBurst above, but with
+  // its own bigger card (real portrait, spin-in) for the rarer "you just
+  // unlocked a politician" moment — reuses the .power-burst/.glow/.rays
+  // classes so it shares that celebration's visual language.
+  function spawnUnlockCelebration(politician) {
+    var el = document.createElement('div');
+    el.className = 'power-burst unlock-burst';
+    el.style.setProperty('--glow-color', politician.primaryColor || '#C9A227');
+    var glow = document.createElement('div'); glow.className = 'glow';
+    var rays = document.createElement('div'); rays.className = 'rays';
+    var card = document.createElement('div'); card.className = 'card unlock-card';
+    var portrait = document.createElement('img'); portrait.className = 'unlock-card-portrait';
+    setPortrait(portrait, politician);
+    var headline = document.createElement('div'); headline.className = 'name'; headline.textContent = '🔓 New Card Unlocked!';
+    var who = document.createElement('div'); who.className = 'who'; who.textContent = politician.name;
+    card.appendChild(portrait); card.appendChild(headline); card.appendChild(who);
+    el.appendChild(glow); el.appendChild(rays); el.appendChild(card);
+    $('fxLayer').appendChild(el);
+    setTimeout(function () { el.remove(); }, 5000);
+  }
   function shakeInvalid(el) {
     if (el) {
       el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake');
@@ -827,10 +897,10 @@
     return '<svg viewBox="0 0 ' + w + ' 10" preserveAspectRatio="none"><path d="' + path + 'L' + w + ',10 Z" fill="var(--paper)"/></svg>';
   }
 
-  function buildPolCard(p) {
+  function buildPolCard(p, locked) {
     var color = p.primaryColor || '#999';
     var card = document.createElement('div');
-    card.className = 'pol-card';
+    card.className = 'pol-card' + (locked ? ' pol-locked' : '');
 
     var ballot = document.createElement('div');
     ballot.className = 'ballot-card';
@@ -900,8 +970,12 @@
     var btn = document.createElement('button');
     btn.className = 'pol-play-btn';
     btn.style.background = color;
-    btn.textContent = 'Play as ' + p.name.replace(/\s*\([^)]*\)\s*$/, '').split(' ').slice(-1)[0];
+    btn.textContent = locked ? '🔒 Defeat to unlock' : 'Play as ' + p.name.replace(/\s*\([^)]*\)\s*$/, '').split(' ').slice(-1)[0];
     btn.addEventListener('click', function () {
+      if (locked) {
+        showToast('Beat ' + p.name + ' in a match to unlock them');
+        return;
+      }
       if (tutorialMode && p.id !== TUTORIAL_POL_ID) {
         showToast('The tutorial plays as Modi — swipe back to select him');
         return;
@@ -934,8 +1008,15 @@
   function renderPolGrid() {
     var track = $('polCarousel'), dots = $('polDots');
     track.innerHTML = ''; dots.innerHTML = '';
+    var unlocked = loadUnlockedPoliticians();
+    // Unlocked politicians always sort first, so a newly-unlocked pick never
+    // sits behind a locked card you'd have to scroll past. Stable sort keeps
+    // each group's relative order otherwise unchanged.
+    data.politicians.sort(function (a, b) {
+      return (isPoliticianUnlocked(unlocked, a.id) ? 0 : 1) - (isPoliticianUnlocked(unlocked, b.id) ? 0 : 1);
+    });
     data.politicians.forEach(function (p, i) {
-      track.appendChild(buildPolCard(p));
+      track.appendChild(buildPolCard(p, !isPoliticianUnlocked(unlocked, p.id)));
       var dot = document.createElement('button');
       dot.className = 'pol-dot' + (i === 0 ? ' on' : '');
       dot.setAttribute('aria-label', p.name);
@@ -955,10 +1036,20 @@
     var others = data.politicians.filter(function (p) {
       return p.id !== p1Id && (p1Pol.party === 'Independent' || p.party !== p1Pol.party);
     });
+    // Opponent draw is weighted toward still-locked politicians
+    // (LOCKED_OPPONENT_CHANCE) so unlocking the roster keeps moving — falls
+    // back to a uniform draw over `others` if that split isn't available
+    // (e.g. everything's already unlocked, or everything eligible is locked).
+    var unlockedForDraw = loadUnlockedPoliticians();
+    var lockedOthers = others.filter(function (p) { return !isPoliticianUnlocked(unlockedForDraw, p.id); });
+    var unlockedOthers = others.filter(function (p) { return isPoliticianUnlocked(unlockedForDraw, p.id); });
+    var opponentPool = (lockedOthers.length && unlockedOthers.length)
+      ? (Math.random() < LOCKED_OPPONENT_CHANCE ? lockedOthers : unlockedOthers)
+      : others;
     // Tutorial always faces Rahul Gandhi — a random opponent could nullify
     // Modi's power before the step-30 "use your special ability" gate, which
     // would leave that gate stuck forever (see finishActivatePower).
-    var p2Id = tutorialMode ? 'rahul-gandhi' : others[Math.floor(Math.random() * others.length)].id;
+    var p2Id = tutorialMode ? 'rahul-gandhi' : opponentPool[Math.floor(Math.random() * opponentPool.length)].id;
     game = G.createGame(data, p1Id, p2Id, Math.random);
     window.__game = game; // debug/test hook — inspect live state from devtools
     // Tutorial AI never crafts/activates its special power — aiStep's power
@@ -1131,7 +1222,14 @@
   function showEndOverlay() {
     var seats = game.finalSeats;
     var seal, headline, sub;
-    if (game.winner === 'p1') { seal = '🏆'; headline = 'You won the election'; sub = 'You crossed 272 seats.'; }
+    if (game.winner === 'p1') {
+      seal = '🏆'; headline = 'You won the election'; sub = 'You crossed 272 seats.';
+      if (unlockPolitician(game.players.p2.politician.id)) {
+        sub += ' 🔓 ' + game.players.p2.politician.name + ' unlocked!';
+        spawnUnlockCelebration(game.players.p2.politician);
+        playSound('fanfare');
+      }
+    }
     else if (game.hungParliament) {
       seal = '⚖️';
       headline = 'Hung parliament — a draw';
@@ -1982,6 +2080,7 @@
   $('playAgainBtn').addEventListener('click', function () {
     $('endOverlay').hidden = true;
     $('selectOverlay').hidden = false;
+    renderPolGrid(); // picks up any politician unlocked by the game just played
     // A tutorial game already flips tutorialMode off mid-match
     // (finishStageTutorial, around phase 6), but that alone leaves several
     // select-screen classes from the tutorial's coaching steps stuck —
@@ -2073,8 +2172,34 @@
   G.loadGameData('data/').then(function (d) {
     data = d;
     renderPolGrid();
+    // The JSON resolving only means the carousel DOM exists — renderPolGrid
+    // just kicked off all ~21 portrait <img> fetches, each still in flight.
+    // Wait for most of them (not just the first) to settle before calling
+    // it "loaded", so scrolling the carousel right after Begin Campaign
+    // doesn't run into cards still visibly filling in.
+    var portraitImgs = Array.prototype.slice.call($('polCarousel').querySelectorAll('.pol-art img'));
+    var neededCount = Math.ceil(portraitImgs.length * PORTRAIT_READY_FRACTION);
+    var settledCount = 0;
+    var portraitReady = new Promise(function (resolve) {
+      if (!portraitImgs.length) { resolve(); return; }
+      var maybeResolve = function () { if (++settledCount >= neededCount) resolve(); };
+      portraitImgs.forEach(function (img) {
+        if (img.complete) maybeResolve();
+        else {
+          img.addEventListener('load', maybeResolve, { once: true });
+          img.addEventListener('error', maybeResolve, { once: true });
+        }
+      });
+    });
+    portraitReady.then(function () {
+      $('welcomeLoading').hidden = true;
+      $('welcomeStartBtn').disabled = false;
+      $('howToPlayBtn').disabled = false;
+    });
   }).catch(function (err) {
     console.error('Failed to load game data — is this served over http(s), not file://?', err);
     showToast('Failed to load game data — serve this over http(s), not file://');
+    $('welcomeLoading').classList.add('welcome-loading-error');
+    $('welcomeLoading').querySelector('.welcome-loading-label').textContent = 'Couldn’t load — check your connection';
   });
 })();
