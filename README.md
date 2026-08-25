@@ -57,10 +57,10 @@ npm test              # Runs simulate.js regression suite
 
 ### Game Setup
 
-1. **Welcome screen** — see the campaign poster (PradhanMantri Elections branding), then tap "Begin Campaign" to proceed
-2. **Politician select** — choose your politician (defines your 4 agenda commitments + unique special power)
-3. **Choose opponent** — play solo vs. AI, or select "local hotseat" for 2-player on one device
-4. **Game begins** — 10 phases of investment and power deployment
+1. **Welcome screen** — see the campaign poster (PradhanMantri Elections branding), then tap "Begin Campaign" to proceed. First-time startup shows a loading bar (waits for game data + politician portraits to download)
+2. **Politician select** — choose your politician (defines your 4 agenda commitments + unique special power). New players start with only 3 politicians unlocked (Modi, Manmohan Singh, Vajpayee); others unlock by defeating them as AI opponents in a decisive win. Unlocked politicians sort to the top of the carousel for quick access
+3. **Choose opponent** — play solo vs. AI (weighted 70% toward your still-locked politicians, so you steadily work through the roster), or select "local hotseat" for 2-player on one device
+4. **Game begins** — 10 phases of investment and power deployment. Winning against a locked politician triggers a 5-second unlock celebration showing their portrait
 
 ### In-Game Controls
 
@@ -172,10 +172,11 @@ See `docs/wiki.html`'s "Architecture" section for current tech stack, deployment
 ## Known Limitations
 
 - **Single-player vs. AI only** — no live human multiplayer backend yet (Phase 0, planned for later); local hotseat available via pass-the-phone
-- **No session persistence** — game state lives only in memory during a single session; no save/resume or stats tracking across sessions
-- **16 of 20 politicians lack a dedicated power-activation sound clip** — falls back to a generic fanfare sound instead
-- **Special-power balance provisional** — all 20 politicians have powers with magnitude numbers assigned; these are first-pass numbers pending real playtesting and balance refinement
+- **No session persistence** — game state lives only in memory during a single session; no save/resume or stats tracking across sessions (unlock progression is saved locally via `localStorage`, but is client-side only and bypassable via devtools)
+- **Unlock progression is local-only and bypassable** — stored in the browser's `localStorage`, with no server verification. A player can unlock all politicians instantly by editing `localStorage` or using devtools; this is accepted for a single-player game with no leaderboard or real-money stakes
+- **17 of 21 politicians lack a dedicated power-activation sound clip** — falls back to a generic fanfare sound instead (only Modi, Bachchan, Rajinikanth, Tendulkar have dedicated clips)
 - **Small UTs require dedicated buttons** — Delhi, Chandigarh, Puducherry, Lakshadweep, Andaman & Nicobar, Dadra & Nagar Haveli/Daman & Diu are not directly tappable on the map (too small); they route through button-cluster pattern at bottom-left (confirmed production-ready)
+- **Offline play requires prior online session** — the service worker precaches the app shell and core data, but portrait images only start caching after the first online visit; the app supports offline play once cached, but cold-start offline isn't supported
 
 ## Mobile Development Notes
 
