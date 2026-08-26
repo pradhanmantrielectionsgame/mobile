@@ -83,7 +83,7 @@
     "regionalDominance": {
       "thresholdBps": 5000,
       "payoutCrPerSeat": 5,
-      "holdingBonusCrPerSeat": 5
+      "holdingBonusCrPerSeat": 2
     },
     "cleanSweep": {
       "payoutCrPerSeat": 5

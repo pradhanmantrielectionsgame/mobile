@@ -3,11 +3,24 @@
 (function () {
   'use strict';
   var E = window.PMEEngine, G = window.PMEGame;
-  var GAME_VERSION = '1.2.0';
+  var GAME_VERSION = '1.2.2';
   ['welcomeVersion', 'stageVersion', 'endVersion'].forEach(function (id) {
     var el = document.getElementById(id);
     if (el) el.textContent = 'v' + GAME_VERSION;
   });
+
+  // Booth Ink's fixed-height chrome only reliably fits within the fuller
+  // usable height standalone/installed mode gets (~844px) — a plain mobile
+  // browser tab's shorter, chrome-reduced viewport (~664px) clips fixed UI,
+  // including tutorial-required tap targets, below the fold with no scroll
+  // fallback, hard-blocking tutorial progress. Gate touch devices that
+  // aren't running standalone before they ever reach the welcome screen.
+  // Desktop/mouse dev testing (no coarse pointer) is unaffected.
+  if (window.matchMedia('(pointer: coarse)').matches &&
+      !(window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true)) {
+    document.getElementById('installGateOverlay').hidden = false;
+    document.getElementById('welcomeOverlay').hidden = true;
+  }
 
   // ponytail: placeholder tip-jar link — swap in a real Ko-fi/Buy Me a
   // Coffee URL once one exists, no other code needs to change.
@@ -149,7 +162,7 @@
     {
       type: 'coach', freeze: false,
       title: 'Choose your candidate',
-      body: 'Each candidate has their own unique strengths, agendas, and special ability. Browse through the different available options.'
+      body: 'Each candidate has their own unique strengths, agendas, and special abilities. Browse through the different available options.'
     },
     {
       type: 'coach', freeze: true, pulse: 'agendas', requireAgendaTap: true,
@@ -206,13 +219,13 @@
     updateTutorialCounter(tutorialStep + 1);
 
     if (isSlide) {
-      $('tutorialSlideTitle').textContent = step.title;
-      $('tutorialSlideBody').textContent = step.body;
+      $('tutorialSlideTitle').innerHTML = step.title;
+      $('tutorialSlideBody').innerHTML = step.body;
       $('tutorialSlide').appendChild($('tutorialNavRow')); // Back/Next dock to whichever card is showing, not a fixed corner
     } else if (isCoach) {
-      $('tutorialCoachTitle').textContent = step.title || '';
+      $('tutorialCoachTitle').innerHTML = step.title || '';
       $('tutorialCoachTitle').hidden = !step.title;
-      $('tutorialCoachBody').textContent = step.body;
+      $('tutorialCoachBody').innerHTML = step.body;
       $('tutorialCoach').appendChild($('tutorialNavRow'));
     }
 
@@ -248,75 +261,82 @@
   var TUTORIAL_GROUP_KEY = 'WesternBorder'; // much smaller/cheaper than Eastern Border (5 states/70 seats vs 14/197) — Gujarat, already heavily invested by this point, is a member too
   var TUTORIAL_STAGE_STEPS = [
     { pulse: 'phase', body: 'The game is played in 10 phases.' },
-    { pulse: 'clock', body: 'Each phase lasts 45 seconds of clock time.' },
-    { pulse: 'funds', body: 'This is your starting funds.' },
+    { pulse: 'clock', body: 'Each phase lasts for 45 seconds.' },
+    { pulse: 'funds', title: 'Campaign funds', body: 'This is the amount of funds you start with.' },
     {
-      pulse: 'info', requireMapTap: true,
+      pulse: 'info', requireMapTap: true, title: 'Popularity',
       body: "Each territory on the map is colored by popularity — Modi's is orange. The stronger the lead, the more intense the color. Tap any state and you can see your popularity score (as well as your opponent's) in the info bar on the bottom of the screen."
     },
     {
-      pulse: 'gujarat', requireInvestGujarat: true,
-      body: 'There are a few ways to increase your popularity. Option 1: direct investment. Double tap on Gujarat to invest funds.'
+      pulse: 'gujarat', requireInvestGujarat: true, title: 'Spending campaign funds',
+      body: 'There are a few ways to increase your popularity.<br>Option 1: direct investment. Double tap on Gujarat to invest funds.'
     },
     {
-      pulse: 'seats',
+      pulse: 'seats', title: 'Spending campaign funds',
       body: 'Higher popularity in any territory means more seats in the Lok Sabha. Keep investing in Gujarat to watch your projected seats climb.'
     },
     {
-      pulse: 'gujarat', requireGujaratPopularityBps: 7000,
+      pulse: 'gujarat', requireGujaratPopularityBps: 7000, title: 'Spending campaign funds',
       body: 'Each double tap deducts funds in proportion to the number of Lok Sabha seats that state or union territory contributes — larger states cost more, smaller states cost less. Keep investing in Gujarat until your popularity there is above 70%.'
     },
     {
-      pulse: 'rally',
+      pulse: 'rally', title: 'Rallies',
       body: 'Option 2: Rallies. Rallies are a cheap way to increase your popularity in any given region. You receive 2 free rally tokens per phase.'
     },
     {
-      pulse: 'rally', requireRallyPlaysInGujarat: 1,
+      pulse: 'rally', requireRallyPlaysInGujarat: 1, title: 'Rallies',
       body: 'Click on rally tokens and then click on Gujarat to hold a rally there. Each rally gives a 5% popularity boost.'
     },
     {
-      pulse: 'gujarat', requireRallyPlaysInGujarat: 2,
+      pulse: 'gujarat', requireRallyPlaysInGujarat: 2, title: 'Rallies',
       body: 'Place another rally token in Gujarat. You may only place 2 rally tokens in any given phase of the game.'
     },
     {
-      pulse: 'gujarat',
+      pulse: 'gujarat', title: 'Rallies',
       body: 'Any single state can have a maximum of 2 rallies per game — this includes any rallies your opponent holds in that state. Use them strategically.'
     },
     {
-      pulse: 'agendatray',
+      pulse: 'agendatray', title: 'Political agendas',
       body: 'You can get additional tokens by fully committing to agenda items.'
     },
     {
-      pulse: 'targetagenda', targetAgendaName: 'National Defense', requireAgendaComplete: 'National Defense',
+      pulse: 'targetagenda', targetAgendaName: 'National Defense', requireAgendaComplete: 'National Defense', title: 'Political agendas',
       body: 'You can partially commit to an agenda by investing 500 crores. Full commitment requires 2000 crores. Tap on National Defense until that agenda is completed.'
     },
     {
-      pulse: 'info',
+      pulse: 'info', title: 'Political agendas',
       body: 'Not all agendas are equally popular everywhere. You can see the info bar for more information on how each agenda will affect your popularity in different parts of the country.'
     },
     {
-      pulse: 'gujarat', requireGujaratPopularityBps: 10000,
+      pulse: 'gujarat', requireGujaratPopularityBps: 10000, title: 'Clean sweep bonus',
       body: 'Keep investing in Gujarat until your popularity hits 100%. Once hit, you receive a small cash bonus for achieving a clean sweep.'
     },
     {
-      pulse: 'groups', requireGroupClick: true,
-      body: 'State groups: Notice the buttons on your left. Each button corresponds to a different group of states (or UTs). Click on a few and check the bottom info bar to see which states belong to which group.'
+      title: 'Diminishing Returns',
+      body: 'Repeated investments in the same state or territory have a smaller and smaller impact on popularity each time you spend campaign funds there. Manage your funds carefully!'
     },
     {
+      pulse: 'groups', requireGroupClick: true, title: 'State Groups',
+      body: 'Notice the buttons on your left. Each button corresponds to a different group of states (or UTs). Click on a few and check the bottom info bar to see which states belong to which group.'
+    },
+    {
+      title: 'State Groups',
       body: 'Controlling a state group unlocks additional funds for your campaign. Large state groups (in terms of number of seats) are harder to control but unlock more funds for your campaign.'
     },
     {
-      body: 'Controlling a state group requires you to achieve a popularity of 50% or greater in each territory within that group.'
+      title: 'State Groups',
+      body: 'Controlling a state group requires you to achieve a popularity of 50% or greater in <b>each</b> territory within that group.'
     },
     {
-      pulse: 'targetgroup', targetGroupKey: TUTORIAL_GROUP_KEY, requireGroupDominance: TUTORIAL_GROUP_KEY,
+      pulse: 'targetgroup', targetGroupKey: TUTORIAL_GROUP_KEY, requireGroupDominance: TUTORIAL_GROUP_KEY, title: 'State Groups',
       body: "Let's try to get control over the Western Border group. Here are some additional funds. Keep investing in all the territories in the Western Border group until you achieve 50% or higher in every territory within the group."
     },
     {
-      pulse: 'targetgroup', targetGroupKey: TUTORIAL_GROUP_KEY, unpinGroupOnEnter: true,
+      pulse: 'targetgroup', targetGroupKey: TUTORIAL_GROUP_KEY, unpinGroupOnEnter: true, title: 'State Groups',
       body: 'Once control is achieved you receive a cash bonus and the group button lights up with your player color.'
     },
     {
+      title: 'Group control bonus',
       body: 'Keep holding a group into the next phase and you earn a smaller bonus again — sustained popularity keeps drawing fundraising, phase after phase, as long as you hold it.'
     },
     {
@@ -328,38 +348,43 @@
       body: 'Small UTs and the Northeast 8 have their own buttons as well.'
     },
     {
-      pulse: 'utexample', targetGroupKey: 'SouthIndia', targetStateSvgId: 'INPY',
+      pulse: 'utexample', targetGroupKey: 'SouthIndia', targetStateSvgId: 'INPY', title: 'Maintaining group control',
       body: "Watch out: some state groups include a Union Territory as a member. South India (shown below) includes tiny Puducherry. Losing control of just that one small UT can break your whole group's bonus — don't let the big states distract you from defending the small ones."
     },
     {
+      title: 'Try it yourself',
       body: 'Try playing the game on your own. Keep investing funds, conducting rallies and trying to control as many state groups as you can.'
     },
     {
-      waitForPhase: 2,
+      waitForPhase: 2, title: 'AI opponent',
       body: 'You may have noticed the AI player has been playing on the same game board.'
     },
     {
+      pulse: 'opponent', title: 'AI opponent',
       body: "Your opponent for this tutorial is Rahul Gandhi (INC). You'll never be paired against an opponent from your own party — worth remembering once you start unlocking politicians by defeating them, since that also decides who you might face."
     },
     {
+      title: 'AI opponent',
       body: "The AI player will try to stop you from achieving a majority of seats. Observe your opponent's actions carefully and change your strategy accordingly. Press next to continue."
     },
     {
-      pulse: 'special', waitForPhase: 3, grantSpecialTokens: true, requirePowerActivated: true,
+      pulse: 'special', waitForPhase: 3, grantSpecialTokens: true, requirePowerActivated: true, title: 'Special Ability',
       body: "Modi's special ability unlocks at phase 3 and requires 6 unspent rally tokens. Here are some extra tokens — use the special ability now!"
     },
     {
+      title: 'Special Ability',
       body: "Great move! You just implemented Demonetization. This freezes your opponent's funds for 2 phases. Act quickly and try to control as many states as you can!"
     },
     {
-      waitForPhase: 6,
+      waitForPhase: 6, title: 'Nationwide Rally',
       body: 'A nationwide rally can be unlocked at phase 6. And requires 12 unspent tokens.'
     },
     {
-      pulse: 'nationwide', grantNationwideTokens: true, requireNationwideRally: true,
+      pulse: 'nationwide', grantNationwideTokens: true, requireNationwideRally: true, title: 'Nationwide Rally',
       body: "Here's some extra tokens to help you out. Launch a nationwide rally now!"
     },
     {
+      title: 'Nationwide Rally',
       body: 'A nationwide rally gives you a big popularity boost — 5% in every state and territory all at once. Keep the momentum going and go for the win!'
     }
   ];
@@ -482,8 +507,9 @@
 
   function renderTutorialStageStep() {
     var step = TUTORIAL_STAGE_STEPS[tutorialStageStep];
-    $('tutorialCoachStageTitle').hidden = true;
-    $('tutorialCoachStageBody').textContent = step.body;
+    $('tutorialCoachStageTitle').innerHTML = step.title || '';
+    $('tutorialCoachStageTitle').hidden = !step.title;
+    $('tutorialCoachStageBody').innerHTML = step.body;
     updateTutorialCounter(TUTORIAL_STEPS.length + tutorialStageStep + 1);
     var stageEl = $('stage');
     stageEl.classList.toggle('tutorial-pulse-phase', step.pulse === 'phase');
@@ -498,6 +524,7 @@
     stageEl.classList.toggle('tutorial-pulse-utsne', step.pulse === 'utsne');
     stageEl.classList.toggle('tutorial-pulse-special', step.pulse === 'special');
     stageEl.classList.toggle('tutorial-pulse-nationwide', step.pulse === 'nationwide');
+    stageEl.classList.toggle('tutorial-pulse-opponent', step.pulse === 'opponent');
     var gj = document.getElementById(TUTORIAL_GUJARAT_ID);
     if (gj) gj.classList.toggle('tutorial-target', step.pulse === 'gujarat');
     var prevAgendaBtn = document.querySelector('#agendaTray .tutorial-target');
