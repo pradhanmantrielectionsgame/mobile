@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [1.2.3] - 2026-08-26
+
+### Changed
+- **CHANGED**: Wired the real Buy Me a Coffee link (`https://buymeacoffee.com/pradhanmantri`) into the "Support the developer" tip-jar links on the welcome screen and end-game card, replacing the `REPLACE_ME` placeholder in `mobile/main.js`.
+
 ## [1.2.2] - 2026-08-25
 
 ### Changed
