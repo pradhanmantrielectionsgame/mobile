@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [1.2.6] - 2026-08-26
+
+### Changed
+- **CHANGED**: Re-tuned the starting-position random-draw seat-budget thresholds (`mobile/engine.js`'s new `DRAW_BUDGET_STOP_AT`/`DRAW_BUDGET_MAX`, 124/154 → 145/181) — the 1.2.5 fix that made home-state seats count against this budget was correct, but it also pulled the overall mean down from ~147 to ~143 for every politician, not just the previously-broken ones. Measured via a 1000-game simulation using real random matchmaking (including the game's same-party opponent exclusion): 145/181 restores mean=150.3, sd=12.4 (matching the original ~150/~12.5 design target), with max seen across 1000 games at 192 (Hema Malini, still the roster's highest/most variable starter by design, but nowhere near the 213-seat outlier that started this).
+
 ## [1.2.5] - 2026-08-26
 
 ### Fixed
