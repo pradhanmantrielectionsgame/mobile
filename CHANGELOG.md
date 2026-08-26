@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [1.2.2] - 2026-08-25
+
+### Changed
+- **CHANGED**: Added bold section headers to the in-match tutorial's coaching steps ("Spending campaign funds", "Rallies", "Political agendas", "Clean sweep bonus", "State Groups", "Group control bonus", "Maintaining group control", "Try it yourself", "AI opponent", "Special Ability", "Nationwide Rally") grouping related steps under a shared heading, plus a new "Diminishing Returns" step explaining the investment glide path. Wired up the previously-unused `tutorialCoachStageTitle` element (`renderTutorialStageStep()` in `mobile/main.js`) to render these. Also bolded "each" in the group-control-requirement step and added a new `pulse: 'opponent'` highlight (`.pstrip-row.p2` in `mobile/index.html`) for the step introducing the AI opponent, Rahul Gandhi.
+
+## [1.2.1] - 2026-08-25
+
+### Changed
+- **CHANGED**: Group holding bonus (`holdingBonusCrPerSeat` in `game-config.json`'s `mobileEconomy.regionalDominance`) dialed down from 5 to 2 Cr/seat — considered too strong relative to the one-time dominance payout, which stays at 5 Cr/seat.
+- **CHANGED**: Tutorial coach steps now support an optional bold heading above the body text (`title` field, rendered via `innerHTML` instead of `textContent` in both `renderTutorialStep()` and the previously-unused `tutorialCoachStageTitle` element in `renderTutorialStageStep()`) — used to add headings ("Campaign funds", "Popularity", "Direct investment of campaign funds") to a few in-match steps that introduce a new concept. Also reworded a couple of steps for clarity (candidate special "abilities" plural, phase length, starting-funds wording) and split the "Option 1: direct investment" line onto its own line via `<br>`.
+
 ## [1.2.0] - 2026-08-25
 
 ### Added
