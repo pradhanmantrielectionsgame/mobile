@@ -175,6 +175,16 @@
   // self-correcting (a player who draws a run of small states just needs
   // more draws to cross the threshold), which is what keeps sigma stable.
   var HOME_STATE_BONUS_BPS = 2500;
+  // Random-draw seat-budget thresholds — re-tuned 2026-08-26 (124/154 -> 145/
+  // 181) after home-state seats started counting against this same budget
+  // (see HOME_STATE_BONUS_BPS usage below): that change alone pulled the
+  // real-matchup mean down from ~147 to ~143 (measured via 1000-game sim
+  // using real random matchmaking, home-state collisions, and the game's
+  // same-party opponent exclusion), so the stop/cap pair was raised to
+  // restore the ~150-seat mean / ~12.5 sigma target. Raising these two
+  // numbers shifts the mean without much widening the spread (confirmed by
+  // direct simulation, same finding as the original 2026-07-28 calibration).
+  var DRAW_BUDGET_STOP_AT = 145, DRAW_BUDGET_MAX = 181;
 
   function generateStartingPosition(states, p1HomeStateNames, p2HomeStateNames, rng) {
     var pop = {};
@@ -243,7 +253,7 @@
     var guard = 0;
     while (pool.length > 0 && (stillDrawing.p1 || stillDrawing.p2) && guard++ < 10000) {
       if (!stillDrawing[turn]) { turn = otherPlayer(turn); continue; }
-      var budget = 154 - seatCountWithAdvantage[turn];
+      var budget = DRAW_BUDGET_MAX - seatCountWithAdvantage[turn];
       var idx = -1;
       for (var k = 0; k < pool.length; k++) { if (pool[k].seats <= budget) { idx = k; break; } }
       if (idx === -1) { stillDrawing[turn] = false; turn = otherPlayer(turn); continue; }
@@ -252,7 +262,7 @@
       pop[st.svgId][turn] = p;
       pop[st.svgId].others = BPS - pop[st.svgId].p1 - pop[st.svgId].p2;
       seatCountWithAdvantage[turn] += st.seats;
-      if (seatCountWithAdvantage[turn] > 124) stillDrawing[turn] = false;
+      if (seatCountWithAdvantage[turn] > DRAW_BUDGET_STOP_AT) stillDrawing[turn] = false;
       turn = otherPlayer(turn);
     }
     return pop;
