@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-08-26
+
+### Added
+- **ADDED**: Agenda emoji reactions — tapping an agenda you (the human player) control now briefly pops an emoji over each affected region group's chip in the groups bar, gradient-scaled by that agenda's real per-region magnitude: 🙂/🙁 for ±4, 😄/😟 for ±8, 😍/😡 for ±12. Reads the magnitude directly from the policy's static `tagEffects` table (`mobile/game.js`'s new `agendaGroupEffects()`) rather than simulating the tap's actual redistribution outcome — a region key in `policy-tags.json` is exactly one of the 15 regional-dominance groups' own keys, so no simulation is needed. New `.fx-group-emoji` pop-and-fade animation in `mobile/index.html`, reusing the existing `#fxLayer`/`viewportPoint()` FX pattern.
+
+### Changed
+- **CHANGED**: Normalized 12 off-convention `tagEffects` magnitudes (±6 → ±8, ±10 → ±12) across 7 policies (Administrative Reform, Coastal Economy, Food Security, Heritage and Tourism, Environmental Conservation, Sports and Entertainment, Nationalization) in `data/policy-tags.json`, so every policy's regional pull is one of exactly ±4/±8/±12 — the convention the new emoji-reaction feature reads directly. Some of these ±6/±10 values had been deliberately chosen in earlier balance passes specifically to avoid an exact same-state cancellation against another of that policy's own tags (see CLAUDE.md's same-state-cancellation note); normalizing them reintroduces exactly 5 such collisions, accepted as a known, explicit tradeoff for the cleaner convention rather than left as silent drift: **Administrative Reform** nets to zero in Madhya Pradesh (`AgriculturalRegion:-4` + `IndustrialCorridor:8` + `TribalLands:-4`); **Environmental Conservation** nets to zero in Jharkhand (`IndustrialCorridor:-8` + `TribalLands:8`); **Nationalization** nets to zero in Andhra Pradesh, Tamil Nadu, and West Bengal (`CoastalIndia:-8` vs. `AgriculturalRegion:8`/`Manufacturing:8`).
+
 ## [1.2.7] - 2026-08-26
 
 ### Changed

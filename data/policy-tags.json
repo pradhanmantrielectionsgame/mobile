@@ -40,7 +40,7 @@
       "nationwideBonus": 4
     },
     "Administrative Reform": {
-      "tagEffects": { "Education": 8, "IndustrialCorridor": 6, "Manufacturing": 6, "TribalLands": -4, "AgriculturalRegion": -4 }
+      "tagEffects": { "Education": 8, "IndustrialCorridor": 8, "Manufacturing": 8, "TribalLands": -4, "AgriculturalRegion": -4 }
     },
     "Press Freedom": {
       "tagEffects": { "Education": 8, "MinorityAreas": 8, "TribalLands": 4 }
@@ -76,22 +76,22 @@
       "tagEffects": { "Education": 8, "TribalLands": 12 }
     },
     "Coastal Economy": {
-      "tagEffects": { "CoastalIndia": 10, "NaturalResources": 6, "AgriculturalRegion": -4 }
+      "tagEffects": { "CoastalIndia": 12, "NaturalResources": 8, "AgriculturalRegion": -4 }
     },
     "Food Security": {
-      "tagEffects": { "AgriculturalRegion": 8, "SouthIndia": 6, "MinorityAreas": 4 }
+      "tagEffects": { "AgriculturalRegion": 8, "SouthIndia": 8, "MinorityAreas": 4 }
     },
     "Heritage and Tourism": {
-      "tagEffects": { "TravelAndTourism": 10, "Pilgrimage": 6 }
+      "tagEffects": { "TravelAndTourism": 12, "Pilgrimage": 8 }
     },
     "Environmental Conservation": {
-      "tagEffects": { "NationalParksWildlife": 10, "TribalLands": 8, "Manufacturing": -8, "IndustrialCorridor": -6 }
+      "tagEffects": { "NationalParksWildlife": 12, "TribalLands": 8, "Manufacturing": -8, "IndustrialCorridor": -8 }
     },
     "Sports and Entertainment": {
-      "tagEffects": { "Education": 6, "TravelAndTourism": 6, "Manufacturing": 4 }
+      "tagEffects": { "Education": 8, "TravelAndTourism": 8, "Manufacturing": 4 }
     },
     "Nationalization": {
-      "tagEffects": { "AgriculturalRegion": 8, "IndustrialCorridor": 8, "Manufacturing": 8, "CoastalIndia": -6 }
+      "tagEffects": { "AgriculturalRegion": 8, "IndustrialCorridor": 8, "Manufacturing": 8, "CoastalIndia": -8 }
     },
     "Foreign Policy & Diplomacy": {
       "nationwideBonus": 4
