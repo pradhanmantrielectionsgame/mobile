@@ -346,7 +346,7 @@ flowchart TD
         </div>
         <div class="flow-card">
           <h4>3️⃣ Random draw</h4>
-          <div class="step">Both home states are pulled from the pool. Players alternate drawing (coin-flip who goes first); each drawn state gets a fresh 35%–65% for the drawer, until their seat total from drawn states exceeds 100 (never past 130).</div>
+          <div class="step">Both home states are pulled from the pool. Players alternate drawing (coin-flip who goes first); each drawn state gets a fresh 35%–65% for the drawer, until their seat-budget counter exceeds 124 (never past 154) — and that counter now <i>starts</i> pre-loaded with 25% of the player's own home-state seats, not zero (see the note below).</div>
         </div>
       </div>
       <div class="note">
@@ -358,7 +358,11 @@ flowchart TD
         <p class="label">Why Uttar Pradesh's over-representation is a feature</p>
         <p>9 of the 21 politicians call Uttar Pradesh home. That sounds like a balance problem, but it means the home-state-tie nullification rule triggers <i>often</i> — which is exactly what stops one player starting with a lopsided lead just by picking a UP-born politician and claiming the country's single biggest state (80 seats) uncontested.</p>
       </div>
-      <p style="font-size:13px;color:var(--ink-soft);font-family:var(--sans)">Implemented as <code>generateStartingPosition()</code> in <code>mobile/engine.js:166-215</code>. The 2026-07-23 playtest bug where this occasionally produced a 200-seat starting position instead of the intended ~100–130 range was traced and fixed before this document was written — see <a href="#div-2">Divergence 2</a> for why the design doc still lists it as open.</p>
+      <div class="note">
+        <p class="label">2026-08-26 fix: home-state seats now count against the same draw budget</p>
+        <p>The random-draw thresholds (124/154) were calibrated for a ~150-seat mean with ~175 at 2-sigma, but that calibration assumed the draw started from a budget of zero — home states were fully excluded from the draw pool and got their +25% for free, on top of that budget, not against it. Invisible for a typical single small-to-medium home state, but it broke down for a large one (Uttar Pradesh alone pushed the mean to ~156.6) and especially for a multi-home politician (Hema Malini's Uttar Pradesh + Tamil Nadu pushed it to ~166.2, with real games landing above 200). Fixed by seeding the draw-budget counter with 25% of each player's own home-state seats (2500/10000 BPS — the home bonus's own magnitude, since apportionment scales roughly linearly with a flat vote-share addition) instead of zero. Confirmed by direct simulation: UP-only is back to ~149.8 mean, and Hema Malini's UP+TN lands at ~156.1 mean / ~177 at 2-sigma — a real, deliberate edge over a single-home baseline (this roster's celebrities are meant to feel OP along varied axes, not just via their special power), just no longer a runaway one.</p>
+      </div>
+      <p style="font-size:13px;color:var(--ink-soft);font-family:var(--sans)">Implemented as <code>generateStartingPosition()</code> in <code>mobile/engine.js</code>. The 2026-07-23 playtest bug where this occasionally produced a 200-seat starting position instead of the intended ~100–130 range was traced and fixed before this document was written — see <a href="#div-2">Divergence 2</a> for why the design doc still lists it as open. The 2026-08-26 home-state-budget fix above is a distinct, later bug in the same function.</p>
     </section>
 
     <!-- ======================================================== -->

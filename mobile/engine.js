@@ -174,6 +174,8 @@
   // ~12.4-12.7 across the tested range) — the stopping rule below is
   // self-correcting (a player who draws a run of small states just needs
   // more draws to cross the threshold), which is what keeps sigma stable.
+  var HOME_STATE_BONUS_BPS = 2500;
+
   function generateStartingPosition(states, p1HomeStateNames, p2HomeStateNames, rng) {
     var pop = {};
     states.forEach(function (s) {
@@ -192,18 +194,35 @@
     p2Homes.forEach(function (h) { p2HomeIds[h.svgId] = true; });
 
     // A state that's home to both players cancels — no bonus to either there.
+    // Home-state seats (post-cancellation) feed the same seat budget the
+    // random draw below uses, weighted by the home bonus's own share of BPS
+    // (2500/10000 = 25%) — since the bonus is a flat addition to p1's raw
+    // share with "others" absorbing the entire hit (not split with p2), a
+    // home state's expected marginal seat contribution is ~25% of its raw
+    // seats (confirmed by direct simulation: Gujarat/UP/Delhi+Punjab/UP+TN
+    // home-vs-no-home deltas all land within noise of raw seats × 0.25).
+    // Folding the *raw* seat count in 1:1 instead would overcorrect, since a
+    // drawn state's 35%-65% boost converts to seats far more efficiently
+    // than a home state's flat +25%. Without this weighting, a big or
+    // multi-home politician (Uttar Pradesh alone, 80 seats; or Hema Malini's
+    // Uttar Pradesh + Tamil Nadu) silently busts the ~150-seat/~175-at-
+    // 2-sigma target the random-draw thresholds below were calibrated for.
+    var p1HomeSeats = 0, p2HomeSeats = 0;
     p1Homes.forEach(function (h) {
       if (p2HomeIds[h.svgId]) return;
       var s1 = pop[h.svgId];
-      s1.p1 = Math.min(BPS, s1.p1 + 2500);
+      s1.p1 = Math.min(BPS, s1.p1 + HOME_STATE_BONUS_BPS);
       s1.others = BPS - s1.p1 - s1.p2;
+      p1HomeSeats += h.seats;
     });
     p2Homes.forEach(function (h) {
       if (p1HomeIds[h.svgId]) return;
       var s2 = pop[h.svgId];
-      s2.p2 = Math.min(BPS, s2.p2 + 2500);
+      s2.p2 = Math.min(BPS, s2.p2 + HOME_STATE_BONUS_BPS);
       s2.others = BPS - s2.p1 - s2.p2;
+      p2HomeSeats += h.seats;
     });
+    var homeSeatBudgetWeight = HOME_STATE_BONUS_BPS / BPS;
 
     var excluded = {};
     Object.keys(p1HomeIds).forEach(function (id) { excluded[id] = true; });
@@ -216,7 +235,10 @@
     }
 
     var turn = rng() < 0.5 ? 'p1' : 'p2';
-    var seatCountWithAdvantage = { p1: 0, p2: 0 };
+    var seatCountWithAdvantage = {
+      p1: Math.round(p1HomeSeats * homeSeatBudgetWeight),
+      p2: Math.round(p2HomeSeats * homeSeatBudgetWeight)
+    };
     var stillDrawing = { p1: true, p2: true };
     var guard = 0;
     while (pool.length > 0 && (stillDrawing.p1 || stillDrawing.p2) && guard++ < 10000) {

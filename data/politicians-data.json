@@ -1006,6 +1006,7 @@
       "party": "BJP",
       "archetype": "STAR POWER CANDIDATE",
       "homeState": "Uttar Pradesh",
+      "secondaryHomeStates": ["Tamil Nadu"],
       "image": "assets/images/Hema_Malini.png",
       "partyLogo": "assets/icons/Bharatiya_Janata_Party_(icon).svg",
       "primaryColor": "#FF9933",
@@ -1029,12 +1030,12 @@
       ],
       "specialPower": {
         "name": "Star Power Rally",
-        "effect": "+2% popularity nationwide, +14% more (16% total) in her home state, Uttar Pradesh",
+        "effect": "+2% popularity nationwide, +14% more (16% total) in home states Uttar Pradesh and Tamil Nadu",
         "cost": "₹2,500 Cr"
       },
       "power": {
         "name": "Star Power Rally",
-        "description": "+2% popularity nationwide, plus another +14% in her home state (Uttar Pradesh, 16% total there); costs 2,500 Cr instantly.",
+        "description": "+2% popularity nationwide, plus another +14% in each of her home states (Uttar Pradesh and Tamil Nadu, 16% total there); costs 2,500 Cr instantly.",
         "benefits": [
           {
             "kind": "popularity",

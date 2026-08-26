@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [1.2.5] - 2026-08-26
+
+### Fixed
+- **FIXED**: `generateStartingPosition()`'s random-draw budget (`mobile/engine.js`, the 124-154 thresholds calibrated for a ~150-seat mean / ~175 2-sigma ceiling) never accounted for home-state seats at all — a home state was fully excluded from the draw pool and got its bonus for free, on top of a draw budget sized as if starting from zero. This was invisible for a typical small-to-medium single home state, but silently broke down for a large one (Uttar Pradesh alone, 80 seats — mean crept to ~156.6) and especially for a multi-home politician (Hema Malini's Uttar Pradesh + Tamil Nadu — mean ~166.2, max ~199), which is what produced the reported 213-seat outlier. Fixed by folding each player's home-state seats into the same seat-budget counter the random draw depends on, weighted by the home bonus's own share of BPS (2500/10000 = 25%, since apportionment scales roughly linearly with the bonus's flat vote-share addition) — confirmed via direct simulation this restores UP-only to ~149.8 (on target) and Hema Malini's UP+TN to ~156.1 mean / ~177 2-sigma (still a real, deliberate edge over a single-home baseline — this project's celebrities are meant to feel OP along varied axes — just no longer a runaway one). Home-state-collision nullification (same home on both sides cancels for both) is unaffected and still verified to net back to the no-home baseline.
+
 ## [1.2.4] - 2026-08-26
 
 ### Fixed
