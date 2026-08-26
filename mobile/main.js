@@ -28,6 +28,17 @@
     if (el) el.href = TIP_URL;
   });
 
+  // Version baked into the subject line (not just the body) since some mail
+  // clients truncate/hide the body preview — keeps it visible at a glance.
+  (function () {
+    var el = document.getElementById('reportBugBtn');
+    if (!el) return;
+    var body = 'What happened:\n\n\nGame version: v' + GAME_VERSION;
+    el.href = 'mailto:pradhanmantrielections@gmail.com?subject=' +
+      encodeURIComponent('PME Mobile bug report (v' + GAME_VERSION + ')') +
+      '&body=' + encodeURIComponent(body);
+  })();
+
   // Local-only politician unlock progression: start with 3, unlock the rest
   // by beating them (as the AI opponent) in a match. Enforced client-side
   // only (localStorage) — a determined player can edit around it via

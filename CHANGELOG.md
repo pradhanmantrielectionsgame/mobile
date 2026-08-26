@@ -8,6 +8,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [1.3.1] - 2026-08-26
 
+### Added
+- **ADDED**: "Report a Bug" row in the Settings overlay — a `mailto:pradhanmantrielections@gmail.com` link, pre-filled with the current game version in both the subject and body (`mobile/main.js` sets `#reportBugBtn`'s `href` at startup from `GAME_VERSION`). No backend/third-party service involved, matching the existing tip-jar link's approach.
+
 ### Changed
 - **CHANGED**: Group holding bonus (`holdingBonusCrPerSeat` in `game-config.json`'s `mobileEconomy.regionalDominance`) halved again, 1→0.5 Cr/seat, after the user reported still-lopsided blowout results post-1.2.7. `mobile/engine.js`'s `dominanceHoldingPayoutCr()` now rounds its result — a fractional Cr/seat rate combined with several groups' odd seat counts would otherwise show a fractional Cr amount in the log/toast (e.g. "+₹50.5Cr").
 
