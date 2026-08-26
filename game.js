@@ -493,6 +493,17 @@
     return seatDelta;
   }
 
+  // A policy's tagEffects region keys are exactly the 15 regional-dominance
+  // groups' own keys (one-to-one, confirmed against states_data.json's
+  // region columns) — so the magnitude a group-chip emoji reaction should
+  // react to is just this static per-agenda table, not a simulated tap
+  // outcome. Returns a shallow copy (or {} for an unknown/nationwide-only
+  // policy). UI-only consumer (main.js's group-chip emoji reaction).
+  function agendaGroupEffects(game, policyName) {
+    var policy = game.policiesByName[policyName];
+    return (policy && policy.tagEffects) ? Object.assign({}, policy.tagEffects) : {};
+  }
+
   function totalNetEffect(game, policyName) {
     var policy = game.policiesByName[policyName];
     if (!policy) return 0;
@@ -873,6 +884,7 @@
     canActivatePower: canActivatePower,
     totalNetEffect: totalNetEffect,
     previewAgendaTapSeatDelta: previewAgendaTapSeatDelta,
+    agendaGroupEffects: agendaGroupEffects,
     pushLog: pushLog,
     aiStep: aiStep,
     runAIFull: runAIFull

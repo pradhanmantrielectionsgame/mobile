@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var E = window.PMEEngine, G = window.PMEGame;
-  var GAME_VERSION = '1.2.7';
+  var GAME_VERSION = '1.3.0';
   ['welcomeVersion', 'stageVersion', 'endVersion'].forEach(function (id) {
     var el = document.getElementById(id);
     if (el) el.textContent = 'v' + GAME_VERSION;
@@ -1898,6 +1898,7 @@
   function doTapAgenda(name) {
     var safeId = 'agenda' + name.replace(/[^a-zA-Z0-9]/g, '');
     activeAgenda = name; activeAction = null; // show what this agenda does in the info panel either way
+    var groupEffects = G.agendaGroupEffects(game, name);
     var r = G.tapAgenda(game, 'p1', name);
     if (!r.ok) {
       showToast(r.reason === 'insufficient_funds' ? 'Not enough funds' : 'Agenda already maxed');
@@ -1911,7 +1912,39 @@
     if (r.completed) playSound('fanfare');
     showToast((r.completed ? name + ' agenda completed!' : 'Invested in ' + name));
     renderAll();
+    spawnGroupEmojiReactions(groupEffects);
     if (tutorialMode) onTutorialAgendaInvest(name);
+  }
+
+  // Every policy-tags.json tagEffects magnitude is one of ±4/±8/±12
+  // (Administrative Reform, Coastal Economy, Food Security, Heritage and
+  // Tourism, Environmental Conservation, Sports and Entertainment, and
+  // Nationalization were normalized onto this convention 2026-08-26 — see
+  // CHANGELOG) — so the emoji tier is a direct lookup, not a threshold sweep.
+  var GROUP_EMOJI_BY_MAGNITUDE = { 4: '🙂', 8: '😄', 12: '😍' };
+  var GROUP_EMOJI_BY_MAGNITUDE_NEG = { 4: '🙁', 8: '😟', 12: '😡' };
+  function emojiForGroupMagnitude(mag) {
+    var table = mag > 0 ? GROUP_EMOJI_BY_MAGNITUDE : GROUP_EMOJI_BY_MAGNITUDE_NEG;
+    return table[Math.abs(mag)] || null;
+  }
+  function spawnGroupEmojiReactions(groupEffects) {
+    var keys = Object.keys(groupEffects);
+    keys.forEach(function (key, i) {
+      var emoji = emojiForGroupMagnitude(groupEffects[key]);
+      if (!emoji) return;
+      setTimeout(function () { spawnGroupEmojiReaction(key, emoji); }, i * 80);
+    });
+  }
+  function spawnGroupEmojiReaction(groupKey, emoji) {
+    var chip = document.querySelector('.gchip[data-key="' + groupKey + '"]');
+    if (!chip) return;
+    var pt = viewportPoint(chip);
+    var el = document.createElement('div');
+    el.className = 'fx-group-emoji';
+    el.textContent = emoji;
+    el.style.left = pt.x + 'px'; el.style.top = pt.y + 'px';
+    $('fxLayer').appendChild(el);
+    setTimeout(function () { el.remove(); }, 1100);
   }
 
   // ---------------------------------------------------------------------
