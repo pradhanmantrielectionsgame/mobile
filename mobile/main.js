@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var E = window.PMEEngine, G = window.PMEGame;
-  var GAME_VERSION = '1.2.3';
+  var GAME_VERSION = '1.2.4';
   ['welcomeVersion', 'stageVersion', 'endVersion'].forEach(function (id) {
     var el = document.getElementById(id);
     if (el) el.textContent = 'v' + GAME_VERSION;
@@ -1151,10 +1151,13 @@
     var p2Id = tutorialMode ? 'rahul-gandhi' : opponentPool[Math.floor(Math.random() * opponentPool.length)].id;
     game = G.createGame(data, p1Id, p2Id, Math.random);
     window.__game = game; // debug/test hook — inspect live state from devtools
-    // Tutorial AI never crafts/activates its special power — aiStep's power
-    // block is entirely gated on !usedSpecial, so marking it pre-used is
-    // enough to turn it off without touching game.js's AI logic.
-    if (tutorialMode) game.players.p2.usedSpecial = true;
+    // Tutorial AI never crafts/activates its special power or nationwide
+    // rally — both are entirely gated on !usedSpecial/!usedNationwide, so
+    // marking them pre-used is enough to turn them off without touching
+    // game.js's AI logic. The nationwide rally is scripted as a player-only
+    // moment (tutorial grants the player tokens for it at phase 6) — without
+    // this the AI could craft/launch its own first.
+    if (tutorialMode) { game.players.p2.usedSpecial = true; game.players.p2.usedNationwide = true; }
     // tutorialMode itself flips false once coaching finishes (around phase
     // 6, after the nationwide rally) — this survives to phase 10 so the
     // end-of-game sign-off still knows the match started as a tutorial.

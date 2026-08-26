@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [1.2.4] - 2026-08-26
+
+### Fixed
+- **FIXED**: Tutorial's AI opponent (Rahul Gandhi) could craft and launch its own Nationwide Rally before the scripted step where the player is meant to launch theirs — tutorial only pre-marked `usedSpecial` to disable the AI's special power (`mobile/main.js`), never the equivalent `usedNationwide` flag that `game.js`'s `craftToken()`/`activateNationwideRally()` gate on. Now sets both.
+- **FIXED**: Hema Malini's starting seats averaged ~169 instead of the ~150 target (confirmed via `generateStartingPosition()` simulation) — she carried `secondaryHomeStates: ["Tamil Nadu"]` on top of an already-large primary home state (Uttar Pradesh, the single biggest state at 80 seats), stacking two large home-state bonuses. That mechanism was designed to compensate a *small* primary home state (see Kejriwal's Delhi+Punjab), not to double up on an already-large one — removed the erroneous secondary home from `data/politicians-data.json`, which also fixes her `power` block's home-state bonus (previously doubled via the same `homeStatesOf` scope) back down to Uttar Pradesh only.
+
 ## [1.2.3] - 2026-08-26
 
 ### Changed
