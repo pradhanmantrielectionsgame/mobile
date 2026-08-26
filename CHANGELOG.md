@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [1.2.7] - 2026-08-26
+
+### Changed
+- **CHANGED**: Group holding bonus (`holdingBonusCrPerSeat` in `game-config.json`'s `mobileEconomy.regionalDominance`) dialed down 2→1 Cr/seat, in response to a user report of a 341-143 blowout after capturing 7 of 15 (overlapping, 200+ seat) regional-dominance groups against an AI that captured 0 — the bonus pays per-group with no dedup across shared member states, so a lopsided capture split can compound into 1,000+ "group-seats" of one-sided payout every phase. This asymmetric-capture risk is invisible to the project's symmetric AI-vs-AI balance-sim, which can only ever show a flat win rate for a bonus both sides receive equally.
+
+### Fixed
+- **FIXED**: The AI was hard-capped to exactly one rally per phase via a redundant `aiRalliedThisPhase` flag in `aiStep()` (`mobile/game.js`), on top of the real per-phase spend cap (`tokensSpentThisPhase < maxTokenSpendPerPhase`, currently 2 — the same cap a human plays under). Every AI used at most half the rally budget a human can, in every game, regardless of personality profile. Removed the flag; the AI now rallies up to the real per-phase cap. Found from the same user report above (AI logged 5 rallies vs. the human's 16, and never used its Nationwide Rally despite apparently saving up for it).
+
 ## [1.2.6] - 2026-08-26
 
 ### Changed

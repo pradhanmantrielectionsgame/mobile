@@ -139,7 +139,6 @@
       seatsToWinOverride: null,
       investmentTaps: {},
       aiTargetGroup: null,
-      aiRalliedThisPhase: false,
       aiAgendaTapsThisPhase: {}
     };
   }
@@ -304,7 +303,7 @@
       pl.fundsCr += game.cfg.fundsRefreshPerPhaseCr;
       if (!pl.tokenIncomeStopped) pl.tokens.stateRally += game.cfg.rally.tokenIncomePerPhase;
       pl.tokensSpentThisPhase = 0;
-      if (pl.isAI) { pl.aiAgendaTapsThisPhase = {}; pl.aiRalliedThisPhase = false; }
+      if (pl.isAI) { pl.aiAgendaTapsThisPhase = {}; }
     });
     applyPayouts(game);
     applyGroupHoldingBonus(game);
@@ -764,12 +763,17 @@
     if (!pl.isAI || game.winner) return null;
     var profile = pl.aiProfile || AI_PROFILES[0];
 
-    // One rally attempt per phase, at a random top-10-largest state — not a
+    // One rally attempt per tick, at a random top-10-largest state — not a
     // retry loop. A rejected placement (state already at its shared 2-play
-    // cap) just leaves the token unspent for this phase, banking it toward
-    // the auto-craft check below instead of hunting for another target.
-    if (!pl.aiRalliedThisPhase && pl.tokensSpentThisPhase < game.cfg.rally.maxTokenSpendPerPhase && pl.tokens.stateRally > 0) {
-      pl.aiRalliedThisPhase = true;
+    // cap) just leaves the token unspent this tick, banking it toward the
+    // auto-craft check below instead of hunting for another target. The real
+    // per-phase limit is playRallyToken's own tokensSpentThisPhase check
+    // (maxTokenSpendPerPhase, same cap a human plays under) — this used to
+    // also gate on a since-removed aiRalliedThisPhase flag that capped the
+    // AI to exactly one rally per phase regardless of that shared cap,
+    // silently halving the AI's rally usage versus a human every game
+    // (found 2026-08-26 from a user report of a lopsided AI-vs-human game).
+    if (pl.tokensSpentThisPhase < game.cfg.rally.maxTokenSpendPerPhase && pl.tokens.stateRally > 0) {
       var rallyTarget = pickAIRallyTarget(game);
       if (rallyTarget && playRallyToken(game, playerKey, rallyTarget).ok) {
         return { type: 'rally', svgId: rallyTarget, costCr: null };
