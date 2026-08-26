@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var E = window.PMEEngine, G = window.PMEGame;
-  var GAME_VERSION = '1.2.2';
+  var GAME_VERSION = '1.2.3';
   ['welcomeVersion', 'stageVersion', 'endVersion'].forEach(function (id) {
     var el = document.getElementById(id);
     if (el) el.textContent = 'v' + GAME_VERSION;
@@ -22,9 +22,7 @@
     document.getElementById('welcomeOverlay').hidden = true;
   }
 
-  // ponytail: placeholder tip-jar link — swap in a real Ko-fi/Buy Me a
-  // Coffee URL once one exists, no other code needs to change.
-  var TIP_URL = 'https://ko-fi.com/REPLACE_ME';
+  var TIP_URL = 'https://buymeacoffee.com/pradhanmantri';
   ['tipLinkWelcome', 'tipLinkEnd'].forEach(function (id) {
     var el = document.getElementById(id);
     if (el) el.href = TIP_URL;
