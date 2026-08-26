@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [1.3.1] - 2026-08-26
+
+### Changed
+- **CHANGED**: Group holding bonus (`holdingBonusCrPerSeat` in `game-config.json`'s `mobileEconomy.regionalDominance`) halved again, 1→0.5 Cr/seat, after the user reported still-lopsided blowout results post-1.2.7. `mobile/engine.js`'s `dominanceHoldingPayoutCr()` now rounds its result — a fractional Cr/seat rate combined with several groups' odd seat counts would otherwise show a fractional Cr amount in the log/toast (e.g. "+₹50.5Cr").
+
 ## [1.3.0] - 2026-08-26
 
 ### Added

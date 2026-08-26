@@ -326,7 +326,10 @@
   // design: doesn't grow the longer a group is held, so it can't compound
   // into a late-game blowout on top of the instant bonus.
   function dominanceHoldingPayoutCr(group, states, cfg) {
-    return groupSeats(group, states) * cfg.holdingBonusCrPerSeat;
+    // Math.round: holdingBonusCrPerSeat can be fractional (e.g. 0.5), and
+    // group seat counts are often odd, which would otherwise show up as a
+    // fractional Cr amount in the log/toast ("+₹50.5Cr").
+    return Math.round(groupSeats(group, states) * cfg.holdingBonusCrPerSeat);
   }
 
   root.PMEEngine = {

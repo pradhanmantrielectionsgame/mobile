@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var E = window.PMEEngine, G = window.PMEGame;
-  var GAME_VERSION = '1.3.0';
+  var GAME_VERSION = '1.3.1';
   ['welcomeVersion', 'stageVersion', 'endVersion'].forEach(function (id) {
     var el = document.getElementById(id);
     if (el) el.textContent = 'v' + GAME_VERSION;
