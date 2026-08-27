@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-08-27
+
+### Added
+- **ADDED**: Per-politician cooldown system — each politician's select-screen card shows 3 diamonds ("ink" charges); every `Play as X` spends one. At zero, the card locks with a live-ticking "🧊 Cooldown: Xh Ym" countdown (6h) on the play button, refilling to 3 diamonds automatically once it expires. Local-only (`localStorage`'s `pme_politician_charges`), same enforcement caveat as the existing politician-unlock progression — client-side and bypassable via devtools, accepted since this is a single-player pacing nudge, not anti-cheat. Implemented in `mobile/main.js` (`chargeState()`/`useCharge()`/`renderCardCharges()`), with a 1-second interval keeping every visible card's diamonds/countdown live without needing to navigate away and back.
+
 ## [1.3.1] - 2026-08-26
 
 ### Added

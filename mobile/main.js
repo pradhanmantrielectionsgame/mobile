@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var E = window.PMEEngine, G = window.PMEGame;
-  var GAME_VERSION = '1.3.1';
+  var GAME_VERSION = '1.4.0';
   ['welcomeVersion', 'stageVersion', 'endVersion'].forEach(function (id) {
     var el = document.getElementById(id);
     if (el) el.textContent = 'v' + GAME_VERSION;
@@ -78,6 +78,54 @@
       localStorage.setItem(UNLOCK_KEY, JSON.stringify(list));
       return true;
     } catch (e) { return false; }
+  }
+
+  // Same local-only enforcement caveat as the unlock progression above: each
+  // politician has 3 "ink" charges (diamonds on their card); playing them
+  // spends one. Hit zero and they're out of ink for a 6h cooldown, then
+  // refill to 3. Storage: { [id]: { used: 0-3, cooldownStart: ms|null } }.
+  var CHARGES_KEY = 'pme_politician_charges';
+  var MAX_CHARGES = 3;
+  var CHARGE_COOLDOWN_MS = 6 * 60 * 60 * 1000;
+  function loadCharges() {
+    try {
+      var raw = localStorage.getItem(CHARGES_KEY);
+      var obj = raw ? JSON.parse(raw) : {};
+      return (obj && typeof obj === 'object') ? obj : {};
+    } catch (e) { return {}; }
+  }
+  function saveCharges(map) {
+    try { localStorage.setItem(CHARGES_KEY, JSON.stringify(map)); } catch (e) {}
+  }
+  // { remaining: 0-3, cooldownMs: 0 if not on cooldown else ms left }.
+  // Auto-refills (clears storage) the moment an expired cooldown is checked.
+  function chargeState(id) {
+    var map = loadCharges();
+    var entry = map[id];
+    if (!entry) return { remaining: MAX_CHARGES, cooldownMs: 0 };
+    if (entry.cooldownStart) {
+      var left = CHARGE_COOLDOWN_MS - (Date.now() - entry.cooldownStart);
+      if (left > 0) return { remaining: 0, cooldownMs: left };
+      delete map[id];
+      saveCharges(map);
+      return { remaining: MAX_CHARGES, cooldownMs: 0 };
+    }
+    return { remaining: MAX_CHARGES - entry.used, cooldownMs: 0 };
+  }
+  function useCharge(id) {
+    var map = loadCharges();
+    var entry = map[id] || { used: 0, cooldownStart: null };
+    entry.used++;
+    if (entry.used >= MAX_CHARGES) entry.cooldownStart = Date.now();
+    map[id] = entry;
+    saveCharges(map);
+  }
+  function formatCooldown(ms) {
+    var totalSec = Math.ceil(ms / 1000);
+    var h = Math.floor(totalSec / 3600);
+    if (h > 0) return h + 'h ' + Math.floor((totalSec % 3600) / 60) + 'm';
+    var m = Math.floor(totalSec / 60), s = totalSec % 60;
+    return m + ':' + (s < 10 ? '0' : '') + s;
   }
 
   // p1/p2 default to placeholder colors here but are overwritten in
@@ -1007,10 +1055,33 @@
     return '<svg viewBox="0 0 ' + w + ' 10" preserveAspectRatio="none"><path d="' + path + 'L' + w + ',10 Z" fill="var(--paper)"/></svg>';
   }
 
+  // Redraws one card's diamond row + play-button label from live charge
+  // state — shared by the initial build and the once-a-second cooldown tick.
+  function renderCardCharges(card, p, locked) {
+    var charge = chargeState(p.id);
+    card.classList.toggle('pol-locked', !!(locked || charge.cooldownMs));
+    var chargesEl = card.querySelector('.pol-charges');
+    if (chargesEl) {
+      chargesEl.innerHTML = '';
+      for (var i = 0; i < MAX_CHARGES; i++) {
+        var d = document.createElement('span');
+        d.className = 'pol-diamond' + (i < charge.remaining ? ' full' : '');
+        d.textContent = i < charge.remaining ? '♦' : '♢';
+        chargesEl.appendChild(d);
+      }
+    }
+    var btn = card.querySelector('.pol-play-btn');
+    if (btn && !locked) {
+      btn.textContent = charge.cooldownMs ? '🧊 Cooldown: ' + formatCooldown(charge.cooldownMs) :
+        'Play as ' + p.name.replace(/\s*\([^)]*\)\s*$/, '').split(' ').slice(-1)[0];
+    }
+    return charge;
+  }
+
   function buildPolCard(p, locked) {
     var color = p.primaryColor || '#999';
     var card = document.createElement('div');
-    card.className = 'pol-card' + (locked ? ' pol-locked' : '');
+    card.className = 'pol-card' + (locked ? ' pol-card-hard-locked' : '');
 
     var ballot = document.createElement('div');
     ballot.className = 'ballot-card';
@@ -1030,7 +1101,7 @@
           '<div class="pow-unlock">Unlocks at: Phase ' + (p.power.requiresMinPhase || 1) + '</div>' +
         '</div>' +
       '</div>' +
-      '<div class="pol-footer"></div>';
+      '<div class="pol-footer"><div class="pol-charges"></div></div>';
 
     var img = document.createElement('img');
     setArtPortrait(img, p);
@@ -1086,6 +1157,11 @@
         showToast('Beat ' + p.name + ' in a match to unlock them — you\'re never matched against your own party, so pick someone from a different party to face them');
         return;
       }
+      var liveCharge = chargeState(p.id);
+      if (liveCharge.cooldownMs) {
+        showToast(p.name + ' is in their Cooldown Period — available again in ' + formatCooldown(liveCharge.cooldownMs));
+        return;
+      }
       if (tutorialMode && p.id !== TUTORIAL_POL_ID) {
         showToast('The tutorial plays as Modi — swipe back to select him');
         return;
@@ -1099,6 +1175,7 @@
     ballot.querySelector('.pol-footer').appendChild(btn);
 
     card.appendChild(ballot);
+    renderCardCharges(card, p, locked);
     return card;
   }
 
@@ -1138,7 +1215,21 @@
     track.addEventListener('scroll', onCarouselScroll);
   }
 
+  // Live-updates every rendered card's diamonds/countdown once a second, and
+  // flips a card back to playable the moment its cooldown hits zero.
+  setInterval(function () {
+    var track = $('polCarousel');
+    if (!track) return;
+    Array.prototype.forEach.call(track.children, function (card) {
+      if (card.classList.contains('pol-card-hard-locked')) return;
+      var id = card.getAttribute('data-pol-id');
+      var p = id && data.politicians.filter(function (x) { return x.id === id; })[0];
+      if (p) renderCardCharges(card, p, false);
+    });
+  }, 1000);
+
   function startGame(p1Id) {
+    useCharge(p1Id);
     var p1Pol = data.politicians.filter(function (p) { return p.id === p1Id; })[0];
     // Same-party matchups don't make sense (e.g. two BJP candidates running
     // against each other) — "Independent" isn't a real shared affiliation,
