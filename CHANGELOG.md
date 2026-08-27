@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [1.4.1] - 2026-08-27
+
+### Added
+- **ADDED**: GoatCounter analytics snippet in `mobile/index.html` to track real play counts (privacy-friendly, no cookies) — replaces guessing from GitHub repo Insights, which only tracks git clone/repo-page activity and never sees actual gameplay traffic on the deployed site.
+
 ## [1.4.0] - 2026-08-27
 
 ### Added
