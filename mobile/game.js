@@ -426,6 +426,9 @@
     if (!pl.craftedNationwide || pl.usedNationwide) return { ok: false, reason: 'not_ready' };
     pl.usedNationwide = true;
     var boost = game.cfg.rally.nationwideRallyBoostBps;
+    if (pl.nationwideRallyBonusArmedPhase != null) {
+      boost += pl.nationwideRallyBonusPerPhaseBps * Math.max(0, game.phase - pl.nationwideRallyBonusArmedPhase);
+    }
     game.states.forEach(function (s) { applyBigAction(game, playerKey, s.svgId, boost); });
     pushLog(game, '🇮🇳 BREAKING: ' + who(game, playerKey) + ' launched a Nationwide Rally — every state feels it', true);
     applyPayouts(game);
@@ -644,6 +647,17 @@
           if (isBig) applyBigAction(game, actor, svgId, delta);
           else E.applySigned(game.pop[svgId], actor, delta, source);
         });
+      } else if (e.kind === 'armNationwideRallyBonus') {
+        // No immediate popularity change — just marks the phase this fired
+        // in. activateNationwideRally() reads this back later and adds
+        // e.bpsPerPhase for every phase that has elapsed since, so the
+        // payoff only lands if/when this player's Nationwide Rally is
+        // actually deployed afterward. Deploying one earlier (or never)
+        // means this power's funds cost bought nothing — a deliberate
+        // "long march, patience wager" tradeoff, not a bug.
+        var who5 = e.target === 'self' ? pl : oppPl;
+        who5.nationwideRallyBonusArmedPhase = game.phase;
+        who5.nationwideRallyBonusPerPhaseBps = e.bpsPerPhase;
       }
     }
     (power.costs || []).forEach(runEffect);

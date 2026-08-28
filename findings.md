@@ -1,5 +1,20 @@
 # Findings
 
+## 2026-08-28 — Rahul Gandhi's original agenda kit netted negative popularity in his own home state
+**Finding:** The pre-existing kit (Rural Development/Press Freedom/Secularism/Caste Reservation) netted -4bps in Uttar Pradesh — Secularism's -12 HindiHeartland/-12 Pilgrimage penalty applied in full there, but its +12 MinorityAreas benefit never did (UP isn't a MinorityAreas state). This was the dominant cause of his dead-last 38.4% win rate in `mobile/balance-sim.js`, not his special power. A tested fix (swapping Secularism → Food Security) raised win rate to 57.2% and home popularity from 29.4% to 58.1%, but was reverted at the user's request in favor of redesigning the special power instead, leaving this root cause unaddressed in the shipped state.
+**Context:** Diagnosed via `mobile/balance-sim.js` plus a custom per-state net-effect script cross-referencing `data/policy-tags.json` against `data/states_data.json` group membership.
+**Implication:** If Rahul's win rate is still weak after the power redesign, this agenda-kit home-state drag is the real remaining lever to pull.
+
+## 2026-08-28 — toBps ("floor") special powers show zero measured seat impact when used late-game
+**Finding:** Sardar Patel's Iron Unification and Sachin Tendulkar's National Icon (both `toBps` "raise to at least X%" effects) measured 0 seats added when applied against realistic late-game average popularity, because natural growth over the game usually already exceeds their floor by then. Not a measurement bug — the floor genuinely has nothing left to raise once popularity has organically passed it.
+**Context:** Found while building a full-roster power comparison (applying each politician's real power benefits to their own average final-game popularity to measure seat delta).
+**Implication:** Don't compare a floor-type power's "seats added" to a flat-bonus power's without noting when in the game it was measured — floor powers are front-loaded (most valuable early), unlike a flat or deferred-growth bonus.
+
+## 2026-08-28 — craftToken() (Special Powerup / Nationwide Rally crafting) is not subject to the per-phase rally-spend cap
+**Finding:** `playRallyToken()` enforces `maxTokenSpendPerPhase` (2/phase), but `craftToken()` (used to craft both the Special Powerup and the Nationwide Rally) has no such check — a player can bank tokens across several phases and spend a large chunk (6 or 12 at once) on crafting without it counting against that phase's rally-spend limit.
+**Context:** Traced while checking whether an earlier (since-abandoned) power design — requiring 2 rallies each in 6 states plus 1 each in 4 more, alongside crafting a Special Powerup — was reachable within a 10-phase game's token budget.
+**Implication:** Relevant to any future token-economy balance work — crafting costs and rally-spend costs draw from the same token pool but aren't rate-limited the same way per phase.
+
 ## 2026-08-27 — GitHub repo Insights (views/clones) never sees traffic to a deployed GitHub Pages site
 **Finding:** The `mobile` repo's Insights showed 58 clones but 0 views / 0 unique visitors over 14 days, despite the user knowing friends had downloaded and played the live game. GitHub's repo-level "views"/"clones" metrics only measure git/GitHub-UI activity — cloning the source (`git clone`/`pull`, including CI/bots) or browsing the repo's code page on github.com — not requests to the deployed GitHub Pages site, which is a separate serving surface Insights doesn't instrument at all.
 **Context:** User asked "who's cloning?" then "so how many people are playing the game," expecting Insights to answer both; investigation showed the two questions need entirely different data sources.

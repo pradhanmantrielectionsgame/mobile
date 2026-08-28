@@ -469,13 +469,13 @@ boost_bps(tap) = tap ≤ 20 : round(500 − (tap−1) × 300/19)            // 5
           <tr><td class="feat">Hema Malini</td><td>Star Power Rally</td><td>free while behind</td><td>+5% nationwide; needs ≥500 Cr; costs 500 Cr</td></tr>
           <tr><td class="feat">Rajinikanth</td><td>Thalaivar Announcement</td><td>undefined benefit, brutal permanent cost</td><td>+20% South India + Maharashtra; needs ≥2,000 Cr; costs 2,000 Cr</td></tr>
           <tr><td class="feat">Arvind Kejriwal</td><td>Anti-Corruption Raid</td><td>free if no tokens held</td><td>seizes 50% of opponent's cash (destroyed, not transferred); costs 15pt of <i>own</i> share in opponent's home state</td></tr>
-          <tr><td class="feat">Nitish Kumar</td><td>Alliance Switch</td><td>value depended on opponent's last move</td><td>+7% self / −7% opponent, nationwide; costs 1,000 Cr + 2 tokens</td></tr>
+          <tr><td class="feat">Nitish Kumar</td><td>Alliance Switch</td><td>value depended on opponent's last move</td><td>+5% self / −5% opponent, nationwide; costs 1,000 Cr + 2 tokens (tuned 2026-08-28 from ±7%)</td></tr>
           <tr><td class="feat">Jawaharlal Nehru</td><td>Non-Alignment</td><td>worthless if opponent already used their power</td><td>secretly nullifies opponent's power, or grants 2,000 Cr if too late — the gamble itself is the cost</td></tr>
         </tbody>
       </table></div>
 
       <h4>Reference point</h4>
-      <p>Vajpayee's <b>Pokhran Test</b> (+10% nationwide, zero extra cost beyond the 6-token craft) is a deliberate outlier — exactly double Nationwide Rally's boost for half the token cost — kept on purpose as the roster's one standout "signature" play, and used to sanity-check every other power's magnitude during the rework pass.</p>
+      <p>Vajpayee's <b>Pokhran Test</b> (+8% nationwide, zero extra cost beyond the 6-token craft) is a deliberate outlier — exactly 1.6× Nationwide Rally's boost (5%) for half the token cost — kept on purpose as the roster's one standout "signature" play, and used to sanity-check every other power's magnitude during the rework pass. Tuned down from +10% on 2026-08-28 per balance analysis showing seat gains exceeding 50-seat threshold.</p>
 
       <div class="example">
         <p class="label">The 4 celebrity/film-persona powers were rebalanced 2026-07-28 — agenda kits left untouched</p>
@@ -506,7 +506,8 @@ boost_bps(tap) = tap ≤ 20 : round(500 − (tap−1) × 300/19)            // 5
         <tbody>
           <tr><td class="feat">Damage opponent's funds</td><td>Modi (freeze), Kejriwal (seize 50%), Indira Gandhi (seize 100% + tokens)</td></tr>
           <tr><td class="feat">Convert own popularity → funds</td><td>Manmohan Singh</td></tr>
-          <tr><td class="feat">Region-scoped popularity push</td><td>Rahul Gandhi, Mamata Banerjee, Ambedkar, Jayalalithaa, Shastri, Rajinikanth</td></tr>
+          <tr><td class="feat">Region-scoped popularity push</td><td>Mamata Banerjee, Ambedkar, Jayalalithaa, Shastri, Rajinikanth</td></tr>
+          <tr><td class="feat">Deferred nationwide boost (arming)</td><td>Rahul Gandhi (Bharat Jodo Yatra: arms for 50bps/phase, deploys on Nationwide Rally)</td></tr>
           <tr><td class="feat">Nationwide popularity push</td><td>Vajpayee, Nitish Kumar, Tendulkar, Hema Malini, Bachchan, Indira Gandhi</td></tr>
           <tr><td class="feat">Meta / conditional effect</td><td>Nehru (nullify), P.V. Narasimha Rao (replay a completed agenda), Ambedkar (refund all agenda spend), Rajiv Gandhi (refund all rally tokens spent), Sardar Patel (floor every state nationwide to 20%)</td></tr>
         </tbody>

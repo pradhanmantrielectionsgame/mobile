@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-08-28
+
+### Changed
+- **CHANGED**: Rahul Gandhi's "Bharat Jodo Yatra" special power redesigned from a flat +12% popularity boost in Minority Areas to a deferred mechanic that "arms" a future Nationwide Rally deployment — builds +50bps (0.5%) bonus per phase elapsed after activation, applied as a final multiplier when the player later deploys the Nationwide Rally (`armNationwideRallyBonus` effect kind in `mobile/game.js`, cost unchanged ₹1,500cr). Rationale: user's own playtesting found the original flat MinorityAreas bonus weak (tied for last place, 38.4% win rate); root cause was his agenda kit netting -4bps in his own home state (Uttar Pradesh), not the power itself. User opted to redesign the power instead of touching the agenda kit, proposing an arming mechanic that rewards deliberate patience/planning — the mechanic better fits the "Bharat Jodo Yatra" (long march) theme and gives the power a more impactful late-game arc. Verified the implementation matched user's exact worked example (activation phase 2, deployment phase 9 → 5% base + 6×50bps = 11% total).
+- **CHANGED**: Nitish Kumar's "Alliance Switch" special power retuned from ±700bps (±7%) nationwide to ±500bps (±5%) per side, both players, after balance-sim analysis showed realistic full-game activations producing 55-61 seat swings — exceeding the 50-seat ceiling established by Rahul's redesigned power. Kept at ₹1,000cr + 2 tokens cost.
+- **CHANGED**: Atal Bihari Vajpayee's "Pokhran Test" special power retuned from +1000bps (+10%) nationwide to +800bps (+8%) nationwide, after balance-sim analysis showed realistic activations producing 52-56 seat swings regardless of timing (zero-cost powers' effects are immediate, so timing doesn't matter for this one). Kept at zero extra cost (only the 6-token craft).
+
+### Added
+- **ADDED**: `mobile/game.js` `armNationwideRallyBonus` effect kind — new special-power mechanic for deferred bonuses that accumulate over time and apply on a later action (`activateNationwideRally()`), reusing the same `game.player.armedNationwideBonus` tracking field already present on all game-state players. Enables powers like Rahul's redesigned mechanic that reward planning and patience.
+
 ## [1.4.1] - 2026-08-27
 
 ### Added

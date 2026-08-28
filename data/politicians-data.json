@@ -136,22 +136,17 @@
       ],
       "specialPower": {
         "name": "Bharat Jodo Yatra",
-        "effect": "+12% popularity in Minority Areas states",
+        "effect": "Arms your Nationwide Rally with +0.5% bonus for every phase that passes before you deploy it",
         "cost": "₹1,500 Cr"
       },
       "power": {
         "name": "Bharat Jodo Yatra",
-        "description": "Popularity boost in Minority Areas states, funded by an instant lump-sum spend.",
+        "description": "A long march builds momentum over time — no immediate effect, but every phase that passes before you deploy your Nationwide Rally adds +0.5% to its boost. Deploy the Rally early or not at all and this power's cost bought nothing.",
         "benefits": [
           {
-            "kind": "popularity",
+            "kind": "armNationwideRallyBonus",
             "target": "self",
-            "scope": "tags",
-            "tags": [
-              "MinorityAreas"
-            ],
-            "bps": 1200,
-            "source": "both"
+            "bpsPerPhase": 50
           }
         ],
         "costs": [
@@ -192,18 +187,18 @@
       ],
       "specialPower": {
         "name": "Pokhran Test",
-        "effect": "+10% popularity nationwide",
+        "effect": "+8% popularity nationwide",
         "cost": "None"
       },
       "power": {
         "name": "Pokhran Test",
-        "description": "+10% popularity nationwide. No cost beyond the craft.",
+        "description": "+8% popularity nationwide. No cost beyond the craft.",
         "benefits": [
           {
             "kind": "popularity",
             "target": "self",
             "scope": "nationwide",
-            "bps": 1000,
+            "bps": 800,
             "source": "both"
           }
         ],
@@ -360,25 +355,25 @@
       ],
       "specialPower": {
         "name": "Alliance Switch",
-        "effect": "+7% popularity nationwide for you, -7% for opponent",
+        "effect": "+5% popularity nationwide for you, -5% for opponent",
         "cost": "₹1,000 Cr + 2 rally tokens"
       },
       "power": {
         "name": "Alliance Switch",
-        "description": "+7% popularity nationwide for you, -7% for your opponent; costs funds and rally tokens.",
+        "description": "+5% popularity nationwide for you, -5% for your opponent; costs funds and rally tokens.",
         "benefits": [
           {
             "kind": "popularity",
             "target": "self",
             "scope": "nationwide",
-            "bps": 700,
+            "bps": 500,
             "source": "both"
           },
           {
             "kind": "popularity",
             "target": "opponent",
             "scope": "nationwide",
-            "bps": -700
+            "bps": -500
           }
         ],
         "costs": [
