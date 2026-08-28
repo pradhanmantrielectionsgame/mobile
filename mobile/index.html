@@ -35,7 +35,7 @@
      Icon glyph sizes (the big emoji inside uts-btn/action-btn) stay literal. */
   --fs-1:0.575rem; --fs-2:0.7rem; --fs-3:0.8rem; --fs-4:0.925rem; --fs-5:1.1rem; --fs-6:1.25rem;
   --radius-sm:0.25rem; --radius-md:0.4rem;
-  --shadow-sm:3px 3px 0 var(--line); --shadow-md:4px 4px 0 var(--line);
+  --shadow-sm:2px 2px 0 var(--line); --shadow-md:2px 2px 0 var(--line);
 
   /* VIEWPORT MIGRATION (2026-08-28): the app now ships a real <meta viewport>
      and is a centered, max-width column on anything wider than a phone —
@@ -67,7 +67,7 @@ body{ font-family:var(--font); background:var(--ink); color:var(--ink); }
 .stage, .overlay, .welcome-overlay, .tutorial-overlay{
   max-height:var(--app-max-h); margin-block:auto;
 }
-button{ font-family:inherit; border:none; background:none; color:inherit; }
+button{ font-family:inherit; border: none; background:none; color:inherit; }
 @media (prefers-reduced-motion: reduce){ *{ transition-duration:.01ms !important; animation-duration:.01ms !important; } }
 
 /* Three fixed regions stacked in a column — header, map, info panel. Nothing
@@ -77,8 +77,8 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
 
 /* ---- topstrip: ballot-header band. Seat bar + phase, then a slim players
    readout — small, glanceable. ---- */
-.topstrip{ flex:0 0 auto; padding: calc(env(safe-area-inset-top,0px) + 0.3rem) 0.675rem 0.3rem; background:var(--surface); border-bottom:3px solid var(--line); }
-.seatbar{ display:flex; height: 0.3rem; border:3px solid var(--line); border-radius:var(--radius-sm); overflow:hidden; background:var(--track); margin-bottom: 0.25rem; }
+.topstrip{ flex:0 0 auto; padding: calc(env(safe-area-inset-top,0px) + 0.3rem) 0.675rem 0.3rem; background:var(--surface); border-bottom: 2px solid var(--line); }
+.seatbar{ display:flex; height: 0.3rem; border: 2px solid var(--line); border-radius:var(--radius-sm); overflow:hidden; background:var(--track); margin-bottom: 0.25rem; }
 .seatbar .seg.p1{ background:var(--p1); } .seatbar .seg.p2{ background:var(--p2); } .seatbar .seg.oth{ background:transparent; }
 .topstrip-row{ display:flex; align-items:center; justify-content:space-between; }
 .phase-chip{ font-family:var(--font-mono); font-size:var(--fs-5); font-weight:700; color:var(--ink-soft); letter-spacing:.01em; }
@@ -87,15 +87,15 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
 .ver-badge{ font-family:var(--font-mono); font-size: 0.5rem; color:var(--ink-soft); opacity:.55; }
 .ver-badge-stage{ margin-right: 0.05rem; }
 .ver-badge-end{ display:block; margin: 0 0 0.2rem; }
-.iconbtn{ width: 1.65rem; height: 1.65rem; border-radius:var(--radius-md); background:var(--surface); border:3px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:var(--fs-4); color:var(--ink); box-shadow:var(--shadow-md); }
-.iconbtn:active{ transform:translate(4px,4px); box-shadow:none; }
+.iconbtn{ width: 1.65rem; height: 1.65rem; border-radius:var(--radius-md); background:var(--surface); border: 2px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:var(--fs-4); color:var(--ink); box-shadow: var(--shadow-md); }
+.iconbtn:active{ transform: translate(2.5px,2.5px); box-shadow: none; }
 .players-mini{ display:flex; justify-content:space-between; gap: 0.35rem; margin-top: 0.25rem; }
 .pmini{ display:flex; flex-direction:column; gap: 0.15rem; font-weight:700; font-family:var(--font-mono); min-width:0; max-width:48%; }
 .pmini.p1{ color:var(--p1); align-items:flex-start; } .pmini.p2{ color:var(--p2); align-items:flex-end; }
 .pmini .sub{ color:var(--ink-faint); font-weight:600; }
 .pmini-id{ display:flex; align-items:center; gap: 0.2rem; font-size:var(--fs-2); min-width:0; }
 .pmini.p2 .pmini-id{ flex-direction:row-reverse; }
-.pmini-portrait{ width: 0.85rem; height: 0.85rem; border-radius:50%; object-fit:cover; border:2px solid var(--line); background:var(--surface2); flex:0 0 auto; }
+.pmini-portrait{ width: 0.85rem; height: 0.85rem; border-radius:50%; object-fit:cover; border: 1.5px solid var(--line); background:var(--surface2); flex:0 0 auto; }
 .pmini .pname{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
 .pmini-stats{ display:flex; align-items:baseline; gap: 0.15rem; font-size:var(--fs-2); white-space:nowrap; }
 .pmini.p2 .pmini-stats{ flex-direction:row-reverse; }
@@ -115,7 +115,7 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
    color tweak. ---- */
 .map-row{ flex:1 1 auto; display:flex; flex-direction:row; min-height:0; }
 .groups-bar{ flex:0 0 3.2rem; display:flex; flex-direction:column; gap: 0.2rem;
-  padding: 0.25rem; background:var(--surface); border-right:1px solid var(--rule); overflow-y:auto; }
+  padding: 0.25rem; background:var(--surface); border-right: 1px solid var(--rule); overflow-y:auto; }
 .hex-row{ display:contents; }
 /* flex:1 1 0 (not aspect-ratio:1) so all 15 chips divide whatever vertical
    space the sidebar actually has evenly between them — no scrolling, chips
@@ -123,11 +123,11 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
 .gchip{ position:relative; width:100%; flex:1 1 0; min-height:0; max-height:2.6rem; background:none; }
 .gchip .hex{ position:relative; width:100%; height:100%; display:flex; align-items:center; justify-content:center;
   font-size: clamp(0.7rem, 2.4vh, 1.15rem); line-height:1; background:var(--surface2);
-  border:2px solid var(--line); border-radius:var(--radius-sm); box-shadow:var(--shadow-sm); }
-.gchip.captured-p1 .hex{ border-color:var(--p1); border-width:6px; box-shadow:3px 3px 0 var(--p1); }
-.gchip.captured-p2 .hex{ border-color:var(--p2); border-width:6px; box-shadow:3px 3px 0 var(--p2); }
+  border: 1.5px solid var(--line); border-radius:var(--radius-sm); box-shadow: var(--shadow-sm); }
+.gchip.captured-p1 .hex{ border-color:var(--p1); border-width: 3.5px; box-shadow: 2px 2px 0 var(--p1); }
+.gchip.captured-p2 .hex{ border-color:var(--p2); border-width: 3.5px; box-shadow: 2px 2px 0 var(--p2); }
 .gchip.on .hex{ background:var(--accent); color:#fff; }
-.gchip .badge{ display:none; position:absolute; top: -0.075rem; right: -0.075rem; width: 0.325rem; height: 0.325rem; border-radius:50%; background:var(--stamp); border:2px solid var(--surface); z-index:2; }
+.gchip .badge{ display:none; position:absolute; top: -0.075rem; right: -0.075rem; width: 0.325rem; height: 0.325rem; border-radius:50%; background:var(--stamp); border: 1.5px solid var(--surface); z-index:2; }
 .gchip.qualified .badge{ display:block; }
 
 /* ---- map: the "table" the ballot sits on, pale and flat. Lakshadweep and
@@ -139,7 +139,7 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
 .map-wrap{ flex:1 1 auto; position:relative; min-height: 4rem; overflow:hidden; background:
   repeating-linear-gradient(0deg, rgba(20,22,28,.025) 0px, rgba(20,22,28,.025) 1px, transparent 1px, transparent 26px),
   var(--page); }
-.india-map{ position:absolute; inset:0; width:100%; height:100%; transform:scale(1.06); transform-origin:center; }
+.india-map{ position:absolute; inset:0; width:100%; height:100%; transform: scale(1.06); transform-origin:center; }
 .india-map path, .india-map circle{ fill:var(--map-base); stroke:var(--map-stroke); stroke-width:1.1; cursor:pointer; transition:fill-opacity .25s ease, fill .2s ease; }
 .india-map path.selected, .india-map circle.selected{ stroke:var(--accent); stroke-width:3; stroke-dasharray:5 3; animation:march .7s linear infinite; }
 /* Clean-sweep glow — a state a player holds at a literal 100% share. Two
@@ -177,11 +177,11 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
    it (there's room) so this strip can run nearly full width instead of
    stopping short to clear it. */
 .player-strip{ position:absolute; top: 0.35rem; left: 0.35rem; right: 0.35rem; z-index:7;
-  background:var(--surface); border:1px solid var(--rule); border-radius:var(--radius-md); box-shadow:var(--shadow-sm);
+  background:var(--surface); border: 1px solid var(--rule); border-radius:var(--radius-md); box-shadow: var(--shadow-sm);
   display:flex; flex-direction:column; gap: 0.2rem; padding: 0.25rem 0.35rem; }
 .pstrip-row{ display:flex; align-items:center; gap: 0.25rem; font-family:var(--font-mono); font-weight:700; font-size:var(--fs-3); min-width:0; }
 .pstrip-row.p1{ color:var(--p1); } .pstrip-row.p2{ color:var(--p2); }
-.pstrip-portrait{ width: 0.85rem; height: 0.85rem; border-radius:50%; object-fit:cover; border:2px solid var(--line); background:var(--surface2); flex:0 0 auto; }
+.pstrip-portrait{ width: 0.85rem; height: 0.85rem; border-radius:50%; object-fit:cover; border: 1.5px solid var(--line); background:var(--surface2); flex:0 0 auto; }
 .pstrip-row .pname{ flex:1 1 auto; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
 .pstrip-funds{ font-variant-numeric:tabular-nums; white-space:nowrap; }
 .pstrip-seats{ font-variant-numeric:tabular-nums; color:var(--ink-soft); font-weight:600; white-space:nowrap; }
@@ -191,10 +191,10 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
    system as everywhere else (radius-md, shadow-sm), just floating with a
    small inset instead of glued flush to the corner. */
 .ne-actions{ position:absolute; top: 4.125rem; right: 0.35rem; z-index:7;
-  background:var(--surface); border:1px solid var(--rule); border-radius:var(--radius-md); box-shadow:var(--shadow-sm);
+  background:var(--surface); border: 1px solid var(--rule); border-radius:var(--radius-md); box-shadow: var(--shadow-sm);
   display:flex; flex-direction:column; align-items:center; padding: 0.3rem; }
 .se-actions{ position:absolute; bottom: 5.625rem; right: 0.35rem; z-index:7;
-  background:var(--surface); border:1px solid var(--rule); border-radius:var(--radius-md); box-shadow:var(--shadow-sm);
+  background:var(--surface); border: 1px solid var(--rule); border-radius:var(--radius-md); box-shadow: var(--shadow-sm);
   display:flex; flex-direction:column; align-items:center; padding: 0.3rem; }
 .ne-actions .action-block, .se-actions .action-block{ width: 5.2rem; }
 .ne-actions .action-btn, .se-actions .action-btn{ font-size: 1.25rem; }
@@ -213,20 +213,20 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
    — flex:1+aspect-ratio:1 made them balloon into oversized squares. */
 .ut-bar{ position:absolute; left: 0.35rem; right: 0.35rem; bottom: 0.35rem; z-index:7;
   display:flex; flex-direction:row; align-items:center; justify-content:space-between; padding: 0.25rem 0.35rem;
-  background:var(--surface); border:1px solid var(--rule); border-radius:var(--radius-md); box-shadow:var(--shadow-sm); }
+  background:var(--surface); border: 1px solid var(--rule); border-radius:var(--radius-md); box-shadow: var(--shadow-sm); }
 .corner-top-left, .corner-top-right, .corner-left{ display:contents; }
-.uts-btn{ flex:0 0 auto; width: 2.3rem; height: 2.3rem; display:flex; flex-direction:column; align-items:center; justify-content:center; gap: 0.075rem; border-radius:var(--radius-sm); background:var(--surface); border:2px solid var(--line); box-shadow:var(--shadow-sm); font-size: 0.85rem; }
+.uts-btn{ flex:0 0 auto; width: 2.3rem; height: 2.3rem; display:flex; flex-direction:column; align-items:center; justify-content:center; gap: 0.075rem; border-radius:var(--radius-sm); background:var(--surface); border: 1.5px solid var(--line); box-shadow: var(--shadow-sm); font-size: 0.85rem; }
 .uts-btn .lb{ font-size: 0.375rem; font-weight:800; letter-spacing:.02em; color:var(--ink-soft); }
-.uts-btn:active{ transform:translate(3px,3px); box-shadow:none; }
+.uts-btn:active{ transform: translate(2px,2px); box-shadow: none; }
 
 .action-block{ display:flex; flex-direction:column; gap: 0.15rem; }
 .action-block-label{ font-size:var(--fs-1); font-weight:800; letter-spacing:.02em; color:var(--ink-soft); text-align:center; }
 .action-group{ display:flex; flex-direction:column; gap: 0.2rem; }
 .action-btn{ position:relative; width:100%; aspect-ratio:1; border-radius:var(--radius-md);
-  background:var(--surface); border:3px solid var(--line); box-shadow:var(--shadow-md);
+  background:var(--surface); border: 2px solid var(--line); box-shadow: var(--shadow-md);
   display:flex; align-items:center; justify-content:center; font-size: 1.6rem;
   transition:transform .1s ease, box-shadow .1s ease; }
-.action-btn:active{ transform:translate(4px,4px); box-shadow:none; }
+.action-btn:active{ transform: translate(2.5px,2.5px); box-shadow: none; }
 .action-btn-wide{ grid-column:1 / -1; aspect-ratio:2.5; gap: 0.3rem; padding: 0 0.4rem; }
 .action-btn-wide.action-btn{ font-size: 1.05rem; }
 .action-btn-wide .special-label{ font-family:var(--font-display); font-weight:800; font-size: 0.575rem; line-height:1.15;
@@ -236,7 +236,7 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
   font-weight:800; display:flex; align-items:center; justify-content:center; line-height:1; }
 .action-btn .badge[hidden]{ display:none; }
 .action-btn .agenda-bar{ position:absolute; left: 0.225rem; top: 0.3rem; bottom: 0.3rem; display:flex; flex-direction:column; justify-content:space-between; align-items:center; }
-.action-btn .agenda-bar .pip{ width: 0.275rem; height: 0.275rem; border-radius:50%; background:var(--track); border:1.5px solid var(--line); flex:none; }
+.action-btn .agenda-bar .pip{ width: 0.275rem; height: 0.275rem; border-radius:50%; background:var(--track); border: 1.3px solid var(--line); flex:none; }
 .action-btn .agenda-bar .pip.filled{ background:var(--accent); border-color:var(--accent); }
 .action-btn.agenda-done .agenda-bar .pip.filled{ background:var(--stamp); border-color:var(--stamp); }
 .action-btn.armed{ background:var(--accent); border-color:var(--accent); color:#fff; }
@@ -249,8 +249,8 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
 .action-btn.agenda-done{ opacity:.5; }
 .action-btn.agenda-done .badge{ background:var(--stamp); }
 @keyframes craft-pulse{
-  0%,100%{ box-shadow:3px 3px 0 var(--line); }
-  50%{ box-shadow:3px 3px 0 var(--line), 0 0 0 4px rgba(179,49,29,.35); }
+  0%,100%{ box-shadow: 2px 2px 0 var(--line); }
+  50%{ box-shadow: 2px 2px 0 var(--line), 0 0 0 2.5px rgba(179,49,29,.35); }
 }
 
 /* ---- rally token markers: a small colored dot per player left on the map
@@ -259,18 +259,18 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
    still have room. Viewport-fixed, same coordinate space as .fx-layer. ---- */
 .rally-token-layer{ position:fixed; inset:0; z-index:6; pointer-events:none; }
 .rally-token{ position:absolute; width: 0.375rem; height: 0.375rem; margin: -0.2rem 0 0 -0.2rem; border-radius:50%;
-  border:2px solid var(--surface); box-shadow:0 1px 2px rgba(0,0,0,.35); }
+  border: 1.5px solid var(--surface); box-shadow: 0 0.5px 1px rgba(0,0,0,.35); }
 
 /* ---- news ticker: a chyron in normal document flow at the very top of the
    stage (breaking news, then state groups, then the group info readout),
    echoing the same events that already fire showToast (rallies, crafts,
    phase turns) as a scrolling wire-service feed instead of a one-off popup. ---- */
-.news-ticker{ flex:0 0 auto; height: 1.6rem; background:var(--ink); display:flex; align-items:stretch; box-shadow:0 3px 0 var(--stamp); }
+.news-ticker{ flex:0 0 auto; height: 1.6rem; background:var(--ink); display:flex; align-items:stretch; box-shadow: 0 2px 0 var(--stamp); }
 .news-ticker .tag{ flex:0 0 auto; display:flex; align-items:center; padding: 0 0.45rem; background:var(--stamp); color:#fff; font-family:var(--font-mono); font-size:var(--fs-2); font-weight:800; letter-spacing:.05em; }
 .news-ticker .feed{ flex:1 1 auto; overflow:hidden; white-space:nowrap; }
 .news-ticker .feed .track{ display:inline-flex; align-items:center; height: 1.6rem; gap: 1.2rem; padding-left: 1.2rem; animation:ticker-scroll 22s linear infinite; }
 .news-ticker .feed .track span{ font-family:var(--font-mono); font-size:var(--fs-3); font-weight:700; color:var(--page); }
-@keyframes ticker-scroll{ from{ transform:translateX(0); } to{ transform:translateX(-50%); } }
+@keyframes ticker-scroll{ from{ transform: translateX(0); } to{ transform: translateX(-50%); } }
 
 /* top:195px is only the pre-game fallback (before the map/Ladakh exists to
    measure) — main.js's showToast() overrides this per-call, anchored just
@@ -282,7 +282,7 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
    every fixed-position value in the ~980px virtual-canvas coordinate
    space, not real device px. max-width keeps most messages to one line so
    the anchor doesn't have to grow upward as often. */
-.toast{ position:fixed; left:50%; top: 4.875rem; transform:translate(-50%,0); z-index:65; background:var(--ink); color:var(--page); font-size:var(--fs-3); font-weight:700; padding: 0.45rem 0.825rem; border-radius:var(--radius-md); box-shadow:4px 4px 0 var(--accent); opacity:0; pointer-events:none; transition:opacity .25s ease; max-width: min(23rem,94vw); width:max-content; text-align:center; }
+.toast{ position:fixed; left:50%; top: 4.875rem; transform: translate(-50%,0); z-index:65; background:var(--ink); color:var(--page); font-size:var(--fs-3); font-weight:700; padding: 0.45rem 0.825rem; border-radius:var(--radius-md); box-shadow: 2.5px 2.5px 0 var(--accent); opacity:0; pointer-events:none; transition:opacity .25s ease; max-width: min(23rem,94vw); width:max-content; text-align:center; }
 .toast.show{ opacity:1; }
 
 /* ---- info panel: fixed, non-interactive readout for the tapped state, kept
@@ -290,7 +290,7 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
    of icon-only group chips, one single tug-of-war bar for both players.
    Doesn't expand, doesn't drag, doesn't cover the map. Investing still
    happens by tapping the map directly. ---- */
-.info-panel{ position:relative; flex:0 0 auto; zoom:1.15; padding: 0.675rem calc(0.675rem + 2.25rem) calc(env(safe-area-inset-bottom,0px) + 0.675rem) 0.675rem; background:var(--surface); border-top:3px solid var(--line); }
+.info-panel{ position:relative; flex:0 0 auto; padding: 0.45rem calc(0.7rem + 1.5rem) calc(env(safe-area-inset-bottom,0px) + 0.3rem) 0.7rem; background:var(--surface); border-top: 2px solid var(--line); }
 .info-row{ display:flex; align-items:center; gap: 0.4rem; flex-wrap:wrap; }
 /* flex-shrink:0 — for the one or two longest state names, this drops
    "seats" onto its own line below the name instead of squeezing the name
@@ -309,9 +309,9 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
    faded icon, so it reads as a real toggle rather than a decoration. */
 .pin-btn{ position:absolute; right: 0.675rem; bottom: calc(env(safe-area-inset-bottom,0px) + 0.675rem);
   width: 1.75rem; height: 1.75rem; z-index:2; display:flex; align-items:center; justify-content:center;
-  font-size:var(--fs-4); background:var(--surface); border:3px solid var(--line); border-radius:var(--radius-md);
-  box-shadow:var(--shadow-md); transition:transform .1s ease, box-shadow .1s ease; }
-.pin-btn:active{ transform:translate(4px,4px); box-shadow:none; }
+  font-size:var(--fs-4); background:var(--surface); border: 2px solid var(--line); border-radius:var(--radius-md);
+  box-shadow: var(--shadow-md); transition:transform .1s ease, box-shadow .1s ease; }
+.pin-btn:active{ transform: translate(2.5px,2.5px); box-shadow: none; }
 .pin-btn.on{ background:var(--accent); border-color:var(--accent); color:#fff; }
 .pin-btn[hidden]{ display:none; }
 
@@ -321,24 +321,24 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
    different row count (2 or 3) depending on the state, which also made the
    map above it resize taller/shorter every tap. Fixed row structure now:
    name+seats, then groups, then the popularity meter, always in that order. */
-.info-groups{ display:flex; flex-wrap:wrap; gap: 0.25rem; width:100%; margin-top: 0.35rem; }
+.info-groups{ display:flex; flex-wrap:wrap; gap: 0.25rem; width:100%; margin-top: 0.3rem; }
 .info-groups .chip{ width: 1.2rem; height: 1.2rem; display:flex; align-items:center; justify-content:center; font-size: 0.775rem; background:var(--surface2); border-radius: 0.275rem; }
-.info-groups .none{ font-size: 0.6rem; color:var(--ink-faint); line-height:48px; }
+.info-groups .none{ font-size: 0.6rem; color:var(--ink-faint); line-height: 1.2rem; }
 
-.vs-bar{ display:flex; align-items:center; gap: 0.4rem; margin-top: 0.525rem; }
+.vs-bar{ display:flex; align-items:center; gap: 0.4rem; margin-top: 0.4rem; }
 .vs-bar[hidden]{ display:none; }
 .vs-label{ font-family:var(--font-mono); font-size:var(--fs-4); font-weight:800; white-space:nowrap; }
 .vs-label.p1{ color:var(--p1); } .vs-label.p2{ color:var(--p2); }
-.vs-track{ flex:1 1 auto; display:flex; height: 0.675rem; border:3px solid var(--line); border-radius:var(--radius-sm); overflow:hidden; background:var(--track); }
+.vs-track{ flex:1 1 auto; display:flex; height: 0.675rem; border: 2px solid var(--line); border-radius:var(--radius-sm); overflow:hidden; background:var(--track); }
 .vs-seg.p1{ background:var(--p1); } .vs-seg.p2{ background:var(--p2); } .vs-seg.oth{ background:transparent; }
 
 /* Group overview mode — takes over the same info-panel real estate as the
    single-state card (cardGroups + vs-bar) when a group chip is active. */
 .led-grid{ display:flex; flex-wrap:wrap; gap: 0.2rem; margin-top: 0.525rem; width:100%; }
 .led-chip{ display:flex; align-items:center; gap: 0.175rem; padding: 0.2rem 0.3rem; border-radius: 2.5rem;
-  background:var(--surface2); border:2px solid var(--line); font-family:var(--font-mono);
+  background:var(--surface2); border: 1.5px solid var(--line); font-family:var(--font-mono);
   font-weight:700; font-size: 0.425rem; color:var(--ink-soft); }
-.led-dot{ width: 0.35rem; height: 0.35rem; border-radius:50%; background:var(--track); border:2px solid var(--ink-faint); flex:0 0 auto; }
+.led-dot{ width: 0.35rem; height: 0.35rem; border-radius:50%; background:var(--track); border: 1.5px solid var(--ink-faint); flex:0 0 auto; }
 .led-chip.led-on{ border-color:var(--p1); color:var(--ink); }
 .led-chip.led-on .led-dot{ background:var(--p1); border-color:var(--p1); }
 
@@ -371,24 +371,24 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
 .welcome-bg{ position:absolute; inset:0; width:100%; height:100%; object-fit:contain; object-position:top center; background:var(--ink); }
 .welcome-scrim{ position:absolute; inset:0; background:linear-gradient(to bottom, rgba(20,22,28,0) 30%, rgba(20,22,28,.5) 55%, rgba(20,22,28,.7) 68%, rgba(20,22,28,.85) 78%); }
 .welcome-content{ position:relative; z-index:1; padding: 0 0.7rem calc(env(safe-area-inset-bottom,0px) + 1rem); text-align:center; }
-.welcome-content h1{ color:#fff; font-size: 1.2rem; margin: 0.4rem 0 0.65rem; text-shadow:0 3px 14px rgba(0,0,0,.55); }
+.welcome-content h1{ color:#fff; font-size: 1.2rem; margin: 0.4rem 0 0.65rem; text-shadow: 0 2px 8.5px rgba(0,0,0,.55); }
 .welcome-start-btn{ width:100%; max-width: 11rem; font-family:var(--font-display); color:#fff; font-weight:700; font-size: 0.8rem; padding: 0.5rem 0.8rem;
-  background:var(--accent); border-radius: 2.5rem; border:2px solid var(--ink); box-shadow:3px 3px 0 var(--ink); }
+  background:var(--accent); border-radius: 2.5rem; border: 1.5px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); }
 .welcome-howto-btn{ width:100%; max-width: 11rem; margin-top: 0.4rem; font-family:var(--font-display); color:var(--ink); font-weight:700; font-size: 0.8rem; padding: 0.5rem 0.8rem;
-  background:var(--paper-dim); border-radius: 2.5rem; border:2px solid var(--ink); box-shadow:3px 3px 0 var(--ink); }
-.welcome-howto-btn:active{ transform:translate(3px,3px); box-shadow:none; }
-.welcome-start-btn:active{ transform:translate(3px,3px); box-shadow:none; }
-.welcome-start-btn[disabled], .welcome-howto-btn[disabled]{ opacity:.4; box-shadow:none; }
+  background:var(--paper-dim); border-radius: 2.5rem; border: 1.5px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); }
+.welcome-howto-btn:active{ transform: translate(2px,2px); box-shadow: none; }
+.welcome-start-btn:active{ transform: translate(2px,2px); box-shadow: none; }
+.welcome-start-btn[disabled], .welcome-howto-btn[disabled]{ opacity:.4; box-shadow: none; }
 .welcome-content .ver-badge{ margin-top: 0.4rem; color:#fff; }
 .welcome-loading{ width:100%; max-width: 11rem; margin: 0 auto 0.55rem; }
 .welcome-loading[hidden]{ display:none; }
-.welcome-loading-track{ width:100%; height: 0.5rem; background:rgba(255,255,255,.25); border-radius: 2.5rem; overflow:hidden; border:1.5px solid rgba(255,255,255,.4); }
+.welcome-loading-track{ width:100%; height: 0.5rem; background:rgba(255,255,255,.25); border-radius: 2.5rem; overflow:hidden; border: 1.3px solid rgba(255,255,255,.4); }
 .welcome-loading-fill{ width:35%; height:100%; background:var(--accent); border-radius: 2.5rem; animation:welcome-loading-sweep 1.1s ease-in-out infinite; }
 .welcome-loading-label{ margin-top: 0.25rem; color:rgba(255,255,255,.85); font-family:var(--font-mono); font-size: 0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; }
 @keyframes welcome-loading-sweep{
-  0%{ transform:translateX(-100%); }
-  100%{ transform:translateX(285%); } }
-.welcome-loading-error .welcome-loading-fill{ width:100%; background:var(--stamp); animation:none; transform:none; }
+  0%{ transform: translateX(-100%); }
+  100%{ transform: translateX(285%); } }
+.welcome-loading-error .welcome-loading-fill{ width:100%; background:var(--stamp); animation:none; transform: none; }
 .welcome-loading-error .welcome-loading-label{ color:#fff; }
 .tip-link{ display:block; font-family:var(--font-display); font-size: 0.65rem; font-weight:700; text-decoration:underline; }
 .welcome-content .tip-link{ margin-top: 0.5rem; color:rgba(255,255,255,.8); }
@@ -400,8 +400,8 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
    and rationale). Swipe/scroll-snap between them (native CSS, no drag JS). */
 #polCarousel{ flex:1 1 auto; min-height:0; display:flex; overflow-x:auto; overflow-y:hidden; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; }
 .pol-card{ flex:0 0 100%; scroll-snap-align:center; scroll-snap-stop:always; display:flex; flex-direction:column; overflow-y:auto; padding: 0.45rem 0.45rem 0.3rem; }
-.ballot-card{ --acc:#999; flex:1 1 auto; min-height:0; zoom:.95; background:var(--paper); color:var(--ink); border-radius: 1.125rem; border:3px solid var(--ink);
-  box-shadow:5px 5px 0 var(--ink); overflow:hidden; display:flex; flex-direction:column; }
+.ballot-card{ --acc:#999; flex:1 1 auto; min-height:0; zoom:.95; background:var(--paper); color:var(--ink); border-radius: 1.125rem; border: 2px solid var(--ink);
+  box-shadow: 3px 3px 0 var(--ink); overflow:hidden; display:flex; flex-direction:column; }
 
 .tricolor{ width:100%; height: 0.25rem; display:flex; flex:0 0 auto; }
 .tricolor span{ flex:1; }
@@ -411,49 +411,49 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
   background:linear-gradient(160deg, var(--acc), var(--paper) 92%); }
 .pol-art img{ width:100%; height:100%; object-fit:contain; display:block; }
 .pol-art-fallback{ width:100%; height:100%; display:flex; align-items:center; justify-content:center;
-  font-family:var(--font-display); font-weight:700; font-size: 3rem; color:#fff; text-shadow:0 2px 10px rgba(0,0,0,.25); }
+  font-family:var(--font-display); font-weight:700; font-size: 3rem; color:#fff; text-shadow: 0 1px 6px rgba(0,0,0,.25); }
 .pol-stub{ position:absolute; left:0; right:0; bottom:0; height: 0.625rem; line-height:0; }
 .pol-stub svg{ display:block; width:100%; height:100%; }
 
 .pol-bio{ flex:0 0 auto; padding: 0.5rem 1rem 0; }
 .pol-name-row{ display:flex; align-items:center; justify-content:space-between; gap: 0.5rem; margin-bottom: 0.25rem; }
 .pol-name{ font-family:var(--font-display); font-weight:700; font-size: 1.2rem; margin:0; text-align:left; min-width:0; }
-.pol-seal{ width: 2.5rem; height: 2.5rem; border-radius:50%; flex:0 0 auto; border:2.5px solid #C9A227;
-  display:flex; align-items:center; justify-content:center; font-size: 1.05rem; overflow:hidden; box-shadow:0 0 0 2.5px rgba(0,0,0,.15); }
+.pol-seal{ width: 2.5rem; height: 2.5rem; border-radius:50%; flex:0 0 auto; border: 1.6px solid #C9A227;
+  display:flex; align-items:center; justify-content:center; font-size: 1.05rem; overflow:hidden; box-shadow: 0 0 0 1.5px rgba(0,0,0,.15); }
 .pol-seal img{ width: 2.2rem; height: 2.2rem; object-fit:contain; }
 .party-symbol-icon{ width:1.15em; height:1.15em; object-fit:contain; vertical-align:-0.2em; flex:0 0 auto; }
 .pol-meta{ display:flex; justify-content:flex-start; align-items:center; gap: 0.5rem; margin-bottom: 0.15rem; font-size: 0.75rem; font-family:var(--font-mono); color:var(--brass); }
 .pol-party-pill{ color:var(--ink); background:var(--paper-dim); font-weight:700; padding: 0.075rem 0.5rem; border-radius: 0.25rem; font-size: 0.7rem; }
-.pol-section-label{ font-family:var(--font-mono); font-size: 0.625rem; font-weight:700; text-transform:uppercase; letter-spacing:.12em; color:var(--brass); margin: 0.45rem 0 0.2rem; padding-bottom: 0.25rem; border-bottom:1px solid rgba(20,22,28,.15); }
+.pol-section-label{ font-family:var(--font-mono); font-size: 0.625rem; font-weight:700; text-transform:uppercase; letter-spacing:.12em; color:var(--brass); margin: 0.45rem 0 0.2rem; padding-bottom: 0.25rem; border-bottom: 1px solid rgba(20,22,28,.15); }
 .pol-agendas{ display:flex; flex-direction:column; }
-.pol-agenda-chip{ width:100%; text-align:left; background:none; border-radius:0; padding: 0.325rem 0.125rem; display:flex; align-items:center; gap: 0.575rem; font-size: 0.85rem; font-weight:600; min-width:0; border-bottom:1px solid rgba(20,22,28,.15); }
-.pol-agenda-chip:nth-last-child(2){ border-bottom:none; }
+.pol-agenda-chip{ width:100%; text-align:left; background:none; border-radius:0; padding: 0.325rem 0.125rem; display:flex; align-items:center; gap: 0.575rem; font-size: 0.85rem; font-weight:600; min-width:0; border-bottom: 1px solid rgba(20,22,28,.15); }
+.pol-agenda-chip:nth-last-child(2){ border-bottom: none; }
 /* checklist look — the bullet is its own marker (a hollow punched
    ballot-stub circle, die-cut through the card stock) leading each row,
    ahead of the icon, not overlapping it. */
-.pol-agenda-chip .bullet{ width: 0.65rem; height: 0.65rem; border-radius:50%; background:var(--paper); border:2.5px solid rgba(20,22,28,.35); flex:0 0 auto; }
+.pol-agenda-chip .bullet{ width: 0.65rem; height: 0.65rem; border-radius:50%; background:var(--paper); border: 1.6px solid rgba(20,22,28,.35); flex:0 0 auto; }
 .pol-agenda-chip .ic{ width: 1.625rem; height: 1.625rem; border-radius:50%; background:var(--paper-dim); display:flex; align-items:center; justify-content:center; font-size: 0.875rem; flex:0 0 auto; }
 .pol-agenda-chip .nm{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .pol-agenda-chip .chev{ flex:0 0 auto; font-size: 0.75rem; color:var(--brass); transition:transform .15s; }
-.pol-agenda-chip.active .chev{ transform:rotate(90deg); color:var(--stamp); }
+.pol-agenda-chip.active .chev{ transform: rotate(90deg); color:var(--stamp); }
 .pol-agenda-detail{ display:none; flex-wrap:wrap; gap: 0.375rem; padding: 0.125rem 0.125rem 0.625rem 2.2rem; }
 .pol-agenda-detail.show{ display:flex; }
-.pol-eff-chip{ padding: 0.2rem 0.5rem; border-radius: 2.5rem; background:var(--paper-dim); border:1.3px solid var(--rule); font-family:var(--font-mono); font-weight:700; font-size: 0.625rem; }
+.pol-eff-chip{ padding: 0.2rem 0.5rem; border-radius: 2.5rem; background:var(--paper-dim); border: 1px solid var(--rule); font-family:var(--font-mono); font-weight:700; font-size: 0.625rem; }
 .pol-eff-chip.eff-pos{ border-color:#1C8A4B; color:#1C8A4B; }
 .pol-eff-chip.eff-neg{ border-color:var(--stamp); color:var(--stamp); }
-.pol-power{ position:relative; width:100%; background:rgba(179,49,29,.06); border:1.3px solid rgba(179,49,29,.4); border-radius: 0.625rem; padding: 0.45rem 0.75rem 0.45rem 2.5rem; margin-bottom: 0.45rem; }
-.pow-seal{ position:absolute; left: 0.55rem; top: 0.45rem; width: 1.375rem; height: 1.375rem; border-radius:50%; background:var(--stamp); display:flex; align-items:center; justify-content:center; font-size: 0.7rem; transform:rotate(-8deg); box-shadow:0 2px 4px rgba(20,22,28,.3); }
+.pol-power{ position:relative; width:100%; background:rgba(179,49,29,.06); border: 1px solid rgba(179,49,29,.4); border-radius: 0.625rem; padding: 0.45rem 0.75rem 0.45rem 2.5rem; margin-bottom: 0.45rem; }
+.pow-seal{ position:absolute; left: 0.55rem; top: 0.45rem; width: 1.375rem; height: 1.375rem; border-radius:50%; background:var(--stamp); display:flex; align-items:center; justify-content:center; font-size: 0.7rem; transform: rotate(-8deg); box-shadow: 0 1px 2.5px rgba(20,22,28,.3); }
 .pow-name{ font-family:var(--font-display); font-weight:700; font-size: 0.85rem; margin-bottom: 0.15rem; }
 .pow-benefit{ font-family:var(--font-mono); font-size: 0.625rem; color:var(--seal-green); font-weight:700; text-transform:uppercase; letter-spacing:.02em; margin-bottom: 0.15rem; }
 .pow-cost{ font-family:var(--font-mono); font-size: 0.625rem; color:var(--stamp); font-weight:700; text-transform:uppercase; letter-spacing:.02em; }
 .pow-unlock{ font-family:var(--font-mono); font-size: 0.625rem; color:var(--ink-soft); font-weight:700; text-transform:uppercase; letter-spacing:.02em; margin-top: 0.15rem; }
-.pol-footer{ flex:0 0 auto; border-top:1px solid rgba(20,22,28,.18); padding: 0.5rem 0.875rem 0.6rem; display:flex; flex-direction:column; align-items:center; justify-content:center; gap: 0.35rem; }
+.pol-footer{ flex:0 0 auto; border-top: 1px solid rgba(20,22,28,.18); padding: 0.5rem 0.875rem 0.6rem; display:flex; flex-direction:column; align-items:center; justify-content:center; gap: 0.35rem; }
 .pol-charges{ display:flex; gap: 0.35rem; }
 .pol-diamond{ font-size: 1rem; line-height:1; color:rgba(20,22,28,.25); }
 .pol-diamond.full{ color:var(--acc); }
 .pol-play-btn{ width:100%; max-width: 13rem; text-align:center; flex:0 0 auto; font-family:var(--font-display); color:#fff; font-weight:700; font-size: 1.05rem; padding: 0.7rem 1.125rem;
-  border-radius: 2.5rem; border:2px solid var(--ink); box-shadow:3px 3px 0 var(--ink); }
-.pol-play-btn:active{ transform:translate(3px,3px); box-shadow:none; }
+  border-radius: 2.5rem; border: 1.5px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); }
+.pol-play-btn:active{ transform: translate(2px,2px); box-shadow: none; }
 .pol-locked .pol-art img, .pol-locked .pol-art-fallback{ filter:grayscale(1); opacity:.55; }
 .pol-locked .pol-play-btn{ background:var(--ink-soft) !important; }
 .pol-dots{ flex:0 0 auto; zoom:.95; display:flex; justify-content:center; flex-wrap:wrap; gap: 0.325rem; padding: 0.25rem 1rem calc(env(safe-area-inset-bottom,0px) + 0.35rem); }
@@ -463,39 +463,39 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
 /* ---- end-of-game "declaration" card — same ballot-card materials as the
    select screen's, so the game opens and closes inside one visual world. ---- */
 .end-overlay{ align-items:center; justify-content:flex-start; text-align:center; gap:0; padding: 0.5rem; }
-.declare-card{ width:100%; background:var(--paper); color:var(--ink); border-radius: 1.125rem; border:3px solid var(--ink);
-  box-shadow:6px 6px 0 var(--ink); overflow:hidden; display:flex; flex-direction:column; align-items:center; }
-.declare-seal{ margin-top: 0.5rem; width: 2.75rem; height: 2.75rem; border-radius:50%; background:var(--ink); border:3px solid #C9A227;
-  display:flex; align-items:center; justify-content:center; font-size: 1.3rem; box-shadow:0 0 0 3px rgba(0,0,0,.12); flex:0 0 auto; }
+.declare-card{ width:100%; background:var(--paper); color:var(--ink); border-radius: 1.125rem; border: 2px solid var(--ink);
+  box-shadow: 3.5px 3.5px 0 var(--ink); overflow:hidden; display:flex; flex-direction:column; align-items:center; }
+.declare-seal{ margin-top: 0.5rem; width: 2.75rem; height: 2.75rem; border-radius:50%; background:var(--ink); border: 2px solid #C9A227;
+  display:flex; align-items:center; justify-content:center; font-size: 1.3rem; box-shadow: 0 0 0 2px rgba(0,0,0,.12); flex:0 0 auto; }
 .end-winner-portrait{ margin-top: 0.25rem; width: 3rem; height: 3rem; border-radius:50%; object-fit:cover; background:#ccc;
-  border:4px solid #C9A227; box-shadow:0 0 0 3px rgba(0,0,0,.12); flex:0 0 auto; }
+  border: 2.5px solid #C9A227; box-shadow: 0 0 0 2px rgba(0,0,0,.12); flex:0 0 auto; }
 .end-overlay .headline{ font-family:var(--font-display); font-size: 1.325rem; font-weight:700; margin: 0.45rem 1.25rem 0.15rem; }
 .end-overlay .sub{ color:rgba(20,22,28,.65); font-size: 0.85rem; max-width:34ch; margin: 0 1.25rem 0.5rem; }
 .end-parliament{ width:100%; max-width: 15.5rem; padding: 0 1rem; }
 .end-parliament svg{ width:100%; height:auto; display:block; }
 .end-parliament circle{ transition:fill .4s ease; }
 .declare-ledger{ width:100%; padding: 0.45rem 1rem 0.15rem; }
-.ledger-row{ display:flex; align-items:center; gap: 0.5rem; padding: 0.3rem 0; border-bottom:1px dashed rgba(20,22,28,.16); font-family:var(--font-mono); font-size: 0.8rem; }
-.ledger-row:last-child{ border-bottom:none; }
+.ledger-row{ display:flex; align-items:center; gap: 0.5rem; padding: 0.3rem 0; border-bottom: 1px dashed rgba(20,22,28,.16); font-family:var(--font-mono); font-size: 0.8rem; }
+.ledger-row:last-child{ border-bottom: none; }
 .ledger-row.winner{ font-weight:700; }
 .ledger-row.others{ color:var(--ink-soft); font-style:italic; }
-.ledger-portrait{ width: 1.75rem; height: 1.75rem; border-radius:50%; object-fit:cover; border:2.5px solid var(--ink); background:#ccc; flex:0 0 auto; }
+.ledger-portrait{ width: 1.75rem; height: 1.75rem; border-radius:50%; object-fit:cover; border: 1.6px solid var(--ink); background:#ccc; flex:0 0 auto; }
 .ledger-dot{ width: 0.55rem; height: 0.55rem; border-radius:50%; flex:0 0 auto; }
 .ledger-name{ flex:1; text-align:left; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .ledger-type{ color:var(--ink-soft); font-weight:600; font-size: 0.6rem; }
 .ledger-seats{ font-weight:700; font-variant-numeric:tabular-nums; white-space:nowrap; }
 .declare-stats{ width:100%; padding: 0.125rem 1rem 0.15rem; }
 .declare-stats .pol-section-label{ text-align:left; }
-.stat-row{ display:flex; align-items:center; gap: 0.375rem; padding: 0.225rem 0; border-bottom:1px dashed rgba(20,22,28,.16); font-family:var(--font-mono); font-size: 0.7rem; }
-.stat-row:last-child{ border-bottom:none; }
+.stat-row{ display:flex; align-items:center; gap: 0.375rem; padding: 0.225rem 0; border-bottom: 1px dashed rgba(20,22,28,.16); font-family:var(--font-mono); font-size: 0.7rem; }
+.stat-row:last-child{ border-bottom: none; }
 .stat-label{ flex:1; text-align:center; color:var(--ink-soft); }
 .stat-val{ font-weight:700; text-align:center; min-width: 2.75rem; font-variant-numeric:tabular-nums; }
 .stat-val.p1{ color:var(--p1); } .stat-val.p2{ color:var(--p2); }
-.declare-footer{ width:100%; display:flex; flex-wrap:wrap; gap: 0.5rem; border-top:1px solid rgba(20,22,28,.18); margin-top: 0.45rem; padding: 0.5rem 1.25rem 0.75rem; }
+.declare-footer{ width:100%; display:flex; flex-wrap:wrap; gap: 0.5rem; border-top: 1px solid rgba(20,22,28,.18); margin-top: 0.45rem; padding: 0.5rem 1.25rem 0.75rem; }
 .declare-footer .tip-link{ flex:0 0 100%; text-align:center; color:var(--ink-soft); }
 .end-overlay button{ flex:1; font-family:var(--font-display); background:var(--accent); color:#fff; font-weight:700;
-  padding: 0.6rem 0.75rem; border-radius: 2.5rem; font-size: 0.9rem; border:2px solid var(--ink); box-shadow:3px 3px 0 var(--ink); }
-.end-overlay button:active{ transform:translate(3px,3px); box-shadow:none; }
+  padding: 0.6rem 0.75rem; border-radius: 2.5rem; font-size: 0.9rem; border: 1.5px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); }
+.end-overlay button:active{ transform: translate(2px,2px); box-shadow: none; }
 .end-overlay button.secondary{ background:var(--paper-dim); color:var(--ink); }
 .target-banner{ position:fixed; top:0; left:0; right:0; z-index:60; background:var(--stamp); color:#fff; text-align:center; font-size: 0.3125rem; font-weight:700; padding: 0.2rem; }
 .target-banner[hidden]{ display:none; }
@@ -509,19 +509,19 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
 .install-gate-overlay{ z-index:100; align-items:center; justify-content:center; text-align:center; padding: 1rem; padding-top: calc(env(safe-area-inset-top,0px) + 2.25rem); }
 .install-gate-body{ max-width: 16rem; margin:0 auto; }
 .install-gate-body p{ font-size: 1.1rem; line-height:1.5; margin: 0 0 0.75rem; }
-.install-gate-steps{ background:var(--paper-dim); border:2px solid var(--ink); border-radius: 0.75rem; padding: 0.75rem 0.875rem; text-align:left; }
+.install-gate-steps{ background:var(--paper-dim); border: 1.5px solid var(--ink); border-radius: 0.75rem; padding: 0.75rem 0.875rem; text-align:left; }
 .install-gate-steps p{ font-size: 0.95rem; line-height:1.4; margin: 0 0 0.5rem; }
 .install-gate-steps p:last-child{ margin-bottom:0; }
 
 .tutorial-navbar{ position:fixed; top: calc(env(safe-area-inset-top,0px) + 0.35rem); left: calc(var(--gutter) + 0.35rem); z-index:62;
-  background:var(--paper); color:var(--ink); padding: 0.25rem 0.5rem; border-radius: 2.5rem; border:2px solid var(--ink); box-shadow:3px 3px 0 var(--ink); }
+  background:var(--paper); color:var(--ink); padding: 0.25rem 0.5rem; border-radius: 2.5rem; border: 1.5px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); }
 .tutorial-navbar[hidden]{ display:none; }
 .tutorial-navbar-label{ font-family:var(--font-display); font-weight:700; font-size: 0.65rem; letter-spacing: .5px; }
 .tutorial-step-counter{ font-family:var(--font-mono); font-weight:700; font-size: 0.6rem; color:var(--ink-faint); align-self:center; }
 .tutorial-nav-btn{ font-family:var(--font-display); font-weight:700; font-size: 0.7rem; color:#fff; background:var(--accent);
-  border:2px solid var(--ink); border-radius: 2.5rem; padding: 0.35rem 0.7rem; flex:0 0 auto; box-shadow:3px 3px 0 var(--ink); }
-.tutorial-nav-btn:active{ transform:translate(3px,3px); box-shadow:none; }
-.tutorial-nav-btn:disabled{ background:var(--paper-dim); color:var(--ink-faint); box-shadow:none; }
+  border: 1.5px solid var(--ink); border-radius: 2.5rem; padding: 0.35rem 0.7rem; flex:0 0 auto; box-shadow: 2px 2px 0 var(--ink); }
+.tutorial-nav-btn:active{ transform: translate(2px,2px); box-shadow: none; }
+.tutorial-nav-btn:disabled{ background:var(--paper-dim); color:var(--ink-faint); box-shadow: none; }
 #tutorialBackBtn, #tutorialStageBackBtn{ background:var(--paper-dim); color:var(--ink); }
 /* Back/Next dock to the bottom-left/bottom-right of whichever card is showing
    (slide or coach banner) via .tutorial-coach-nav below — a JS-relocated
@@ -537,7 +537,7 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
    it should already look like the rest of the game, not plain text on the
    page background. */
 .tutorial-slide{ width:100%; text-align:center; background:var(--paper); color:var(--ink);
-  border-radius: 1.125rem; border:3px solid var(--ink); box-shadow:8px 8px 0 var(--ink); overflow:hidden; }
+  border-radius: 1.125rem; border: 2px solid var(--ink); box-shadow: 5px 5px 0 var(--ink); overflow:hidden; }
 .tutorial-slide h2{ font-family:var(--font-display); font-size: 1.95rem; margin: 1.75rem 1.375rem 0.85rem; }
 .tutorial-slide p{ font-size: 1.15rem; color:var(--ink); line-height:1.55; margin: 0 1.375rem 1.75rem; }
 .tutorial-slide .tutorial-coach-nav{ margin: 0 1.375rem 1.5rem; }
@@ -545,42 +545,46 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
 
 #selectOverlay.tutorial-locked .overlay-header{ padding-top: calc(env(safe-area-inset-top,0px) + 2.25rem); }
 .tutorial-coach{ flex:0 0 auto; margin: 0 0.6rem 0.35rem; padding: 0.55rem 0.7rem; background:var(--paper-dim); color:var(--ink);
-  border-radius:var(--radius-md); border:2px solid var(--ink); box-shadow:var(--shadow-sm); text-align:center; }
+  border-radius:var(--radius-md); border: 1.5px solid var(--ink); box-shadow: var(--shadow-sm); text-align:center; }
 .tutorial-coach[hidden]{ display:none; }
 .tutorial-coach-title{ font-family:var(--font-display); font-weight:700; font-size: 1rem; margin-bottom: 0.2rem; }
 .tutorial-coach-title[hidden]{ display:none; }
 .tutorial-coach-body{ font-size: 0.95rem; line-height:1.4; color:var(--ink); }
-/* stage banner: same in-flow docking — the bottom strip is already
-   claimed edge-to-edge by the small-UT invest buttons (.ut-bar), so Back/Next
-   instead dock to this banner's own left/right edge, in normal flow. */
 .tutorial-coach-nav{ display:flex; justify-content:space-between; gap: 0.35rem; margin-top: 0.4rem; }
-.tutorial-coach-stage{ margin: 0.25rem 0.35rem; padding: 0.4rem 0.55rem; }
+/* stage banner: floats over the map's lower half as an absolute overlay
+   (anchored to #stage, which is the fixed containing block) rather than a flex
+   child — an in-flow banner stole height from the map row and, on a short
+   phone, squeezed it until the floating HUD panels inside collapsed onto each
+   other. Back/Next dock to this banner's own left/right edge. */
+.tutorial-coach-stage{ position:absolute; left: 0.5rem; right: 0.5rem;
+  bottom: calc(env(safe-area-inset-bottom,0px) + 7.5rem); z-index:9;
+  margin:0; padding: 0.5rem 0.6rem; max-height:42vh; overflow-y:auto; }
 .tutorial-coach-stage .tutorial-coach-body{ font-size: 0.85rem; text-align:left; }
 #polCarousel.tutorial-frozen{ overflow-x:hidden; touch-action:none; }
-@keyframes tutorial-chip-pulse{ 0%,100%{ box-shadow:none; } 50%{ box-shadow:inset 0 0 0 4px var(--brass), 0 0 0 9px rgba(156,122,30,.4); } }
+@keyframes tutorial-chip-pulse{ 0%,100%{ box-shadow: none; } 50%{ box-shadow: inset 0 0 0 2.5px var(--brass), 0 0 0 5.5px rgba(156,122,30,.4); } }
 #polCarousel.tutorial-pulse-agendas .pol-agenda-chip{ animation:tutorial-chip-pulse 1.1s ease-in-out infinite; border-radius: 0.25rem; }
-@keyframes tutorial-power-pulse{ 0%,100%{ box-shadow:none; } 50%{ box-shadow:inset 0 0 0 4px var(--brass), 0 0 0 9px rgba(156,122,30,.4); } }
+@keyframes tutorial-power-pulse{ 0%,100%{ box-shadow: none; } 50%{ box-shadow: inset 0 0 0 2.5px var(--brass), 0 0 0 5.5px rgba(156,122,30,.4); } }
 #polCarousel.tutorial-pulse-power .pol-power{ animation:tutorial-power-pulse 1.1s ease-in-out infinite; }
-@keyframes tutorial-play-pulse{ 0%,100%{ box-shadow:3px 3px 0 var(--ink); transform:scale(1); } 50%{ box-shadow:3px 3px 0 var(--ink), 0 0 0 10px rgba(156,122,30,.5); transform:scale(1.03); } }
+@keyframes tutorial-play-pulse{ 0%,100%{ box-shadow: 2px 2px 0 var(--ink); transform: scale(1); } 50%{ box-shadow: 2px 2px 0 var(--ink), 0 0 0 6px rgba(156,122,30,.5); transform: scale(1.03); } }
 #polCarousel.tutorial-pulse-play .pol-card[data-pol-id="narendra-modi"] .pol-play-btn{ animation:tutorial-play-pulse 1s ease-in-out infinite; }
 
 /* small inline HUD text (phase/clock/funds/seats) needs a filled tint, not
    just an outline ring — a thin box-shadow alone is easy to miss against a
    busy screen at this size. */
 @keyframes tutorial-hud-pulse{
-  0%,100%{ box-shadow:none; background:transparent; }
-  50%{ box-shadow:0 0 0 4px var(--brass), 0 0 0 9px rgba(156,122,30,.45); background:rgba(156,122,30,.3); }
+  0%,100%{ box-shadow: none; background:transparent; }
+  50%{ box-shadow: 0 0 0 2.5px var(--brass), 0 0 0 5.5px rgba(156,122,30,.45); background:rgba(156,122,30,.3); }
 }
 #stage.tutorial-pulse-phase #phaseNum, #stage.tutorial-pulse-clock #phaseTimer,
 #stage.tutorial-pulse-funds #p1Funds, #stage.tutorial-pulse-seats #p1Seats{
   display:inline-block; border-radius: 0.2rem; padding: 0.05rem 0.2rem; margin: -0.05rem -0.2rem;
   animation:tutorial-hud-pulse 1s ease-in-out infinite;
 }
-@keyframes tutorial-hud-pulse-info{ 0%,100%{ box-shadow:none; } 50%{ box-shadow:inset 0 0 0 4px var(--brass), inset 0 0 0 9px rgba(156,122,30,.35); } }
+@keyframes tutorial-hud-pulse-info{ 0%,100%{ box-shadow: none; } 50%{ box-shadow: inset 0 0 0 2.5px var(--brass), inset 0 0 0 5.5px rgba(156,122,30,.35); } }
 #stage.tutorial-pulse-info .info-panel{ animation:tutorial-hud-pulse-info 1.1s ease-in-out infinite; }
 @keyframes tutorial-target-pulse{ 0%,100%{ filter:drop-shadow(0 0 6px var(--brass)); } 50%{ filter:drop-shadow(0 0 16px var(--brass)) drop-shadow(0 0 28px var(--brass)); } }
 .india-map path.tutorial-target, .india-map circle.tutorial-target{ animation:tutorial-target-pulse 1s ease-in-out infinite; }
-@keyframes tutorial-btn-pulse{ 0%,100%{ box-shadow:none; } 50%{ box-shadow:inset 0 0 0 4px var(--brass), 0 0 0 9px rgba(156,122,30,.45); } }
+@keyframes tutorial-btn-pulse{ 0%,100%{ box-shadow: none; } 50%{ box-shadow: inset 0 0 0 2.5px var(--brass), 0 0 0 5.5px rgba(156,122,30,.45); } }
 #stage.tutorial-pulse-rally #rallyBtn{ animation:tutorial-btn-pulse 1s ease-in-out infinite; }
 #stage.tutorial-pulse-agendatray #agendaTray .action-btn{ animation:tutorial-btn-pulse 1s ease-in-out infinite; }
 #agendaTray .action-btn.tutorial-target{ animation:tutorial-btn-pulse 1s ease-in-out infinite; }
@@ -595,7 +599,7 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
 
 /* ---- settings overlay ---- */
 .settings-body{ padding: 1rem; display:flex; flex-direction:column; gap: 0.625rem; width:100%; }
-.settings-row{ background:var(--surface); border:1px solid var(--rule); border-radius: 0.475rem; padding: 0.875rem 1rem; font-size: 0.9rem; font-weight:600; text-align:left; display:block; width:100%;
+.settings-row{ background:var(--surface); border: 1px solid var(--rule); border-radius: 0.475rem; padding: 0.875rem 1rem; font-size: 0.9rem; font-weight:600; text-align:left; display:block; width:100%;
   color:inherit; text-decoration:none; box-sizing:border-box; }
 .settings-help{ background:var(--surface2); border-radius: 0.475rem; padding: 0.875rem 1rem; font-size: 0.75rem; color:var(--ink-soft); line-height:1.5; }
 .settings-help b{ display:block; margin-bottom: 0.15rem; color:var(--ink); }
@@ -610,19 +614,19 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
 .share-overlay[hidden]{ display:none; }
 .share-backdrop{ position:absolute; inset:0; background:rgba(0,0,0,.45); }
 .share-sheet{ position:relative; width:100%; background:var(--surface); border-radius: 1rem 1rem 0 0;
-  padding: 0.5rem 0.75rem calc(env(safe-area-inset-bottom,0px) + 0.75rem); box-shadow:0 -4px 20px rgba(0,0,0,.2);
+  padding: 0.5rem 0.75rem calc(env(safe-area-inset-bottom,0px) + 0.75rem); box-shadow: 0 -2.5px 12px rgba(0,0,0,.2);
   animation:shareSheetUp .22s ease-out; }
-@keyframes shareSheetUp{ from{ transform:translateY(100%); } to{ transform:translateY(0); } }
+@keyframes shareSheetUp{ from{ transform: translateY(100%); } to{ transform: translateY(0); } }
 .share-sheet-handle{ width: 1.75rem; height: 0.2rem; border-radius: 0.125rem; background:var(--rule); margin: 0 auto 0.625rem; }
 .share-apps{ display:flex; gap: 0.6rem; overflow-x:auto; padding: 0.125rem 0.125rem 0.75rem; -webkit-overflow-scrolling:touch; }
 .share-app{ display:flex; flex-direction:column; align-items:center; gap: 0.3rem; flex:0 0 auto; width: 3.25rem;
   font-family:var(--font); font-size: 0.65rem; font-weight:600; text-decoration:none; color:var(--ink);
-  background:none; border:none; padding:0; }
+  background:none; border: none; padding:0; }
 .share-app[hidden]{ display:none; }
 .share-app-icon{ width: 2.5rem; height: 2.5rem; border-radius: 0.65rem; display:flex; align-items:center; justify-content:center;
-  font-size: 1.25rem; color:#fff; box-shadow:var(--shadow-sm); }
+  font-size: 1.25rem; color:#fff; box-shadow: var(--shadow-sm); }
 .share-cancel{ width:100%; background:var(--surface2); border-radius: 0.6rem; padding: 0.75rem; font-size: 0.9rem; font-weight:700;
-  font-family:var(--font); color:var(--ink); border:none; }
+  font-family:var(--font); color:var(--ink); border: none; }
 .share-cancel:active{ opacity:.7; }
 
 /* ---- feedback fx layer: viewport-fixed so it works over both the map and
@@ -632,23 +636,23 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
   background:var(--accent); opacity:.55; animation:fx-flash-anim .45s ease-out forwards; }
 .fx-flash.p2{ background:var(--p2); }
 @keyframes fx-flash-anim{ to{ width: 2.75rem; height: 2.75rem; margin: -1.375rem 0 0 -1.375rem; opacity:0; } }
-.fx-money{ position:absolute; transform:translate(-50%,-50%); font-family:var(--font-mono); font-weight:800; font-size: 1.5rem;
+.fx-money{ position:absolute; transform: translate(-50%,-50%); font-family:var(--font-mono); font-weight:800; font-size: 1.5rem;
   animation:fx-money-anim .7s ease-out forwards; white-space:nowrap; }
 .fx-money.spend{ color:var(--stamp); }
 .fx-money.gain{ color:#1C8A4B; }
 .fx-money.p2{ color:var(--p2); }
-@keyframes fx-money-anim{ from{ opacity:1; transform:translate(-50%,-50%); } to{ opacity:0; transform:translate(-50%,-130%); } }
-.fx-group-emoji{ position:absolute; transform:translate(-50%,-50%); font-size: 1.75rem; line-height:1;
+@keyframes fx-money-anim{ from{ opacity:1; transform: translate(-50%,-50%); } to{ opacity:0; transform: translate(-50%,-130%); } }
+.fx-group-emoji{ position:absolute; transform: translate(-50%,-50%); font-size: 1.75rem; line-height:1;
   animation:fx-group-emoji-anim 1.1s ease-out forwards; }
 @keyframes fx-group-emoji-anim{
-  0%{ opacity:0; transform:translate(-50%,-50%) scale(.2); }
-  15%{ opacity:1; transform:translate(-50%,-50%) scale(1.3); }
-  25%{ transform:translate(-50%,-50%) scale(1); }
-  70%{ opacity:1; transform:translate(-50%,-90%) scale(1); }
-  100%{ opacity:0; transform:translate(-50%,-160%) scale(.9); }
+  0%{ opacity:0; transform: translate(-50%,-50%) scale(.2); }
+  15%{ opacity:1; transform: translate(-50%,-50%) scale(1.3); }
+  25%{ transform: translate(-50%,-50%) scale(1); }
+  70%{ opacity:1; transform: translate(-50%,-90%) scale(1); }
+  100%{ opacity:0; transform: translate(-50%,-160%) scale(.9); }
 }
-@keyframes fx-shake{ 10%,90%{ transform:translate(-1px,0); } 20%,80%{ transform:translate(2px,0); }
-  30%,50%,70%{ transform:translate(-4px,0); } 40%,60%{ transform:translate(4px,0); } }
+@keyframes fx-shake{ 10%,90%{ transform: translate(-0.5px,0); } 20%,80%{ transform: translate(1px,0); }
+  30%,50%,70%{ transform: translate(-2.5px,0); } 40%,60%{ transform: translate(2.5px,0); } }
 .shake{ animation:fx-shake .4s ease; }
 
 .power-burst{ position:fixed; inset:0; z-index:90; display:flex; align-items:center; justify-content:center; }
@@ -658,8 +662,8 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
 .power-burst .rays{ position:absolute; width: 37.5rem; height: 37.5rem; border-radius:50%;
   background:repeating-conic-gradient(var(--glow-color) 0deg 4deg, transparent 4deg 18deg);
   opacity:0; animation:power-rays-spin 5s linear forwards; }
-.power-burst .card{ position:relative; background:var(--paper); border:4px solid var(--ink); border-radius: 0.875rem;
-  box-shadow:8px 8px 0 var(--ink); padding: 1.125rem 1.875rem; text-align:center; transform:scale(0);
+.power-burst .card{ position:relative; background:var(--paper); border: 2.5px solid var(--ink); border-radius: 0.875rem;
+  box-shadow: 5px 5px 0 var(--ink); padding: 1.125rem 1.875rem; text-align:center; transform: scale(0);
   animation:power-card-pop 5s cubic-bezier(.34,1.56,.64,1) forwards; }
 .power-burst .card .bolt{ font-size: 2.75rem; line-height:1; }
 .power-burst .card .name{ font-family:var(--font-mono); font-weight:800; font-size: 1.05rem; color:var(--ink);
@@ -668,30 +672,30 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
 @keyframes power-glow-pulse{
   0%{ opacity:0; } 8%{ opacity:.6; } 20%{ opacity:.32; } 85%{ opacity:.22; } 100%{ opacity:0; } }
 @keyframes power-rays-spin{
-  0%{ opacity:0; transform:rotate(0deg) scale(.6); }
+  0%{ opacity:0; transform: rotate(0deg) scale(.6); }
   10%{ opacity:.5; } 85%{ opacity:.32; }
-  100%{ opacity:0; transform:rotate(160deg) scale(1); } }
+  100%{ opacity:0; transform: rotate(160deg) scale(1); } }
 @keyframes power-card-pop{
-  0%{ transform:scale(0) rotate(-8deg); opacity:0; }
-  10%{ transform:scale(1.12) rotate(2deg); opacity:1; }
-  16%{ transform:scale(1) rotate(0deg); }
-  85%{ transform:scale(1) rotate(0deg); opacity:1; }
-  100%{ transform:scale(.9) rotate(0deg); opacity:0; } }
+  0%{ transform: scale(0) rotate(-8deg); opacity:0; }
+  10%{ transform: scale(1.12) rotate(2deg); opacity:1; }
+  16%{ transform: scale(1) rotate(0deg); }
+  85%{ transform: scale(1) rotate(0deg); opacity:1; }
+  100%{ transform: scale(.9) rotate(0deg); opacity:0; } }
 
 /* Unlock celebration — same glow/rays as .power-burst above (shared
    classes), but its own bigger card: a real portrait that spins into view
    for the rarer "new politician unlocked" moment. */
 .power-burst.unlock-burst{ perspective: 35rem; }
-.power-burst .unlock-card{ padding: 1.375rem 1.75rem; transform:scale(0); animation:unlock-card-spin 5s cubic-bezier(.34,1.56,.64,1) forwards; }
-.unlock-card-portrait{ width: 4.25rem; height: 4.25rem; border-radius:50%; object-fit:cover; border:5px solid var(--ink); box-shadow:0 6px 14px rgba(0,0,0,.3); display:block; margin:0 auto; }
+.power-burst .unlock-card{ padding: 1.375rem 1.75rem; transform: scale(0); animation:unlock-card-spin 5s cubic-bezier(.34,1.56,.64,1) forwards; }
+.unlock-card-portrait{ width: 4.25rem; height: 4.25rem; border-radius:50%; object-fit:cover; border: 5px solid var(--ink); box-shadow: 0 3.5px 8.5px rgba(0,0,0,.3); display:block; margin:0 auto; }
 .power-burst .unlock-card .name{ font-size: 0.9rem; margin-top: 0.4rem; }
 .power-burst .unlock-card .who{ font-size: 0.85rem; font-weight:800; color:var(--ink); margin-top: 0.1rem; }
 @keyframes unlock-card-spin{
-  0%{ transform:scale(0) rotateY(0deg); opacity:0; }
-  45%{ transform:scale(1.15) rotateY(720deg); opacity:1; }
-  55%{ transform:scale(1) rotateY(720deg); opacity:1; }
-  85%{ transform:scale(1) rotateY(720deg); opacity:1; }
-  100%{ transform:scale(.9) rotateY(720deg); opacity:0; } }
+  0%{ transform: scale(0) rotateY(0deg); opacity:0; }
+  45%{ transform: scale(1.15) rotateY(720deg); opacity:1; }
+  55%{ transform: scale(1) rotateY(720deg); opacity:1; }
+  85%{ transform: scale(1) rotateY(720deg); opacity:1; }
+  100%{ transform: scale(.9) rotateY(720deg); opacity:0; } }
 </style>
 
 </head>
