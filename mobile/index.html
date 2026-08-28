@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Pradhan Mantri — Booth Ink</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -35,17 +36,33 @@
   --fs-1:23px; --fs-2:28px; --fs-3:32px; --fs-4:37px; --fs-5:44px; --fs-6:50px;
   --radius-sm:10px; --radius-md:16px;
   --shadow-sm:3px 3px 0 var(--line); --shadow-md:4px 4px 0 var(--line);
+
+  /* VIEWPORT MIGRATION (2026-08-28): the app now ships a real <meta viewport>
+     and is a centered, max-width column on anything wider than a phone —
+     letterbox rails on iPad/desktop, no fluid-fill or landscape layout. Every
+     full-screen fixed layer is capped to --app-max and centered; --gutter is
+     the width of one letterbox rail, for pinning edge-anchored chrome (e.g.
+     the tutorial navbar) to the column instead of the raw viewport edge. */
+  --app-max:520px;
+  --gutter:max(0px, calc((100vw - var(--app-max)) / 2));
 }
 *{box-sizing:border-box; -webkit-tap-highlight-color:transparent; touch-action:pan-x pan-y;}
 html,body{height:100%; margin:0; overscroll-behavior:none;}
-body{ font-family:var(--font); background:var(--page); color:var(--ink); }
+body{ font-family:var(--font); background:var(--ink); color:var(--ink); }
+
+/* Cap + center every full-screen chrome layer. The JS-positioned layers
+   (.fx-layer, .rally-token-layer) are deliberately left true-viewport-fixed —
+   their children are placed from getBoundingClientRect() viewport coords. */
+.stage, .overlay, .welcome-overlay, .tutorial-overlay, .share-overlay, .target-banner{
+  margin-inline:auto; max-width:var(--app-max);
+}
 button{ font-family:inherit; border:none; background:none; color:inherit; }
 @media (prefers-reduced-motion: reduce){ *{ transition-duration:.01ms !important; animation-duration:.01ms !important; } }
 
 /* Three fixed regions stacked in a column — header, map, info panel. Nothing
    overlaps, nothing expands, so no element's position ever depends on
    another's runtime size. */
-.stage{ position:fixed; inset:0; overflow:hidden; display:flex; flex-direction:column; }
+.stage{ position:fixed; inset:0; overflow:hidden; display:flex; flex-direction:column; background:var(--page); }
 
 /* ---- topstrip: ballot-header band. Seat bar + phase, then a slim players
    readout — small, glanceable. ---- */
@@ -485,7 +502,7 @@ button{ font-family:inherit; border:none; background:none; color:inherit; }
 .install-gate-steps p{ font-size:38px; line-height:1.4; margin:0 0 20px; }
 .install-gate-steps p:last-child{ margin-bottom:0; }
 
-.tutorial-navbar{ position:fixed; top:calc(env(safe-area-inset-top,0px) + 14px); left:14px; z-index:62;
+.tutorial-navbar{ position:fixed; top:calc(env(safe-area-inset-top,0px) + 14px); left:calc(var(--gutter) + 14px); z-index:62;
   background:var(--paper); color:var(--ink); padding:10px 20px; border-radius:100px; border:2px solid var(--ink); box-shadow:3px 3px 0 var(--ink); }
 .tutorial-navbar[hidden]{ display:none; }
 .tutorial-navbar-label{ font-family:var(--font-display); font-weight:700; font-size:26px; letter-spacing:.5px; }
