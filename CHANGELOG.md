@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [2.0.2] - 2026-08-29
+
+### Changed
+- **CHANGED**: Service worker fetch strategy split into two branches: code and JSON data use `{cache:'reload'}` to bypass the browser HTTP cache (GitHub Pages sends `max-age=600` headers that would otherwise make deploys lag 10 minutes on-device); large media (images, sounds, `.png`/`.jpg`/`.jpeg`/`.svg`/`.webp`/`.mp3`/`.ogg`/`.wav`) switched to cache-first strategy (served from Cache Storage when present, avoiding re-download for repeat visitors). Cache version bumped `pme-mobile-v5` → `v7`.
+
+## [2.0.1] - 2026-08-29
+
+### Changed
+- **CHANGED**: Politician portrait images downscaled from 2048×2048 px (1.5–7.9 MB each, ~75 MB total) to 768×768 px (~20 MB total). The original size exceeded iOS Safari's per-tab decoded-image memory cap (~350 MB), causing most portrait images to silently drop and fall back to the colored-initial placeholder — appeared as "missing images" in reports even though all files existed and returned HTTP 200. Downscaling to display resolution (768 px, matching ~4× DPR on the select-card art render target) cuts decoded RAM to ~50 MB, well under the cap, while preserving visual quality at the actual render size.
+- **CHANGED**: Carousel portrait `<img>` elements now set `loading="lazy"` to defer off-screen portrait decoding.
+- **CHANGED**: Welcome screen loading gate reworked to wait for (1) first 3 politician portraits to load (a representative sample of the roster) + (2) a 3.5-second timeout, instead of the previous "80% of all ~21 portraits" gate (unreachable with lazy loading). Removed now-unused `PORTRAIT_READY_FRACTION` constant.
+
+### Fixed
+- **FIXED**: `mobile/main.js` `setArtPortrait()` stale comment claiming "11 of 20 portraits don't exist" — all 21 politician portraits are confirmed to exist on disk and in the deployed build.
+
 ## [2.0.0] - 2026-08-28
 
 ### Changed
