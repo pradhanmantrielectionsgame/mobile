@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var E = window.PMEEngine, G = window.PMEGame;
-  var GAME_VERSION = '2.1.1';
+  var GAME_VERSION = '2.1.2';
   ['welcomeVersion', 'stageVersion', 'endVersion'].forEach(function (id) {
     var el = document.getElementById(id);
     if (el) el.textContent = 'v' + GAME_VERSION;
@@ -2544,16 +2544,20 @@
     // stayed false, and every single boot sat out the full 3,500ms timeout
     // (measured: 0 of 21 complete, 0 decoded, at the moment the button
     // unlocked). new Image() ignores visibility, so this actually preloads.
-    var firstArt = (data.politicians || []).slice(0, 2)
-      .map(function (p) { return p.image; }).filter(Boolean);
+    // Written as `'../' + p.image` rather than hoisting the path into a
+    // variable: scripts/deploy-mobile.js rewrites paths by literal string
+    // match, and `'../' + p.image` is one of the exact forms it knows. A
+    // local like `'../' + src` survives the rewrite and 404s on the live
+    // site, where these files sit at the root instead of one level up.
+    var firstArt = (data.politicians || []).slice(0, 2).filter(function (p) { return p.image; });
     var portraitReady = firstArt.length ? new Promise(function (resolve) {
       var left = firstArt.length;
       var done = function () { if (--left <= 0) resolve(); };
       setTimeout(resolve, 1500); // straggler guard, no longer the normal path
-      firstArt.forEach(function (src) {
+      firstArt.forEach(function (p) {
         var img = new Image();
         img.onload = img.onerror = done;
-        img.src = '../' + src;
+        img.src = '../' + p.image;
       });
     }) : Promise.resolve();
     portraitReady.then(function () {

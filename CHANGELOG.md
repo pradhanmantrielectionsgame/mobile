@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [2.1.2] - 2026-08-29
+
+### Fixed
+- **FIXED**: The v2.1.0 portrait preload wrote `img.src = '../' + src`, but `scripts/deploy-mobile.js` rewrites relative paths by literal string match and only knows the forms `'../' + p.image` and `'../' + p.partyLogo`. Hoisting the path into a local variable defeated the rewrite, so the deployed build would have requested `../assets/images/…` from the site root and 404'd on both preloads every boot (the app would still start — `onerror` resolves the gate — but the preload would do nothing). Rewritten to use `p.image` inline, matching the four existing call sites and the transform the deploy script already understands. Caught by dry-running the deploy transform before pushing.
+
 ## [2.1.1] - 2026-08-29
 
 ### Fixed
