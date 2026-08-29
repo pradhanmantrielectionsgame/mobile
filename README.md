@@ -167,7 +167,7 @@ See the "Key Architectural Decisions" table above for framework selection, multi
 
 See `docs/wiki.html`'s "Architecture" section for current tech stack, deployment status, and open items.
 
-**Live deployment:** the mobile build ships from a dedicated repo, `github.com/pradhanmantrielectionsgame/mobile` (GitHub Pages, served at `pradhanmantrielectionsgame.github.io/mobile/`) — separate from this repo's own `origin` remote, which is a live Pages site still serving the legacy desktop game and is never merged into.
+**Live deployment:** the mobile build ships from a dedicated repo, `github.com/pradhanmantrielectionsgame/mobile` (GitHub Pages, served at `pradhanmantrielectionsgame.github.io/mobile/`). That repo carries two branches: `main` holds the flattened deploy build the live game serves — written only by `node scripts/deploy-mobile.js --push` — and `source` holds this full source tree, which local `main` tracks and pushes to with a plain `git push`. The legacy desktop game lives in its own separate repo (`pradhanmantrielectionsgame.github.io`) and is not a remote of this clone.
 
 ## Known Limitations
 
