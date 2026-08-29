@@ -55,21 +55,9 @@
 html,body{height:100%; margin:0; overscroll-behavior:none;}
 body{ font-family:var(--font); background:var(--ink); color:var(--ink); }
 
-/* Cap + centre every full-screen chrome layer. inset:0 + margin:auto + a
-   max-width/height centres a fixed box on both axes. These selectors' own
-   rules (further down) also set inset:0 / display, and land LATER in the
-   sheet, so this block only adds the caps + margins — it must not try to set
-   left/top itself (a later inset:0 would beat it and leave a stray
-   transform mis-placing the layer). The JS-positioned layers (.fx-layer,
-   .rally-token-layer) stay true-viewport-fixed. */
-.stage, .overlay, .welcome-overlay, .tutorial-overlay, .share-overlay, .target-banner{
-  margin-left:auto; margin-right:auto; max-width:var(--app-max);
-}
-/* The four that also cap height and centre vertically on tall viewports (iPad
-   portrait, big desktop) — a letterboxed rectangle on both axes. */
-.stage, .overlay, .welcome-overlay, .tutorial-overlay{
-  max-height:var(--app-max-h); margin-top:auto; margin-bottom:auto;
-}
+/* Full-screen chrome layers are capped to a centred column — see the
+   centring block at the very end of the stylesheet (it has to land after
+   each layer's own `inset:0` rule to win). */
 button{ font-family:inherit; border: none; background:none; color:inherit; }
 @media (prefers-reduced-motion: reduce){ *{ transition-duration:.01ms !important; animation-duration:.01ms !important; } }
 
@@ -706,6 +694,29 @@ button{ font-family:inherit; border: none; background:none; color:inherit; }
   55%{ transform: scale(1) rotateY(720deg); opacity:1; }
   85%{ transform: scale(1) rotateY(720deg); opacity:1; }
   100%{ transform: scale(.9) rotateY(720deg); opacity:0; } }
+
+/* ===== Centred column for every full-screen chrome layer =====
+   Placed LAST on purpose: each of these selectors has its own `position:fixed;
+   inset:0` rule earlier in the sheet, and at equal specificity the later rule
+   wins — so this is where left/top/transform must live. Uses left:50% +
+   translate rather than inset:0 + margin:auto, because an old WebKit (the
+   user's ~2014 iPad) doesn't re-resolve `margin:auto` after `max-width` clamps
+   a fixed element, leaving it pinned to the corner. No .stage/.overlay
+   descendant uses its ancestor as a positioning containing block (the map's
+   floating panels anchor to .map-wrap), so a transform here is safe.
+   .fx-layer / .rally-token-layer stay true-viewport-fixed for the JS that
+   places their children from viewport coords. */
+.stage, .overlay, .welcome-overlay, .tutorial-overlay, .share-overlay, .target-banner{
+  left:50%; right:auto; margin-left:0; margin-right:0;
+  width:100%; max-width:var(--app-max);
+  transform:translateX(-50%); -webkit-transform:translateX(-50%);
+}
+/* the four that also cap height + centre vertically (iPad portrait, tall desktop) */
+.stage, .overlay, .welcome-overlay, .tutorial-overlay{
+  top:50%; bottom:auto; margin-top:0; margin-bottom:0;
+  height:100%; max-height:var(--app-max-h);
+  transform:translate(-50%,-50%); -webkit-transform:translate(-50%,-50%);
+}
 </style>
 
 </head>
