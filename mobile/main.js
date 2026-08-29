@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var E = window.PMEEngine, G = window.PMEGame;
-  var GAME_VERSION = '2.0.0';
+  var GAME_VERSION = '2.0.1';
   ['welcomeVersion', 'stageVersion', 'endVersion'].forEach(function (id) {
     var el = document.getElementById(id);
     if (el) el.textContent = 'v' + GAME_VERSION;
@@ -50,10 +50,6 @@
   // politician as your AI opponent so unlocking the roster doesn't stall
   // out on luck once you're down to a few remaining locked names.
   var LOCKED_OPPONENT_CHANCE = 0.70;
-  // Fraction of politician portraits the welcome-screen loading bar waits
-  // for before letting the player in — "most", not all, so one slow
-  // straggler image doesn't hold the whole app hostage.
-  var PORTRAIT_READY_FRACTION = 0.8;
   var STARTER_POLITICIAN_IDS = ['narendra-modi', 'manmohan-singh', 'atal-bihari-vajpayee'];
   // Returns the unlocked-id array, or null if storage is unavailable/broken
   // (private browsing, quota, etc.) — null means "treat everyone as
@@ -176,7 +172,7 @@
 
   // Sets a politician portrait <img>, falling back to a colored initial
   // circle (same className, so existing CSS sizing still applies) if the
-  // image file doesn't exist — 11 of 20 portraits don't yet (see CLAUDE.md).
+  // image fails to load.
   function setPortrait(imgEl, p) {
     imgEl.alt = p.name;
     imgEl.style.background = p.primaryColor || '#ccc';
@@ -1036,6 +1032,9 @@
   // the ballot card's photo window, where a small circular avatar wouldn't.
   function setArtPortrait(imgEl, p) {
     imgEl.alt = p.name;
+    // Carousel holds all ~21 cards in one scroll track — only fetch a
+    // portrait once its card is near the viewport.
+    imgEl.loading = 'lazy';
     imgEl.src = '../' + p.image;
     imgEl.onerror = function () {
       var fallback = document.createElement('div');
@@ -2418,15 +2417,16 @@
     data = d;
     renderPolGrid();
     // The JSON resolving only means the carousel DOM exists — renderPolGrid
-    // just kicked off all ~21 portrait <img> fetches, each still in flight.
-    // Wait for most of them (not just the first) to settle before calling
-    // it "loaded", so scrolling the carousel right after Begin Campaign
-    // doesn't run into cards still visibly filling in.
+    // just kicked off the on-screen portrait <img> fetches (the rest are
+    // loading="lazy" and won't fetch until scrolled to). Wait for the first
+    // few to settle so the opening cards aren't visibly filling in, with a
+    // hard timeout so one slow straggler can't hold the app hostage.
     var portraitImgs = Array.prototype.slice.call($('polCarousel').querySelectorAll('.pol-art img'));
-    var neededCount = Math.ceil(portraitImgs.length * PORTRAIT_READY_FRACTION);
+    var neededCount = Math.min(3, portraitImgs.length);
     var settledCount = 0;
     var portraitReady = new Promise(function (resolve) {
       if (!portraitImgs.length) { resolve(); return; }
+      setTimeout(resolve, 3500);
       var maybeResolve = function () { if (++settledCount >= neededCount) resolve(); };
       portraitImgs.forEach(function (img) {
         if (img.complete) maybeResolve();
