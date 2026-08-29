@@ -1094,6 +1094,30 @@ button{ font-family:inherit; border: none; background:none; color:inherit; }
   </div>
 </div>
 
+<!-- TEMP viewport-debug readout — remove before merge. Shows the numbers we
+     need to diagnose the iPad standalone layout. -->
+<div id="vpDebug" style="position:fixed;left:0;top:0;z-index:2147483647;background:#000;color:#0f0;
+  font:11px/1.35 monospace;padding:4px 6px;white-space:pre;pointer-events:none;max-width:60vw"></div>
+<script>
+(function(){
+  function upd(){
+    var d=document.getElementById('vpDebug'); if(!d) return;
+    var vv=window.visualViewport||{};
+    d.textContent=[
+      'inner '+window.innerWidth+'x'+window.innerHeight,
+      'client '+document.documentElement.clientWidth+'x'+document.documentElement.clientHeight,
+      'screen '+screen.width+'x'+screen.height+'  dpr '+window.devicePixelRatio,
+      'vv '+Math.round(vv.width||0)+'x'+Math.round(vv.height||0)+'  scale '+((vv.scale||0).toFixed(3)),
+      'standalone '+(window.navigator.standalone===true),
+      'bodyW '+Math.round(document.body.getBoundingClientRect().width),
+      'rootFS '+getComputedStyle(document.documentElement).fontSize
+    ].join('\n');
+  }
+  upd(); addEventListener('resize',upd);
+  if(window.visualViewport) visualViewport.addEventListener('resize',upd);
+  setTimeout(upd,800); setTimeout(upd,2500);
+})();
+</script>
 <script src="html2canvas.min.js"></script>
 <script src="engine.js"></script>
 <script src="game.js"></script>
