@@ -1,90 +1,58 @@
-# Viewport / responsive migration plan (not started)
+# Viewport / responsive migration — DONE (v2.0.0, 2026-08-28)
 
-Written 2026-07-25 to think through before committing to an approach — no code changed yet.
-Context: `mobile/index.html` (and both prototypes it descends from) intentionally ship with
-no `<meta name="viewport">` tag, relying on the legacy "no viewport tag → lay out on a
-virtual ~980px canvas, then browser-zoom to fit" fallback, with every dimension hand-tuned
-for that fallback's iPhone-14 zoom factor (~0.4x) — see CLAUDE.md's "2.5x scale convention"
-and "no viewport meta" bullets for the full history of why this was ever a deliberate choice.
+Shipped. This file is now a historical record; the current-state reference for
+how the layout works is `mobile/index.html` itself and `docs/wiki.html`.
 
-Confirmed broken on: a different phone width, tablet (iPad), desktop browser window.
-Desired end state (per user, 2026-07-25): fully responsive across all screen types, not just
-a letterboxed phone column on non-phone screens.
+## What the problem was
 
-## Why it's currently fragile (root cause, not symptom)
+`mobile/index.html` shipped with **no `<meta name="viewport">` tag**, relying on the
+legacy "lay out on a ~980px virtual canvas, then browser-zoom to fit" fallback, with
+every font/padding/gap/size hand-authored at **~2.5×** the intended size for iPhone 14's
+zoom factor. The layout's correctness depended on an undocumented browser behaviour keyed
+only to viewport *width*, applied to a stack of fixed *heights* — so it was only ever
+right at iPhone 14 portrait's ratio. iPad and desktop were unplayable.
 
-One underlying problem, not three separate bugs: **no dimension in the CSS means the same
-thing across environments.** The layout's correctness depends on an undocumented browser
-fallback behavior that different browsers implement differently (or not at all), keyed only
-to viewport *width*, applied to a stack of regions each given a fixed *height* — so it was
-only ever correct for one specific width:height ratio (iPhone 14's).
+## What shipped
 
-## Phased plan
+- **Real viewport tag**: `<meta name="viewport" content="width=device-width, initial-scale=1">`
+  (deliberately *not* `viewport-fit=cover` — that activates `env(safe-area-inset-*)`, which
+  the old no-tag build never had, and it added a ~34px strip at the screen edge).
+- **Fluid rem scale**: `:root{ font-size:16px; font-size:clamp(15px, 4vw, 16.5px) }`. ~330
+  `px` size declarations across both `<style>` blocks divided by 2.5 and converted to `rem`
+  (scripted pass over a property whitelist; borders / box-shadows / transforms / the SVG
+  left alone, then borders+shadows scaled ~0.6× in a second pass). `--fs-*` / `--radius-*`
+  are now used app-wide, not just the HUD.
+- **Centred column**: on anything wider than the column, the app is a centred
+  `max-width: var(--app-max)` (520px) block with letterbox rails; on tall viewports also
+  `max-height: var(--app-max-h)` (920px), centred vertically — a letterboxed rectangle, not
+  a stretched column over an empty map. Centring lives in a rule **at the very end of the
+  stylesheet** (it has to beat each layer's own `position:fixed; inset:0`) and uses
+  `left/top:50%` + `transform:translate(-50%,-50%)` — **not** `margin:auto`, which old
+  WebKit doesn't re-resolve after `max-width` clamps a fixed box (this was the bug that
+  kept the column pinned to the corner on a ~2014 iPad).
+- **Flexible stack**: `.stage` is `overflow-y:auto` (scroll as a last resort); `.map-wrap`
+  has a real `min-height` (22rem) so the four floating HUD panels can't collide when the
+  map row is squeezed; the tutorial stage-coach is in normal flow (a float-over-map version
+  covered the elements it taught).
+- **`.stage[hidden]{display:none}`** — `.stage` sets its own `display`, so the empty
+  pre-game board had been rendering behind the welcome/select screens.
+- **Install gate is phone-only now** (`(max-width: 700px)` added) — the reflowing layout
+  plays fine in a tablet browser tab; the gate stays for phones (disappearing toolbar, ITP
+  storage purge).
 
-### Phase 0 — safety net before touching anything
-- Playwright screenshot baseline at iPhone-14 portrait (current known-good state) for every
-  screen (HUD mid-game, politician-select carousel, end-of-game card, settings). Nothing in
-  later phases should regress this without it being a deliberate, noticed tradeoff.
-- `npm test` green as the functional baseline (this migration is CSS/layout only, shouldn't
-  touch `engine.js`/`game.js` logic — if it does, that's scope creep, stop and reassess).
+## Verified
 
-### Phase 1 — real viewport meta tag
-- Add `<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">`
-  to `mobile/index.html` (and the prototypes if they're still meant to preview real device
-  behavior — `pme-mobile-sheet.html` is a frozen reference though, may not be worth touching).
-- Expected immediately after this alone, before anything else changes: layout looks *worse*
-  on the very device this was tuned for, since every px constant assumed the old fallback's
-  zoom. This phase is a deliberate one-commit regression, not a fix by itself — don't ship it
-  alone; land it together with Phase 2/3 or behind a branch.
-- Risk: low, mechanical, fully reversible (delete the tag).
+Real iPhone, a modern iPad, desktop (320–1920px sweep). All fine.
 
-### Phase 2 — fixed-height stack → flexible stack
-- `.stage`'s column (topstrip, groups-bar, group-readout, map, info panel) currently assumes
-  the *sum* of several fixed-px heights fits one specific device height. Change so exactly
-  one region (the map — it's the only one with no fixed intrinsic content) takes `flex:1 1
-  auto` and absorbs whatever height is left, instead of every region being a fixed constant.
-- Chrome regions (topstrip, groups-bar, info panel) move off single fixed heights onto
-  `clamp(floor, preferred, ceiling)` so a short/wide viewport (landscape, tablet) doesn't
-  reserve the same vertical budget a tall phone gets.
-- Risk: medium. This changes what "the map" visually looks like on every device (it becomes
-  variable-height where it was fixed) — needs a design sign-off on min/max map height, not
-  just an engineering pass.
+## Known limitation (out of scope)
 
-### Phase 3 — magic px → relative units
-- Bulk mechanical pass: every literal px font-size/padding/gap/icon-size authored under the
-  "2.5x convention" (CLAUDE.md's frontend-rules bullet has the full list of affected
-  selectors) converts to `clamp()` or a fluid root type-scale.
-- Do this *after* Phase 1/2 land and are visually re-approved — reduces the chance of
-  debugging three overlapping causes of "it looks wrong" at once.
-- Risk: low per-element, high in aggregate (touches nearly every rule in the file) — the
-  kind of change that benefits from doing it selector-by-selector with a screenshot diff
-  after each group, not as one giant patch.
+A **~2014 iPad on old WebKit** is still degraded — that engine lacks flex `gap` (Safari
+14.1) and `aspect-ratio` (Safari 15), both used throughout the layout. Not worth unwinding
+for one decade-old device; a current iPad renders correctly. If this ever matters, the work
+is: replace every flex `gap` with margins and give `.action-btn` an explicit height.
 
-### Phase 4 — the two genuinely hard parts (design work, not a units fix)
-- **Groups-bar honeycomb**: `--hexw` is already computed from `100vw`, so it never overflows
-  — but at tablet/desktop width the hexes become oversized rather than capped. Needs a
-  `clamp()` max hex size plus a decision on what happens to the freed horizontal space
-  (letterbox vs. a wider honeycomb vs. more hexes per row).
-- **Map SVG**: scaling it proportionally is easy (Phase 2 already does this). Making it a
-  *good* layout at tablet/landscape aspect ratios — more information density, maybe a side
-  panel instead of a stacked column — is a real design pass, closer to the ballot-card visual
-  work than to a CSS fix. Recommend treating this as its own follow-up decision, not bundled
-  into "the responsive fix," since it changes what the game *looks like* on those screens,
-  not just whether it fits.
+## Not done (deliberately, per the original scope decision)
 
-## Open decisions to make before starting Phase 1
-
-- Does `pme-mobile-sheet.html` (frozen design-reference prototype) get migrated too, or left
-  as a historical snapshot of the old convention? Leaning: leave it, it's explicitly frozen.
-- Map min/max height bounds for Phase 2's `clamp()` — needs an actual number, not "whatever
-  fits," or the flexible region just becomes a new unbounded failure mode.
-- Groups-bar max hex size for Phase 4 — same kind of number needed.
-- Whether tablet/landscape map layout (Phase 4) is in scope for this pass at all, or its own
-  later task — it's the one piece of "fully responsive" that isn't just re-plumbing units.
-
-## Explicitly out of scope for this migration
-
-- Any change to `engine.js`/`game.js` game logic.
-- Redesigning the map's information density for tablet (tracked as an open decision above,
-  not pre-committed to).
-- Touching `pme-mobile-sheet.html` (pending the open decision above).
+- Fluid-fill or landscape-specific layouts — the choice was "centred column, letterbox".
+- Any `engine.js` / `game.js` change.
+- `design/prototypes/pme-mobile-sheet.html` (frozen) and `mobile/index-redesign-c.html`.

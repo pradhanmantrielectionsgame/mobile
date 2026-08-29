@@ -1106,42 +1106,6 @@ button{ font-family:inherit; border: none; background:none; color:inherit; }
   </div>
 </div>
 
-<!-- TEMP viewport-debug readout — remove before merge. Shows the numbers we
-     need to diagnose the iPad standalone layout. -->
-<div id="vpDebug" style="position:fixed;left:0;top:0;z-index:2147483647;background:#000;color:#0f0;
-  font:11px/1.35 monospace;padding:4px 6px;white-space:pre;pointer-events:none;max-width:60vw"></div>
-<script>
-(function(){
-  function widest(){
-    var w=0,el=null;
-    document.querySelectorAll('body *').forEach(function(n){
-      var r=n.getBoundingClientRect(); if(r.width>w){w=r.width;el=n;}
-    });
-    return el?(Math.round(w)+' '+el.tagName.toLowerCase()+'.'+(el.className||'').toString().split(' ')[0]+(el.id?'#'+el.id:'')):'?';
-  }
-  function upd(){
-    var d=document.getElementById('vpDebug'); if(!d) return;
-    var de=document.documentElement, vv=window.visualViewport||{};
-    d.textContent=[
-      'inner '+window.innerWidth+'x'+window.innerHeight,
-      'de.client '+de.clientWidth+'x'+de.clientHeight,
-      'de.scroll '+de.scrollWidth+'x'+de.scrollHeight,
-      'de.rect '+Math.round(de.getBoundingClientRect().width),
-      'de.cssW '+getComputedStyle(de).width,
-      'screen '+screen.width+'x'+screen.height+' dpr'+window.devicePixelRatio,
-      'vv '+Math.round(vv.width||0)+'x'+Math.round(vv.height||0)+' sc'+((vv.scale||0).toFixed(2)),
-      'standalone '+(window.navigator.standalone===true),
-      'bodyW '+Math.round(document.body.getBoundingClientRect().width),
-      'rootFS '+getComputedStyle(de).fontSize,
-      'mq>=700 '+window.matchMedia('(min-width:700px)').matches,
-      'widest '+widest()
-    ].join('\n');
-  }
-  upd(); addEventListener('resize',upd);
-  if(window.visualViewport) visualViewport.addEventListener('resize',upd);
-  setTimeout(upd,800); setTimeout(upd,2500); setTimeout(upd,5000);
-})();
-</script>
 <script src="html2canvas.min.js"></script>
 <script src="engine.js"></script>
 <script src="game.js"></script>

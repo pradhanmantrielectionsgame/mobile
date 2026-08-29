@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-08-28
+
+### Changed
+- **CHANGED**: Ground-up viewport/responsive rework of `mobile/index.html`. The build shipped with **no `<meta name="viewport">` tag**, relying on the legacy "lay out on a ~980px virtual canvas, then browser-zoom to fit" fallback, with every size hand-authored at ~2.5× for iPhone 14's zoom factor — so the layout was only ever correct at one width:height ratio and was unplayable on iPad and desktop. Now: a real `<meta name="viewport" content="width=device-width, initial-scale=1">`; ~330 hardcoded `px` sizes migrated onto a fluid `rem` scale (`:root` font-size `clamp(15px, 4vw, 16.5px)` with a `16px` fallback for older engines; `--fs-*` / `--radius-*` tokens now used app-wide, was HUD-only); borders and box-shadows scaled down ~0.6× to match the new real-pixel scale. On anything wider than a phone the app is a centred, max-width column (`--app-max: 520px`) with letterbox rails, capped in height too (`--app-max-h: 920px`) on tall viewports so iPad-portrait/desktop get a letterboxed rectangle rather than a stretched column over an empty map. Centring uses `left/top:50%` + `transform:translate(-50%,-50%)` in a rule placed last in the stylesheet (older WebKit doesn't re-resolve `margin:auto` after `max-width` clamps a fixed box). Verified on real iPhone, a modern iPad, and desktop; a ~2014 iPad on old WebKit is still degraded (that engine lacks flex `gap` and `aspect-ratio`, used throughout) and is out of scope.
+- **CHANGED**: `.map-wrap` now carries a real `min-height` (22rem) so the four absolutely-positioned floating HUD panels (`.player-strip` / `.ne-actions` / `.se-actions` / `.ut-bar`) can't collide when something above squeezes the map row; `.stage` scrolls (`overflow-y:auto`) as a last resort on a very short screen. The in-game tutorial coach banner is back in normal flow (a brief float-over-map version covered the very elements it was teaching).
+- **CHANGED**: `.stage[hidden]{display:none}` added — `.stage` sets its own `display`, so the bare `[hidden]` UA rule lost to it and the empty pre-game board rendered behind the welcome/select screens (invisible on a phone, very visible on iPad).
+- **CHANGED**: Install gate is now phone-only (`(max-width: 700px)` added to its condition). The reworked layout reflows and scrolls, so a tablet/iPad plays fine in a browser tab; the gate stays for phones, where iOS Safari's disappearing toolbar is worst and Add-to-Home-Screen also protects `localStorage` + the offline cache from iOS's 7-day ITP purge.
+- **CHANGED**: `mobile/sw.js` cache `pme-mobile-v4` → `v5`.
+
 ## [1.5.0] - 2026-08-28
 
 ### Changed
