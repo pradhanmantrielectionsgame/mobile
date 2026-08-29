@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var E = window.PMEEngine, G = window.PMEGame;
-  var GAME_VERSION = '2.1.0';
+  var GAME_VERSION = '2.1.1';
   ['welcomeVersion', 'stageVersion', 'endVersion'].forEach(function (id) {
     var el = document.getElementById(id);
     if (el) el.textContent = 'v' + GAME_VERSION;
@@ -1747,21 +1747,29 @@
         var br = $(btnId).getBoundingClientRect();
         if (!br.width) return;
         // top-right corner, clear of the icon/label
-        spots.push({ plays: plays, cx: br.right - 12, cy: br.top + 12 });
+        spots.push({ plays: plays, cx: br.right - 12, cy: br.top + 12, w: br.width });
       } else {
         var el = document.getElementById(svgId);
         if (!el) return;
         var r = el.getBoundingClientRect();
         if (!r.width || !r.height) return; // hidden map element (e.g. a dropped small UT)
-        spots.push({ plays: plays, cx: r.left + r.width / 2, cy: r.top + r.height / 2 });
+        spots.push({ plays: plays, cx: r.left + r.width / 2, cy: r.top + r.height / 2, w: r.width });
       }
     });
+    // Dot pitch: the v2.0.0 rem migration moved the stylesheet off fixed px but
+    // missed this JS-side constant, which stayed at 16px while the dot itself
+    // is 0.375rem (~6px) — so two dots sat nearly two full dot-widths apart.
+    // Now derived from the live rem scale AND clamped to the state's own width,
+    // so a pair reads as one tight cluster on a small state instead of
+    // straddling its borders.
+    var rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
     var frag = document.createDocumentFragment();
     spots.forEach(function (s) {
+      var pitch = Math.min(0.55 * rem, Math.max(0.28 * rem, s.w * 0.38));
       s.plays.forEach(function (pk, i) {
         var dot = document.createElement('div');
         dot.className = 'rally-token';
-        dot.style.left = (s.cx + (i - (s.plays.length - 1) / 2) * 16) + 'px';
+        dot.style.left = (s.cx + (i - (s.plays.length - 1) / 2) * pitch) + 'px';
         dot.style.top = s.cy + 'px';
         dot.style.background = COLORS[pk];
         frag.appendChild(dot);
@@ -2343,7 +2351,6 @@
 
   function renderAll() {
     paintMap();
-    renderRallyTokens();
     updateCard();
     if (activeGroup) applyGroupHighlight();
     renderHeader();
@@ -2351,6 +2358,14 @@
     renderAgendas();
     renderGroupCaptureBadges();
     syncNewsFeed();
+    // Runs LAST, deliberately. It's a pure measure-then-place pass over the
+    // live map (getBoundingClientRect in viewport coords), so anything above
+    // that can change the layout must have already run. updateCard() in
+    // particular resizes the info panel — a longer state name wrapping to two
+    // lines, or switching between a state card and a group card's LED grid —
+    // which resizes .map-wrap and moves every state. Placing the dots before
+    // that left them pinned to the previous layout until the next render.
+    renderRallyTokens();
   }
 
   // ---------------------------------------------------------------------
@@ -2497,6 +2512,22 @@
     $('tutorialSignoffOverlay').hidden = true;
     showEndOverlay();
   });
+
+  // Rally dots are placed in viewport coordinates from a live measurement of
+  // the map, so they go stale on ANY layout change — not only the ones that
+  // route through renderAll(). Selecting a state, a group or a quick-invest
+  // cluster calls updateCard() directly, and the info panel's height follows
+  // its content (a two-line state name, a group's LED grid, a shorter cluster
+  // header), which resizes .map-wrap and moves every state out from under the
+  // dots. Observing the map's own box catches all of those paths at once —
+  // plus rotation, window resize, and mobile browser chrome sliding in and out
+  // — without having to chase down every caller.
+  // No feedback loop: renderRallyTokens only writes into #rallyTokenLayer, a
+  // position:fixed sibling that cannot affect .map-wrap's size.
+  var mapWrap = document.querySelector('.map-wrap');
+  if (mapWrap && typeof ResizeObserver === 'function') {
+    new ResizeObserver(function () { if (game) renderRallyTokens(); }).observe(mapWrap);
+  }
 
   scheduleAITick();
 

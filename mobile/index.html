@@ -714,6 +714,16 @@ button{ font-family:inherit; border: none; background:none; color:inherit; }
   height:100%; max-height:var(--app-max-h);
   transform:translate(-50%,-50%); -webkit-transform:translate(-50%,-50%);
 }
+/* A thin surface-coloured rail along the very bottom edge of the game screen,
+   so nothing runs flush into it — the info panel's vs-bar in particular sat at
+   exactly y=innerHeight. A border rather than padding because .stage is
+   height:100% under the global border-box, so this takes its few pixels out of
+   the layer's own height and pushes the content up, instead of revealing
+   whatever is behind it.
+   .stage ONLY, deliberately: the select and tutorial screens already leave room
+   below their last row, and the welcome screen is a full-bleed dark poster
+   where a bright white line across the bottom reads as a rendering fault. */
+.stage{ border-bottom: 5px solid var(--surface); }
 </style>
 
 </head>

@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [2.1.1] - 2026-08-29
+
+### Fixed
+- **FIXED**: Rally-token dots for two rallies on the same state sat nearly two full dot-widths apart. The dot pitch was a hardcoded `16px` in `renderRallyTokens()` while the dot itself is `0.375rem` (~6px) — a JS-side constant the v2.0.0 rem migration missed. Now derived from the live root font size (`0.55rem`) and clamped to the state's own width (`w * 0.38`, floor `0.28rem`), so a pair reads as one tight cluster and doesn't straddle the borders of a small state.
+- **FIXED**: Rally dots went stale whenever the info panel changed height. They're placed in viewport coordinates from a live measurement of the map, so any layout shift moves the states out from under them — and selecting a state, group or quick-invest cluster calls `updateCard()` directly without a full `renderAll()`. Switching to a cluster card shrank the panel 86px → 65px and left the dots 10.6px off. Fixed with a `ResizeObserver` on `.map-wrap`, which catches every such path at once (plus rotation, resize, and mobile browser chrome sliding in/out) rather than chasing individual callers; measured drift is now 0.0px. `renderRallyTokens()` also moved to last in `renderAll()`, so its measure-then-place pass runs after everything that can move the layout.
+
+### Changed
+- **CHANGED**: `.stage` gains a 5px `border-bottom` in the surface colour, so game content no longer runs flush into the bottom screen edge — the info panel's vs-bar previously sat at exactly `y = innerHeight`. A border rather than padding because `.stage` is `height:100%` under the global `border-box`, so it takes its pixels out of the layer's own height. Applied to `.stage` only: the select and tutorial screens already leave room below their last row, and on the welcome screen's full-bleed dark poster a white line across the bottom read as a rendering fault.
+- **CHANGED**: `npm run serve` now sends `image/webp` and `audio/mpeg` content types. The dev server's MIME map predated the WebP conversion and served images as `application/octet-stream`, which would have looked like a WebP failure during real-device testing when it was only the test harness.
+
 ## [2.1.0] - 2026-08-29
 
 Full performance audit and fix pass. Boot payload down 3.67 MB → 0.89 MB, time-to-playable down 3,602 ms → ~150 ms, deployed assets down 23 MB → 2.5 MB. No gameplay, balance, or data-format changes.
