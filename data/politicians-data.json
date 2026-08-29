@@ -6,7 +6,7 @@
       "party": "BJP",
       "archetype": "MASS MOBILIZER",
       "homeState": "Gujarat",
-      "image": "assets/images/Narendra_Modi.png",
+      "image": "assets/images/Narendra_Modi.webp",
       "partyLogo": "assets/icons/Bharatiya_Janata_Party_(icon).svg",
       "primaryColor": "#FF9933",
       "policies": [
@@ -58,7 +58,7 @@
       "party": "INC",
       "archetype": "TECHNOCRAT REFORMER",
       "homeState": "Punjab",
-      "image": "assets/images/Manmohan_Singh.png",
+      "image": "assets/images/Manmohan_Singh.webp",
       "partyLogo": "assets/icons/Indian_National_Congress_hand_logo.svg",
       "primaryColor": "#138808",
       "policies": [
@@ -113,7 +113,7 @@
       "party": "INC",
       "archetype": "DYNASTY CHALLENGER",
       "homeState": "Uttar Pradesh",
-      "image": "assets/images/Rahul_Gandhi.png",
+      "image": "assets/images/Rahul_Gandhi.webp",
       "partyLogo": "assets/icons/Indian_National_Congress_hand_logo.svg",
       "primaryColor": "#138808",
       "policies": [
@@ -164,7 +164,7 @@
       "party": "BJP",
       "archetype": "STATESMAN ORATOR",
       "homeState": "Uttar Pradesh",
-      "image": "assets/images/Atal_Bihari_Vajpayee.png",
+      "image": "assets/images/Atal_Bihari_Vajpayee.webp",
       "partyLogo": "assets/icons/Bharatiya_Janata_Party_(icon).svg",
       "primaryColor": "#FF9933",
       "policies": [
@@ -212,8 +212,8 @@
       "archetype": "ANTI-CORRUPTION CRUSADER",
       "homeState": "Delhi",
       "secondaryHomeStates": ["Punjab"],
-      "image": "assets/images/Arvind_Kejriwal.png",
-      "partyLogo": "assets/icons/Aam_Aadmi_Party_logo_(English).svg",
+      "image": "assets/images/Arvind_Kejriwal.webp",
+      "partyLogo": "assets/icons/Aam_Aadmi_Party_logo_(English).webp",
       "primaryColor": "#2196F3",
       "policies": [
         {
@@ -263,8 +263,8 @@
       "party": "AITC",
       "archetype": "REGIONAL FIREBRAND",
       "homeState": "West Bengal",
-      "image": "assets/images/Mamata_Banerjee.png",
-      "partyLogo": "assets/icons/All_India_Trinamool_Congress_logo_(3).svg",
+      "image": "assets/images/Mamata_Banerjee.webp",
+      "partyLogo": "assets/icons/All_India_Trinamool_Congress_logo_(3).webp",
       "primaryColor": "#00AAFF",
       "policies": [
         {
@@ -332,7 +332,7 @@
       "party": "JD(U)",
       "archetype": "ALLIANCE BROKER",
       "homeState": "Bihar",
-      "image": "assets/images/Nitish_Kumar.png",
+      "image": "assets/images/Nitish_Kumar.webp",
       "partyLogo": "assets/icons/Janata_Dal_(United)_Flag.svg",
       "primaryColor": "#5CB85C",
       "policies": [
@@ -397,7 +397,7 @@
       "party": "BJP",
       "archetype": "HARDLINE ENFORCER",
       "homeState": "Uttar Pradesh",
-      "image": "assets/images/Yogi_Adityanath.png",
+      "image": "assets/images/Yogi_Adityanath.webp",
       "partyLogo": "assets/icons/Bharatiya_Janata_Party_(icon).svg",
       "primaryColor": "#FF9933",
       "policies": [
@@ -454,7 +454,7 @@
       "party": "INC",
       "archetype": "IRON-WILLED MATRIARCH",
       "homeState": "Uttar Pradesh",
-      "image": "assets/images/Indira_Gandhi.png",
+      "image": "assets/images/Indira_Gandhi.webp",
       "partyLogo": "assets/icons/Indian_National_Congress_hand_logo.svg",
       "primaryColor": "#138808",
       "policies": [
@@ -510,7 +510,7 @@
       "party": "INC",
       "archetype": "FOUNDING ARCHITECT",
       "homeState": "Uttar Pradesh",
-      "image": "assets/images/Jawaharlal_Nehru.png",
+      "image": "assets/images/Jawaharlal_Nehru.webp",
       "partyLogo": "assets/icons/Indian_National_Congress_hand_logo.svg",
       "primaryColor": "#138808",
       "policies": [
@@ -560,7 +560,7 @@
       "party": "INC",
       "archetype": "IRON UNIFIER",
       "homeState": "Gujarat",
-      "image": "assets/images/Sardar_Patel.png",
+      "image": "assets/images/Sardar_Patel.webp",
       "partyLogo": "assets/icons/Indian_National_Congress_hand_logo.svg",
       "primaryColor": "#138808",
       "policies": [
@@ -613,7 +613,7 @@
       "party": "Independent",
       "archetype": "CONSTITUTIONAL ARCHITECT",
       "homeState": "Maharashtra",
-      "image": "assets/images/Bhimrao_Ambedkar.png",
+      "image": "assets/images/Bhimrao_Ambedkar.webp",
       "partyLogo": null,
       "primaryColor": "#0033A0",
       "policies": [
@@ -679,7 +679,7 @@
       "party": "AIADMK",
       "archetype": "WELFARE MATRIARCH",
       "homeState": "Tamil Nadu",
-      "image": "assets/images/Jayalalithaa.png",
+      "image": "assets/images/Jayalalithaa.webp",
       "partyLogo": null,
       "primaryColor": "#00A651",
       "policies": [
@@ -735,7 +735,7 @@
       "party": "INC",
       "archetype": "QUIET UNIFIER",
       "homeState": "Uttar Pradesh",
-      "image": "assets/images/Lal_Bahadur_Shastri.png",
+      "image": "assets/images/Lal_Bahadur_Shastri.webp",
       "partyLogo": "assets/icons/Indian_National_Congress_hand_logo.svg",
       "primaryColor": "#138808",
       "policies": [
@@ -793,7 +793,7 @@
       "party": "INC",
       "archetype": "SURVIVAL STRATEGIST",
       "homeState": "Telangana",
-      "image": "assets/images/P_V_Narasimha_Rao.png",
+      "image": "assets/images/P_V_Narasimha_Rao.webp",
       "partyLogo": "assets/icons/Indian_National_Congress_hand_logo.svg",
       "primaryColor": "#138808",
       "policies": [
@@ -844,7 +844,7 @@
       "party": "INC",
       "archetype": "MODERNIZING HEIR",
       "homeState": "Uttar Pradesh",
-      "image": "assets/images/Rajiv_Gandhi.png",
+      "image": "assets/images/Rajiv_Gandhi.webp",
       "partyLogo": "assets/icons/Indian_National_Congress_hand_logo.svg",
       "primaryColor": "#138808",
       "policies": [
@@ -893,7 +893,7 @@
       "party": "Independent",
       "archetype": "CELEBRITY SUPERSTAR",
       "homeState": "Uttar Pradesh",
-      "image": "assets/images/Amitabh_Bachchan.png",
+      "image": "assets/images/Amitabh_Bachchan.webp",
       "partyLogo": null,
       "primaryColor": "#B8860B",
       "policies": [
@@ -947,7 +947,7 @@
       "party": "Independent",
       "archetype": "NATIONAL ICON",
       "homeState": "Maharashtra",
-      "image": "assets/images/Sachin_Tendulkar.png",
+      "image": "assets/images/Sachin_Tendulkar.webp",
       "partyLogo": null,
       "primaryColor": "#004BA0",
       "policies": [
@@ -1002,7 +1002,7 @@
       "archetype": "STAR POWER CANDIDATE",
       "homeState": "Uttar Pradesh",
       "secondaryHomeStates": ["Tamil Nadu"],
-      "image": "assets/images/Hema_Malini.png",
+      "image": "assets/images/Hema_Malini.webp",
       "partyLogo": "assets/icons/Bharatiya_Janata_Party_(icon).svg",
       "primaryColor": "#FF9933",
       "policies": [
@@ -1063,7 +1063,7 @@
       "party": "Independent",
       "archetype": "THALAIVAR OF THE MASSES",
       "homeState": "Tamil Nadu",
-      "image": "assets/images/Rajinikanth.png",
+      "image": "assets/images/Rajinikanth.webp",
       "partyLogo": null,
       "primaryColor": "#8B0000",
       "policies": [
@@ -1137,7 +1137,7 @@
       "party": "Lokahit",
       "archetype": "THE PEOPLE'S ONE-DAY CM",
       "homeState": "Maharashtra",
-      "image": "assets/images/Sivaji_Rao.png",
+      "image": "assets/images/Sivaji_Rao.webp",
       "partyLogo": null,
       "primaryColor": "#00897B",
       "policies": [

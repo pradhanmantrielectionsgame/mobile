@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var E = window.PMEEngine, G = window.PMEGame;
-  var GAME_VERSION = '2.0.2';
+  var GAME_VERSION = '2.1.0';
   ['welcomeVersion', 'stageVersion', 'endVersion'].forEach(function (id) {
     var el = document.getElementById(id);
     if (el) el.textContent = 'v' + GAME_VERSION;
@@ -914,6 +914,31 @@
   }
 
   function $(id) { return document.getElementById(id); }
+
+  // Binds a game action to pointerdown instead of click. A `click` cannot
+  // fire until the finger LIFTS, so every action was gated behind the
+  // player's own press duration (~70-120ms of dwell on a real tap) before
+  // the sound or FX could start. That reads as lag even though nothing on
+  // screen is actually slow — and it's invisible to Playwright, whose
+  // synthetic taps press and release in the same tick (measured: click
+  // lands 7ms after touchstart there, vs. dwell+7ms on a real finger).
+  // Only for action controls that never scroll; the carousel keeps `click`
+  // so a swipe doesn't fire a card. The click fallback keeps keyboard
+  // activation working on real <button>s, which pointerdown alone breaks.
+  function fastTap(el, fn) {
+    if (!el) return;
+    var lastPointer = 0;
+    el.addEventListener('pointerdown', function (e) {
+      if (e.button) return; // ignore right/middle mouse
+      lastPointer = e.timeStamp || Date.now();
+      fn(e);
+    });
+    el.addEventListener('click', function (e) {
+      if ((e.timeStamp || Date.now()) - lastPointer < 700) return; // already handled on press
+      fn(e);
+    });
+  }
+
   function fmtPct(bps) { return Math.round(bps / 100) + '%'; }
   function fmtClock(sec) { sec = Math.max(0, sec); var m = Math.floor(sec / 60), s = sec % 60; return (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s; }
 
@@ -1219,7 +1244,10 @@
   // flips a card back to playable the moment its cooldown hits zero.
   setInterval(function () {
     var track = $('polCarousel');
-    if (!track) return;
+    // The select screen is hidden for the whole match, but this interval kept
+    // running through it — 21 localStorage reads + 21 JSON.parses + 21
+    // innerHTML rebuilds a second, for cards nobody can see.
+    if (!track || $('selectOverlay').hidden) return;
     Array.prototype.forEach.call(track.children, function (card) {
       if (card.classList.contains('pol-card-hard-locked')) return;
       var id = card.getAttribute('data-pol-id');
@@ -1492,8 +1520,33 @@
   // shown, including future edits to that card. The Play again/Share
   // buttons are excluded (ignoreElements) since they're UI chrome, not
   // part of the result. Calls back with a PNG Blob, or null on failure.
+  // html2canvas is 194KB and its only job is screenshotting the end-of-game
+  // declare card, which most sessions never reach — so it's fetched on the
+  // first Share tap instead of blocking every boot. The callback(null) path
+  // below was already the "library unavailable" fallback; a failed load just
+  // reuses it.
+  var html2canvasLoad = null;
+  function loadHtml2Canvas() {
+    if (typeof html2canvas === 'function') return Promise.resolve(true);
+    if (html2canvasLoad) return html2canvasLoad;
+    html2canvasLoad = new Promise(function (resolve) {
+      var s = document.createElement('script');
+      s.src = 'html2canvas.min.js';
+      s.onload = function () { resolve(typeof html2canvas === 'function'); };
+      s.onerror = function () { html2canvasLoad = null; resolve(false); };
+      document.head.appendChild(s);
+    });
+    return html2canvasLoad;
+  }
+
   function buildShareCardBlob(callback) {
-    if (typeof html2canvas !== 'function') { callback(null); return; }
+    loadHtml2Canvas().then(function (ok) {
+      if (!ok) { callback(null); return; }
+      renderShareCardBlob(callback);
+    });
+  }
+
+  function renderShareCardBlob(callback) {
     html2canvas(document.querySelector('.declare-card'), {
       backgroundColor: '#FBF8EF',
       useCORS: true,
@@ -1678,34 +1731,44 @@
   // therefore easy to miss, same problem the button exists to solve — so
   // always anchor their dot to the button, not the map shape underneath it.
   var SMALL_STATE_BTN_ID = { INDL: 'delhiBtn', INGA: 'goaBtn', INKL: 'keralaBtn' };
+  // Every getBoundingClientRect() runs BEFORE any DOM write, then the dots go
+  // in as one fragment. Reading a rect after an append forces a synchronous
+  // layout recalculation, so the old read/append/read/append loop paid for one
+  // full layout per rallied state — measured 2.19ms vs 0.09ms batched (24x) at
+  // 20 states on desktop WebKit, and it grew with every rally played.
   function renderRallyTokens() {
     var layer = $('rallyTokenLayer');
-    layer.innerHTML = '';
+    var spots = [];
     Object.keys(game.rallyPlaysByState).forEach(function (svgId) {
       var plays = game.rallyPlaysByState[svgId];
       if (!plays || !plays.length) return;
-      var cx, cy;
       var btnId = SMALL_STATE_BTN_ID[svgId];
       if (btnId) {
         var br = $(btnId).getBoundingClientRect();
         if (!br.width) return;
-        cx = br.right - 12; cy = br.top + 12; // top-right corner, clear of the icon/label
+        // top-right corner, clear of the icon/label
+        spots.push({ plays: plays, cx: br.right - 12, cy: br.top + 12 });
       } else {
         var el = document.getElementById(svgId);
         if (!el) return;
         var r = el.getBoundingClientRect();
         if (!r.width || !r.height) return; // hidden map element (e.g. a dropped small UT)
-        cx = r.left + r.width / 2; cy = r.top + r.height / 2;
+        spots.push({ plays: plays, cx: r.left + r.width / 2, cy: r.top + r.height / 2 });
       }
-      plays.forEach(function (pk, i) {
+    });
+    var frag = document.createDocumentFragment();
+    spots.forEach(function (s) {
+      s.plays.forEach(function (pk, i) {
         var dot = document.createElement('div');
         dot.className = 'rally-token';
-        dot.style.left = (cx + (i - (plays.length - 1) / 2) * 16) + 'px';
-        dot.style.top = cy + 'px';
+        dot.style.left = (s.cx + (i - (s.plays.length - 1) / 2) * 16) + 'px';
+        dot.style.top = s.cy + 'px';
         dot.style.background = COLORS[pk];
-        layer.appendChild(dot);
+        frag.appendChild(dot);
       });
     });
+    layer.innerHTML = '';
+    layer.appendChild(frag);
   }
 
   function updateCard() {
@@ -1724,6 +1787,7 @@
     $('cardVsBar').hidden = true;
     $('cardPinBtn').hidden = true;
     var el = $('cardGroups');
+    el.dataset.key = ''; // cardGroups is shared; drop renderMemberCard's rebuild key
     el.className = 'info-groups desc';
     var rc = game.cfg.rally;
     if (kind === 'rally') {
@@ -1777,6 +1841,7 @@
         cls + '">' + sign + seatDelta + ' seats</span>';
     }
     var el = $('cardGroups');
+    el.dataset.key = ''; // cardGroups is shared; drop renderMemberCard's rebuild key
     el.className = 'led-grid';
     el.innerHTML = '';
     var chips = agendaEffectChips(name);
@@ -1802,6 +1867,7 @@
     $('cardP1Pct').textContent = fmtPct(p.p1);
     $('cardP2Pct').textContent = fmtPct(p.p2);
     var groupsEl = $('cardGroups');
+    groupsEl.dataset.key = ''; // cardGroups is shared; drop renderMemberCard's rebuild key
     groupsEl.className = 'info-groups';
     groupsEl.innerHTML = '';
     if (!s.tags.length) { groupsEl.innerHTML = '<span class="none">No group affiliations</span>'; }
@@ -1818,31 +1884,58 @@
   // dot) so the player can see at a glance which states they already lead
   // (>= the regional-dominance threshold, same bar the group bonus uses)
   // and which ones are still worth investing in to clear the group.
-  function renderGroupCard(key) {
-    var g = game.groups.filter(function (x) { return x.key === key; })[0];
-    if (!g) return;
+  // Shared by renderGroupCard and renderClusterCard - the two differed only in
+  // their header text and whether the pin button shows, but each carried its
+  // own verbatim copy of this LED grid.
+  //
+  // The grid rebuild is guarded by a content key, the same trick syncNewsFeed
+  // already uses: renderAll() runs this on every player tap AND every AI tick,
+  // and it was wiping 5-15 buttons and rebinding a listener on each one every
+  // time, even when nothing about the group had changed.
+  function renderMemberCard(members, title, subtitle, showPin) {
     var threshold = game.cfg.regionalDominance.thresholdBps;
-    var members = game.states.filter(function (s) { return s.tags.indexOf(key) !== -1; });
-    var leadingCount = members.filter(function (s) { return game.pop[s.svgId].p1 >= threshold; }).length;
-    $('cardName').textContent = g.icon + ' ' + g.label;
-    $('cardSeats').textContent = g.seats + ' seats · leading ' + leadingCount + '/' + members.length +
-      (leadingCount === members.length ? ' — bonus qualified!' : '');
+    $('cardName').textContent = title;
+    $('cardSeats').textContent = subtitle;
     $('cardVsBar').hidden = true;
-    $('cardPinBtn').hidden = false;
-    $('cardPinBtn').classList.toggle('on', groupPinned);
+    $('cardPinBtn').hidden = !showPin;
+    if (showPin) $('cardPinBtn').classList.toggle('on', groupPinned);
+
+    var sorted = members.slice().sort(function (a, b) { return b.seats - a.seats; });
+    var key = sorted.map(function (s) {
+      return s.svgId + (game.pop[s.svgId].p1 >= threshold ? '1' : '0');
+    }).join(',');
     var ledEl = $('cardGroups');
     ledEl.className = 'led-grid';
-    ledEl.innerHTML = '';
-    members.slice().sort(function (a, b) { return b.seats - a.seats; }).forEach(function (s) {
+    // The other card renderers repurpose #cardGroups and each clear this key,
+    // so a match here really does mean our own grid is still on screen.
+    if (ledEl.dataset.key === key) return; // same members, same leading/trailing states
+    ledEl.dataset.key = key;
+
+    var frag = document.createDocumentFragment();
+    sorted.forEach(function (s) {
       var isLeading = game.pop[s.svgId].p1 >= threshold;
       var chip = document.createElement('button');
       chip.className = 'led-chip' + (isLeading ? ' led-on' : '');
       chip.title = s.name;
       chip.dataset.svgid = s.svgId;
       chip.innerHTML = '<span class="led-dot"></span><span>' + s.svgId.slice(2) + '</span>';
-      chip.addEventListener('click', function () { selectState(s.svgId); });
-      ledEl.appendChild(chip);
+      fastTap(chip, function () { selectState(s.svgId); });
+      frag.appendChild(chip);
     });
+    ledEl.innerHTML = '';
+    ledEl.appendChild(frag);
+  }
+
+  function renderGroupCard(key) {
+    var g = game.groups.filter(function (x) { return x.key === key; })[0];
+    if (!g) return;
+    var threshold = game.cfg.regionalDominance.thresholdBps;
+    var members = game.states.filter(function (s) { return s.tags.indexOf(key) !== -1; });
+    var leadingCount = members.filter(function (s) { return game.pop[s.svgId].p1 >= threshold; }).length;
+    renderMemberCard(members, g.icon + ' ' + g.label,
+      g.seats + ' seats · leading ' + leadingCount + '/' + members.length +
+        (leadingCount === members.length ? ' — bonus qualified!' : ''),
+      true);
   }
 
   // Info for the NE8 / Small UTs quick-invest clusters — same led-grid
@@ -1855,22 +1948,8 @@
     var members = game.states.filter(function (s) { return c.ids.indexOf(s.svgId) !== -1; });
     var leadingCount = members.filter(function (s) { return game.pop[s.svgId].p1 >= threshold; }).length;
     var totalSeats = members.reduce(function (sum, s) { return sum + s.seats; }, 0);
-    $('cardName').textContent = c.icon + ' ' + c.label;
-    $('cardSeats').textContent = totalSeats + ' seats · leading ' + leadingCount + '/' + members.length;
-    $('cardVsBar').hidden = true;
-    $('cardPinBtn').hidden = true;
-    var ledEl = $('cardGroups');
-    ledEl.className = 'led-grid';
-    ledEl.innerHTML = '';
-    members.slice().sort(function (a, b) { return b.seats - a.seats; }).forEach(function (s) {
-      var isLeading = game.pop[s.svgId].p1 >= threshold;
-      var chip = document.createElement('button');
-      chip.className = 'led-chip' + (isLeading ? ' led-on' : '');
-      chip.title = s.name;
-      chip.innerHTML = '<span class="led-dot"></span><span>' + s.svgId.slice(2) + '</span>';
-      chip.addEventListener('click', function () { selectState(s.svgId); });
-      ledEl.appendChild(chip);
-    });
+    renderMemberCard(members, c.icon + ' ' + c.label,
+      totalSeats + ' seats · leading ' + leadingCount + '/' + members.length, false);
   }
 
   function selectState(id) {
@@ -1922,9 +2001,11 @@
     }
   }
 
+  var groupChipEls = {};
   function buildGroupsBox() {
     var box = $('groupsBox');
     box.innerHTML = '';
+    groupChipEls = {};
     var rows = [game.groups.slice(0, 8), game.groups.slice(8)];
     rows.forEach(function (rowMembers, i) {
       var row = document.createElement('div');
@@ -1933,7 +2014,12 @@
         var b = document.createElement('button');
         b.className = 'gchip'; b.dataset.key = g.key; b.title = g.label + ' — ' + g.seats + ' seats';
         b.innerHTML = '<span class="hex">' + g.icon + '</span><span class="badge"></span>';
-        b.addEventListener('click', function () { setActiveGroup(g.key); });
+        fastTap(b, function () { setActiveGroup(g.key); });
+        // Kept in a side map, NOT on the group object: `game` gets
+        // structuredClone()d by planAITickPacing, and a DOM node is not
+        // cloneable — hanging one off game.groups throws there, which left
+        // game.rng nulled and broke the AI for the rest of the match.
+        groupChipEls[g.key] = b;
         row.appendChild(b);
       });
       box.appendChild(row);
@@ -1961,7 +2047,7 @@
       btn.innerHTML = (AGENDA_ICONS[name] || '📜') +
         '<span class="badge" id="' + safeId + 'Badge" hidden>✓</span>' +
         '<span class="agenda-bar" id="' + safeId + 'Bar">' + pips + '</span>';
-      btn.addEventListener('click', function () { handleAgendaTap(name); });
+      fastTap(btn, function () { handleAgendaTap(name); });
       tray.appendChild(btn);
     });
   }
@@ -2157,16 +2243,17 @@
     var pt = point || viewportPoint(el);
     var r = G.investCash(game, 'p1', svgId);
     if (!r.ok) { showToast('Not enough funds'); shakeInvalid(el); return; }
-    // Sound fires before the render/FX work below, not after — renderAll()
-    // forces a synchronous layout (getBoundingClientRect in
-    // renderRallyTokens) and repaints the whole map, which on real hardware
-    // is enough to make the sound audibly lag the tap if it waits behind it.
+    // Sound AND the tap FX both fire before renderAll(), not after —
+    // renderAll() repaints the whole map and rebuilds the token layer, which
+    // on real hardware is enough to make the feedback audibly/visibly lag the
+    // tap if it waits behind. Everything the player perceives as "the tap
+    // registered" happens first; the state re-render follows.
     playSound('money_spent');
-    renderAll();
-    if (tutorialMode) onTutorialInvest(svgId);
     if (el && el.animate) el.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.03)' }, { transform: 'scale(1)' }], { duration: 220 });
     spawnFlash(pt.x, pt.y);
     spawnMoneyText(pt.x, pt.y, r.cost, -1);
+    renderAll();
+    if (tutorialMode) onTutorialInvest(svgId);
     // Still a valid, spendable tap (a real campaign doesn't always know when
     // to stop) — engine.js's gainAt already clamps the actual boost to 0
     // once a state is fully owned, so r.gained===0 is exactly "that money
@@ -2245,7 +2332,7 @@
   function renderGroupCaptureBadges() {
     var threshold = game.cfg.regionalDominance.thresholdBps;
     game.groups.forEach(function (g) {
-      var chip = document.querySelector('.gchip[data-key="' + g.key + '"]');
+      var chip = groupChipEls[g.key]; // cached in buildGroupsBox; never replaced
       if (!chip) return;
       var p1 = E.dominanceActive(g, game.states, game.pop, 'p1', threshold);
       var p2 = E.dominanceActive(g, game.states, game.pop, 'p2', threshold);
@@ -2269,12 +2356,12 @@
   // ---------------------------------------------------------------------
   // Boot
   // ---------------------------------------------------------------------
-  document.getElementById('map').addEventListener('click', function (e) {
+  fastTap(document.getElementById('map'), function (e) {
     var path = e.target.closest('path[id], circle[id]'); if (!path) return;
     handleMapTap(path.id, { x: e.clientX, y: e.clientY });
   });
   $('cardPinBtn').addEventListener('click', toggleGroupPin);
-  $('utsBtn').addEventListener('click', function () {
+  fastTap($('utsBtn'), function () {
     activeAgenda = null; activeAction = null; activeCluster = 'ALL_UTS'; updateCard();
     handleButtonTap('ALL_UTS', function () {
       var pt = viewportPoint($('utsBtn')), any = false, totalCost = 0;
@@ -2289,7 +2376,7 @@
       else { shakeInvalid($('utsBtn')); showToast('Not enough funds'); }
     });
   });
-  $('neBtn').addEventListener('click', function () {
+  fastTap($('neBtn'), function () {
     activeAgenda = null; activeAction = null; activeCluster = 'ALL_NE'; updateCard();
     handleButtonTap('ALL_NE', function () {
       var pt = viewportPoint($('neBtn')), any = false, totalCost = 0;
@@ -2314,12 +2401,12 @@
     selectState(svgId);
     handleButtonTap(svgId, function () { investPaid(svgId, pt); });
   }
-  $('delhiBtn').addEventListener('click', function () { smallStateBtnTap('INDL', $('delhiBtn')); });
-  $('goaBtn').addEventListener('click', function () { smallStateBtnTap('INGA', $('goaBtn')); });
-  if ($('keralaBtn')) $('keralaBtn').addEventListener('click', function () { smallStateBtnTap('INKL', $('keralaBtn')); });
-  $('rallyBtn').addEventListener('click', onRallyBtn);
-  $('specialBtn').addEventListener('click', onSpecialBtn);
-  $('nationwideBtn').addEventListener('click', onNationwideBtn);
+  fastTap($('delhiBtn'), function () { smallStateBtnTap('INDL', $('delhiBtn')); });
+  fastTap($('goaBtn'), function () { smallStateBtnTap('INGA', $('goaBtn')); });
+  fastTap($('keralaBtn'), function () { smallStateBtnTap('INKL', $('keralaBtn')); });
+  fastTap($('rallyBtn'), onRallyBtn);
+  fastTap($('specialBtn'), onSpecialBtn);
+  fastTap($('nationwideBtn'), onNationwideBtn);
   $('endPhaseBtn').addEventListener('click', doEndPhase);
   $('playAgainBtn').addEventListener('click', function () {
     $('endOverlay').hidden = true;
@@ -2416,26 +2503,28 @@
   G.loadGameData('../data/').then(function (d) {
     data = d;
     renderPolGrid();
-    // The JSON resolving only means the carousel DOM exists — renderPolGrid
-    // just kicked off the on-screen portrait <img> fetches (the rest are
-    // loading="lazy" and won't fetch until scrolled to). Wait for the first
-    // few to settle so the opening cards aren't visibly filling in, with a
-    // hard timeout so one slow straggler can't hold the app hostage.
-    var portraitImgs = Array.prototype.slice.call($('polCarousel').querySelectorAll('.pol-art img'));
-    var neededCount = Math.min(3, portraitImgs.length);
-    var settledCount = 0;
-    var portraitReady = new Promise(function (resolve) {
-      if (!portraitImgs.length) { resolve(); return; }
-      setTimeout(resolve, 3500);
-      var maybeResolve = function () { if (++settledCount >= neededCount) resolve(); };
-      portraitImgs.forEach(function (img) {
-        if (img.complete) maybeResolve();
-        else {
-          img.addEventListener('load', maybeResolve, { once: true });
-          img.addEventListener('error', maybeResolve, { once: true });
-        }
+    // Warm the first two portraits before unlocking, so the opening cards
+    // aren't visibly filling in.
+    //
+    // This used to wait on the carousel's own <img> elements, which never
+    // worked: all 21 are loading="lazy" inside #selectOverlay, which is
+    // hidden behind the welcome screen — and a browser never fetches a lazy
+    // image in a hidden subtree. So load/error never fired, img.complete
+    // stayed false, and every single boot sat out the full 3,500ms timeout
+    // (measured: 0 of 21 complete, 0 decoded, at the moment the button
+    // unlocked). new Image() ignores visibility, so this actually preloads.
+    var firstArt = (data.politicians || []).slice(0, 2)
+      .map(function (p) { return p.image; }).filter(Boolean);
+    var portraitReady = firstArt.length ? new Promise(function (resolve) {
+      var left = firstArt.length;
+      var done = function () { if (--left <= 0) resolve(); };
+      setTimeout(resolve, 1500); // straggler guard, no longer the normal path
+      firstArt.forEach(function (src) {
+        var img = new Image();
+        img.onload = img.onerror = done;
+        img.src = '../' + src;
       });
-    });
+    }) : Promise.resolve();
     portraitReady.then(function () {
       $('welcomeLoading').hidden = true;
       $('welcomeStartBtn').disabled = false;
