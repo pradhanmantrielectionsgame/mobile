@@ -3,20 +3,21 @@
 (function () {
   'use strict';
   var E = window.PMEEngine, G = window.PMEGame;
-  var GAME_VERSION = '1.5.0';
+  var GAME_VERSION = '2.0.0';
   ['welcomeVersion', 'stageVersion', 'endVersion'].forEach(function (id) {
     var el = document.getElementById(id);
     if (el) el.textContent = 'v' + GAME_VERSION;
   });
 
-  // Booth Ink's fixed-height chrome only reliably fits within the fuller
-  // usable height standalone/installed mode gets (~844px) — a plain mobile
-  // browser tab's shorter, chrome-reduced viewport (~664px) clips fixed UI,
-  // including tutorial-required tap targets, below the fold with no scroll
-  // fallback, hard-blocking tutorial progress. Gate touch devices that
-  // aren't running standalone before they ever reach the welcome screen.
-  // Desktop/mouse dev testing (no coarse pointer) is unaffected.
+  // Phone-only install gate. After the viewport migration (v2.0.0) the layout
+  // reflows and .stage scrolls, so a browser tab's shorter chrome-reduced
+  // viewport no longer clips fixed UI — a tablet/iPad plays fine in-tab. The
+  // gate stays for phones: iOS Safari's disappearing toolbar is worst on a
+  // small screen, and Add-to-Home-Screen is also what protects localStorage
+  // (unlock progress) + the offline cache from iOS's 7-day ITP purge.
+  // Desktop/mouse (no coarse pointer) and tablets (wider than a phone) skip it.
   if (window.matchMedia('(pointer: coarse)').matches &&
+      window.matchMedia('(max-width: 700px)').matches &&
       !(window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true)) {
     document.getElementById('installGateOverlay').hidden = false;
     document.getElementById('welcomeOverlay').hidden = true;
