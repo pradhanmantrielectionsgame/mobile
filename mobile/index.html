@@ -54,16 +54,18 @@
 html,body{height:100%; margin:0; overscroll-behavior:none;}
 body{ font-family:var(--font); background:var(--ink); color:var(--ink); }
 
-/* Cap + center every full-screen chrome layer. The JS-positioned layers
-   (.fx-layer, .rally-token-layer) are deliberately left true-viewport-fixed —
-   their children are placed from getBoundingClientRect() viewport coords. */
+/* Cap + centre every full-screen chrome layer. inset:0 + margin:auto + a
+   max-width/height centres a fixed box on both axes. These selectors' own
+   rules (further down) also set inset:0 / display, and land LATER in the
+   sheet, so this block only adds the caps + margins — it must not try to set
+   left/top itself (a later inset:0 would beat it and leave a stray
+   transform mis-placing the layer). The JS-positioned layers (.fx-layer,
+   .rally-token-layer) stay true-viewport-fixed. */
 .stage, .overlay, .welcome-overlay, .tutorial-overlay, .share-overlay, .target-banner{
   margin-inline:auto; max-width:var(--app-max);
 }
-/* On tall viewports (iPad portrait, big desktop) also cap height and centre
-   vertically, so the app is a letterboxed rectangle on both axes rather than a
-   stretched column with a huge empty map. .share-overlay/.target-banner opt out
-   — they anchor to a screen edge by design. */
+/* The four that also cap height and centre vertically on tall viewports (iPad
+   portrait, big desktop) — a letterboxed rectangle on both axes. */
 .stage, .overlay, .welcome-overlay, .tutorial-overlay{
   max-height:var(--app-max-h); margin-block:auto;
 }
@@ -74,6 +76,11 @@ button{ font-family:inherit; border: none; background:none; color:inherit; }
    overlaps, nothing expands, so no element's position ever depends on
    another's runtime size. */
 .stage{ position:fixed; inset:0; overflow-y:auto; overflow-x:hidden; display:flex; flex-direction:column; background:var(--page); }
+/* .stage sets its own display, so the bare [hidden] UA rule loses to it —
+   without this the pre-game stage renders behind the welcome/select screens
+   (invisible on a phone where those cover the viewport, very visible on iPad
+   where every layer is a centred 520px column). */
+.stage[hidden]{ display:none; }
 
 /* ---- topstrip: ballot-header band. Seat bar + phase, then a slim players
    readout — small, glanceable. ---- */
