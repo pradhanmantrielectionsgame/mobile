@@ -48,8 +48,9 @@
   --gutter:max(0px, calc((100vw - var(--app-max)) / 2));
 }
 /* Fluid root: ~15px on the smallest phones, ~16.5px cap by the time the column
-   hits its max width. Every rem in the stylesheet keys off this. */
-:root{ font-size:clamp(15px, 4vw, 16.5px); }
+   hits its max width. Every rem in the stylesheet keys off this. The plain
+   16px first line is the fallback for engines without clamp() (older iOS). */
+:root{ font-size:16px; font-size:clamp(15px, 4vw, 16.5px); }
 *{box-sizing:border-box; -webkit-tap-highlight-color:transparent; touch-action:pan-x pan-y;}
 html,body{height:100%; margin:0; overscroll-behavior:none;}
 body{ font-family:var(--font); background:var(--ink); color:var(--ink); }
@@ -62,12 +63,12 @@ body{ font-family:var(--font); background:var(--ink); color:var(--ink); }
    transform mis-placing the layer). The JS-positioned layers (.fx-layer,
    .rally-token-layer) stay true-viewport-fixed. */
 .stage, .overlay, .welcome-overlay, .tutorial-overlay, .share-overlay, .target-banner{
-  margin-inline:auto; max-width:var(--app-max);
+  margin-left:auto; margin-right:auto; max-width:var(--app-max);
 }
 /* The four that also cap height and centre vertically on tall viewports (iPad
    portrait, big desktop) — a letterboxed rectangle on both axes. */
 .stage, .overlay, .welcome-overlay, .tutorial-overlay{
-  max-height:var(--app-max-h); margin-block:auto;
+  max-height:var(--app-max-h); margin-top:auto; margin-bottom:auto;
 }
 button{ font-family:inherit; border: none; background:none; color:inherit; }
 @media (prefers-reduced-motion: reduce){ *{ transition-duration:.01ms !important; animation-duration:.01ms !important; } }
@@ -1100,22 +1101,34 @@ button{ font-family:inherit; border: none; background:none; color:inherit; }
   font:11px/1.35 monospace;padding:4px 6px;white-space:pre;pointer-events:none;max-width:60vw"></div>
 <script>
 (function(){
+  function widest(){
+    var w=0,el=null;
+    document.querySelectorAll('body *').forEach(function(n){
+      var r=n.getBoundingClientRect(); if(r.width>w){w=r.width;el=n;}
+    });
+    return el?(Math.round(w)+' '+el.tagName.toLowerCase()+'.'+(el.className||'').toString().split(' ')[0]+(el.id?'#'+el.id:'')):'?';
+  }
   function upd(){
     var d=document.getElementById('vpDebug'); if(!d) return;
-    var vv=window.visualViewport||{};
+    var de=document.documentElement, vv=window.visualViewport||{};
     d.textContent=[
       'inner '+window.innerWidth+'x'+window.innerHeight,
-      'client '+document.documentElement.clientWidth+'x'+document.documentElement.clientHeight,
-      'screen '+screen.width+'x'+screen.height+'  dpr '+window.devicePixelRatio,
-      'vv '+Math.round(vv.width||0)+'x'+Math.round(vv.height||0)+'  scale '+((vv.scale||0).toFixed(3)),
+      'de.client '+de.clientWidth+'x'+de.clientHeight,
+      'de.scroll '+de.scrollWidth+'x'+de.scrollHeight,
+      'de.rect '+Math.round(de.getBoundingClientRect().width),
+      'de.cssW '+getComputedStyle(de).width,
+      'screen '+screen.width+'x'+screen.height+' dpr'+window.devicePixelRatio,
+      'vv '+Math.round(vv.width||0)+'x'+Math.round(vv.height||0)+' sc'+((vv.scale||0).toFixed(2)),
       'standalone '+(window.navigator.standalone===true),
       'bodyW '+Math.round(document.body.getBoundingClientRect().width),
-      'rootFS '+getComputedStyle(document.documentElement).fontSize
+      'rootFS '+getComputedStyle(de).fontSize,
+      'mq>=700 '+window.matchMedia('(min-width:700px)').matches,
+      'widest '+widest()
     ].join('\n');
   }
   upd(); addEventListener('resize',upd);
   if(window.visualViewport) visualViewport.addEventListener('resize',upd);
-  setTimeout(upd,800); setTimeout(upd,2500);
+  setTimeout(upd,800); setTimeout(upd,2500); setTimeout(upd,5000);
 })();
 </script>
 <script src="html2canvas.min.js"></script>
