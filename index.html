@@ -369,6 +369,9 @@ button{ font-family:inherit; border: none; background:none; color:inherit; }
 .welcome-start-btn:active{ transform: translate(2px,2px); box-shadow: none; }
 .welcome-start-btn[disabled], .welcome-howto-btn[disabled]{ opacity:.4; box-shadow: none; }
 .welcome-content .ver-badge{ margin-top: 0.4rem; color:#fff; }
+.welcome-highscore{ color:#fff; font-family:var(--font-mono); font-weight:700; font-size: 0.8rem; letter-spacing:.03em;
+  margin: 0 0 0.55rem; text-shadow: 0 2px 6px rgba(0,0,0,.55); }
+.welcome-highscore[hidden]{ display:none; }
 .welcome-loading{ width:100%; max-width: 11rem; margin: 0 auto 0.55rem; }
 .welcome-loading[hidden]{ display:none; }
 .welcome-loading-track{ width:100%; height: 0.5rem; background:rgba(255,255,255,.25); border-radius: 2.5rem; overflow:hidden; border: 1.3px solid rgba(255,255,255,.4); }
@@ -454,10 +457,12 @@ button{ font-family:inherit; border: none; background:none; color:inherit; }
 .end-overlay{ align-items:center; justify-content:flex-start; text-align:center; gap:0; padding: 0.5rem; }
 .declare-card{ width:100%; background:var(--paper); color:var(--ink); border-radius: 1.125rem; border: 2px solid var(--ink);
   box-shadow: 3.5px 3.5px 0 var(--ink); overflow:hidden; display:flex; flex-direction:column; align-items:center; }
-.declare-seal{ margin-top: 0.5rem; width: 2.75rem; height: 2.75rem; border-radius:50%; background:var(--ink); border: 2px solid #C9A227;
-  display:flex; align-items:center; justify-content:center; font-size: 1.3rem; box-shadow: 0 0 0 2px rgba(0,0,0,.12); flex:0 0 auto; }
-.end-winner-portrait{ margin-top: 0.25rem; width: 3rem; height: 3rem; border-radius:50%; object-fit:cover; background:#ccc;
+.declare-crest{ display:flex; flex-direction:row; align-items:center; justify-content:center; gap: 0.9rem; margin-top: 0.6rem; }
+.declare-seal{ width: 3.75rem; height: 3.75rem; border-radius:50%; background:var(--ink); border: 2px solid #C9A227;
+  display:flex; align-items:center; justify-content:center; font-size: 1.9rem; box-shadow: 0 0 0 2px rgba(0,0,0,.12); flex:0 0 auto; }
+.end-winner-portrait{ width: 3.75rem; height: 3.75rem; border-radius:50%; object-fit:cover; background:#ccc;
   border: 2.5px solid #C9A227; box-shadow: 0 0 0 2px rgba(0,0,0,.12); flex:0 0 auto; }
+.end-winner-portrait[hidden]{ display:none; }
 .end-overlay .headline{ font-family:var(--font-display); font-size: 1.325rem; font-weight:700; margin: 0.45rem 1.25rem 0.15rem; }
 .end-overlay .sub{ color:rgba(20,22,28,.65); font-size: 0.85rem; max-width:34ch; margin: 0 1.25rem 0.5rem; }
 .stat-row.stat-total{ border-top: 1.5px solid rgba(20,22,28,.4); border-bottom:none; margin-top: 0.15rem; padding-top: 0.35rem; font-weight:700; }
@@ -746,6 +751,7 @@ button{ font-family:inherit; border: none; background:none; color:inherit; }
   <div class="welcome-content">
     <div class="tricolor"><span class="saffron"></span><span class="white"></span><span class="green"></span></div>
     <h1>Pradhan Mantri Elections</h1>
+    <div class="welcome-highscore" id="welcomeHighScore" hidden>🏆 Best score <span id="welcomeHighScoreVal">0</span></div>
     <div class="welcome-loading" id="welcomeLoading">
       <div class="welcome-loading-track"><div class="welcome-loading-fill"></div></div>
       <div class="welcome-loading-label">Loading…</div>
@@ -819,8 +825,10 @@ button{ font-family:inherit; border: none; background:none; color:inherit; }
 <div class="overlay end-overlay" id="endOverlay" hidden>
   <div class="declare-card">
     <div class="tricolor"><span class="saffron"></span><span class="white"></span><span class="green"></span></div>
-    <div class="declare-seal" id="declareSeal">🏆</div>
-    <img class="end-winner-portrait" id="endWinnerPortrait" alt="" hidden>
+    <div class="declare-crest">
+      <div class="declare-seal" id="declareSeal">🏆</div>
+      <img class="end-winner-portrait" id="endWinnerPortrait" alt="" hidden>
+    </div>
     <div class="headline" id="endHeadline">—</div>
     <div class="sub" id="endSub">—</div>
     <div class="end-parliament" id="endParliamentChart"></div>
