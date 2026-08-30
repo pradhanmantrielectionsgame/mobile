@@ -87,6 +87,16 @@
     },
     "cleanSweep": {
       "payoutCrPerSeat": 5
+    },
+    "scoring": {
+      "_comment": "Composite end-of-game 'Final score' (mobile/game.js computeScore). First-pass weights — tune with beta feedback. Pure function of final game state so the same number is reproducible server-side from a replayed action log. Scaled x100 so the number reads big.",
+      "seatWeight": 100,
+      "marginWeight": 50,
+      "winBonus": 50000,
+      "drawBonus": 15000,
+      "groupWeight": 4000,
+      "agendaWeight": 1500,
+      "cleanSweepWeight": 2500
     }
   }
 }

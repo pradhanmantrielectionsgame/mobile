@@ -31,8 +31,38 @@ function mulberry32(a) {
   };
 }
 
-function runOneGame(data, p1Id, p2Id, seedFn) {
+// Replay the recorded action log from just the seed + the list of calls,
+// and assert it lands on the exact same final seat count. This is the
+// determinism guard for the replay feature (main.js startReplay) — it
+// fails loudly if any engine change sneaks non-determinism (a Math.random,
+// a Date.now) into an action path.
+function assertReplayMatches(data, game) {
+  const rec = {
+    seed: game.seed,
+    p1: game.players.p1.politician.id,
+    p2: game.players.p2.politician.id,
+    log: game.actionLog,
+    finalSeats: game.finalSeats
+  };
+  const g = Game.createGame(data, rec.p1, rec.p2, mulberry32(rec.seed));
+  rec.log.forEach(e => {
+    if (e.fn === 'endPhase') Game.endPhase(g);
+    else Game[e.fn](g, e.pk, ...(e.args || []));
+  });
+  assert.ok(g.winner, 'replay did not finalize');
+  assert.deepStrictEqual(
+    { p1: g.finalSeats.p1, p2: g.finalSeats.p2, others: g.finalSeats.others },
+    { p1: rec.finalSeats.p1, p2: rec.finalSeats.p2, others: rec.finalSeats.others },
+    `replay diverged for ${rec.p1} vs ${rec.p2} (seed ${rec.seed})`
+  );
+  assert.strictEqual(g.score, game.score,
+    `replay composite score diverged for ${rec.p1} vs ${rec.p2} (seed ${rec.seed}): ${g.score} vs ${game.score}`);
+}
+
+function runOneGame(data, p1Id, p2Id, seed) {
+  const seedFn = mulberry32(seed);
   const game = Game.createGame(data, p1Id, p2Id, seedFn);
+  game.seed = seed;
   Game.runAIFull(game);
   checkInvariants(game, 'phase 1 start (after AI)');
 
@@ -83,9 +113,11 @@ const pairs = [
   ['rajinikanth', 'hema-malini']
 ];
 pairs.forEach((pair, i) => {
-  const g = runOneGame(data, pair[0], pair[1], mulberry32(1000 + i));
-  console.log(`${pair[0]} vs ${pair[1]}: winner=${g.winner} hung=${g.hungParliament} seats p1=${g.finalSeats.p1} p2=${g.finalSeats.p2} others=${g.finalSeats.others}`);
+  const g = runOneGame(data, pair[0], pair[1], 1000 + i);
+  assertReplayMatches(data, g);
+  console.log(`${pair[0]} vs ${pair[1]}: winner=${g.winner} hung=${g.hungParliament} seats p1=${g.finalSeats.p1} p2=${g.finalSeats.p2} others=${g.finalSeats.others} score=${g.score}`);
 });
+console.log('Replay determinism: all games replay to identical final seats from seed + action log.');
 
 let powerFailures = [];
 data.politicians.forEach((pol, i) => {

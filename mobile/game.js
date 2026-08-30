@@ -7,6 +7,19 @@
   'use strict';
   var E = root.PMEEngine || require('./engine.js');
 
+  // Seeded PRNG (mulberry32) — a game created with mulberry32(seed) as its
+  // rng draws an identical starting position + AI setup every time, which is
+  // what lets a recorded action log (game.actionLog) replay to the exact
+  // same outcome. Same impl as mobile/simulate.js / balance-sim.js.
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = (a + 0x6D2B79F5) | 0;
+      var t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
   // Small UTs/states no dedicated map interaction routes through directly —
   // mirrors the union-territories-container button cluster convention (see
   // CLAUDE.md) plus Delhi/Goa, which get their own quick-invest buttons.
@@ -187,6 +200,7 @@
       dominanceHeld: {},
       cleanSweepHeld: {},
       log: [],
+      actionLog: [],
       winner: null,
       hungParliament: false,
       finalSeats: null,
@@ -213,6 +227,16 @@
   function pushLog(game, msg, ticker, instant, toastParts) {
     game.log.unshift({ phase: game.phase, msg: msg, ticker: !!ticker, instant: !!instant, toastParts: toastParts });
     if (game.log.length > 40) game.log.pop();
+  }
+
+  // Append one committed action to the replay log. Called from inside each
+  // action function once success is guaranteed (past every {ok:false}
+  // guard) — so it captures the human's taps AND the AI's, since aiStep()
+  // routes through these same functions. args must be JSON-safe primitives.
+  // A game whose createGame got a seeded rng can replay this list back to
+  // an identical end state (see main.js startReplay).
+  function recordAction(game, fn, playerKey, args) {
+    if (game.actionLog) game.actionLog.push({ fn: fn, pk: playerKey || null, args: args || [] });
   }
 
   // ---------------------------------------------------------------------
@@ -314,6 +338,7 @@
 
   function endPhase(game) {
     if (game.winner) return game;
+    recordAction(game, 'endPhase', null, []);
     if (game.phase >= game.cfg.totalPhases) { finalizeGame(game); return game; }
     game.phase += 1;
     startPhase(game);
@@ -338,6 +363,48 @@
       game.hungParliament = true;
       game.winner = 'draw';
     }
+    var s = computeScore(game, 'p1');
+    game.score = s.score;
+    game.scoreBreakdown = s.breakdown;
+  }
+
+  // Composite end-of-game score for one player — a pure function of final
+  // game state, so the identical number is reproducible from a replayed
+  // action log (and, later, server-side from {seed, actionLog}). Weights
+  // live in game-config.json's mobileEconomy.scoring; first-pass values.
+  // Only additive/non-negative components for now — efficiency/penalty
+  // terms can come later once there's real playtest feedback.
+  function computeScore(game, playerKey) {
+    playerKey = playerKey || 'p1';
+    var opp = E.otherPlayer(playerKey);
+    var sc = game.cfg.scoring || {};
+    var seats = game.finalSeats || E.nationalSeats(game.states, game.pop);
+    var margin = seats[playerKey] - seats[opp];
+    var pl = game.players[playerKey];
+
+    var threshold = game.cfg.regionalDominance.thresholdBps;
+    var groups = game.groups.filter(function (g) {
+      return E.dominanceActive(g, game.states, game.pop, playerKey, threshold);
+    }).length;
+    var agendas = Object.keys(pl.agendaProgress).filter(function (k) {
+      return pl.agendaProgress[k] >= game.cfg.agenda.tapsToComplete;
+    }).length;
+    var sweeps = game.states.filter(function (st) { return game.pop[st.svgId][playerKey] === E.BPS; }).length;
+
+    var outcome = game.winner === playerKey ? (sc.winBonus || 0)
+      : game.winner === 'draw' ? (sc.drawBonus || 0) : 0;
+
+    var breakdown = {
+      seats: seats[playerKey] * (sc.seatWeight != null ? sc.seatWeight : 1),
+      margin: Math.max(0, margin) * (sc.marginWeight || 0),
+      outcome: outcome,
+      groups: groups * (sc.groupWeight || 0),
+      agendas: agendas * (sc.agendaWeight || 0),
+      cleanSweeps: sweeps * (sc.cleanSweepWeight || 0)
+    };
+    var total = 0;
+    Object.keys(breakdown).forEach(function (k) { total += breakdown[k]; });
+    return { score: Math.round(total), breakdown: breakdown };
   }
 
   // ---------------------------------------------------------------------
@@ -371,6 +438,7 @@
     if (fundsFrozen(pl, game)) return { ok: false, reason: 'funds_frozen' };
     var cost = E.investmentCostCr(game.statesById[svgId].seats, game.cfg.investment);
     if (pl.fundsCr < cost) return { ok: false, reason: 'insufficient_funds' };
+    recordAction(game, 'investCash', playerKey, [svgId]);
     var tapNum = (pl.investmentTaps[svgId] || 0) + 1;
     pl.fundsCr -= cost;
     pl.investmentTaps[svgId] = tapNum;
@@ -390,6 +458,7 @@
     if (pl.tokensSpentThisPhase >= game.cfg.rally.maxTokenSpendPerPhase) return { ok: false, reason: 'spend_cap' };
     var plays = game.rallyPlaysByState[svgId] || [];
     if (plays.length >= game.cfg.rally.maxPlaysPerStateShared) return { ok: false, reason: 'state_cap' };
+    recordAction(game, 'playRallyToken', playerKey, [svgId]);
     pl.tokens.stateRally -= 1;
     pl.tokensSpentThisPhase += 1;
     pl.tokensSpentTotal += 1;
@@ -413,6 +482,7 @@
     var minPhase = flavor === 'special' ? game.cfg.rally.specialPowerupMinPhase : game.cfg.rally.nationwideRallyMinPhase;
     if (game.phase < minPhase) return { ok: false, reason: 'too_early' };
     if (pl.tokens.stateRally < cost) return { ok: false, reason: 'insufficient_tokens' };
+    recordAction(game, 'craftToken', playerKey, [flavor]);
     pl.tokens.stateRally -= cost;
     pl.tokensSpentTotal += cost;
     pl[craftedFlag] = true;
@@ -424,6 +494,7 @@
   function activateNationwideRally(game, playerKey) {
     var pl = game.players[playerKey];
     if (!pl.craftedNationwide || pl.usedNationwide) return { ok: false, reason: 'not_ready' };
+    recordAction(game, 'activateNationwideRally', playerKey, []);
     pl.usedNationwide = true;
     var boost = game.cfg.rally.nationwideRallyBoostBps;
     if (pl.nationwideRallyBonusArmedPhase != null) {
@@ -444,6 +515,7 @@
     if (fundsFrozen(pl, game)) return { ok: false, reason: 'funds_frozen' };
     var cost = game.cfg.agenda.costPerTapCr;
     if (pl.fundsCr < cost) return { ok: false, reason: 'insufficient_funds' };
+    recordAction(game, 'tapAgenda', playerKey, [policyName]);
     pl.fundsCr -= cost;
     game.states.forEach(function (s) {
       var net = E.netAgendaEffectBps(s, policy);
@@ -574,6 +646,7 @@
     if (pl.fundsCr < powerFundsCost(power)) return { ok: false, reason: 'insufficient_funds' };
     if (powerFundsCost(power) > 0 && fundsFrozen(pl, game)) return { ok: false, reason: 'funds_frozen' };
 
+    recordAction(game, 'activatePower', playerKey, [{ targetStateSvgId: opts.targetStateSvgId || null, targetAgendaName: opts.targetAgendaName || null }]);
     pl.usedSpecial = true;
     if (pl.powerNullified) return { ok: true, nullified: true };
 
@@ -878,6 +951,7 @@
   }
 
   var API = {
+    mulberry32: mulberry32,
     SMALL_UT_IDS: SMALL_UT_IDS,
     NORTHEAST_IDS: NORTHEAST_IDS,
     GROUP_META: GROUP_META,
@@ -889,6 +963,7 @@
     startPhase: startPhase,
     endPhase: endPhase,
     finalizeGame: finalizeGame,
+    computeScore: computeScore,
     investCash: investCash,
     playRallyToken: playRallyToken,
     craftToken: craftToken,

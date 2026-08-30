@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-08-29
+
+Action log + in-game replay, and a composite "Final score". Groundwork for the still-unbuilt multiplayer and leaderboard features — both need a backend that stays out of scope until asked; this ships the local, no-infrastructure half first.
+
+### Added
+- **ADDED**: Every committed game action is now recorded to `game.actionLog` (`{fn, pk, args}`, in order), capturing the human's moves and the AI's alike since `aiStep()` routes through the same action functions. `createGame` takes a seeded PRNG (`G.mulberry32`, seed on `game.seed`) — the only randomness that matters for reproduction is the starting position and AI setup, both drawn at creation, so a game replays to an identical end state from just `{seed, actionLog}`. The same log is the intended multiplayer sync payload and the leaderboard's server-side validation input.
+- **ADDED**: End-of-game replay. "▶ Watch replay" on the declare card (and "▶ Watch last game" on the welcome screen) rebuilds the game from the seed and re-applies the recorded calls through the engine at 1×/2×/3×, with a top playback bar (exit · play/pause/restart · speed). The last game is persisted to `localStorage['pme:lastReplay']` (~8 KB) so it survives a reload. Replay fires the same flashes / flying-money / power-burst FX a live move does (shared `playActionFx()`), coloured per player; sound plays at 1× only.
+- **ADDED**: Composite "Final score" (`G.computeScore`, weights in `game-config.json` → `mobileEconomy.scoring`) — `seats·100 + max(0,margin)·50 + (win 50000 | draw 15000) + regionsDominated·4000 + agendasCompleted·1500 + cleanSweeps·2500`, a pure function of final game state so the identical number is reproducible server-side later. Shown as a total row at the bottom of Match stats. First-pass weights, to be tuned with beta feedback.
+- **ADDED**: Replay determinism guard in `npm test` (`assertReplayMatches` in `mobile/simulate.js`) — every full test game is replayed from its log and asserted to land on identical final seats **and** identical score. This is what fails loudly if a future engine change sneaks non-determinism (a `Math.random`, a `Date.now`) into an action path. In-browser, `verifyReplay()` logs a console error on any seat or score divergence.
+
+### Changed
+- **CHANGED**: The service worker's network-first fetch for the app shell / code / JSON is now capped at 3.5 s (`AbortSignal.timeout`). Fully offline already fell back to cache instantly; the gap was a flaky or captive connection hanging the whole launch waiting on each request. It now gives up after 3.5 s and serves the last cached copy, refreshing on the next good launch. Falls through cleanly on engines without `AbortSignal.timeout`. The cache-fallback path itself is unchanged.
+
+### Notes
+- Replays are version-locked: an engine balance change (costs, curves) invalidates older saved replays. Handled the standard way — `GAME_VERSION` stamped on the record, a toast warning on mismatch. This is inherent to an input-based replay (StarCraft, Factorio, fighting games all share it), accepted deliberately as the price of a small, verifiable log.
+- The composite score is **not** itself an anti-cheat mechanism — a client can forge it exactly like it can forge a seat count. What makes it trustworthy is server-side re-simulation from `{seed, actionLog}` running the same `computeScore` (not built). Keeping `computeScore` pure-from-state is the prerequisite for that check.
+
 ## [2.1.2] - 2026-08-29
 
 ### Fixed
