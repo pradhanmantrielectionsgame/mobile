@@ -3,7 +3,12 @@
 (function () {
   'use strict';
   var E = window.PMEEngine, G = window.PMEGame;
-  var GAME_VERSION = '2.3.1';
+  var GAME_VERSION = '2.3.2';
+  // Canonical public URL for the end-of-game "share result" link — hardcoded,
+  // not location.href, so the shared link is always the clean site root and
+  // never a /index.html deep link, a ?query string, or a Capacitor
+  // app-internal URL once this is wrapped for the app stores.
+  var SITE_URL = 'https://kaunbanegapradhanmantri.in/';
   ['welcomeVersion', 'stageVersion', 'endVersion'].forEach(function (id) {
     var el = document.getElementById(id);
     if (el) el.textContent = 'v' + GAME_VERSION;
@@ -1736,7 +1741,7 @@
     var seats = game.finalSeats;
     var me = game.players.p1.politician.name;
     var opp = game.players.p2.politician.name;
-    var url = location.href.split('#')[0];
+    var url = SITE_URL;
     var line;
     if (game.winner === 'p1') {
       line = 'I just won India as ' + me + ' in Pradhan Mantri: Elections Game (' + seats.p1 + '-' + seats.p2 + ')! Think you can do better?';
