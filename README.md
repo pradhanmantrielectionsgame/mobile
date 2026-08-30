@@ -117,17 +117,23 @@ Both tutorials are fully optional — skip by completing the final step or closi
 
 ### Key Architectural Decisions
 
-| Decision | Status | Rationale |
-|----------|--------|-----------|
-| [ADR-0001: Player 2 Matchmaking with AI Fallback](docs/adr/0001-player2-matchmaking-fallback.md) | Accepted | Prefer live multiplayer, fall back to AI after timeout — matches "always have a game" requirement |
-| [ADR-0002: Firebase/Supabase Backend](docs/adr/0002-firebase-matchmaking-backend.md) | Accepted | Zero-ops, anonymous auth, free tier covers hobby scale |
-| [ADR-0003: Capacitor (not React Native/Flutter)](docs/adr/0003-capacitor-native-distribution.md) | Accepted | Preserve DOM/CSS/SVG fidelity; game is turn-based, not real-time |
-| [ADR-0004: Instant-Effect-Only Special Powers](docs/adr/0004-instant-effect-special-powers.md) | Accepted | Convert all power effects to instant lump-sum equivalents; robustness against game-length changes |
-| [ADR-0005: Token Economy as Unlock Gate](docs/adr/0005-token-economy-unlock-gate.md) | Accepted | Gate special powers via rally-token crafting; symmetric opportunity regardless of game state |
-| [ADR-0006: Hung Parliament Tie Resolution](docs/adr/0006-hung-parliament-tie-resolution.md) | Accepted | Draw vs. human opponent, Loss vs. AI fallback; ensures fairness in human-vs-human, incentivizes multiplayer |
-| [ADR-0007: Single-Player vs. AI Scope](docs/adr/0007-single-player-ai-scope.md) | Accepted | Built single-player-vs-AI only this session; deferred human matchmaking backend to Phase 0. Prioritizes end-to-end design validation + playable game on day 1 |
-| [ADR-0008: Additive Config Schema Evolution](docs/adr/0008-additive-config-schema-evolution.md) | Accepted | Preserved backward compatibility with legacy desktop build via new `mobileEconomy` namespace, rather than restructuring entire `game-config.json` |
-| [ADR-0009: Special Powers — Instant or One-Phase](docs/adr/0009-special-powers-instant-or-one-phase.md) | Accepted | Clarified instant-only rule: powers may resolve instantly OR last exactly one phase; longer durations remain banned. One-phase effects need only one self-clearing flag; longer effects require genuine expiry tracking (real complexity) |
+| Decision | Status |
+|----------|--------|
+| [ADR-0001: Player 2 Matchmaking with AI Fallback](docs/adr/0001-player2-matchmaking-fallback.md) | Accepted |
+| [ADR-0002: Firebase/Supabase Backend](docs/adr/0002-firebase-matchmaking-backend.md) | Accepted |
+| [ADR-0003: Capacitor (not React Native/Flutter)](docs/adr/0003-capacitor-native-distribution.md) | Accepted |
+| [ADR-0004: Instant-Effect-Only Special Powers](docs/adr/0004-instant-effect-special-powers.md) | Accepted |
+| [ADR-0005: Token Economy as Unlock Gate](docs/adr/0005-token-economy-unlock-gate.md) | Accepted |
+| [ADR-0006: Hung Parliament Tie Resolution](docs/adr/0006-hung-parliament-tie-resolution.md) | Accepted |
+| [ADR-0007: Single-Player vs. AI Scope](docs/adr/0007-single-player-ai-scope.md) | Accepted |
+| [ADR-0008: Additive Config Schema Evolution](docs/adr/0008-additive-config-schema-evolution.md) | Accepted |
+| [ADR-0009: Special Powers — Instant or One-Phase](docs/adr/0009-special-powers-instant-or-one-phase.md) | Accepted |
+| [ADR-0010: Hung Parliament Always a Draw](docs/adr/0010-hung-parliament-always-a-draw.md) | Accepted |
+| [ADR-0011: Wiki as Authoritative Design Reference](docs/adr/0011-wiki-authoritative-design-reference.md) | Accepted |
+| [ADR-0012: Input Handling via pointerdown](docs/adr/0012-input-handling-pointerdown.md) | Accepted |
+| [ADR-0013: Mobile Source Backup and Origin Remote Removal](docs/adr/0013-mobile-source-backup-and-origin-removal.md) | Accepted |
+| [ADR-0014: Input-Based Action-Log Replay](docs/adr/0014-input-based-action-log-replay.md) | Accepted |
+| [ADR-0015: Composite Final Score Design](docs/adr/0015-composite-final-score-design.md) | Accepted |
 
 ## Project Documentation & References
 
