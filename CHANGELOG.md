@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [2.3.2] - 2026-08-30
+
+Share-result link now points at the canonical site URL.
+
+### Changed
+- **CHANGED**: `buildShareText()` uses a hardcoded `SITE_URL` constant (`https://kaunbanegapradhanmantri.in/`) instead of `location.href`, so a shared result always links to the clean site root — never a `/index.html` deep link, a `?query` string (e.g. `?goatcounter-ignore`), or a Capacitor `capacitor://` app-internal URL once the game is wrapped for the app stores. `SITE_URL` sits next to `GAME_VERSION` at the top of `mobile/main.js` as another manually-maintained constant (browser JS can't read `package.json`).
+
 ## [2.3.1] - 2026-08-30
 
 Custom domain (`kaunbanegapradhanmantri.in`), link-preview cards, and a privacy policy page. No gameplay changes.
