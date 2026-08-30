@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [2.3.4] - 2026-08-30
+
+### Changed
+- **CHANGED**: `mobile/privacy.html` contact email filled in (`pradhanmantrielectionsgame@gmail.com`), replacing the placeholder. The privacy policy is now submission-ready for the Play Store listing.
+
 ## [2.3.3] - 2026-08-30
 
 Share-result copy now uses the public brand name.
