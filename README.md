@@ -173,7 +173,9 @@ See the "Key Architectural Decisions" table above for framework selection, multi
 
 See `docs/wiki.html`'s "Architecture" section for current tech stack, deployment status, and open items.
 
-**Live deployment:** the mobile build ships from a dedicated repo, `github.com/pradhanmantrielectionsgame/mobile` (GitHub Pages, served at `pradhanmantrielectionsgame.github.io/mobile/`). That repo carries two branches: `main` holds the flattened deploy build the live game serves — written only by `node scripts/deploy-mobile.js --push` — and `source` holds this full source tree, which local `main` tracks and pushes to with a plain `git push`. The legacy desktop game lives in its own separate repo (`pradhanmantrielectionsgame.github.io`) and is not a remote of this clone.
+**Live deployment:** the mobile build ships from a dedicated repo, `github.com/pradhanmantrielectionsgame/mobile` (GitHub Pages, served at `https://kaunbanegapradhanmantri.in/`). A `CNAME` file (`kaunbanegapradhanmantri.in`) is written by `scripts/deploy-mobile.js` into every deploy build, so the custom domain survives each rebuild — the deploy repo carries two branches: `main` holds the flattened deploy build the live game serves — written only by `node scripts/deploy-mobile.js --push` — and `source` holds this full source tree, which local `main` tracks and pushes to with `git push mobile HEAD:source`. The legacy desktop game lives in its own separate repo (`pradhanmantrielectionsgame.github.io`) and is not a remote of this clone.
+
+**Privacy policy:** `mobile/privacy.html` is served at `/privacy.html` on the live domain, providing a plain-language privacy disclosure (no accounts, no personal data, cookieless GoatCounter analytics, on-device storage only). Required for the Play Store listing.
 
 ## Known Limitations
 
