@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var E = window.PMEEngine, G = window.PMEGame;
-  var GAME_VERSION = '2.3.2';
+  var GAME_VERSION = '2.3.3';
   // Canonical public URL for the end-of-game "share result" link — hardcoded,
   // not location.href, so the shared link is always the clean site root and
   // never a /index.html deep link, a ?query string, or a Capacitor
@@ -1744,11 +1744,11 @@
     var url = SITE_URL;
     var line;
     if (game.winner === 'p1') {
-      line = 'I just won India as ' + me + ' in Pradhan Mantri: Elections Game (' + seats.p1 + '-' + seats.p2 + ')! Think you can do better?';
+      line = 'I just won India as ' + me + ' in Kaun Banega Pradhan Mantri (' + seats.p1 + '-' + seats.p2 + ')! Think you can do better?';
     } else if (game.winner === 'p2') {
-      line = opp + ' just beat me ' + seats.p2 + '-' + seats.p1 + ' in Pradhan Mantri: Elections Game. Think you can do better?';
+      line = opp + ' just beat me ' + seats.p2 + '-' + seats.p1 + ' in Kaun Banega Pradhan Mantri. Think you can do better?';
     } else {
-      line = 'Hung parliament! ' + me + ' and ' + opp + ' tied ' + seats.p1 + '-' + seats.p2 + ' in Pradhan Mantri: Elections Game. Think you can do better?';
+      line = 'Hung parliament! ' + me + ' and ' + opp + ' tied ' + seats.p1 + '-' + seats.p2 + ' in Kaun Banega Pradhan Mantri. Think you can do better?';
     }
     return line + ' ' + url;
   }
@@ -1762,7 +1762,7 @@
       // is why this must fall through to the link-only sheet in that case
       // rather than erroring.
       if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
-        navigator.share({ files: [file], text: text, title: 'Pradhan Mantri: Elections Game' }).catch(function () {});
+        navigator.share({ files: [file], text: text, title: 'Kaun Banega Pradhan Mantri' }).catch(function () {});
       } else {
         openShareOverlay(text, blob);
       }
