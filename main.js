@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var E = window.PMEEngine, G = window.PMEGame;
-  var GAME_VERSION = '2.3.0';
+  var GAME_VERSION = '2.3.1';
   ['welcomeVersion', 'stageVersion', 'endVersion'].forEach(function (id) {
     var el = document.getElementById(id);
     if (el) el.textContent = 'v' + GAME_VERSION;
@@ -202,6 +202,8 @@
   var replay = null; // non-null while a replay is playing: { rec, idx, speed, playing, timer, savedGame }
   var REPLAY_KEY = 'pme:lastReplay';
   var HIGH_SCORE_KEY = 'pme:highScore';
+  // Retrieves the player's best composite score from localStorage.
+  // Returns 0 if storage is unavailable (private browsing, quota exceeded, etc.).
   function loadHighScore() {
     try { return parseInt(localStorage.getItem(HIGH_SCORE_KEY), 10) || 0; } catch (e) { return 0; }
   }
@@ -913,6 +915,9 @@
 
   // Same glow/rays/card treatment as spawnUnlockCelebration, for a new
   // personal-best composite score (see game.js computeScore).
+  // Displays a brief celebratory pop-up (trophy seal + "New High Score" badge)
+  // when the player beats their stored personal best. Matches the visual style
+  // of the politician-unlock celebration.
   function spawnHighScoreCelebration(score) {
     var el = document.createElement('div');
     el.className = 'power-burst';
@@ -929,6 +934,8 @@
     setTimeout(function () { el.remove(); }, 5000);
   }
 
+  // Renders the high-score badge on the welcome screen ("🏆 Best score N").
+  // Hides the badge until the first game completes and seeds a baseline score.
   function renderWelcomeHighScore() {
     var hs = loadHighScore(), el = $('welcomeHighScore');
     if (!el) return;
