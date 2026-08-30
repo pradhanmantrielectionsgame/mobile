@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var E = window.PMEEngine, G = window.PMEGame;
-  var GAME_VERSION = '2.2.0';
+  var GAME_VERSION = '2.3.0';
   ['welcomeVersion', 'stageVersion', 'endVersion'].forEach(function (id) {
     var el = document.getElementById(id);
     if (el) el.textContent = 'v' + GAME_VERSION;
@@ -201,6 +201,10 @@
   var data = null, game = null, selectedId = 'INUP', armed = null; // armed: null | 'stateRally' | 'powerTarget'
   var replay = null; // non-null while a replay is playing: { rec, idx, speed, playing, timer, savedGame }
   var REPLAY_KEY = 'pme:lastReplay';
+  var HIGH_SCORE_KEY = 'pme:highScore';
+  function loadHighScore() {
+    try { return parseInt(localStorage.getItem(HIGH_SCORE_KEY), 10) || 0; } catch (e) { return 0; }
+  }
   var tutorialMode = false; // true between "How to Play" and starting the tutorial game — locks select screen to Modi only
   var TUTORIAL_POL_ID = 'narendra-modi';
   // Two step types:
@@ -905,6 +909,42 @@
     el.appendChild(glow); el.appendChild(rays); el.appendChild(card);
     $('fxLayer').appendChild(el);
     setTimeout(function () { el.remove(); }, 5000);
+  }
+
+  // Same glow/rays/card treatment as spawnUnlockCelebration, for a new
+  // personal-best composite score (see game.js computeScore).
+  function spawnHighScoreCelebration(score) {
+    var el = document.createElement('div');
+    el.className = 'power-burst';
+    el.style.setProperty('--glow-color', '#C9A227');
+    var glow = document.createElement('div'); glow.className = 'glow';
+    var rays = document.createElement('div'); rays.className = 'rays';
+    var card = document.createElement('div'); card.className = 'card';
+    var bolt = document.createElement('div'); bolt.className = 'bolt'; bolt.textContent = '🏆';
+    var name = document.createElement('div'); name.className = 'name'; name.textContent = 'New High Score';
+    var who = document.createElement('div'); who.className = 'who'; who.textContent = score.toLocaleString();
+    card.appendChild(bolt); card.appendChild(name); card.appendChild(who);
+    el.appendChild(glow); el.appendChild(rays); el.appendChild(card);
+    $('fxLayer').appendChild(el);
+    setTimeout(function () { el.remove(); }, 5000);
+  }
+
+  function renderWelcomeHighScore() {
+    var hs = loadHighScore(), el = $('welcomeHighScore');
+    if (!el) return;
+    el.hidden = hs <= 0;
+    $('welcomeHighScoreVal').textContent = hs.toLocaleString();
+  }
+
+  // Records the player's (p1) composite score if it beats the stored best.
+  // Fanfare only once there's a prior best to beat — the first completed
+  // game silently seeds the baseline.
+  function maybeRecordHighScore() {
+    var score = game.score != null ? game.score : G.computeScore(game, 'p1').score;
+    var prev = loadHighScore();
+    if (score <= prev) return;
+    try { localStorage.setItem(HIGH_SCORE_KEY, String(score)); } catch (e) {}
+    if (prev > 0) { spawnHighScoreCelebration(score); playSound('fanfare'); }
   }
   function shakeInvalid(el) {
     if (el) {
@@ -1654,6 +1694,7 @@
 
   function showEndOverlay() {
     saveReplay();
+    maybeRecordHighScore();
     var seats = game.finalSeats;
     var seal, headline, sub;
     if (game.winner === 'p1') {
@@ -2643,6 +2684,7 @@
   });
   $('shareResultBtn').addEventListener('click', shareResult);
   wireReplayControls();
+  renderWelcomeHighScore();
   $('closeShareBtn').addEventListener('click', function () { $('shareOverlay').hidden = true; });
   $('shareBackdrop').addEventListener('click', function () { $('shareOverlay').hidden = true; });
 

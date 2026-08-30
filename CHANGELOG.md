@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-08-30
+
+Personal high score, plus a small win-screen layout fix.
+
+### Added
+- **ADDED**: The composite Final score (v2.2.0) is now tracked as a personal best. Best score to date shows on the welcome screen (`localStorage['pme:highScore']`, hidden until the first game finishes). When a completed game beats it, a "New High Score" burst (same glow/rays/card treatment as the politician-unlock celebration) fires on the declare card with a fanfare. The first completed game seeds the baseline silently — the celebration only fires once there's a prior best to beat. Recorded on every `showEndOverlay()`, so a hung parliament or a loss can still set a best.
+
+### Changed
+- **CHANGED**: The win-screen declare card's trophy seal and winner portrait are now two equal-sized circles side by side (`.declare-crest` flex row) instead of stacked vertically. The Share-result screenshot picks this up automatically since it captures the whole card.
+
 ## [2.2.0] - 2026-08-29
 
 Action log + in-game replay, and a composite "Final score". Groundwork for the still-unbuilt multiplayer and leaderboard features — both need a backend that stays out of scope until asked; this ships the local, no-infrastructure half first.
