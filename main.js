@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var E = window.PMEEngine, G = window.PMEGame;
-  var GAME_VERSION = '2.1.2';
+  var GAME_VERSION = '2.2.0';
   ['welcomeVersion', 'stageVersion', 'endVersion'].forEach(function (id) {
     var el = document.getElementById(id);
     if (el) el.textContent = 'v' + GAME_VERSION;
@@ -199,6 +199,8 @@
   };
 
   var data = null, game = null, selectedId = 'INUP', armed = null; // armed: null | 'stateRally' | 'powerTarget'
+  var replay = null; // non-null while a replay is playing: { rec, idx, speed, playing, timer, savedGame }
+  var REPLAY_KEY = 'pme:lastReplay';
   var tutorialMode = false; // true between "How to Play" and starting the tutorial game — locks select screen to Modi only
   var TUTORIAL_POL_ID = 'narendra-modi';
   // Two step types:
@@ -1279,7 +1281,11 @@
     // Modi's power before the step-30 "use your special ability" gate, which
     // would leave that gate stuck forever (see finishActivatePower).
     var p2Id = tutorialMode ? 'rahul-gandhi' : opponentPool[Math.floor(Math.random() * opponentPool.length)].id;
-    game = G.createGame(data, p1Id, p2Id, Math.random);
+    // Seeded rng (not Math.random) so game.actionLog can be replayed back to
+    // the same outcome from just the seed + the action list (see startReplay).
+    var seed = (Date.now() ^ (Math.random() * 1e9)) >>> 0;
+    game = G.createGame(data, p1Id, p2Id, G.mulberry32(seed));
+    game.seed = seed;
     window.__game = game; // debug/test hook — inspect live state from devtools
     // Tutorial AI never crafts/activates its special power or nationwide
     // rally — both are entirely gated on !usedSpecial/!usedNationwide, so
@@ -1365,29 +1371,36 @@
     aiTickIntervalMs = Math.max(AI_MIN_TICK_MS, Math.min(AI_MAX_TICK_MS, interval));
   }
 
-  function animateAITap(action) {
-    if (!action.svgId) return;
-    var el = document.getElementById(action.svgId);
-    var pt = viewportPoint(el);
-    if (el && el.animate) el.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.03)' }, { transform: 'scale(1)' }], { duration: 220 });
-    spawnFlash(pt.x, pt.y, 'p2');
-    if (action.costCr) spawnMoneyText(pt.x, pt.y, action.costCr, -1, 'p2');
+  // Visual FX for one action, from either the live AI tick or a replay step.
+  // pk drives the colour; withSound is off during fast replay to keep 2x/3x
+  // from turning into a wall of noise.
+  function playActionFx(action, pk, withSound) {
+    if (!action) return;
+    pk = pk || 'p2';
+    if (action.svgId) {
+      var el = document.getElementById(action.svgId);
+      var pt = viewportPoint(el);
+      if (el && el.animate) el.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.03)' }, { transform: 'scale(1)' }], { duration: 220 });
+      spawnFlash(pt.x, pt.y, pk);
+      if (action.costCr) spawnMoneyText(pt.x, pt.y, action.costCr, -1, pk);
+    }
+    if (action.type === 'power') {
+      if (withSound) playPowerSound(game.players[pk].politician.name);
+      spawnPowerBurst(pk, game.players[pk].politician.power.name, game.players[pk].politician.name);
+    } else if (action.type === 'nationwide') {
+      if (withSound) playSound('fanfare');
+      spawnPowerBurst(pk, 'Nationwide Rally', game.players[pk].politician.name, '🇮🇳');
+    }
   }
 
   function scheduleAITick() {
     var delay = aiTickIntervalMs * (0.8 + Math.random() * 0.4); // +-20% jitter, stays organic
     setTimeout(function () {
-      if (game && !timerPaused && !game.winner) {
+      if (game && !timerPaused && !game.winner && !replay) {
         var action = G.aiStep(game);
         if (action) {
-          renderAll(); animateAITap(action);
-          if (action.type === 'power') {
-            playPowerSound(game.players.p2.politician.name);
-            spawnPowerBurst('p2', game.players.p2.politician.power.name, game.players.p2.politician.name);
-          } else if (action.type === 'nationwide') {
-            playSound('fanfare');
-            spawnPowerBurst('p2', 'Nationwide Rally', game.players.p2.politician.name, '🇮🇳');
-          }
+          renderAll();
+          playActionFx(action, 'p2', true);
         }
       }
       scheduleAITick();
@@ -1451,7 +1464,196 @@
     if (!checkTutorialPhaseGate()) resumePhaseTimer();
   }
 
+  // ---------------------------------------------------------------------
+  // Replay — record on game.actionLog (game.js), re-run the same action
+  // calls through the engine from the recorded seed. Version-locked: an
+  // engine balance change invalidates an older saved replay (we warn, not
+  // crash). See CLAUDE.md discussion.
+  // ---------------------------------------------------------------------
+  function currentReplayRecord() {
+    if (!game || !game.actionLog || game.seed == null) return null;
+    return {
+      v: GAME_VERSION, seed: game.seed,
+      p1: game.players.p1.politician.id,
+      p2: game.players.p2.politician.id,
+      log: game.actionLog,
+      finalSeats: game.finalSeats || null,
+      score: game.score != null ? game.score : null
+    };
+  }
+
+  function saveReplay() {
+    var rec = currentReplayRecord();
+    if (!rec) return;
+    try { localStorage.setItem(REPLAY_KEY, JSON.stringify(rec)); } catch (e) { /* quota / private mode — in-memory replay still works this session */ }
+  }
+
+  function loadSavedReplay() {
+    try {
+      var rec = JSON.parse(localStorage.getItem(REPLAY_KEY) || 'null');
+      return rec && rec.log ? rec : null;
+    } catch (e) { return null; }
+  }
+
+  // Apply one recorded entry and return an FX descriptor (same shape aiStep
+  // returns) so the replay can fire the same flashes/bursts a live move does.
+  function applyReplayEntry(e) {
+    if (e.fn === 'endPhase') {
+      var before = game.players.p1.fundsCr;
+      G.endPhase(game);
+      return { type: 'endPhase', fundsGained: game.players.p1.fundsCr - before };
+    }
+    var fn = G[e.fn];
+    if (typeof fn !== 'function') return null;
+    var r = fn.apply(null, [game, e.pk].concat(e.args || []));
+    if (!r || !r.ok) return null;
+    var svgId = (e.fn === 'investCash' || e.fn === 'playRallyToken') ? e.args[0]
+      : (e.fn === 'activatePower' && e.args[0]) ? e.args[0].targetStateSvgId : null;
+    var type = e.fn === 'activatePower' ? 'power'
+      : e.fn === 'activateNationwideRally' ? 'nationwide'
+        : e.fn === 'investCash' ? 'invest'
+          : e.fn === 'playRallyToken' ? 'rally'
+            : e.fn === 'tapAgenda' ? 'agenda' : 'craft';
+    return { type: type, pk: e.pk, svgId: svgId, costCr: r.cost || null };
+  }
+
+  function startReplay(rec) {
+    if (!rec || !rec.log || replay) return;
+    if (!data) { showToast('Still loading…'); return; }
+    if (rec.v && rec.v !== GAME_VERSION) {
+      showToast('Replay recorded on v' + rec.v + ' — may not match exactly');
+    }
+    clearInterval(timerHandle);
+    var savedGame = game;
+    game = G.createGame(data, rec.p1, rec.p2, G.mulberry32(rec.seed));
+    game.seed = rec.seed;
+    window.__game = game;
+    replay = { rec: rec, idx: 0, speed: 1, playing: true, timer: null, savedGame: savedGame };
+
+    COLORS.p1 = game.players.p1.politician.primaryColor || '#E8871C';
+    COLORS.p2 = game.players.p2.politician.primaryColor || '#1C8A4B';
+    document.documentElement.style.setProperty('--p1', COLORS.p1);
+    document.documentElement.style.setProperty('--p2', COLORS.p2);
+    setPartySymbol($('p1PartySymbol'), game.players.p1.politician);
+    setPartySymbol($('p2PartySymbol'), game.players.p2.politician);
+    setPortrait($('p1Portrait'), game.players.p1.politician);
+    setPortrait($('p2Portrait'), game.players.p2.politician);
+    $('p1Name').textContent = game.players.p1.politician.name;
+    $('p2Name').textContent = game.players.p2.politician.name;
+
+    activeGroup = null; activeAgenda = null; activeAction = null; activeCluster = null; armed = null;
+    $('endOverlay').hidden = true;
+    $('selectOverlay').hidden = true;
+    $('welcomeOverlay').hidden = true;
+    $('stage').hidden = false;
+    $('replayBar').hidden = false;
+    buildGroupsBox();
+    buildAgendaTray();
+    selectState('INUP');
+    renderAll();
+    updateReplayBar();
+    scheduleReplayStep();
+  }
+
+  function scheduleReplayStep() {
+    if (!replay) return;
+    clearTimeout(replay.timer);
+    if (!replay.playing) return;
+    replay.timer = setTimeout(function () {
+      if (!replay) return;
+      if (replay.idx >= replay.rec.log.length) { replay.playing = false; updateReplayBar(); verifyReplay(); return; }
+      var action = applyReplayEntry(replay.rec.log[replay.idx++]);
+      renderAll();
+      var sound = replay.speed === 1;
+      if (action && action.type === 'endPhase') {
+        if (action.fundsGained > 0) {
+          var fp = viewportPoint($('p1Funds'));
+          spawnMoneyText(fp.x, fp.y, action.fundsGained, 1);
+        }
+        if (sound) playSound('phase_reset');
+        if (!game.winner) showToast('Phase ' + game.phase + ' begins');
+      } else if (action) {
+        playActionFx(action, action.pk, sound);
+        if (sound && action.type === 'invest') playSound('money_spent');
+        else if (sound && action.type === 'rally') playSound('rally_sound');
+      }
+      updateReplayBar();
+      scheduleReplayStep();
+    }, 620 / replay.speed);
+  }
+
+  function verifyReplay() {
+    var want = replay.rec.finalSeats;
+    if (want) {
+      var got = E.nationalSeats(game.states, game.pop);
+      if (got.p1 !== want.p1 || got.p2 !== want.p2 || got.others !== want.others) {
+        console.error('[replay] final seats mismatch — got', got, 'expected', want,
+          '(engine changed since this game was recorded?)');
+      }
+    }
+    // Composite score folds in groups/agendas/sweeps/margin, so it's a
+    // stricter integrity check than seats alone — a divergence that happened
+    // to preserve seat count still trips this.
+    if (replay.rec.score != null && game.score != null && game.score !== replay.rec.score) {
+      console.error('[replay] score mismatch — got', game.score, 'expected', replay.rec.score);
+    }
+  }
+
+  function updateReplayBar() {
+    if (!replay) return;
+    var total = replay.rec.log.length;
+    $('replayProgress').textContent = 'Phase ' + game.phase + ' · ' + Math.min(replay.idx, total) + '/' + total;
+    $('replayPlayBtn').textContent = replay.playing ? '⏸' : (replay.idx >= total ? '↺' : '▶');
+    ['1', '2', '3'].forEach(function (s) {
+      $('replaySpeed' + s).classList.toggle('on', String(replay.speed) === s);
+    });
+  }
+
+  function exitReplay() {
+    if (!replay) return;
+    clearTimeout(replay.timer);
+    game = replay.savedGame;
+    window.__game = game;
+    replay = null;
+    $('replayBar').hidden = true;
+    COLORS.p1 = game.players.p1.politician.primaryColor || '#E8871C';
+    COLORS.p2 = game.players.p2.politician.primaryColor || '#1C8A4B';
+    document.documentElement.style.setProperty('--p1', COLORS.p1);
+    document.documentElement.style.setProperty('--p2', COLORS.p2);
+    $('endOverlay').hidden = false;
+  }
+
+  function wireReplayControls() {
+    fastTap($('replayPlayBtn'), function () {
+      if (!replay) return;
+      if (replay.idx >= replay.rec.log.length) { // restart
+        game = G.createGame(data, replay.rec.p1, replay.rec.p2, G.mulberry32(replay.rec.seed));
+        game.seed = replay.rec.seed;
+        window.__game = game;
+        replay.idx = 0; replay.playing = true;
+        selectState('INUP'); renderAll();
+      } else {
+        replay.playing = !replay.playing;
+      }
+      updateReplayBar();
+      scheduleReplayStep();
+    });
+    ['1', '2', '3'].forEach(function (s) {
+      fastTap($('replaySpeed' + s), function () {
+        if (!replay) return;
+        replay.speed = parseInt(s, 10);
+        updateReplayBar();
+        if (replay.playing) scheduleReplayStep();
+      });
+    });
+    fastTap($('replayExitBtn'), exitReplay);
+    fastTap($('watchReplayBtn'), function () { startReplay(currentReplayRecord()); });
+    fastTap($('welcomeReplayBtn'), function () { startReplay(loadSavedReplay()); });
+    $('welcomeReplayBtn').hidden = !loadSavedReplay();
+  }
+
   function showEndOverlay() {
+    saveReplay();
     var seats = game.finalSeats;
     var seal, headline, sub;
     if (game.winner === 'p1') {
@@ -1645,16 +1847,21 @@
   }
 
   function renderEndStats() {
+    var p1Score = game.score != null ? game.score : G.computeScore(game, 'p1').score;
+    var p2Score = G.computeScore(game, 'p2').score;
+    // "Final score" sits at the bottom styled like a table's total row — it
+    // isn't literally the sum of the rows above, but reads as their upshot.
     var stats = [
       { label: 'Rallies deployed', p1: ralliesDeployedBy('p1'), p2: ralliesDeployedBy('p2') },
       { label: 'Regions dominated', p1: groupsDominatedBy('p1'), p2: groupsDominatedBy('p2') },
       { label: 'Clean sweeps', p1: cleanSweepsBy('p1'), p2: cleanSweepsBy('p2') },
       { label: 'Agendas completed', p1: agendasCompletedBy('p1'), p2: agendasCompletedBy('p2') },
       { label: 'Special power used', p1: game.players.p1.usedSpecial ? 'Yes' : 'No', p2: game.players.p2.usedSpecial ? 'Yes' : 'No' },
-      { label: 'Nationwide rally used', p1: game.players.p1.usedNationwide ? 'Yes' : 'No', p2: game.players.p2.usedNationwide ? 'Yes' : 'No' }
+      { label: 'Nationwide rally used', p1: game.players.p1.usedNationwide ? 'Yes' : 'No', p2: game.players.p2.usedNationwide ? 'Yes' : 'No' },
+      { label: 'Final score', p1: p1Score.toLocaleString(), p2: p2Score.toLocaleString(), total: true }
     ];
     $('endStats').innerHTML = '<div class="pol-section-label">Match stats</div>' + stats.map(function (s) {
-      return '<div class="stat-row">' +
+      return '<div class="stat-row' + (s.total ? ' stat-total' : '') + '">' +
         '<span class="stat-val p1">' + s.p1 + '</span>' +
         '<span class="stat-label">' + s.label + '</span>' +
         '<span class="stat-val p2">' + s.p2 + '</span></div>';
@@ -2435,6 +2642,7 @@
     switchMusic('intro_music');
   });
   $('shareResultBtn').addEventListener('click', shareResult);
+  wireReplayControls();
   $('closeShareBtn').addEventListener('click', function () { $('shareOverlay').hidden = true; });
   $('shareBackdrop').addEventListener('click', function () { $('shareOverlay').hidden = true; });
 

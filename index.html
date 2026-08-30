@@ -460,6 +460,8 @@ button{ font-family:inherit; border: none; background:none; color:inherit; }
   border: 2.5px solid #C9A227; box-shadow: 0 0 0 2px rgba(0,0,0,.12); flex:0 0 auto; }
 .end-overlay .headline{ font-family:var(--font-display); font-size: 1.325rem; font-weight:700; margin: 0.45rem 1.25rem 0.15rem; }
 .end-overlay .sub{ color:rgba(20,22,28,.65); font-size: 0.85rem; max-width:34ch; margin: 0 1.25rem 0.5rem; }
+.stat-row.stat-total{ border-top: 1.5px solid rgba(20,22,28,.4); border-bottom:none; margin-top: 0.15rem; padding-top: 0.35rem; font-weight:700; }
+.stat-row.stat-total .stat-label{ color:var(--ink); text-transform:uppercase; letter-spacing: 0.04em; font-size: 0.625rem; }
 .end-parliament{ width:100%; max-width: 15.5rem; padding: 0 1rem; }
 .end-parliament svg{ width:100%; height:auto; display:block; }
 .end-parliament circle{ transition:fill .4s ease; }
@@ -488,6 +490,16 @@ button{ font-family:inherit; border: none; background:none; color:inherit; }
 .end-overlay button.secondary{ background:var(--paper-dim); color:var(--ink); }
 .target-banner{ position:fixed; top:0; left:0; right:0; z-index:60; background:var(--stamp); color:#fff; text-align:center; font-size: 0.3125rem; font-weight:700; padding: 0.2rem; }
 .target-banner[hidden]{ display:none; }
+
+.replay-bar{ position:fixed; left:0; right:0; top:0; z-index:64; display:flex; align-items:center; gap: 0.4rem;
+  padding: calc(env(safe-area-inset-top,0px) + 0.3rem) 0.6rem 0.3rem; background:var(--ink); color:#fff; }
+.replay-bar[hidden]{ display:none; }
+.replay-bar button{ font-family:var(--font-display); font-weight:700; font-size:var(--fs-3); color:var(--ink); background:var(--paper);
+  border: 1.5px solid var(--ink); border-radius:var(--radius-sm); padding: 0.2rem 0.5rem; min-width: 1.9rem; }
+.replay-bar button:active{ transform: translate(1px,1px); }
+.replay-progress{ flex:1; font-weight:700; font-size:var(--fs-3); }
+.replay-speeds{ display:flex; gap: 0.25rem; }
+.replay-speeds button.on{ background:var(--accent); color:#fff; }
 
 /* ---- install gate: blocks entry entirely on touch devices not running in
    standalone/home-screen-installed mode. Booth Ink's fixed-height chrome
@@ -740,6 +752,7 @@ button{ font-family:inherit; border: none; background:none; color:inherit; }
     </div>
     <button class="welcome-start-btn" id="welcomeStartBtn" disabled>Begin Campaign</button>
     <button class="welcome-howto-btn" id="howToPlayBtn" disabled>How to Play</button>
+    <button class="welcome-howto-btn" id="welcomeReplayBtn" hidden>▶ Watch last game</button>
     <a class="tip-link" id="tipLinkWelcome" href="#" target="_blank" rel="noopener">☕ Support the developer</a>
     <span class="ver-badge" id="welcomeVersion"></span>
   </div>
@@ -814,13 +827,21 @@ button{ font-family:inherit; border: none; background:none; color:inherit; }
     <div class="declare-ledger" id="endSeats"></div>
     <div class="declare-stats" id="endStats"></div>
     <div class="declare-footer">
-      <button id="shareResultBtn" class="secondary">📤 Share result</button><button id="playAgainBtn">Play again</button>
+      <button id="shareResultBtn" class="secondary">📤 Share result</button><button id="watchReplayBtn" class="secondary">▶ Watch replay</button><button id="playAgainBtn">Play again</button>
       <a class="tip-link" id="tipLinkEnd" href="#" target="_blank" rel="noopener">☕ Support the developer</a>
     </div>
     <span class="ver-badge ver-badge-end" id="endVersion"></span>
   </div>
 </div>
 
+<div class="replay-bar" id="replayBar" hidden>
+  <button id="replayExitBtn" title="Exit replay">✕</button>
+  <button id="replayPlayBtn" title="Play/pause">▶</button>
+  <span class="replay-progress" id="replayProgress">—</span>
+  <span class="replay-speeds">
+    <button id="replaySpeed1" class="on">1x</button><button id="replaySpeed2">2x</button><button id="replaySpeed3">3x</button>
+  </span>
+</div>
 <div class="target-banner" id="targetBanner" hidden>Tap a state to target</div>
 <div class="rally-token-layer" id="rallyTokenLayer"></div>
 <div class="fx-layer" id="fxLayer"></div>

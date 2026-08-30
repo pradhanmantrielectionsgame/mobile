@@ -52,8 +52,16 @@ self.addEventListener('fetch', function (e) {
   // reaches the phone immediately. cache:'reload' bypasses the browser's HTTP
   // cache too — GitHub Pages' 10-minute max-age on index.html/*.js would
   // otherwise keep serving stale code for up to 10 min after a deploy.
+  //
+  // The fetch is capped at 3.5s (AbortSignal.timeout): fully offline, fetch
+  // rejects instantly and we fall to cache; on a flaky/captive connection it
+  // used to hang the whole launch waiting on each request, so now it gives
+  // up after 3.5s and serves the last cached copy instead. The next launch
+  // on a good connection refreshes the cache as normal.
+  var signal;
+  try { signal = AbortSignal.timeout(3500); } catch (err) { /* older engine: no per-fetch timeout, keep prior behaviour */ }
   e.respondWith(
-    fetch(e.request, { cache: 'reload' }).then(function (res) {
+    fetch(e.request, { cache: 'reload', signal: signal }).then(function (res) {
       if (res && res.ok) {
         var copy = res.clone();
         caches.open(CACHE).then(function (c) { c.put(e.request, copy); });
