@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [2.3.3] - 2026-08-30
+
+Share-result copy now uses the public brand name.
+
+### Changed
+- **CHANGED**: The end-of-game share message and the `navigator.share` title now say "Kaun Banega Pradhan Mantri" instead of "Pradhan Mantri: Elections Game", matching the site's public title and domain — the recognisable name is what earns the tap in a WhatsApp/Twitter forward. Tutorial step copy (`mobile/main.js:226`) is unchanged.
+
 ## [2.3.2] - 2026-08-30
 
 Share-result link now points at the canonical site URL.
