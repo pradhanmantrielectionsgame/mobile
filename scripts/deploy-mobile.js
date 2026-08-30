@@ -65,7 +65,7 @@ function copyVerbatim(srcRel, destRel) {
 
 const DEPLOY_README = `# PradhanMantri Elections Game — Mobile
 
-Play at https://pradhanmantrielectionsgame.github.io/mobile/
+Play at https://kaunbanegapradhanmantri.in/
 
 This repo is a built artifact: it's regenerated from the \`mobile/\` folder of
 the main development repo by \`scripts/deploy-mobile.js\` and pushed here as-is.
@@ -83,6 +83,12 @@ function main() {
   copyVerbatim('engine.js', 'engine.js');
   copyVerbatim('sw.js', 'sw.js');
   copyVerbatim('html2canvas.min.js', 'html2canvas.min.js');
+  copyVerbatim('privacy.html', 'privacy.html');
+
+  // GitHub Pages custom domain. Must be regenerated here every deploy —
+  // wipeWorktree() nukes it otherwise, and a domain set only in the repo's
+  // web UI would vanish on the next push.
+  fs.writeFileSync(path.join(WORKTREE, 'CNAME'), 'kaunbanegapradhanmantri.in\n');
 
   fs.cpSync(path.join(ROOT, 'assets'), path.join(WORKTREE, 'assets'), { recursive: true });
   fs.cpSync(path.join(ROOT, 'data'), path.join(WORKTREE, 'data'), { recursive: true });

@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [2.3.1] - 2026-08-30
+
+Custom domain (`kaunbanegapradhanmantri.in`), link-preview cards, and a privacy policy page. No gameplay changes.
+
+### Added
+- **ADDED**: Open Graph / Twitter Card meta tags in `mobile/index.html`, so a pasted game link renders a preview card (title, description, image) in WhatsApp, Twitter/X, Telegram, Discord and Slack instead of a bare URL. `og:image` points at the app icon for now; a dedicated 1200×630 card is a follow-up, with a `ponytail:` comment marking where to switch `twitter:card` to `summary_large_image`.
+- **ADDED**: `mobile/privacy.html` — a plain-language privacy policy (no accounts, no personal data, cookieless GoatCounter analytics, on-device storage only). Needed for the planned Play Store listing. Contact email is a `REPLACE_WITH_YOUR_CONTACT_EMAIL` placeholder pending a real address.
+- **ADDED**: `scripts/deploy-mobile.js` now writes a `CNAME` file (`kaunbanegapradhanmantri.in`) and copies `privacy.html` into every deploy build. The `CNAME` file must be regenerated each deploy — `wipeWorktree()` clears it otherwise.
+
+### Changed
+- **CHANGED**: Public `<title>` is now "Kaun Banega Pradhan Mantri — India Elections Game" (was the internal "Pradhan Mantri — Booth Ink"), plus a `<meta name="description">` and a canonical link to the new domain.
+
 ## [2.3.0] - 2026-08-30
 
 Personal high score, plus a small win-screen layout fix.
