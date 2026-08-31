@@ -1,4 +1,5 @@
-// PME Mobile — Game state, actions, and AI opponent.
+// PME Mobile — Game state and player actions. The AI opponent that drives the
+// p2 seat (and, in headless runs, either seat) lives in mobile/ai.js.
 // Built on top of mobile/engine.js's pure redistribution/apportionment
 // functions. This file owns the mutable `game` object and every player
 // action; mobile/main.js only reads from `game` and calls these functions —
@@ -123,17 +124,6 @@
   // ---------------------------------------------------------------------
   // Game creation
   // ---------------------------------------------------------------------
-  // AI personality profiles — picked randomly per match so the single
-  // greedy heuristic (runAI, below) plays out a few different ways instead
-  // of always the same shape of game. Not adversarially tuned, just varied.
-  var AI_PROFILES = [
-    { key: 'aggressive-investor', agendaTapCapPerPolicyPerPhase: 1, craftsTokens: true, groupFocus: false },
-    { key: 'policy-rusher', agendaTapCapPerPolicyPerPhase: 4, craftsTokens: true, groupFocus: false },
-    { key: 'rally-spammer', agendaTapCapPerPolicyPerPhase: 2, craftsTokens: false, groupFocus: false },
-    { key: 'group-bonus-rusher', agendaTapCapPerPolicyPerPhase: 2, craftsTokens: true, groupFocus: true }
-  ];
-  function pickAIProfile(rng) { return AI_PROFILES[Math.floor(rng() * AI_PROFILES.length)]; }
-
   function makePlayer(politician, cfg, isAI, aiProfile) {
     return {
       politician: politician,
@@ -156,23 +146,13 @@
     };
   }
 
-  // Flags a player slot as AI-controlled and gives it a personality profile
-  // + a committed state-group target, same setup createGame always does for
-  // p2. Exposed so a headless test/simulation can also drive p1 with the
-  // real aiStep() logic (a symmetric "AI vs AI" match) instead of p1 always
-  // being the unflagged human seat — see mobile/balance-sim.js.
-  function setupAI(game, playerKey, rng) {
-    var pl = game.players[playerKey];
-    pl.isAI = true;
-    pl.aiProfile = pickAIProfile(rng);
-    // AI commits to one randomly-chosen state group for the whole match and
-    // hammers every state in it toward regional dominance, instead of
-    // round-robining across all groups — a simpler, harder-to-read-around
-    // opponent than cycling through the full group list.
-    if (game.groups.length) {
-      pl.aiTargetGroup = game.groups[Math.floor(rng() * game.groups.length)];
-    }
-  }
+  // The AI lives in mobile/ai.js. These three shims keep every existing call
+  // site (main.js, balance-sim.js, the replay path) pointing at PMEGame, and
+  // resolve PMEAI per call because in Node this file finishes loading first.
+  function ai() { return root.PMEAI; }
+  function setupAI(game, playerKey, rng, profileKey) { return ai().setupAI(game, playerKey, rng, profileKey); }
+  function aiStep(game, playerKey) { return ai().aiStep(game, playerKey); }
+  function runAIFull(game, playerKey) { return ai().runAIFull(game, playerKey); }
 
   function createGame(data, p1PoliticianId, p2PoliticianId, rng) {
     rng = rng || Math.random;
@@ -742,217 +722,11 @@
     return { ok: true };
   }
 
-  // ---------------------------------------------------------------------
-  // AI opponent — a greedy heuristic bot, not adversarially optimal. See
-  // ADR-0001: live human matchmaking is out of scope here (needs the
-  // Firebase backend from ADR-0002, an external service the user hasn't
-  // asked to stand up); this is the "always have a match available" path
-  // that needs no infrastructure.
-  // ---------------------------------------------------------------------
-  // Random pick among the 10 largest-seat states, once per phase — not the
-  // best-scoring target. A fixed "biggest states" pool with a random draw
-  // each round is simple to read around defensively, on purpose. If the
-  // draw lands on a state that's already capped (playRallyToken rejects
-  // it), the token is just left unspent for that phase rather than retried
-  // elsewhere — it banks toward the auto-craft threshold in aiStep instead.
-  function pickAIRallyTarget(game) {
-    var top10 = game.states.slice().sort(function (a, b) { return b.seats - a.seats; }).slice(0, 10);
-    if (!top10.length) return null;
-    return top10[Math.floor(game.rng() * top10.length)].svgId;
-  }
-
-  function pickAIPowerTarget(game, power, playerKey, oppKey) {
-    var effect = power.benefits[0];
-    var constraint = effect.constraint;
-    var pool = constraint === 'smallUT' ? game.states.filter(function (s) { return SMALL_UT_IDS.indexOf(s.svgId) !== -1; }) : game.states;
-    var best = null, bestVal = -1;
-    pool.forEach(function (s) {
-      var val = effect.target === 'opponent' ? game.pop[s.svgId][oppKey] : (10000 - game.pop[s.svgId][playerKey]);
-      if (val > bestVal) { bestVal = val; best = s; }
-    });
-    return best ? best.svgId : null;
-  }
-
-  function pickAICompletedAgenda(game, playerKey) {
-    var pl = game.players[playerKey];
-    var done = Object.keys(pl.agendaProgress).filter(function (k) { return pl.agendaProgress[k] >= game.cfg.agenda.tapsToComplete; });
-    if (!done.length) return null;
-    done.sort(function (a, b) { return totalNetEffect(game, b) - totalNetEffect(game, a); });
-    return done[0];
-  }
-
-  // groupFocus profile bonus: push a laggard state that's the only thing
-  // standing between the AI and a regional-dominance payout.
-  function groupFocusBonus(game, state, playerKey) {
-    var bonus = 0;
-    state.tags.forEach(function (tag) {
-      var members = game.states.filter(function (s) { return s.tags.indexOf(tag) !== -1; });
-      if (!members.length) return;
-      var thisQualifies = game.pop[state.svgId][playerKey] >= game.cfg.regionalDominance.thresholdBps;
-      if (thisQualifies) return;
-      var qualifying = members.filter(function (s) { return game.pop[s.svgId][playerKey] >= game.cfg.regionalDominance.thresholdBps; }).length;
-      if (qualifying >= members.length - 2) bonus += 0.5;
-    });
-    return bonus;
-  }
-
-  // Investment target: the AI commits to a single state group, chosen once
-  // at game start (pl.aiTargetGroup, set in createGame) and hammered for
-  // the whole match, instead of chasing whatever single state scores best
-  // nationwide — that scattered spend never concentrated enough in one
-  // place to clear the 50% regional-dominance bar.
-  function scoreInvestState(game, pl, profile, s, playerKey, oppKey) {
-    var cost = E.investmentCostCr(s.seats, game.cfg.investment);
-    if (cost > pl.fundsCr) return null;
-    var tapNum = (pl.investmentTaps[s.svgId] || 0) + 1;
-    var boost = E.investmentBoostBps(tapNum, game.cfg.investment);
-    // Use actual remaining headroom, not the raw boost — otherwise the AI
-    // keeps dumping funds into an already-near-100% state forever (0 real
-    // gain) instead of moving on to the next state in its target group,
-    // which meant a group could never actually clear regional dominance.
-    var effectiveGain = Math.min(boost, 10000 - game.pop[s.svgId][playerKey]);
-    if (effectiveGain <= 0) return null;
-    var score = effectiveGain / cost + (game.pop[s.svgId][oppKey] - game.pop[s.svgId][playerKey]) / 100000;
-    if (profile && profile.groupFocus) score += groupFocusBonus(game, s, playerKey);
-    return score;
-  }
-
-  function bestInPool(game, pl, profile, pool, playerKey, oppKey) {
-    var best = null, bestScore = -Infinity;
-    pool.forEach(function (s) {
-      var score = scoreInvestState(game, pl, profile, s, playerKey, oppKey);
-      if (score !== null && score > bestScore) { bestScore = score; best = s; }
-    });
-    return best;
-  }
-
-  function pickAIInvestmentTarget(game, profile, playerKey, oppKey) {
-    var pl = game.players[playerKey];
-    var group = pl.aiTargetGroup;
-    if (!group) return bestInPool(game, pl, profile, game.states, playerKey, oppKey);
-
-    var pool = game.states.filter(function (s) { return s.tags.indexOf(group.key) !== -1; });
-    var best = bestInPool(game, pl, profile, pool, playerKey, oppKey);
-    if (best) return best;
-    // nothing affordable/left with headroom in the target group right now
-    // (fully dominant, or momentarily unaffordable) — spend elsewhere
-    // rather than stall; next tick re-checks the target group first
-    return bestInPool(game, pl, profile, game.states, playerKey, oppKey);
-  }
-
-  // Performs exactly one AI action (rally play, token craft, power/nationwide
-  // activation, agenda tap, or a single investment tap) and returns a
-  // descriptor of what it did ({ type, svgId, costCr }, svgId/costCr null
-  // when not applicable) so the caller can animate it, or null if it had
-  // nothing to do. Called repeatedly — once per tick in the browser
-  // (main.js paces ticks to ~20/min), or in a tight loop by runAIFull() for
-  // Node tests, which don't care about real-time pacing.
-  // playerKey defaults to 'p2' — the browser and every existing call site
-  // (main.js, runAIFull below) call aiStep(game) with no second argument,
-  // so this default preserves their exact prior behavior. A second AI-
-  // controlled seat (e.g. a headless "AI vs AI" balance simulation, which
-  // needs a symmetric opponent instead of a naive/random p1 stand-in) can
-  // drive p1 the same way by passing 'p1' explicitly and flagging
-  // game.players.p1.isAI/.aiProfile/.aiTargetGroup itself first.
-  function aiStep(game, playerKey) {
-    playerKey = playerKey || 'p2';
-    var oppKey = playerKey === 'p2' ? 'p1' : 'p2';
-    var pl = game.players[playerKey];
-    if (!pl.isAI || game.winner) return null;
-    var profile = pl.aiProfile || AI_PROFILES[0];
-
-    // One rally attempt per tick, at a random top-10-largest state — not a
-    // retry loop. A rejected placement (state already at its shared 2-play
-    // cap) just leaves the token unspent this tick, banking it toward the
-    // auto-craft check below instead of hunting for another target. The real
-    // per-phase limit is playRallyToken's own tokensSpentThisPhase check
-    // (maxTokenSpendPerPhase, same cap a human plays under) — this used to
-    // also gate on a since-removed aiRalliedThisPhase flag that capped the
-    // AI to exactly one rally per phase regardless of that shared cap,
-    // silently halving the AI's rally usage versus a human every game
-    // (found 2026-08-26 from a user report of a lopsided AI-vs-human game).
-    if (pl.tokensSpentThisPhase < game.cfg.rally.maxTokenSpendPerPhase && pl.tokens.stateRally > 0) {
-      var rallyTarget = pickAIRallyTarget(game);
-      if (rallyTarget && playRallyToken(game, playerKey, rallyTarget).ok) {
-        return { type: 'rally', svgId: rallyTarget, costCr: null };
-      }
-    }
-
-    // Auto-craft + deploy the special power the moment 6 tokens are banked
-    // — unconditional, not gated by AI personality, so every match the AI
-    // reliably gets its own power online instead of draining tokens on
-    // individual rally plays and never reaching the threshold.
-    if (!pl.craftedSpecial && !pl.usedSpecial && pl.tokens.stateRally >= game.cfg.rally.specialPowerupCraftCost) {
-      if (craftToken(game, playerKey, 'special').ok) return { type: 'craftSpecial', svgId: null, costCr: null };
-    }
-    if (profile.craftsTokens && craftToken(game, playerKey, 'nationwide').ok) {
-      return { type: 'craftNationwide', svgId: null, costCr: null };
-    }
-
-    if (pl.craftedSpecial && !pl.usedSpecial) {
-      var power = pl.politician.power;
-      var canPay = (!power.requiresMinPhase || game.phase >= power.requiresMinPhase) &&
-        (!power.requiresMinFundsCr || pl.fundsCr >= power.requiresMinFundsCr) &&
-        pl.fundsCr >= powerFundsCost(power);
-      if (canPay) {
-        var opts = {};
-        if (power.requiresTargetState) opts.targetStateSvgId = pickAIPowerTarget(game, power, playerKey, oppKey);
-        if (power.requiresCompletedAgenda) opts.targetAgendaName = pickAICompletedAgenda(game, playerKey);
-        var targetsOk = (!power.requiresTargetState || opts.targetStateSvgId) &&
-          (!power.requiresCompletedAgenda || opts.targetAgendaName);
-        if (targetsOk && activatePower(game, playerKey, opts).ok) {
-          return { type: 'power', svgId: opts.targetStateSvgId || null, costCr: null };
-        }
-      }
-    }
-
-    if (pl.craftedNationwide && !pl.usedNationwide) {
-      if (activateNationwideRally(game, playerKey).ok) return { type: 'nationwide', svgId: null, costCr: null };
-    }
-
-    var ranked = pl.politician.policies.map(function (p) { return p.name; })
-      .sort(function (a, b) { return totalNetEffect(game, b) - totalNetEffect(game, a); });
-    for (var i = 0; i < ranked.length; i++) {
-      var name = ranked[i];
-      var tapsThisPhase = pl.aiAgendaTapsThisPhase[name] || 0;
-      if (tapsThisPhase >= profile.agendaTapCapPerPolicyPerPhase) continue;
-      if ((pl.agendaProgress[name] || 0) >= game.cfg.agenda.tapsToComplete) continue;
-      if (pl.fundsCr < game.cfg.agenda.costPerTapCr) continue;
-      if (tapAgenda(game, playerKey, name).ok) {
-        pl.aiAgendaTapsThisPhase[name] = tapsThisPhase + 1;
-        return { type: 'agenda', svgId: null, costCr: game.cfg.agenda.costPerTapCr };
-      }
-    }
-
-    var investTarget = pl.fundsCr >= game.cfg.investment.costPerSeatCr ? pickAIInvestmentTarget(game, profile, playerKey, oppKey) : null;
-    if (investTarget) {
-      if (SMALL_UT_BATCH_IDS.indexOf(investTarget.svgId) !== -1) {
-        var batchCost = 0, batchAny = false;
-        SMALL_UT_BATCH_IDS.forEach(function (id) {
-          var r = investCash(game, playerKey, id);
-          if (r.ok) { batchAny = true; batchCost += r.cost; }
-        });
-        if (batchAny) return { type: 'invest', svgId: investTarget.svgId, costCr: batchCost };
-      } else {
-        var investResult = investCash(game, playerKey, investTarget.svgId);
-        if (investResult.ok) return { type: 'invest', svgId: investTarget.svgId, costCr: investResult.cost };
-      }
-    }
-
-    return null;
-  }
-
-  // Fast-forwards the AI's whole turn in one call — for Node tests/
-  // simulation only, which don't need real-time pacing. The browser never
-  // calls this; it ticks aiStep() on a timer instead (see main.js).
-  function runAIFull(game, playerKey) {
-    var guard = 0;
-    while (aiStep(game, playerKey) && guard++ < 2000) {}
-  }
-
   var API = {
     mulberry32: mulberry32,
     SMALL_UT_IDS: SMALL_UT_IDS,
+    SMALL_UT_BATCH_IDS: SMALL_UT_BATCH_IDS,
+    powerFundsCost: powerFundsCost,
     NORTHEAST_IDS: NORTHEAST_IDS,
     GROUP_META: GROUP_META,
     normalizeGameData: normalizeGameData,
@@ -979,5 +753,8 @@
     runAIFull: runAIFull
   };
   root.PMEGame = API;
-  if (typeof module !== 'undefined') module.exports = API;
+  if (typeof module !== 'undefined') {
+    module.exports = API;
+    require('./ai.js'); // after PMEGame is set — ai.js reads it back at call time
+  }
 })(typeof window !== 'undefined' ? window : (typeof global !== 'undefined' ? global : this));

@@ -1,13 +1,13 @@
 // PME Mobile — minimal cache-first service worker for offline/installable
 // play. Precaches the app shell; everything else (data/*.json, sounds/*,
 // images) is cached opportunistically the first time it's fetched.
-var CACHE = 'pme-mobile-v8';
+var CACHE = 'pme-mobile-v12';
 // html2canvas.min.js is no longer a <script> tag in index.html — main.js injects
 // it on the first Share tap. It stays precached deliberately: install runs in the
 // background (off the boot critical path), and this keeps the share screenshot
 // instant and working offline. Don't drop it as "unreferenced".
 var CORE = [
-  './index.html', './engine.js', './game.js', './main.js', './html2canvas.min.js', './manifest.json',
+  './index.html', './engine.js', './game.js', './ai.js', './main.js', './html2canvas.min.js', './manifest.json',
   './data/states_data.json', './data/policy-tags.json', './data/politicians-data.json', './data/game-config.json'
 ];
 

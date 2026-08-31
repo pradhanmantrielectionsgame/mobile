@@ -6,6 +6,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [2.4.0] - 2026-08-31
+
+### Added
+- **ADDED**: `mobile/ai.js` — AI opponent extracted into its own module (~415 lines) with `AI_PROFILES` registry, profile setup helpers (`setupAI`, `pickAIProfile`, `profileByKey`), and core AI logic (`aiStep`, `runAIFull`). Exports `root.PMEAI` as a global; required by `mobile/game.js` via `<script>` tag in `mobile/index.html` after `game.js` loads. Bit-identical to the original inline AI across all shipped profiles after extraction (verified via 25-game fixed-seed regression).
+- **ADDED**: New "max" AI profile — the strongest heuristic bot, serving as the anchor for a planned difficulty ladder. Four new feature-flag capabilities (all defaulting falsy on shipped profiles):
+  - `seatRankedAgendas` — rank agenda taps by real seat value via `previewAgendaTapSeatDelta`, skip if worth less than equivalent cash investment (2.5 seats breakeven).
+  - `tokenDiscipline` — bank rally tokens toward the Nationwide Rally unless a state rally beats it per token (only UP and Maharashtra typically clear ~45-seat threshold).
+  - `smartGroupTarget` — chase regional-dominance groups by best payout-per-crore-remaining, re-picked live, skipped if unfinishable in phases left.
+  - `spreadInvest` — invest for maximum delivered basis points, avoiding per-state boost decay.
+  - Measured margins: +290 to +333 seats vs. four shipped profiles (mirrored), ~400 of 543 final seats, 7–9 regional groups captured, 95–100% Nationwide Rally usage.
+- **ADDED**: Playtest URL parameters in `mobile/main.js`:
+  - `?ai=<profile-key>` forces opponent's AI profile (random group draw still runs, preserving RNG stream).
+  - `?p2=<politician-id>` forces opponent politician.
+  - Tap version label to cycle forced profile (stored in `localStorage['pme_force_ai']`, 'max' first in cycle).
+  - Build marker on version label: "+max" when 'max' override active, "+ai" when `ai.js` loaded without override.
+  - End-of-match stats table gains "AI profile" row when a profile is forced.
+- **ADDED**: `mobile/index.html` now loads `mobile/ai.js` after `game.js` via `<script>` tag; `mobile/sw.js` adds `'./ai.js'` to CORE precache list.
+
+### Changed
+- **CHANGED**: `mobile/game.js` refactored from 983 to ~760 lines. Three one-line delegating shims remain (`setupAI`, `aiStep`, `runAIFull`), so `main.js`, `balance-sim.js`, and replay path required no changes. Now exports `SMALL_UT_BATCH_IDS` and `powerFundsCost`, which `ai.js` reaches across the file boundary. `makePlayer` state object stays in `game.js`.
+- **CHANGED**: Service worker cache version bumped `pme-mobile-v11` → `v12` (precache update for `ai.js` addition).
+- **CHANGED**: `setupAI` gained an optional 4th argument `profileKey` to force a specific AI profile (used by headless test harness); random group draw still runs either way, preserving RNG stream and replay determinism.
+
 ## [2.3.4] - 2026-08-30
 
 ### Changed

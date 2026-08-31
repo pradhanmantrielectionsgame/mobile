@@ -3,16 +3,57 @@
 (function () {
   'use strict';
   var E = window.PMEEngine, G = window.PMEGame;
-  var GAME_VERSION = '2.3.4';
+  var GAME_VERSION = '2.4.0';
   // Canonical public URL for the end-of-game "share result" link — hardcoded,
   // not location.href, so the shared link is always the clean site root and
   // never a /index.html deep link, a ?query string, or a Capacitor
   // app-internal URL once this is wrapped for the app stores.
   var SITE_URL = 'https://kaunbanegapradhanmantri.in/';
-  ['welcomeVersion', 'stageVersion', 'endVersion'].forEach(function (id) {
-    var el = document.getElementById(id);
-    if (el) el.textContent = 'v' + GAME_VERSION;
-  });
+  // The version label doubles as a build marker during AI-ladder playtests:
+  // "+ai" means mobile/ai.js loaded at all, and "+<key>" that a ?ai= override
+  // is actually in force. Without it, a device that quietly loaded an older
+  // build is indistinguishable from a bot that simply played badly — which
+  // cost two playtests on 2026-08-31.
+  // A stored choice beats the query string: ?ai= kept getting lost between the
+  // link and the page on a real phone (2026-08-31), so tapping the version
+  // label cycles the forced profile instead and localStorage remembers it
+  // across launches, home-screen installs and shared links alike.
+  var AI_FORCE_KEY = 'pme_force_ai';
+  function forcedAIKey() {
+    var stored = null;
+    try { stored = localStorage.getItem(AI_FORCE_KEY); } catch (e) { /* private mode */ }
+    var key = stored || new URLSearchParams(location.search).get('ai');
+    return (key && window.PMEAI && window.PMEAI.profileByKey(key)) ? key : null;
+  }
+  function renderVersionLabels() {
+    var tag = window.PMEAI ? (forcedAIKey() ? '+' + forcedAIKey() : '+ai') : '';
+    ['welcomeVersion', 'stageVersion', 'endVersion'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.textContent = 'v' + GAME_VERSION + tag;
+    });
+  }
+  renderVersionLabels();
+  // Playtest hook: tap the version label to cycle opponent AI profile ->
+  // off. Deliberately undiscoverable rather than hidden behind a build flag —
+  // the label is 10px of footer text a normal player has no reason to tap.
+  (function () {
+    var el = document.getElementById('welcomeVersion');
+    if (!el || !window.PMEAI) return;
+    el.style.cursor = 'pointer';
+    el.style.padding = '8px 12px';
+    el.addEventListener('click', function () {
+      // 'max' first — it is the one a ladder playtest almost always wants.
+      var others = window.PMEAI.AI_PROFILES.map(function (p) { return p.key; }).filter(function (k) { return k !== 'max'; });
+      var keys = ['', 'max'].concat(others);
+      var next = keys[(keys.indexOf(forcedAIKey() || '') + 1) % keys.length];
+      try {
+        if (next) localStorage.setItem(AI_FORCE_KEY, next);
+        else localStorage.removeItem(AI_FORCE_KEY);
+      } catch (e) { /* private mode: the tap just won't stick */ }
+      renderVersionLabels();
+      showToast(next ? 'Next match vs: ' + next : 'AI profile: random (default)');
+    });
+  })();
 
   // Phone-only install gate. After the viewport migration (v2.0.0) the layout
   // reflows and .stage scrolls, so a browser tab's shorter chrome-reduced
@@ -1333,12 +1374,27 @@
     // Modi's power before the step-30 "use your special ability" gate, which
     // would leave that gate stuck forever (see finishActivatePower).
     var p2Id = tutorialMode ? 'rahul-gandhi' : opponentPool[Math.floor(Math.random() * opponentPool.length)].id;
+    // Playtest hook: ?p2=<politician id> forces the opponent, bypassing the
+    // unlock pool — pairs with ?ai= below so a specific kit can be retested
+    // against a specific AI profile instead of waiting for the random draw.
+    var forcedP2 = new URLSearchParams(location.search).get('p2');
+    if (forcedP2 && !tutorialMode && data.politicians.some(function (p) { return p.id === forcedP2; })) p2Id = forcedP2;
     // Seeded rng (not Math.random) so game.actionLog can be replayed back to
     // the same outcome from just the seed + the action list (see startReplay).
     var seed = (Date.now() ^ (Math.random() * 1e9)) >>> 0;
     game = G.createGame(data, p1Id, p2Id, G.mulberry32(seed));
     game.seed = seed;
     window.__game = game; // debug/test hook — inspect live state from devtools
+    // Playtest hook: ?ai=<profile key> forces the opponent's AI profile
+    // instead of the random draw — the ladder profiles (e.g. ?ai=max) are
+    // deliberately not in that draw, so this is the only way to face one.
+    // Skipped in the tutorial, which needs its own scripted opponent.
+    var forcedAI = forcedAIKey();
+    if (forcedAI && !tutorialMode) {
+      G.setupAI(game, 'p2', G.mulberry32(seed ^ 0x5eed), forcedAI);
+      game.forcedAIProfile = forcedAI;
+      showToast('AI profile: ' + forcedAI);
+    }
     // Tutorial AI never crafts/activates its special power or nationwide
     // rally — both are entirely gated on !usedSpecial/!usedNationwide, so
     // marking them pre-used is enough to turn them off without touching
@@ -1911,8 +1967,10 @@
       { label: 'Agendas completed', p1: agendasCompletedBy('p1'), p2: agendasCompletedBy('p2') },
       { label: 'Special power used', p1: game.players.p1.usedSpecial ? 'Yes' : 'No', p2: game.players.p2.usedSpecial ? 'Yes' : 'No' },
       { label: 'Nationwide rally used', p1: game.players.p1.usedNationwide ? 'Yes' : 'No', p2: game.players.p2.usedNationwide ? 'Yes' : 'No' },
+      { label: 'AI profile', p1: '—', p2: game.forcedAIProfile, playtestOnly: true },
       { label: 'Final score', p1: p1Score.toLocaleString(), p2: p2Score.toLocaleString(), total: true }
     ];
+    stats = stats.filter(function (s) { return !s.playtestOnly || game.forcedAIProfile; });
     $('endStats').innerHTML = '<div class="pol-section-label">Match stats</div>' + stats.map(function (s) {
       return '<div class="stat-row' + (s.total ? ' stat-total' : '') + '">' +
         '<span class="stat-val p1">' + s.p1 + '</span>' +
