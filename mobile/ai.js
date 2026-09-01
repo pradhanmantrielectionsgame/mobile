@@ -18,31 +18,64 @@
   // yet at load time, hence the per-call lookup.
   function G() { return root.PMEGame; }
 
-  // AI personality profiles — one is drawn at random per match, so the single
-  // greedy heuristic below plays out a few different ways instead of always
-  // the same shape of game. To play every match against one specific bot
-  // (ladder playtesting), comment out every line here except that one.
+  // The difficulty ladder (ADR-0016). Each rung is the previous rung plus
+  // exactly one capability flag, and every other knob is held constant, so
+  // (rung N margin - rung N-1 margin) is that one capability's worth in
+  // seats. Order matters: index 0 is the weakest rung and the fallback.
+  //
+  // 'easy' reproduces the old shipped 'policy-rusher' bot exactly, so the
+  // bottom of the ladder is the difficulty the game shipped with rather than
+  // a newly-invented weak bot. The three other old personality profiles
+  // (aggressive-investor, rally-spammer, group-bonus-rusher) were flavour
+  // rather than difficulty and are gone; git history has them if the
+  // match-to-match variety is missed.
+  var LADDER_BASE = { agendaTapCapPerPolicyPerPhase: 4, craftsTokens: true, groupFocus: false };
+  function rung(key, flags) {
+    var p = { key: key };
+    Object.keys(LADDER_BASE).forEach(function (k) { p[k] = LADDER_BASE[k]; });
+    Object.keys(flags).forEach(function (k) { p[k] = flags[k]; });
+    return p;
+  }
+  // Level 1-8, weakest to strongest. Ordering measured over 2,700 games with
+  // mobile/ladder-sim.js (mean seat margin vs the whole field, in comments
+  // below); every step clears its error bar. Two earlier profiles are
+  // deliberately absent: 'medium' (seatRankedAgendas alone) measured WEAKER
+  // than level 1, and 'cap0' lost to level 4 - both broke the ordering.
   var AI_PROFILES = [
-    { key: 'aggressive-investor', agendaTapCapPerPolicyPerPhase: 1, craftsTokens: true, groupFocus: false },
-    { key: 'policy-rusher', agendaTapCapPerPolicyPerPhase: 4, craftsTokens: true, groupFocus: false },
-    { key: 'rally-spammer', agendaTapCapPerPolicyPerPhase: 2, craftsTokens: false, groupFocus: false },
-    { key: 'group-bonus-rusher', agendaTapCapPerPolicyPerPhase: 2, craftsTokens: true, groupFocus: true },
-    { key: 'max', agendaTapCapPerPolicyPerPhase: 4, craftsTokens: true, groupFocus: false,
-      seatRankedAgendas: true, tokenDiscipline: true, smartGroupTarget: true, spreadInvest: true }
+    rung('level-1', {}),                                                                    // -101  was 'easy'
+    rung('level-2', { seatRankedAgendas: true, tokenDiscipline: true }),                    //  -61  was 'hard'
+    rung('level-3', { seatRankedAgendas: true, tokenDiscipline: true,
+                      smartGroupTarget: true }),                                            //  -43  was 'expert'
+    rung('level-4', { seatRankedAgendas: true, tokenDiscipline: true,
+                      spreadInvest: true, groupObsession: 2 }),                             //  -22  was 'regional-2'
+    rung('level-5', { seatRankedAgendas: true, tokenDiscipline: true,
+                      smartGroupTarget: true, spreadInvest: true, groupCap: 1 }),           //  +10  was 'cap1'
+    rung('level-6', { seatRankedAgendas: true, tokenDiscipline: true,
+                      smartGroupTarget: true, spreadInvest: true, groupCap: 2 }),           //  +55  was 'cap2'
+    rung('level-7', { seatRankedAgendas: true, tokenDiscipline: true,
+                      smartGroupTarget: true, spreadInvest: true, groupCap: 4 }),           // +109  was 'cap4'
+    rung('level-8', { seatRankedAgendas: true, tokenDiscipline: true,
+                      smartGroupTarget: true, spreadInvest: true })                         // +180  was 'max'
   ];
-  function pickAIProfile(rng) { return AI_PROFILES[Math.floor(rng() * AI_PROFILES.length)]; }
+  var MAX_LEVEL = AI_PROFILES.length;
 
-  // The flags above the shipped four omit all default falsy, so those four
-  // keep today's exact behavior. What each one turns on:
-  //   seatRankedAgendas — rank agenda taps by real seat delta, and skip any
+  // Fallback only. The real choice is main.js's adaptive level, which passes
+  // an explicit profileKey to setupAI; this covers callers that pass none
+  // (the headless harnesses). Never random - a random *difficulty* is a worse
+  // experience than a random personality was.
+  var DEFAULT_RUNG = 'level-3';
+  function pickAIProfile(rng) { return profileByKey(DEFAULT_RUNG) || AI_PROFILES[0]; }
+
+  // What each flag turns on:
+  //   seatRankedAgendas - rank agenda taps by real seat delta, and skip any
   //                       tap worth less than the same cash spent on investment
-  //   tokenDiscipline   — bank rally tokens toward the Nationwide Rally unless
+  //   tokenDiscipline   - bank rally tokens toward the Nationwide Rally unless
   //                       a state rally beats it per token (only the two
   //                       biggest states do)
-  //   smartGroupTarget  — chase the group with the best payout per crore still
+  //   smartGroupTarget  - chase the group with the best payout per crore still
   //                       needed, re-picked live, instead of one random group
   //                       fixed at game start
-  //   spreadInvest      — invest for maximum delivered bps, which dodges the
+  //   spreadInvest      - invest for maximum delivered bps, which dodges the
   //                       per-state boost decay; seats-per-crore is otherwise
   //                       identical for every state (see investmentCostCr)
   function profileByKey(key) {
@@ -68,6 +101,18 @@
     // determinism) never depends on which profile was picked.
     var drawn = game.groups.length ? game.groups[Math.floor(rng() * game.groups.length)] : null;
     pl.aiTargetGroup = pl.aiProfile.smartGroupTarget ? null : drawn;
+    // Obsession rungs commit to N distinct groups for the whole match and
+    // never invest outside them. Drawn here so the choice is fixed at setup,
+    // the same way aiTargetGroup is.
+    pl.aiObsessionGroups = null;
+    if (pl.aiProfile.groupObsession && game.groups.length) {
+      var picked = [drawn];
+      while (picked.length < pl.aiProfile.groupObsession && picked.length < game.groups.length) {
+        var g = game.groups[Math.floor(rng() * game.groups.length)];
+        if (picked.indexOf(g) === -1) picked.push(g);
+      }
+      pl.aiObsessionGroups = picked;
+    }
   }
 
   // ---------------------------------------------------------------------
@@ -195,8 +240,24 @@
   // Re-evaluated live rather than fixed at game start (aiTargetGroup), so the
   // bot rolls onto the next-cheapest group as soon as it banks one, and never
   // sinks its endgame into a group it can no longer afford to complete.
-  function pickBestValueGroup(game, playerKey) {
+  // How many groups this player currently holds outright.
+  function heldGroupCount(game, playerKey) {
+    return game.groups.filter(function (g) {
+      return E.dominanceActive(g, game.states, game.pop, playerKey,
+        game.cfg.regionalDominance.thresholdBps);
+    }).length;
+  }
+
+  // profile.groupCap (optional): stop chasing new groups once this many are
+  // held. Regional dominance is the bot's whole economy - each capture pays
+  // cash that buys more investment that captures more groups - so capping the
+  // count throttles the snowball directly. That is the one genuinely
+  // adjustable dial between the weak rungs and max, whose 147-seat gap comes
+  // from group capture being all-or-nothing rather than from any single skill.
+  function pickBestValueGroup(game, playerKey, profile) {
     var pl = game.players[playerKey];
+    if (profile && profile.groupCap != null &&
+        heldGroupCount(game, playerKey) >= profile.groupCap) return null;
     var phasesLeft = Math.max(0, game.cfg.totalPhases - game.phase);
     var budget = pl.fundsCr + game.cfg.fundsRefreshPerPhaseCr * phasesLeft;
     var best = null, bestRatio = -1;
@@ -263,8 +324,33 @@
 
   function pickAIInvestmentTarget(game, profile, playerKey, oppKey) {
     var pl = game.players[playerKey];
+    // Obsession: max's scorer, but the candidate pool is only the member
+    // states of the drawn groups. Returns null rather than spending
+    // elsewhere when none of them is affordable - "ignores the rest" is the
+    // whole handicap, so the cash banks for agendas instead.
+    if (profile && profile.groupObsession && pl.aiObsessionGroups) {
+      var keys = pl.aiObsessionGroups.map(function (g) { return g.key; });
+      // Chase the first group not yet fully over the threshold. Same
+      // "already held" test pickBestValueGroup uses: nothing left to pay for.
+      var chase = null;
+      for (var gi = 0; gi < keys.length; gi++) {
+        var need = 0;
+        game.states.forEach(function (s) {
+          if (s.tags.indexOf(keys[gi]) !== -1) need += costToThresholdCr(game, s, playerKey);
+        });
+        if (need > 0) { chase = keys[gi]; break; }
+      }
+      var oPick = null, oScore = -Infinity;
+      game.states.forEach(function (s) {
+        var inGroup = keys.some(function (k) { return s.tags.indexOf(k) !== -1; });
+        if (!inGroup) return;
+        var sc = scoreInvestStrong(game, pl, s, playerKey, oppKey, chase);
+        if (sc !== null && sc > oScore) { oScore = sc; oPick = s; }
+      });
+      return oPick;
+    }
     if (profile && profile.spreadInvest) {
-      var chased = profile.smartGroupTarget ? pickBestValueGroup(game, playerKey) : pl.aiTargetGroup;
+      var chased = profile.smartGroupTarget ? pickBestValueGroup(game, playerKey, profile) : pl.aiTargetGroup;
       var chasedKey = chased ? chased.key : null;
       var pick = null, pickScore = -Infinity;
       game.states.forEach(function (s) {
@@ -402,6 +488,7 @@
 
   root.PMEAI = {
     AI_PROFILES: AI_PROFILES,
+    MAX_LEVEL: MAX_LEVEL,
     profileByKey: profileByKey,
     setupAI: setupAI,
     aiStep: aiStep,

@@ -81,6 +81,7 @@ function main() {
   copyTransformed('main.js', 'main.js');
   copyTransformed('manifest.json', 'manifest.json');
   copyVerbatim('engine.js', 'engine.js');
+  copyVerbatim('ai.js', 'ai.js');
   copyVerbatim('sw.js', 'sw.js');
   copyVerbatim('html2canvas.min.js', 'html2canvas.min.js');
   copyVerbatim('privacy.html', 'privacy.html');

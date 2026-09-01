@@ -6,6 +6,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [2.5.0] - 2026-08-31
+
+An eight-level AI difficulty ladder, measured over a 2,700-game round-robin tournament, with adaptive difficulty that follows the player's results.
+
+### Added
+- **ADDED**: `mobile/ladder-sim.js` — profile-vs-profile tournament harness (`node mobile/ladder-sim.js [seedsPerPair]`). Full round robin over AI profiles, scored on seat margin rather than win rate (hung parliaments make win rate mostly draw signal), with mirrored pairs — each matchup plays the same two politicians in the same two seats twice with the bots swapped, cancelling seat and kit advantage. Reports the full matrix, an overall ranking with standard errors, a monotonicity check, and the per-flag margin. `mobile/balance-sim.js` could not measure this at all: it never passes a profile to `setupAI` and aggregates on politician id.
+- **ADDED**: Eight measured difficulty levels in `mobile/ai.js`, `level-1` (weakest) through `level-8`, replacing the four personality profiles and the ad-hoc ladder keys. Mean seat margin vs the whole field: −101, −61, −43, −22, +10, +55, +109, +180. Every step clears its error bar.
+- **ADDED**: `profile.groupCap` — caps how many regional-dominance groups a bot will chase. Regional dominance is the bot's entire economy (a capture pays cash that buys investment taps that capture more groups), so capping the count throttles the compounding directly. This is what fills the old 147-seat cliff between the weak rungs and the strongest bot with evenly spaced levels 5–7.
+- **ADDED**: `profile.groupObsession` — confines a bot to N randomly drawn groups, keeping the correct investment scorer but shrinking its map. Level 4.
+- **ADDED**: Adaptive difficulty (`mobile/main.js`). A new player starts at level 5; three wins in a row moves up a level, three losses in a row moves down. Draws count as neither and leave the streak intact, since a hung parliament is the most common single outcome and counting them would stall progression. Stored in `localStorage`; only unforced Auto-mode matches count, never the tutorial, a replay, or a forced-profile playtest.
+- **ADDED**: Difficulty row in the settings overlay — taps cycle `Auto` → `Level 1` … → `Level 8` → `Auto`. Choosing a level explicitly disables the auto-adjustment.
+- **ADDED**: The end-of-game seat row names the opponent's level — `Rajinikanth (AI 5)`. Read from the game's own profile, not the difficulty setting, so it reports what was actually played even when the ladder promotes the player on that same match.
+
+### Changed
+- **CHANGED**: `scripts/deploy-mobile.js` now copies `mobile/ai.js` into the deploy build. It was missing since `ai.js` was extracted in v2.4.0 — a deploy would have shipped an `index.html` whose `<script src="./ai.js">` 404s, leaving `window.PMEAI` undefined and the AI unable to act.
+- **CHANGED**: The version badge is the bare version again in the shipped build. The level a match was played at is on the end card's seat row; only a forced playtest profile still tags the badge.
+- **CHANGED**: `package.json` version and `mobile/main.js` `GAME_VERSION` → 2.5.0. (v2.4.0 shipped without its `package.json` bump; corrected here.)
+
+### Fixed
+- **FIXED**: Two profiles were dropped for measuring out of order — `seatRankedAgendas` alone is genuinely *weaker* than the flagless baseline (−14.4 ± 7.2), because the agenda-completion token bonus is credited entirely to the 4th tap, so the bot never starts agendas it should finish and starves itself of the tokens the Nationwide Rally needs. The underlying amortisation bug is documented in `findings.md` and still unfixed; level 2 carries the flag.
+
+
 ## [2.4.0] - 2026-08-31
 
 ### Added
