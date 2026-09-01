@@ -67,8 +67,14 @@
 
   function renderDifficultyLabel() {
     var el = document.getElementById('difficultyState');
-    if (!el) return;
-    el.textContent = aiMode() === 'auto' ? 'Auto (Level ' + adaptiveLevel() + ')' : 'Level ' + effectiveLevel();
+    if (el) el.textContent = aiMode() === 'auto' ? 'Auto (Level ' + adaptiveLevel() + ')' : 'Level ' + effectiveLevel();
+    var slider = document.getElementById('difficultyRange');
+    if (slider) {
+      // Position 0 is Auto, 1..MAX_LEVEL are the fixed levels. Max comes from
+      // the profile list so adding a level never needs a markup edit.
+      slider.max = String(maxLevel());
+      slider.value = aiMode() === 'auto' ? '0' : String(effectiveLevel());
+    }
   }
 
   function renderVersionLabels() {
@@ -2837,11 +2843,12 @@
     soundEnabled = !soundEnabled;
     $('soundToggleState').textContent = soundEnabled ? 'On' : 'Off';
   });
-  // Cycles Auto -> 1 -> 2 ... -> maxLevel -> Auto. Most players never open
-  // this; the adaptive default is the intended experience.
-  $('difficultyBtn').addEventListener('click', function () {
-    var m = aiMode();
-    lsSet(AI_MODE_KEY, m === 'auto' ? '1' : (parseInt(m, 10) >= maxLevel() ? 'auto' : String(parseInt(m, 10) + 1)));
+  // Slider: 0 is Auto, 1..MAX_LEVEL pick a fixed level. Most players never
+  // open this; the adaptive default is the intended experience. 'input' not
+  // 'change' so the label tracks the thumb while dragging.
+  $('difficultyRange').addEventListener('input', function () {
+    var v = parseInt(this.value, 10) || 0;
+    lsSet(AI_MODE_KEY, v === 0 ? 'auto' : String(v));
     renderDifficultyLabel();
     renderVersionLabels();
   });
