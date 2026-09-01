@@ -30,16 +30,15 @@
   // moves up a level, three straight losses moves down. Draws (a hung
   // parliament, the most common single outcome) count as neither, so a run of
   // them leaves the level where it is rather than drifting it.
-  var AI_LEVEL_KEY = 'pme_ai_level', AI_STREAK_KEY = 'pme_ai_streak', AI_MODE_KEY = 'pme_ai_mode';
+  var AI_LEVEL_KEY = 'pme_ai_level', AI_STREAK_KEY = 'pme_ai_streak';
   var START_LEVEL = 3;
   function lsGet(k, d) { try { var v = localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } }
   function lsSet(k, v) { try { localStorage.setItem(k, String(v)); } catch (e) { /* private mode */ } }
   function maxLevel() { return (window.PMEAI && window.PMEAI.MAX_LEVEL) || 8; }
   function clampLevel(n) { return Math.min(maxLevel(), Math.max(1, n | 0)); }
-  // 'auto' or a level number as a string.
-  function aiMode() { var m = lsGet(AI_MODE_KEY, 'auto'); return m === 'auto' ? 'auto' : String(clampLevel(parseInt(m, 10))); }
-  function adaptiveLevel() { return clampLevel(parseInt(lsGet(AI_LEVEL_KEY, START_LEVEL), 10) || START_LEVEL); }
-  function effectiveLevel() { var m = aiMode(); return m === 'auto' ? adaptiveLevel() : clampLevel(parseInt(m, 10)); }
+  // One number, nothing else: the slider shows it, the adaptive rule moves
+  // it, the player can drag it. No separate auto/manual mode.
+  function effectiveLevel() { return clampLevel(parseInt(lsGet(AI_LEVEL_KEY, START_LEVEL), 10) || START_LEVEL); }
   function loadStreak() {
     var raw = lsGet(AI_STREAK_KEY, '');
     try { var o = JSON.parse(raw); return { w: o.w | 0, l: o.l | 0 }; } catch (e) { return { w: 0, l: 0 }; }
@@ -52,7 +51,7 @@
     if (!game || !game.ratedMatch) return;
     game.ratedMatch = false;
     if (game.winner !== 'p1' && game.winner !== 'p2') return; // draw: no change
-    var st = loadStreak(), lvl = adaptiveLevel();
+    var st = loadStreak(), lvl = effectiveLevel();
     if (game.winner === 'p1') { st.w++; st.l = 0; } else { st.l++; st.w = 0; }
     if (st.w >= 3) {
       st.w = 0;
@@ -62,18 +61,16 @@
       if (lvl > 1) { lvl--; showToast('Difficulty down — Level ' + lvl); }
     }
     lsSet(AI_LEVEL_KEY, lvl); saveStreak(st);
-    renderVersionLabels();
   }
 
   function renderDifficultyLabel() {
     var el = document.getElementById('difficultyState');
-    if (el) el.textContent = aiMode() === 'auto' ? 'Auto (Level ' + adaptiveLevel() + ')' : 'Level ' + effectiveLevel();
+    if (el) el.textContent = 'Level ' + effectiveLevel();
     var slider = document.getElementById('difficultyRange');
     if (slider) {
-      // Position 0 is Auto, 1..MAX_LEVEL are the fixed levels. Max comes from
-      // the profile list so adding a level never needs a markup edit.
+      // Max comes from the profile list so adding a level needs no markup edit.
       slider.max = String(maxLevel());
-      slider.value = aiMode() === 'auto' ? '0' : String(effectiveLevel());
+      slider.value = String(effectiveLevel());
     }
   }
 
@@ -1459,9 +1456,9 @@
       var levelKey = forcedAI || ('level-' + effectiveLevel());
       G.setupAI(game, 'p2', G.mulberry32(seed ^ 0x5eed), levelKey);
       game.forcedAIProfile = forcedAI || null;
-      // Only an unforced auto-mode match feeds the adaptive ladder: a hand-
-      // picked level is the player's own choice and shouldn't move itself.
-      game.ratedMatch = !forcedAI && aiMode() === 'auto';
+      // A forced playtest profile isn't a real rung, so it can't move the
+      // ladder; every other non-tutorial match counts.
+      game.ratedMatch = !forcedAI;
       if (forcedAI) showToast('AI profile: ' + forcedAI);
     }
     // Tutorial AI never crafts/activates its special power or nationwide
@@ -2843,14 +2840,13 @@
     soundEnabled = !soundEnabled;
     $('soundToggleState').textContent = soundEnabled ? 'On' : 'Off';
   });
-  // Slider: 0 is Auto, 1..MAX_LEVEL pick a fixed level. Most players never
-  // open this; the adaptive default is the intended experience. 'input' not
-  // 'change' so the label tracks the thumb while dragging.
+  // 'input' not 'change' so the readout tracks the thumb while dragging.
+  // Dragging just sets the level the adaptive rule also writes; a manual
+  // pick and an auto adjustment are the same thing to everything downstream.
   $('difficultyRange').addEventListener('input', function () {
-    var v = parseInt(this.value, 10) || 0;
-    lsSet(AI_MODE_KEY, v === 0 ? 'auto' : String(v));
+    lsSet(AI_LEVEL_KEY, clampLevel(parseInt(this.value, 10)));
+    saveStreak({ w: 0, l: 0 });
     renderDifficultyLabel();
-    renderVersionLabels();
   });
   $('musicToggleBtn').addEventListener('click', function () {
     musicEnabled = !musicEnabled;
