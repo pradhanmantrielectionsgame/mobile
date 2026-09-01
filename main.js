@@ -3,16 +3,116 @@
 (function () {
   'use strict';
   var E = window.PMEEngine, G = window.PMEGame;
-  var GAME_VERSION = '2.3.4';
+  var GAME_VERSION = '2.5.0';
   // Canonical public URL for the end-of-game "share result" link — hardcoded,
   // not location.href, so the shared link is always the clean site root and
   // never a /index.html deep link, a ?query string, or a Capacitor
   // app-internal URL once this is wrapped for the app stores.
   var SITE_URL = 'https://kaunbanegapradhanmantri.in/';
-  ['welcomeVersion', 'stageVersion', 'endVersion'].forEach(function (id) {
-    var el = document.getElementById(id);
-    if (el) el.textContent = 'v' + GAME_VERSION;
-  });
+  // The version label doubles as a build marker during AI-ladder playtests:
+  // "+ai" means mobile/ai.js loaded at all, and "+<key>" that a ?ai= override
+  // is actually in force. Without it, a device that quietly loaded an older
+  // build is indistinguishable from a bot that simply played badly — which
+  // cost two playtests on 2026-08-31.
+  // A stored choice beats the query string: ?ai= kept getting lost between the
+  // link and the page on a real phone (2026-08-31), so tapping the version
+  // label cycles the forced profile instead and localStorage remembers it
+  // across launches, home-screen installs and shared links alike.
+  var AI_FORCE_KEY = 'pme_force_ai';
+  function forcedAIKey() {
+    var stored = null;
+    try { stored = localStorage.getItem(AI_FORCE_KEY); } catch (e) { /* private mode */ }
+    var key = stored || new URLSearchParams(location.search).get('ai');
+    return (key && window.PMEAI && window.PMEAI.profileByKey(key)) ? key : null;
+  }
+  // ---- AI difficulty ladder ----
+  // Eight measured levels (mobile/ai.js). 'auto' adapts: three straight wins
+  // moves up a level, three straight losses moves down. Draws (a hung
+  // parliament, the most common single outcome) count as neither, so a run of
+  // them leaves the level where it is rather than drifting it.
+  var AI_LEVEL_KEY = 'pme_ai_level', AI_STREAK_KEY = 'pme_ai_streak', AI_MODE_KEY = 'pme_ai_mode';
+  var START_LEVEL = 5; // playtesting; 3 was the measured mid-ladder starting point
+  function lsGet(k, d) { try { var v = localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } }
+  function lsSet(k, v) { try { localStorage.setItem(k, String(v)); } catch (e) { /* private mode */ } }
+  function maxLevel() { return (window.PMEAI && window.PMEAI.MAX_LEVEL) || 8; }
+  function clampLevel(n) { return Math.min(maxLevel(), Math.max(1, n | 0)); }
+  // 'auto' or a level number as a string.
+  function aiMode() { var m = lsGet(AI_MODE_KEY, 'auto'); return m === 'auto' ? 'auto' : String(clampLevel(parseInt(m, 10))); }
+  function adaptiveLevel() { return clampLevel(parseInt(lsGet(AI_LEVEL_KEY, START_LEVEL), 10) || START_LEVEL); }
+  function effectiveLevel() { var m = aiMode(); return m === 'auto' ? adaptiveLevel() : clampLevel(parseInt(m, 10)); }
+  function loadStreak() {
+    var raw = lsGet(AI_STREAK_KEY, '');
+    try { var o = JSON.parse(raw); return { w: o.w | 0, l: o.l | 0 }; } catch (e) { return { w: 0, l: 0 }; }
+  }
+  function saveStreak(st) { lsSet(AI_STREAK_KEY, JSON.stringify({ w: st.w, l: st.l })); }
+
+  // Called once per completed rated match (game.ratedMatch is a one-shot flag
+  // set at creation, so the tutorial sign-off path and replays can't count).
+  function updateLadderAfterMatch() {
+    if (!game || !game.ratedMatch) return;
+    game.ratedMatch = false;
+    if (game.winner !== 'p1' && game.winner !== 'p2') return; // draw: no change
+    var st = loadStreak(), lvl = adaptiveLevel();
+    if (game.winner === 'p1') { st.w++; st.l = 0; } else { st.l++; st.w = 0; }
+    if (st.w >= 3) {
+      st.w = 0;
+      if (lvl < maxLevel()) { lvl++; showToast('Difficulty up — Level ' + lvl); }
+    } else if (st.l >= 3) {
+      st.l = 0;
+      if (lvl > 1) { lvl--; showToast('Difficulty down — Level ' + lvl); }
+    }
+    lsSet(AI_LEVEL_KEY, lvl); saveStreak(st);
+    renderVersionLabels();
+  }
+
+  function renderDifficultyLabel() {
+    var el = document.getElementById('difficultyState');
+    if (!el) return;
+    el.textContent = aiMode() === 'auto' ? 'Auto (Level ' + adaptiveLevel() + ')' : 'Level ' + effectiveLevel();
+  }
+
+  function renderVersionLabels() {
+    // With a single-entry pool (playtest build) the tag names that profile
+    // outright, so "is max actually running?" is answerable at a glance.
+    // Bare version in the shipped build: the level a match was played at is
+    // already on the end card's seat row ("Rajinikanth (AI 5)"). Only a
+    // forced playtest profile still tags the badge, which is the build-
+    // identity safeguard that cost two inconclusive playtests to learn.
+    var forced = forcedAIKey();
+    var tag = forced ? '+' + forced : '';
+    ['welcomeVersion', 'stageVersion'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.textContent = 'v' + GAME_VERSION + tag;
+    });
+    // The end card carries the level it actually played in its own stats row
+    // (aiLevelLabel), and the ladder may have promoted the player by the time
+    // the card renders — so the badge here is the bare version, never a tag
+    // that would then disagree with the row above it.
+    var endEl = document.getElementById('endVersion');
+    if (endEl) endEl.textContent = 'v' + GAME_VERSION;
+  }
+  renderVersionLabels();
+  // Playtest hook: tap the version label to cycle opponent AI profile ->
+  // off. Deliberately undiscoverable rather than hidden behind a build flag —
+  // the label is 10px of footer text a normal player has no reason to tap.
+  (function () {
+    var el = document.getElementById('welcomeVersion');
+    if (!el || !window.PMEAI) return;
+    el.style.cursor = 'pointer';
+    el.style.padding = '8px 12px';
+    el.addEventListener('click', function () {
+      // 'max' first — it is the one a ladder playtest almost always wants.
+      var others = window.PMEAI.AI_PROFILES.map(function (p) { return p.key; }).filter(function (k) { return k !== 'max'; });
+      var keys = ['', 'max'].concat(others);
+      var next = keys[(keys.indexOf(forcedAIKey() || '') + 1) % keys.length];
+      try {
+        if (next) localStorage.setItem(AI_FORCE_KEY, next);
+        else localStorage.removeItem(AI_FORCE_KEY);
+      } catch (e) { /* private mode: the tap just won't stick */ }
+      renderVersionLabels();
+      showToast(next ? 'Next match vs: ' + next : 'AI profile: random (default)');
+    });
+  })();
 
   // Phone-only install gate. After the viewport migration (v2.0.0) the layout
   // reflows and .stage scrolls, so a browser tab's shorter chrome-reduced
@@ -1333,12 +1433,31 @@
     // Modi's power before the step-30 "use your special ability" gate, which
     // would leave that gate stuck forever (see finishActivatePower).
     var p2Id = tutorialMode ? 'rahul-gandhi' : opponentPool[Math.floor(Math.random() * opponentPool.length)].id;
+    // Playtest hook: ?p2=<politician id> forces the opponent, bypassing the
+    // unlock pool — pairs with ?ai= below so a specific kit can be retested
+    // against a specific AI profile instead of waiting for the random draw.
+    var forcedP2 = new URLSearchParams(location.search).get('p2');
+    if (forcedP2 && !tutorialMode && data.politicians.some(function (p) { return p.id === forcedP2; })) p2Id = forcedP2;
     // Seeded rng (not Math.random) so game.actionLog can be replayed back to
     // the same outcome from just the seed + the action list (see startReplay).
     var seed = (Date.now() ^ (Math.random() * 1e9)) >>> 0;
     game = G.createGame(data, p1Id, p2Id, G.mulberry32(seed));
     game.seed = seed;
     window.__game = game; // debug/test hook — inspect live state from devtools
+    // Playtest hook: ?ai=<profile key> forces the opponent's AI profile
+    // instead of the random draw — the ladder profiles (e.g. ?ai=max) are
+    // deliberately not in that draw, so this is the only way to face one.
+    // Skipped in the tutorial, which needs its own scripted opponent.
+    var forcedAI = forcedAIKey();
+    if (!tutorialMode) {
+      var levelKey = forcedAI || ('level-' + effectiveLevel());
+      G.setupAI(game, 'p2', G.mulberry32(seed ^ 0x5eed), levelKey);
+      game.forcedAIProfile = forcedAI || null;
+      // Only an unforced auto-mode match feeds the adaptive ladder: a hand-
+      // picked level is the player's own choice and shouldn't move itself.
+      game.ratedMatch = !forcedAI && aiMode() === 'auto';
+      if (forcedAI) showToast('AI profile: ' + forcedAI);
+    }
     // Tutorial AI never crafts/activates its special power or nationwide
     // rally — both are entirely gated on !usedSpecial/!usedNationwide, so
     // marking them pre-used is enough to turn them off without touching
@@ -1707,6 +1826,7 @@
   function showEndOverlay() {
     saveReplay();
     maybeRecordHighScore();
+    updateLadderAfterMatch();
     var seats = game.finalSeats;
     var seal, headline, sub;
     if (game.winner === 'p1') {
@@ -1854,10 +1974,21 @@
     setPortrait(img, game.players[game.winner].politician);
   }
 
+  // Opponent seat-row label: "(AI 3)". Read off the live game rather than
+  // the difficulty setting — the setting can change mid-match, and the
+  // adaptive ladder may already have promoted the player by the time this
+  // card renders; the game's own profile is what was actually played.
+  function aiSeatLabel() {
+    var pr = game.players.p2.aiProfile;
+    if (!pr) return 'AI';
+    var m = /^level-(\d+)$/.exec(pr.key);
+    return m ? 'AI ' + m[1] : 'AI ' + pr.key;
+  }
+
   function renderEndLedger(seats) {
     var rows = [
       { pol: game.players.p1.politician, type: 'You', n: seats.p1, color: COLORS.p1, win: game.winner === 'p1' },
-      { pol: game.players.p2.politician, type: 'AI', n: seats.p2, color: COLORS.p2, win: game.winner === 'p2' }
+      { pol: game.players.p2.politician, type: aiSeatLabel(), n: seats.p2, color: COLORS.p2, win: game.winner === 'p2' }
     ];
     $('endSeats').innerHTML = rows.map(function (r) {
       return '<div class="ledger-row' + (r.win ? ' winner' : '') + '">' +
@@ -2700,11 +2831,19 @@
   $('closeShareBtn').addEventListener('click', function () { $('shareOverlay').hidden = true; });
   $('shareBackdrop').addEventListener('click', function () { $('shareOverlay').hidden = true; });
 
-  $('settingsBtn').addEventListener('click', function () { $('settingsOverlay').hidden = false; });
+  $('settingsBtn').addEventListener('click', function () { renderDifficultyLabel(); $('settingsOverlay').hidden = false; });
   $('closeSettingsBtn').addEventListener('click', function () { $('settingsOverlay').hidden = true; });
   $('soundToggleBtn').addEventListener('click', function () {
     soundEnabled = !soundEnabled;
     $('soundToggleState').textContent = soundEnabled ? 'On' : 'Off';
+  });
+  // Cycles Auto -> 1 -> 2 ... -> maxLevel -> Auto. Most players never open
+  // this; the adaptive default is the intended experience.
+  $('difficultyBtn').addEventListener('click', function () {
+    var m = aiMode();
+    lsSet(AI_MODE_KEY, m === 'auto' ? '1' : (parseInt(m, 10) >= maxLevel() ? 'auto' : String(parseInt(m, 10) + 1)));
+    renderDifficultyLabel();
+    renderVersionLabels();
   });
   $('musicToggleBtn').addEventListener('click', function () {
     musicEnabled = !musicEnabled;
