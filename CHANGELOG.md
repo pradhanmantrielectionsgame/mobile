@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [2.5.1] - 2026-09-01
+
+### Changed
+- **CHANGED**: The AI no longer rallies the same two states every game. `pickDisciplinedRallyTarget` (`mobile/ai.js`) returned the single largest open state, so every `tokenDiscipline` rung — levels 2 through 8 — played Uttar Pradesh, then Maharashtra once UP hit the shared play cap, in every single match. Now a seat-weighted random draw over the states that clear the same economic bar: value scales linearly with seats, so weighting by seats keeps most of the expected value while making the target unpredictable. This also matters for fairness, not just variety — `maxPlaysPerStateShared` is a **shared** cap, so a bot camping those two states denied them to the human. Measured over 40 games at level 8: 16 distinct states rallied, top two down to 13.8% each from effectively 100%.
+- **CHANGED**: Default AI level 3 → 2 (`START_LEVEL` in `mobile/main.js`, slider `value` in `mobile/index.html`).
+- **CHANGED**: Re-measured the full ladder after the rally change (2,240 games): −115, −78, −60, −40, −10, +43, +86, +175. The monotonicity check now passes outright — every rung beats the rung below it.
+- **CHANGED**: ADR-0016 amended. Two of its premises did not survive measurement: chain ablation misattributes interacting capabilities (`smartGroupTarget` and `spreadInvest` each measure near zero alone, ~147 seats together), and the shipped rungs are not strict supersets (`level-4` lacks a flag `level-3` has, and earns its rank by measurement). Also records that the ladder's working dial is an economic throttle (`groupCap`), not capability removal, because group capture is all-or-nothing and so pays nothing until it pays everything.
+
+
 ## [2.5.0] - 2026-08-31
 
 An eight-level AI difficulty ladder, measured over a 2,700-game round-robin tournament, with adaptive difficulty that follows the player's results.

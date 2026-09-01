@@ -1,8 +1,10 @@
 # ADR-0016: AI Difficulty Ladder via Feature-Flag Ablation and Seat-Margin Ranking
 
-**Status:** Accepted
+**Status:** Accepted, amended 2026-09-01
 
-**Date:** 2026-08-31
+**Date:** 2026-08-31 (amended 2026-09-01)
+
+> **Amendment summary (2026-09-01):** the decision stands — feature flags on one shared heuristic, ranked by seat margin — but two of its stated premises did not survive measurement. Chain ablation does **not** attribute capability strength correctly when flags interact, and the ladder's rungs are **not** all strict supersets of one another. See "Amendment" at the end of this document. Read that section before relying on any per-flag number quoted above.
 
 ## Context
 
@@ -99,3 +101,69 @@ Profile setup in `setupAI()` reads the feature flags and branches the `aiStep()`
 - `data/game-config.json` — candidate future home for hardened ladder config
 - ADR-0007 (single-player AI scope) for context on why AI at all
 - Design notebook in findings.md for measured margins and capability-strength data from this session's tuning work
+
+---
+
+## Amendment — 2026-09-01: what measurement changed
+
+The ladder was built and then measured with a new harness (`mobile/ladder-sim.js`, 2,700 games). Three parts of the decision above need correcting.
+
+### 1. Chain ablation misattributes interacting capabilities (the significant one)
+
+The original text claims each rung is the previous one plus one capability, so "(rung N margin) − (rung N−1 margin) directly quantifies capability N's strength" and "a capability worth +30 seats stays worth +30 across the ladder." **Neither holds when two capabilities interact.**
+
+Measured: adding `smartGroupTarget` on top of `seatRankedAgendas` + `tokenDiscipline` was worth +15 ± 10 seats (inside noise, i.e. apparently worthless). Adding `spreadInvest` on top of that was worth +147. The natural reading — `spreadInvest` is the strong one, group targeting does nothing — is wrong. Groups captured per game:
+
+| profile | correct investment scorer | live group targeting | groups captured |
+|---|---|---|---|
+| `expert` | no | yes | 2.4 |
+| `regional-2` | yes | no | 0.2 |
+| `max` | yes | yes | **7.3** |
+
+Neither flag does much alone; together they are worth ~147 seats. A chain ablation credits the entire partnership to whichever half was added **last**, purely as an artifact of the ordering.
+
+**Consequence for this ADR:** a single-flag delta from the chain is the value of that flag *given every flag below it*, never the capability's standalone strength. Attribution requires the full round-robin matrix, and interacting flags need a solo-flag row. The "Feature interactions" bullet under Consequences ("won't be known until measured") was correct and turned out to be the dominant effect, not an edge case.
+
+### 2. The rungs are not strict supersets, and two shipped profiles measured out of order
+
+The original design assumes a strictly nested capability set. The shipped ladder is not nested: `level-4` carries `spreadInvest` + `groupObsession` but **not** `smartGroupTarget`, which `level-3` has. It earns its rank by measurement, not by containment.
+
+Two candidate profiles were dropped for losing to the rung below them — exactly the failure the monotonicity check exists to catch:
+
+- `seatRankedAgendas` **alone** measured −14.4 ± 7.2 *weaker* than the flagless baseline. Cause: `agendaTapValueSeats` credits an agenda's completion-bonus tokens (worth ~4.5 seats) entirely to the 4th and final tap, so every earlier tap is valued below the 2.5-seat breakeven and skipped — the bot never starts the agendas it should finish, and starves itself of the tokens the Nationwide Rally needs. Measured against the flagless bot: 1.5 agendas completed vs 4.0, and the Nationwide Rally used in 0 of 6 games vs 2 of 6. The bug is unfixed by explicit decision; `level-2` carries the flag because the rung is still monotone *with* `tokenDiscipline` alongside it.
+- `groupCap: 0` (full skill, no groups) lost to `groupObsession: 2` by −20.0 ± 7.7.
+
+### 3. The ladder's real dial is economic throttling, not capability removal
+
+The original design assumes difficulty is tuned by adding or removing capabilities. That produced a 147-seat cliff with nothing able to sit inside it, because the capability in question is a binary flag.
+
+The gap is not a competence gradient at all — it is a **snowball**. Regional dominance requires *every* state in a group over 50%, so it pays nothing until it pays everything; each capture funds investment taps that capture more groups. Measured: `max` makes 429 investment taps per game against `regional-2`'s 170, on near-identical unspent cash (~5 Cr).
+
+So the working dial is `profile.groupCap` — a cap on how many groups a bot may hold, throttling the compounding directly rather than damaging its judgement. It produced the evenly spaced rungs the ladder needed (overall margin: cap0 −31, cap1 +14, cap2 +55, cap4 +98, uncapped +180). **A numeric throttle on the bot's economy interpolates smoothly where a capability flag cannot.**
+
+### 4. Bot-vs-bot ranking still cannot be the only evidence
+
+Unchanged from the original but worth restating: the strongest bot's edge is group compounding, and a human who holds one state in each group switches that engine off entirely. A rung's rating needs at least a sanity check against real play. (Confirmed in the other direction on 2026-08-31: `max` beat a human 374–142 while taking 3 groups to the human's 0.)
+
+### Measured ladder as shipped
+
+Mean seat margin vs the whole field, 2,240 games, mirrored pairs, measured after the rally-randomisation change below:
+
+| level | flags | margin |
+|---|---|---|
+| 1 | (none) | −115 ± 6 |
+| 2 | seatRankedAgendas, tokenDiscipline | −78 ± 6 |
+| 3 | + smartGroupTarget | −60 ± 7 |
+| 4 | spreadInvest, groupObsession 2 | −40 ± 9 |
+| 5 | full, groupCap 1 | −10 ± 8 |
+| 6 | full, groupCap 2 | +43 ± 8 |
+| 7 | full, groupCap 4 | +86 ± 9 |
+| 8 | full, uncapped | +175 ± 11 |
+
+The monotonicity check passes outright — every rung beats the rung below it. Levels 7→8 remain the one step inside noise (67 ± 38); accepted, since the goal is a set of distinguishable strengths rather than a precisely calibrated scale.
+
+(A prior 2,700-game run before the rally change gave −101/−61/−43/−22/+10/+55/+109/+180. The randomisation shifted every rung down slightly and left the ordering intact.)
+
+### Also amended: rally targeting is deliberately randomised
+
+`pickDisciplinedRallyTarget` originally returned the single largest open state, making every `tokenDiscipline` rung (levels 2–8) rally Uttar Pradesh and then Maharashtra in every game. That is both predictable to play against and unfair: `maxPlaysPerStateShared` is a **shared** cap, so a bot camping those states denies them to the human. Replaced with a seat-weighted random draw over the states that clear the same economic bar — value scales linearly with seats, so weighting by seats keeps most of the expected value. Measured across 40 games at level 8: 16 distinct states rallied, with the top two down to 13.8% each.

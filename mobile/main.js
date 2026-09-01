@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var E = window.PMEEngine, G = window.PMEGame;
-  var GAME_VERSION = '2.5.0';
+  var GAME_VERSION = '2.5.1';
   // Canonical public URL for the end-of-game "share result" link — hardcoded,
   // not location.href, so the shared link is always the clean site root and
   // never a /index.html deep link, a ?query string, or a Capacitor
@@ -31,7 +31,7 @@
   // parliament, the most common single outcome) count as neither, so a run of
   // them leaves the level where it is rather than drifting it.
   var AI_LEVEL_KEY = 'pme_ai_level', AI_STREAK_KEY = 'pme_ai_streak';
-  var START_LEVEL = 3;
+  var START_LEVEL = 2;
   function lsGet(k, d) { try { var v = localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } }
   function lsSet(k, v) { try { localStorage.setItem(k, String(v)); } catch (e) { /* private mode */ } }
   function maxLevel() { return (window.PMEAI && window.PMEAI.MAX_LEVEL) || 8; }
