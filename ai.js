@@ -149,6 +149,21 @@
       (game.cfg.rally.nationwideRallyCraftCost * game.cfg.rally.tokenBoostBps);
   }
 
+  // Seat-weighted random draw. Used instead of picking the single biggest
+  // state so the bot doesn't rally the same two states every game: value
+  // scales linearly with seats, so weighting by seats keeps most of the
+  // expected value while making the target genuinely unpredictable.
+  function weightedRallyPick(game, pool) {
+    var total = pool.reduce(function (a, s) { return a + s.seats; }, 0);
+    if (total <= 0) return pool[0].svgId;
+    var r = game.rng() * total;
+    for (var i = 0; i < pool.length; i++) {
+      r -= pool[i].seats;
+      if (r <= 0) return pool[i].svgId;
+    }
+    return pool[pool.length - 1].svgId;
+  }
+
   function pickDisciplinedRallyTarget(game, playerKey) {
     var pl = game.players[playerKey];
     var owed = (pl.craftedSpecial || pl.usedSpecial ? 0 : game.cfg.rally.specialPowerupCraftCost) +
@@ -159,7 +174,14 @@
       return plays.length < game.cfg.rally.maxPlaysPerStateShared && game.pop[s.svgId][playerKey] < E.BPS;
     }).sort(function (a, b) { return b.seats - a.seats; });
     if (!pool.length) return null;
-    if (pool[0].seats >= rallyBreakevenSeats(game) || spare > 0) return pool[0].svgId;
+    // Tokens spare of both craft costs: banking has no remaining value, so
+    // spread across the biggest handful rather than hammering the top one.
+    if (spare > 0) return weightedRallyPick(game, pool.slice(0, 8));
+    // Otherwise a state rally must still beat banking the token toward the
+    // Nationwide Rally - but among every state that clears that bar, not
+    // just the largest one.
+    var worth = pool.filter(function (s) { return s.seats >= rallyBreakevenSeats(game); });
+    if (worth.length) return weightedRallyPick(game, worth);
     return null; // every open target is worth less than banking the token
   }
 
