@@ -134,14 +134,15 @@ Both tutorials are fully optional — skip by completing the final step or closi
 | [ADR-0013: Mobile Source Backup and Origin Remote Removal](docs/adr/0013-mobile-source-backup-and-origin-removal.md) | Accepted |
 | [ADR-0014: Input-Based Action-Log Replay](docs/adr/0014-input-based-action-log-replay.md) | Accepted |
 | [ADR-0015: Composite Final Score Design](docs/adr/0015-composite-final-score-design.md) | Accepted |
+| [ADR-0016: AI Difficulty Ladder via Feature-Flag Ablation](docs/adr/0016-ai-difficulty-ladder-feature-flags.md) | Accepted, amended 2026-09-01 |
 
 ## Project Documentation & References
 
-**Authoritative Design Reference:**
-- **`design/economy-status-map.md`** — single source of truth for all finalized game design decisions including: core loop structure, win condition (272/543 seats), starting-position randomization, redistribution rule with basis-point precision, investment/rally/agenda/dominance/special-power mechanics, full 20-politician roster with powers, and plausibility proofs showing ~99-seat idealized advantage vs. AI opponent.
+**Authoritative Game Design Reference:**
+- **`docs/wiki.html`** — the single authoritative reference for all finalized game design (core loop, win condition, starting position, redistribution rule, investment/rally/agenda/dominance/special-power formulas, full 20-politician roster with powers). Superseded `design/economy-status-map.md` as of 2026-07-29; the design doc is now a dated historical decision log, not current-state reference.
 
 **Project Wiki & Discovery Log:**
-- **`docs/wiki.html`** — comprehensive project wiki (Claude Artifact) consolidating game mechanics reference for players, architecture/implementation guide for developers, and the full divergence/discovery log from game development sessions. Serves as an exploratory companion to the authoritative design doc.
+- **`design/economy-status-map.md`** — historical record of design decisions and worked examples from earlier development sessions (dated, not current). See the wiki for current mechanics and numbers. See the divergence log at the bottom of `docs/wiki.html` for a detailed record of how mechanics diverged from the design doc.
 
 **Architecture Decisions:**
 See the "Key Architectural Decisions" table above for framework selection, multiplayer strategy, and tech stack choices.
@@ -150,7 +151,7 @@ See the "Key Architectural Decisions" table above for framework selection, multi
 
 **Game Engine (Complete):** `mobile/engine.js` + `mobile/game.js` + `mobile/index.html` form a fully playable, single-player-vs-AI game. All 10-phase loop, economy mechanics (investment, rally, agenda, dominance), special powers, and AI opponent are functional and validated via regression tests (`mobile/simulate.js`).
 
-**Game Design (Finalized):** All mechanics specified in `design/economy-status-map.md` (authoritative reference for economy scale, phase count, starting position, redistribution rule, agenda/rally/dominance/special-power formulas, 20-politician roster with verified powers, and plausibility validation showing ~19-seat passive-opponent margin).
+**Game Design (Finalized):** All mechanics fully implemented and documented in `docs/wiki.html` (the authoritative reference for economy scale, phase count, starting position, redistribution rule, agenda/rally/dominance/special-power formulas, 20-politician roster with verified powers, ladder strengths, and player progression).
 
 **Data Layer (Complete):** 
 - `data/game-config.json` — extended with `mobileEconomy` namespace (phases=10, starting funds, refresh rate, costs, rally boost, dominance payout)
