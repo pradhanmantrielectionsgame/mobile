@@ -61,7 +61,7 @@
       "boostStartBps": 500,
       "boostFloorBps": 200,
       "boostGlidePathTaps": 20,
-      "boostDecayRate": 0.85
+      "boostDecayRate": 0.933
     },
     "rally": {
       "tokenIncomePerPhase": 2,

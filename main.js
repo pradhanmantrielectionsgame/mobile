@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var E = window.PMEEngine, G = window.PMEGame;
-  var GAME_VERSION = '2.5.1';
+  var GAME_VERSION = '2.6.2';
   // Canonical public URL for the end-of-game "share result" link — hardcoded,
   // not location.href, so the shared link is always the clean site root and
   // never a /index.html deep link, a ?query string, or a Capacitor
@@ -34,6 +34,17 @@
   var START_LEVEL = 2;
   function lsGet(k, d) { try { var v = localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } }
   function lsSet(k, v) { try { localStorage.setItem(k, String(v)); } catch (e) { /* private mode */ } }
+
+  // Playtest override: unlocks the whole roster and waives the phone install
+  // gate (which otherwise blocks a browser tab, and a tunnel URL is a fresh
+  // origin every session so a playtest device can never get past it).
+  // MUST BE false in any commit that can be deployed — true would re-lock
+  // nothing, but it hides real progression from every player. There is no
+  // query-param or localStorage escape hatch: a query param can't survive a
+  // home-screen launch anyway (manifest.json's start_url is a bare
+  // './index.html'), so this is a hand-flipped local build switch. Flip it
+  // on to playtest, flip it back before committing.
+  var UNLOCK_ALL = false;
   function maxLevel() { return (window.PMEAI && window.PMEAI.MAX_LEVEL) || 8; }
   function clampLevel(n) { return Math.min(maxLevel(), Math.max(1, n | 0)); }
   // One number, nothing else: the slider shows it, the adaptive rule moves
@@ -124,7 +135,8 @@
   // small screen, and Add-to-Home-Screen is also what protects localStorage
   // (unlock progress) + the offline cache from iOS's 7-day ITP purge.
   // Desktop/mouse (no coarse pointer) and tablets (wider than a phone) skip it.
-  if (window.matchMedia('(pointer: coarse)').matches &&
+  if (!UNLOCK_ALL &&
+      window.matchMedia('(pointer: coarse)').matches &&
       window.matchMedia('(max-width: 700px)').matches &&
       !(window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true)) {
     document.getElementById('installGateOverlay').hidden = false;
@@ -163,6 +175,7 @@
   // (private browsing, quota, etc.) — null means "treat everyone as
   // unlocked" so a storage failure can't softlock the roster.
   function loadUnlockedPoliticians() {
+    if (UNLOCK_ALL) return null;
     try {
       var raw = localStorage.getItem(UNLOCK_KEY);
       if (!raw) return STARTER_POLITICIAN_IDS.slice();
@@ -305,6 +318,26 @@
     'Hindutva': '🕉️', 'Secularism': '☮️', 'Indigenous Rights': '🏹', 'Caste Reservation': '📋',
     'Uniform Civil Code': '📜', "State's Rights": '🚩', 'National Defense': '🛡️'
   };
+
+  // Every place the two players' identity is painted into the HUD: colors,
+  // both party-symbol pairs (top strip AND the info card's vs-bar), portraits
+  // and names. startGame() and startReplay() both need the full set — they
+  // used to each carry their own copy, and startReplay's copy was missing
+  // cardP1Symbol/cardP2Symbol, so a replay launched straight from the welcome
+  // screen (where startGame never ran) left the info bar showing index.html's
+  // hardcoded placeholder emoji instead of the real party logos.
+  function paintPlayerIdentity() {
+    COLORS.p1 = game.players.p1.politician.primaryColor || '#E8871C';
+    COLORS.p2 = game.players.p2.politician.primaryColor || '#1C8A4B';
+    document.documentElement.style.setProperty('--p1', COLORS.p1);
+    document.documentElement.style.setProperty('--p2', COLORS.p2);
+    ['p1PartySymbol', 'cardP1Symbol'].forEach(function (id) { setPartySymbol($(id), game.players.p1.politician); });
+    ['p2PartySymbol', 'cardP2Symbol'].forEach(function (id) { setPartySymbol($(id), game.players.p2.politician); });
+    setPortrait($('p1Portrait'), game.players.p1.politician);
+    setPortrait($('p2Portrait'), game.players.p2.politician);
+    $('p1Name').textContent = game.players.p1.politician.name;
+    $('p2Name').textContent = game.players.p2.politician.name;
+  }
 
   var data = null, game = null, selectedId = 'INUP', armed = null; // armed: null | 'stateRally' | 'powerTarget'
   var replay = null; // non-null while a replay is playing: { rec, idx, speed, playing, timer, savedGame }
@@ -834,10 +867,12 @@
   var sounds = {};
   ['cash_added', 'money_spent', 'invalid_action', 'fanfare', 'game_over', 'phase_reset', 'rally_sound']
     .forEach(function (name) { sounds[name] = new Audio('sounds/' + name + '.mp3'); });
+  // Its own cue rather than reusing fanfare, which already means "rally held".
+  sounds.bell_chime = new Audio('sounds/bell_chime.mp3');
   sounds.bg_music = new Audio('sounds/bg_music.mp3');
   sounds.intro_music = new Audio('sounds/saare_jahan_se_accha.mp3');
   var LOOP_TRACKS = ['bg_music', 'intro_music'];
-  var BG_MUSIC_VOLUME = 0.35, BG_MUSIC_DUCKED_VOLUME = 0;
+  var BG_MUSIC_VOLUME = 0.07, BG_MUSIC_DUCKED_VOLUME = 0;
   LOOP_TRACKS.forEach(function (name) { sounds[name].loop = true; sounds[name].volume = BG_MUSIC_VOLUME; });
   var currentMusicKey = null;
 
@@ -1082,17 +1117,37 @@
   // Only for action controls that never scroll; the carousel keeps `click`
   // so a swipe doesn't fire a card. The click fallback keeps keyboard
   // activation working on real <button>s, which pointerdown alone breaks.
-  function fastTap(el, fn) {
+  // Every human game action is bound through fastTap, so this is the one
+  // place that has to know the game isn't accepting input — pausing and
+  // replay previously only stopped the timer and the AI tick (see
+  // scheduleAITick), leaving the map, agenda tray and every button live.
+  // The tutorial deliberately runs paused while asking the player to tap
+  // things, so it's exempt.
+  function actionsLocked() {
+    if (replay) return true;
+    if (game && game.winner) return true;
+    return timerPaused && !tutorialMode;
+  }
+  // allowAlways: for controls that must survive the lock (replay transport,
+  // "watch replay" entry points) rather than game actions.
+  function fastTap(el, fn, allowAlways) {
     if (!el) return;
     var lastPointer = 0;
+    function run(e) {
+      if (!allowAlways && actionsLocked()) {
+        if (timerPaused && !replay) showToast('Paused — hit ▶ to resume');
+        return;
+      }
+      fn(e);
+    }
     el.addEventListener('pointerdown', function (e) {
       if (e.button) return; // ignore right/middle mouse
       lastPointer = e.timeStamp || Date.now();
-      fn(e);
+      run(e);
     });
     el.addEventListener('click', function (e) {
       if ((e.timeStamp || Date.now()) - lastPointer < 700) return; // already handled on press
-      fn(e);
+      run(e);
     });
   }
 
@@ -1473,20 +1528,7 @@
     // end-of-game sign-off still knows the match started as a tutorial.
     wasTutorialGame = tutorialMode;
 
-    // Map/UI colors and party symbols follow whichever politicians were
-    // actually picked, not a fixed p1=orange/p2=green default.
-    COLORS.p1 = game.players.p1.politician.primaryColor || '#E8871C';
-    COLORS.p2 = game.players.p2.politician.primaryColor || '#1C8A4B';
-    document.documentElement.style.setProperty('--p1', COLORS.p1);
-    document.documentElement.style.setProperty('--p2', COLORS.p2);
-    setPartySymbol($('p1PartySymbol'), game.players.p1.politician);
-    setPartySymbol($('p2PartySymbol'), game.players.p2.politician);
-    setPartySymbol($('cardP1Symbol'), game.players.p1.politician);
-    setPartySymbol($('cardP2Symbol'), game.players.p2.politician);
-    setPortrait($('p1Portrait'), game.players.p1.politician);
-    setPortrait($('p2Portrait'), game.players.p2.politician);
-    $('p1Name').textContent = game.players.p1.politician.name;
-    $('p2Name').textContent = game.players.p2.politician.name;
+    paintPlayerIdentity();
 
     armed = null; activeGroup = null; groupPinned = false; activeAgenda = null; activeAction = null; activeCluster = null;
     lastMapTapId = null; lastBtnTapId = null; timerPaused = false;
@@ -1559,8 +1601,12 @@
       if (action.costCr) spawnMoneyText(pt.x, pt.y, action.costCr, -1, pk);
     }
     if (action.type === 'power') {
-      if (withSound) playPowerSound(game.players[pk].politician.name);
-      spawnPowerBurst(pk, game.players[pk].politician.power.name, game.players[pk].politician.name);
+      if (action.nullified) {
+        showToast(game.players[pk].politician.name + '’s power fizzled — you had nullified it');
+      } else {
+        if (withSound) playPowerSound(game.players[pk].politician.name);
+        spawnPowerBurst(pk, game.players[pk].politician.power.name, game.players[pk].politician.name);
+      }
     } else if (action.type === 'nationwide') {
       if (withSound) playSound('fanfare');
       spawnPowerBurst(pk, 'Nationwide Rally', game.players[pk].politician.name, '🇮🇳');
@@ -1630,7 +1676,6 @@
       else showEndOverlay();
       return;
     }
-    if (game.log.slice(0, 10).some(function (e) { return e.msg.indexOf('💰 You hold') === 0; })) playSound('fanfare');
     renderAll();
     playSound('phase_reset');
     showToast('Phase ' + game.phase + ' begins');
@@ -1704,16 +1749,7 @@
     window.__game = game;
     replay = { rec: rec, idx: 0, speed: 1, playing: true, timer: null, savedGame: savedGame };
 
-    COLORS.p1 = game.players.p1.politician.primaryColor || '#E8871C';
-    COLORS.p2 = game.players.p2.politician.primaryColor || '#1C8A4B';
-    document.documentElement.style.setProperty('--p1', COLORS.p1);
-    document.documentElement.style.setProperty('--p2', COLORS.p2);
-    setPartySymbol($('p1PartySymbol'), game.players.p1.politician);
-    setPartySymbol($('p2PartySymbol'), game.players.p2.politician);
-    setPortrait($('p1Portrait'), game.players.p1.politician);
-    setPortrait($('p2Portrait'), game.players.p2.politician);
-    $('p1Name').textContent = game.players.p1.politician.name;
-    $('p2Name').textContent = game.players.p2.politician.name;
+    paintPlayerIdentity();
 
     activeGroup = null; activeAgenda = null; activeAction = null; activeCluster = null; armed = null;
     $('endOverlay').hidden = true;
@@ -1811,18 +1847,18 @@
       }
       updateReplayBar();
       scheduleReplayStep();
-    });
+    }, true);
     ['1', '2', '3'].forEach(function (s) {
       fastTap($('replaySpeed' + s), function () {
         if (!replay) return;
         replay.speed = parseInt(s, 10);
         updateReplayBar();
         if (replay.playing) scheduleReplayStep();
-      });
+      }, true);
     });
-    fastTap($('replayExitBtn'), exitReplay);
-    fastTap($('watchReplayBtn'), function () { startReplay(currentReplayRecord()); });
-    fastTap($('welcomeReplayBtn'), function () { startReplay(loadSavedReplay()); });
+    fastTap($('replayExitBtn'), exitReplay, true);
+    fastTap($('watchReplayBtn'), function () { startReplay(currentReplayRecord()); }, true);
+    fastTap($('welcomeReplayBtn'), function () { startReplay(loadSavedReplay()); }, true);
     $('welcomeReplayBtn').hidden = !loadSavedReplay();
   }
 
@@ -2408,7 +2444,17 @@
     var box = $('groupsBox');
     box.innerHTML = '';
     groupChipEls = {};
-    var rows = [game.groups.slice(0, 8), game.groups.slice(8)];
+    prevCapturedP1 = {};
+    game.groups.forEach(function (g) {
+      prevCapturedP1[g.key] = E.dominanceActive(g, game.states, game.pop, 'p1',
+        game.cfg.regionalDominance.thresholdBps);
+    });
+    // Smallest group first, so the chip order reads as a size ranking. Sorts a
+    // COPY: ai.js draws its target group by index into game.groups, so
+    // reordering that array in place would change AI behaviour and break
+    // replay of existing action logs.
+    var ordered = game.groups.slice().sort(function (a, b) { return a.seats - b.seats; });
+    var rows = [ordered.slice(0, 8), ordered.slice(8)];
     rows.forEach(function (rowMembers, i) {
       var row = document.createElement('div');
       row.className = 'hex-row ' + (i === 0 ? 'row-a' : 'row-b');
@@ -2731,15 +2777,33 @@
   // doesn't. Reads live game.pop via E.dominanceActive rather than game's
   // payout-gating dominanceHeld flag, since that flag exists only to avoid
   // re-paying a bonus and is beside the point for a live visual readout.
+  // Last-seen capture state per group, so a false->true flip can be heard the
+  // moment it happens. Seeded in buildGroupsBox at game start, or a fresh
+  // game (and every replay) would fire on its first render for any group the
+  // starting position already hands you.
+  var prevCapturedP1 = {};
   function renderGroupCaptureBadges() {
     var threshold = game.cfg.regionalDominance.thresholdBps;
     game.groups.forEach(function (g) {
       var chip = groupChipEls[g.key]; // cached in buildGroupsBox; never replaced
       if (!chip) return;
-      var p1 = E.dominanceActive(g, game.states, game.pop, 'p1', threshold);
-      var p2 = E.dominanceActive(g, game.states, game.pop, 'p2', threshold);
-      chip.classList.toggle('captured-p1', p1);
-      chip.classList.toggle('captured-p2', p2 && !p1);
+      // The border ring is a live gauge, not a capture flash: p1 fills it
+      // clockwise from the top, p2 fills it anticlockwise from the top, and
+      // a full ring in one colour means that player holds every member
+      // state (i.e. dominanceActive is true). Driven by two CSS custom
+      // properties so the whole thing is one conic-gradient in the sheet.
+      var f1 = E.dominanceProgress(g, game.states, game.pop, 'p1', threshold);
+      var f2 = E.dominanceProgress(g, game.states, game.pop, 'p2', threshold);
+      chip.style.setProperty('--ring-p1', f1);
+      chip.style.setProperty('--ring-p2', f2);
+      var held1 = f1 >= 1;
+      // Human captures only, matching spawnGroupEmojiReactions' human-only
+      // rule — the AI takes groups often enough that celebrating its captures
+      // too would just be noise. Re-fires if a group is lost and retaken.
+      if (held1 && !prevCapturedP1[g.key]) playSound('bell_chime');
+      prevCapturedP1[g.key] = held1;
+      chip.classList.toggle('captured-p1', held1);
+      chip.classList.toggle('captured-p2', f2 >= 1 && f1 < 1);
     });
   }
 
@@ -2816,7 +2880,7 @@
   fastTap($('rallyBtn'), onRallyBtn);
   fastTap($('specialBtn'), onSpecialBtn);
   fastTap($('nationwideBtn'), onNationwideBtn);
-  $('endPhaseBtn').addEventListener('click', doEndPhase);
+  $('endPhaseBtn').addEventListener('click', function () { if (!actionsLocked()) doEndPhase(); });
   $('playAgainBtn').addEventListener('click', function () {
     $('endOverlay').hidden = true;
     $('selectOverlay').hidden = false;
