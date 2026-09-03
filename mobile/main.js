@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var E = window.PMEEngine, G = window.PMEGame;
-  var GAME_VERSION = '2.6.0';
+  var GAME_VERSION = '2.6.1';
   // Canonical public URL for the end-of-game "share result" link — hardcoded,
   // not location.href, so the shared link is always the clean site root and
   // never a /index.html deep link, a ?query string, or a Capacitor
@@ -35,18 +35,16 @@
   function lsGet(k, d) { try { var v = localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } }
   function lsSet(k, v) { try { localStorage.setItem(k, String(v)); } catch (e) { /* private mode */ } }
 
-  // Playtest override: unlock the whole roster and skip the install gate.
-  // PERSISTED, for the same reason forcedAIKey above is: a query param can't
-  // survive to where it's needed on a phone. The install gate forces a
-  // home-screen launch, and manifest.json's start_url is a bare
-  // './index.html' — so anything after the '?' is gone the moment the app
-  // opens from the icon. Visiting ?unlockall once in a browser tab records
-  // it; ?unlockall=0 clears it again. It also waives the install gate, or it
-  // could never be set on the one device that needs it (a tunnel URL is a
-  // fresh origin every session, so localStorage starts empty each time).
-  // >>> PLAYTEST BUILD: hardcoded on. Set back to false before deploying. <<<
-  // Unlocks the whole roster and waives the phone install gate.
-  var UNLOCK_ALL = true;
+  // Playtest override: unlocks the whole roster and waives the phone install
+  // gate (which otherwise blocks a browser tab, and a tunnel URL is a fresh
+  // origin every session so a playtest device can never get past it).
+  // MUST BE false in any commit that can be deployed — true would re-lock
+  // nothing, but it hides real progression from every player. There is no
+  // query-param or localStorage escape hatch: a query param can't survive a
+  // home-screen launch anyway (manifest.json's start_url is a bare
+  // './index.html'), so this is a hand-flipped local build switch. Flip it
+  // on to playtest, flip it back before committing.
+  var UNLOCK_ALL = false;
   function maxLevel() { return (window.PMEAI && window.PMEAI.MAX_LEVEL) || 8; }
   function clampLevel(n) { return Math.min(maxLevel(), Math.max(1, n | 0)); }
   // One number, nothing else: the slider shows it, the adaptive rule moves
@@ -850,11 +848,11 @@
   ['cash_added', 'money_spent', 'invalid_action', 'fanfare', 'game_over', 'phase_reset', 'rally_sound']
     .forEach(function (name) { sounds[name] = new Audio('../sounds/' + name + '.mp3'); });
   // Its own cue rather than reusing fanfare, which already means "rally held".
-  sounds.group_won = new Audio('../sounds/group_won.wav');
+  sounds.bell_chime = new Audio('../sounds/bell_chime.mp3');
   sounds.bg_music = new Audio('../sounds/bg_music.mp3');
   sounds.intro_music = new Audio('../sounds/saare_jahan_se_accha.mp3');
   var LOOP_TRACKS = ['bg_music', 'intro_music'];
-  var BG_MUSIC_VOLUME = 0.35, BG_MUSIC_DUCKED_VOLUME = 0;
+  var BG_MUSIC_VOLUME = 0.07, BG_MUSIC_DUCKED_VOLUME = 0;
   LOOP_TRACKS.forEach(function (name) { sounds[name].loop = true; sounds[name].volume = BG_MUSIC_VOLUME; });
   var currentMusicKey = null;
 
@@ -1099,17 +1097,37 @@
   // Only for action controls that never scroll; the carousel keeps `click`
   // so a swipe doesn't fire a card. The click fallback keeps keyboard
   // activation working on real <button>s, which pointerdown alone breaks.
-  function fastTap(el, fn) {
+  // Every human game action is bound through fastTap, so this is the one
+  // place that has to know the game isn't accepting input — pausing and
+  // replay previously only stopped the timer and the AI tick (see
+  // scheduleAITick), leaving the map, agenda tray and every button live.
+  // The tutorial deliberately runs paused while asking the player to tap
+  // things, so it's exempt.
+  function actionsLocked() {
+    if (replay) return true;
+    if (game && game.winner) return true;
+    return timerPaused && !tutorialMode;
+  }
+  // allowAlways: for controls that must survive the lock (replay transport,
+  // "watch replay" entry points) rather than game actions.
+  function fastTap(el, fn, allowAlways) {
     if (!el) return;
     var lastPointer = 0;
+    function run(e) {
+      if (!allowAlways && actionsLocked()) {
+        if (timerPaused && !replay) showToast('Paused — hit ▶ to resume');
+        return;
+      }
+      fn(e);
+    }
     el.addEventListener('pointerdown', function (e) {
       if (e.button) return; // ignore right/middle mouse
       lastPointer = e.timeStamp || Date.now();
-      fn(e);
+      run(e);
     });
     el.addEventListener('click', function (e) {
       if ((e.timeStamp || Date.now()) - lastPointer < 700) return; // already handled on press
-      fn(e);
+      run(e);
     });
   }
 
@@ -1576,8 +1594,12 @@
       if (action.costCr) spawnMoneyText(pt.x, pt.y, action.costCr, -1, pk);
     }
     if (action.type === 'power') {
-      if (withSound) playPowerSound(game.players[pk].politician.name);
-      spawnPowerBurst(pk, game.players[pk].politician.power.name, game.players[pk].politician.name);
+      if (action.nullified) {
+        showToast(game.players[pk].politician.name + '’s power fizzled — you had nullified it');
+      } else {
+        if (withSound) playPowerSound(game.players[pk].politician.name);
+        spawnPowerBurst(pk, game.players[pk].politician.power.name, game.players[pk].politician.name);
+      }
     } else if (action.type === 'nationwide') {
       if (withSound) playSound('fanfare');
       spawnPowerBurst(pk, 'Nationwide Rally', game.players[pk].politician.name, '🇮🇳');
@@ -1827,18 +1849,18 @@
       }
       updateReplayBar();
       scheduleReplayStep();
-    });
+    }, true);
     ['1', '2', '3'].forEach(function (s) {
       fastTap($('replaySpeed' + s), function () {
         if (!replay) return;
         replay.speed = parseInt(s, 10);
         updateReplayBar();
         if (replay.playing) scheduleReplayStep();
-      });
+      }, true);
     });
-    fastTap($('replayExitBtn'), exitReplay);
-    fastTap($('watchReplayBtn'), function () { startReplay(currentReplayRecord()); });
-    fastTap($('welcomeReplayBtn'), function () { startReplay(loadSavedReplay()); });
+    fastTap($('replayExitBtn'), exitReplay, true);
+    fastTap($('watchReplayBtn'), function () { startReplay(currentReplayRecord()); }, true);
+    fastTap($('welcomeReplayBtn'), function () { startReplay(loadSavedReplay()); }, true);
     $('welcomeReplayBtn').hidden = !loadSavedReplay();
   }
 
@@ -2780,7 +2802,7 @@
       // Human captures only, matching spawnGroupEmojiReactions' human-only
       // rule — the AI takes groups often enough that celebrating its captures
       // too would just be noise. Re-fires if a group is lost and retaken.
-      if (held1 && !prevCapturedP1[g.key]) playSound('group_won');
+      if (held1 && !prevCapturedP1[g.key]) playSound('bell_chime');
       prevCapturedP1[g.key] = held1;
       chip.classList.toggle('captured-p1', held1);
       chip.classList.toggle('captured-p2', f2 >= 1 && f1 < 1);
@@ -2860,7 +2882,7 @@
   fastTap($('rallyBtn'), onRallyBtn);
   fastTap($('specialBtn'), onSpecialBtn);
   fastTap($('nationwideBtn'), onNationwideBtn);
-  $('endPhaseBtn').addEventListener('click', doEndPhase);
+  $('endPhaseBtn').addEventListener('click', function () { if (!actionsLocked()) doEndPhase(); });
   $('playAgainBtn').addEventListener('click', function () {
     $('endOverlay').hidden = true;
     $('selectOverlay').hidden = false;

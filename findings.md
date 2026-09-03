@@ -35,9 +35,11 @@
 **Context:** The user asked for a distinct capture sound, noting fanfare already means "rally held."
 **Implication:** Detecting a game event by matching prose in the log is fragile and fires at the wrong moment - edge-detect the state the renderer already computes instead. Keep the loudness table above when adding any new clip; target ~-13 dBFS RMS to sit with `game_over`/`bg_music` and clearly above `fanfare`.
 
-## 2026-09-02 - UNRESOLVED: the new group-capture sound is silent on a real phone while verifying correctly in Chromium
+## 2026-09-02 - RESOLVED: the new group-capture sound is silent on a real phone while verifying correctly in Chromium
 **Finding:** `sounds/group_won.wav` (synthesized locally - no ffmpeg available; 32kHz mono 16-bit PCM, 0.80s, -13.0 dBFS RMS) plays correctly in headless Chromium: forcing a capture yields `sounds played: ['group_won']`, exactly once per false->true transition and silent while merely still held, and the clip loads (`oncanplaythrough`). It is registered in `sounds` before `unlockSounds()` runs, so iOS's per-element gesture unlock covers it. The user captured 7-8 groups on a real phone and heard nothing, across two builds. Ruled out: no group captured (the user confirmed 8), non-finite `seats` breaking the seat-weighted ratio (0 states affected), `buildGroupsBox` re-seeding on every render (it is called only at game start, 2 sites), volume (the first version was already 8 dB louder than `fanfare`).
 **Context:** Three rounds of fixes - louder clip, cache bump v12->v14, version badge - none resolved it. Deliberately left open rather than guessed at again, at the point the user asked to checkpoint and keep playtesting.
+**Resolution (2026-09-02, v2.6.1):** Guess (3) below was the right one. The `.wav` was replaced wholesale by a user-supplied mp3 (`sounds/bell_chime.mp3`) and the sound was immediately audible on the same real phone, first try. The synthesized 32kHz mono PCM WAV was the problem; every other clip in `sounds/` is an mp3, and that is now true of this one too. **Prefer mp3 for any new clip — do not ship a WAV to iOS Safari on the strength of a Chromium check.** A second, separate defect surfaced once it was audible: the supplied clip carried 0.70s of *leading* silence, so the cue fired 0.7s after the capture. Measured per-frame RMS by decoding through headless Chromium's `OfflineAudioContext` (no ffmpeg on this machine) and trimmed both ends at MP3 frame boundaries, 4.20s → 2.35s. **When a new clip feels mistimed rather than missing, measure its leading silence before touching any code.**
+
 **Implication:** Next things to try, in order: (1) confirm the device is actually on v2.6.0 via the version badge - the stale-service-worker finding above makes an old `main.js` the leading suspect; (2) `playSound` does `a.currentTime = 0` before `a.play()`, which throws `InvalidStateError` in Safari when `readyState` is 0, aborting playback silently - wrap it in try/catch; (3) re-encode as mp3 to match every other clip, in case iOS Safari is rejecting the WAV. Do not add more loudness - that has been measured and is not the cause.
 
 ## 2026-09-01 — An AI targeting function returning argmax over a *shared* resource is both predictable and quietly unfair to the human
@@ -81,7 +83,8 @@
 **Implication:** Any behavioural change that can only be observed by playing a match needs a visible build/config marker in the UI *before* the first playtest, not after two inconclusive ones. Never diagnose "the AI played badly" from match stats alone until the build identity is confirmed on the device that played it. The eventual fix was to stop overriding at all and put `max` in the normal random pool, so no plumbing stands between the code and the playtest.
 
 ## 2026-08-31 — mobile/main.js has mixed CRLF and LF line endings
-**Finding:** `mobile/main.js` contains both `
+**Finding:** `mobile/main.js` contains both `
+
 ` and bare `
 ` line terminators in different regions of the same file (`mobile/game.js`, by contrast, is uniformly CRLF — 983/983 lines). A scripted exact-string patch that normalises its search text to CRLF matches in some parts of main.js and silently fails to match in others; the version-label block near line 12 is LF while the game-creation block near line 1339 is CRLF.
 **Context:** Hit twice while applying scripted edits to main.js — an anchor verified by eye against `sed` output still reported zero matches, until the raw bytes were dumped with `JSON.stringify`.

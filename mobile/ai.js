@@ -453,8 +453,14 @@
         if (power.requiresCompletedAgenda) opts.targetAgendaName = pickAICompletedAgenda(game, playerKey);
         var targetsOk = (!power.requiresTargetState || opts.targetStateSvgId) &&
           (!power.requiresCompletedAgenda || opts.targetAgendaName);
-        if (targetsOk && G().activatePower(game, playerKey, opts).ok) {
-          return { type: 'power', svgId: opts.targetStateSvgId || null, costCr: null };
+        // activatePower returns ok:true even when the power was secretly
+        // nullified (Nehru's Non-Alignment) — ok means "the activation was
+        // spent", not "the effect landed". Carry the flag through so the FX
+        // layer shows a fizzle instead of a full power burst, the way the
+        // human path already does in finishActivatePower.
+        var res = targetsOk ? G().activatePower(game, playerKey, opts) : { ok: false };
+        if (res.ok) {
+          return { type: 'power', svgId: opts.targetStateSvgId || null, costCr: null, nullified: !!res.nullified };
         }
       }
     }

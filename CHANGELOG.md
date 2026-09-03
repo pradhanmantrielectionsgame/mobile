@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [2.6.1] - 2026-09-02
+
+Input lock while paused/replaying, nullified-power FX fix, the group-capture sound replaced with a real bell chime, and a quieter music mix. **Clears the v2.6.0 ship blocker** — `UNLOCK_ALL` is back to `false`.
+
+### Fixed
+- **FIXED**: The v2.6.0 `UNLOCK_ALL = true` ship blocker — back to `false`, so the roster unlock progression and the phone install gate behave as they do on the live build. v2.6.0 was never deployed (live was still 2.5.1), so no player's saved progress was ever affected. Its comment block also described a `?unlockall` query-param/localStorage escape hatch that was never actually implemented; rewritten to describe what the flag really is — a hand-flipped local build switch.
+- **FIXED**: The human player could still act while the game was paused, and while watching a replay. `timerPaused`/`replay` only stopped the phase clock and the AI tick (`scheduleAITick`); nothing gated human input, so the map, agenda tray, quick-invest buttons, rally/special/nationwide buttons and group chips all stayed live. Every human game action is bound through `fastTap()`, so the gate lives there as a single `actionsLocked()` check (`replay || game.winner || (timerPaused && !tutorialMode)`), plus the one game action not bound that way, `#endPhaseBtn`. **The tutorial is deliberately exempt**: `startStageTutorial()`/`checkTutorialPhaseGate()` both set `timerPaused = true` while the coach asks the player to tap the map, invest in Gujarat, open a group chip and fire a power — a naive "paused means no input" check would have softlocked the whole tutorial. Replay transport controls (`#replayPlayBtn`, the speed buttons, `#replayExitBtn`, `#watchReplayBtn`, `#welcomeReplayBtn`) opt out via a new third `allowAlways` argument to `fastTap`. A blocked tap on a paused game toasts rather than silently doing nothing.
+- **FIXED**: An opponent power nullified by Nehru's Non-Alignment still played the full power sound and the "BREAKING: X invoked Y" burst, so it read as though it had gone through. `activatePower()` returns `ok: true` even when nullified — `ok` means "the activation was spent", not "the effect landed" — and `mobile/ai.js` checked only `.ok`. The mechanical nullification was always correct (effects are skipped at `pl.powerNullified`); only the presentation lied. The `nullified` flag now rides along on the AI's action object and `playActionFx()` shows a fizzle toast instead, matching what `finishActivatePower()` already did on the human path.
+
+### Changed
+- **CHANGED**: `sounds/group_won.wav` replaced by `sounds/bell_chime.mp3` (user-supplied clip, Freesound "community bell chord"). Trimmed at MP3 frame boundaries from 4.20s to 2.35s (84 KB → 46 KB, no re-encode): the file carried **0.70s of leading silence** as well as 1.3s of trailing, so every capture cue was firing 0.7s late. Three frames of padding are left at each end for the bit reservoir. This also closes findings.md [F8] — the synthesized `.wav` that was inaudible on a real phone is simply gone.
+- **CHANGED**: `BG_MUSIC_VOLUME` 0.35 → 0.07, on user report that background music drowned out the in-game sounds. Every SFX is a plain `<audio>` element already at `volume = 1.0`, which is the `HTMLAudioElement` ceiling — so lowering the music is the only lever that doesn't require routing each element through its own `GainNode` (the pattern that produced the suspended-`AudioContext` failure in findings.md [F8]'s neighbourhood).
+- **CHANGED**: `mobile/sw.js` cache `v14` → `v15`. Media is served cache-first, so without the bump returning players would keep the old 4.2s chime.
+
+### Added
+- **ADDED**: `scripts/check-input-lock.js` — Playwright regression check for the pause gate above: pauses a live game, taps a state three times and asserts funds are unchanged, then resumes and asserts a tap does spend. Needs `npm run serve` running. Not wired into `npm test`, which is Node-only.
+
 ## [2.6.0] - 2026-09-02
 
 Regional-dominance group rebalance (Education/Manufacturing polarity resolution), group-chip completion ring gauge, and dedicated group-capture sound. Includes a playtest-only unlock flag that **must be disabled before any deploy**.
