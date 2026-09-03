@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [2.6.2] - 2026-09-02
+
+Slower investment decay past the glide path, and the info bar's party symbols fixed in replays.
+
+### Changed
+- **CHANGED**: `investment.boostDecayRate` 0.85 → 0.933 in `data/game-config.json`, on a playtest report that repeated taps on one state stalled out too abruptly. Past the tap-20 glide path the boost now **halves every 10 taps** instead of every ~4.3: tap 30 = +1.00% (was +0.39%), tap 40 = +0.50% (was +0.08%), tap 50 = +0.25% (was +0.02%). The glide path itself (taps 1–20, linear 500→200 bps) and the flat `seats × 10 Cr` cost are unchanged. `investmentBoostBps()`'s `max(1, …)` floor still pins the boost at 1 bps (+0.01%) permanently, but the slower decay pushes that from tap 51 out to tap 91. **This partially walks back the 2026-08-24 (v1.1.2) small-UT fix** — re-contesting a heavily-tapped cheap state is now far cheaper for far longer (at tap 50 a 1-seat UT costs 40 Cr per +1%, vs 500 Cr before, 12×), so the regional-dominance veto that fix closed is worth re-checking with `mobile/balance-sim.js` if UT-group win rates look off. Shipped on direct user request with the trade-off flagged; no fresh balance-sim sweep was run.
+
+### Fixed
+- **FIXED**: In a replay launched from the welcome screen, the info bar's vs-bar showed `index.html`'s hardcoded placeholder party emoji instead of the two players' real party logos — and since the placeholders are in a fixed order, they also read as swapped whenever p1 wasn't BJP. `startReplay()` carried its own copy of `startGame()`'s HUD setup and that copy was missing `setPartySymbol()` for `cardP1Symbol`/`cardP2Symbol`; a welcome-screen replay never runs `startGame()`, so nothing ever overwrote the markup defaults. The top strip was unaffected because `startReplay` did set `p1PartySymbol`/`p2PartySymbol`. Rather than adding the two missing lines, the whole block (colors, **both** party-symbol pairs, portraits, names) is now a single `paintPlayerIdentity()` called by both callers — this is the fourth instance of CLAUDE.md's "two places must agree" failure mode, so the duplicate was removed rather than patched.
+
+### Docs
+- **FIXED**: Two wrong numbers in `docs/wiki.html`'s direct-cash-investment section, found while updating the curve. It listed tap 10 as +3.42% (actual: +3.58%), and described taps 50+ as "→0%, asymptotically worthless — never a hard floor" alongside a claim that a 1-seat state's cost per +1% "crosses a full phase's income (2,500 Cr) around tap 43." Both are false: `max(1, …)` **is** a hard floor, and it caps a 1-seat state's cost per +1% at 1,000 Cr, so that figure is unreachable at any tap count under either the old or new rate.
+
 ## [2.6.1] - 2026-09-02
 
 Input lock while paused/replaying, nullified-power FX fix, the group-capture sound replaced with a real bell chime, and a quieter music mix. **Clears the v2.6.0 ship blocker** — `UNLOCK_ALL` is back to `false`.

@@ -377,16 +377,18 @@ flowchart TD
         <thead><tr><th>Tap #</th><th>Boost</th><th>Note</th></tr></thead>
         <tbody>
           <tr><td class="num">1</td><td class="num">+5.00%</td><td>opening tap, best rate</td></tr>
-          <tr><td class="num">10</td><td class="num">+3.42%</td><td>linear glide</td></tr>
+          <tr><td class="num">10</td><td class="num">+3.58%</td><td>linear glide</td></tr>
           <tr><td class="num">20</td><td class="num">+2.00%</td><td>glide path ends</td></tr>
-          <tr><td class="num">30</td><td class="num">+0.39%</td><td>geometric decay past the glide path</td></tr>
-          <tr><td class="num">50+</td><td class="num">→0%</td><td>asymptotically worthless — never a hard floor</td></tr>
+          <tr><td class="num">30</td><td class="num">+1.00%</td><td>geometric decay past the glide path — halves every 10 taps</td></tr>
+          <tr><td class="num">40</td><td class="num">+0.50%</td><td></td></tr>
+          <tr><td class="num">50</td><td class="num">+0.25%</td><td></td></tr>
+          <tr><td class="num">91+</td><td class="num">+0.01%</td><td>hard floor, flat from here on (<code>max(1, …)</code>)</td></tr>
         </tbody>
       </table></div>
-      <p>Cost per tap = <code>state.seats × 10 Cr</code>, always flat — only the boost decays. For the first 20 taps the decay is linear (500→200bps); past tap 20 it used to lock at a permanent 200bps floor forever, which meant a cheap 1-seat UT could be re-contested indefinitely at a fixed, still-meaningful cost. Fixed 2026-08-24 (v1.1.2): past tap 20 the boost now keeps decaying geometrically instead of flattening, so repeated taps on the <i>same</i> state keep getting weaker with no floor. On a 1-seat state, cost per +1% crosses a full phase's income (2,500 Cr) around tap 43 — spam past that point is a real waste, not just diminishing.</p>
+      <p>Cost per tap = <code>state.seats × 10 Cr</code>, always flat — only the boost decays. For the first 20 taps the decay is linear (500→200bps); past tap 20 it used to lock at a permanent 200bps floor forever, which meant a cheap 1-seat UT could be re-contested indefinitely at a fixed, still-meaningful cost. Fixed 2026-08-24 (v1.1.2): past tap 20 the boost keeps decaying geometrically instead of flattening, so repeated taps on the <i>same</i> state keep getting weaker. <b>Slackened 2026-09-02 (v2.6.2)</b>, on a playtest report that the curve stalled out too abruptly: the decay rate went 0.85 → 0.933, i.e. <b>the boost now halves every 10 taps</b> past the glide path (tap 30 = +1.00%, tap 40 = +0.50%, tap 50 = +0.25%) where 0.85 gave +0.39% / +0.08% / +0.02%. There <i>is</i> a hard floor — <code>max(1, …)</code> pins the boost at 1 bps (+0.01%) forever — but the slower decay pushes that from tap 51 out to tap 91. Since cost per tap never decays, a 1-seat state's cost per +1% tops out at 1,000 Cr at the floor and a 30-seat state's at 30,000 Cr.</p>
       <pre class="code">costPerTap(state) = state.seats × 10                                // Cr
 boost_bps(tap) = tap ≤ 20 : round(500 − (tap−1) × 300/19)            // 500 → 200 bps, linear
-                 tap  > 20 : max(1, round(200 × 0.85^(tap−20)))      // keeps decaying, never flat</pre>
+                 tap  > 20 : max(1, round(200 × 0.933^(tap−20)))     // halves every 10 taps; pins at 1 bps from tap 91</pre>
       <div class="note">
         <p class="label">Why this mattered: a cheap state could veto an expensive group forever</p>
         <p>Regional dominance requires <i>every</i> member of a group at 50%+ (see below) — including groups that mix a 1-seat UT alongside 20-40-seat states. Under the old permanent floor, re-suppressing that one cheap UT cost the same 10 Cr per 2% forever, so it could deny access to a group worth hundreds of Cr in payout at near-zero ongoing cost. AI-vs-AI simulation (1,260-game full politician matrix, same seeds before/after): groups containing a small UT went from winning ~36% less often than UT-free groups (4.1% vs 6.4%) to statistically even (5.6% vs 5.7%); combined spend on the 7 smallest UTs fell ~71% per game; average final seats rose for both players (+8.3 / +7.3) as fewer seats got stuck contested with neither side ever converting them. This only stops <i>sustained</i> spam — a slow, occasional strategic snipe of the same state stays exactly as viable as before (each side's own tap-decay clock only advances on their own taps, so a low-frequency defender doesn't grind through it the way a constant attacker does).</p>

@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var E = window.PMEEngine, G = window.PMEGame;
-  var GAME_VERSION = '2.6.1';
+  var GAME_VERSION = '2.6.2';
   // Canonical public URL for the end-of-game "share result" link — hardcoded,
   // not location.href, so the shared link is always the clean site root and
   // never a /index.html deep link, a ?query string, or a Capacitor
@@ -318,6 +318,26 @@
     'Hindutva': '🕉️', 'Secularism': '☮️', 'Indigenous Rights': '🏹', 'Caste Reservation': '📋',
     'Uniform Civil Code': '📜', "State's Rights": '🚩', 'National Defense': '🛡️'
   };
+
+  // Every place the two players' identity is painted into the HUD: colors,
+  // both party-symbol pairs (top strip AND the info card's vs-bar), portraits
+  // and names. startGame() and startReplay() both need the full set — they
+  // used to each carry their own copy, and startReplay's copy was missing
+  // cardP1Symbol/cardP2Symbol, so a replay launched straight from the welcome
+  // screen (where startGame never ran) left the info bar showing index.html's
+  // hardcoded placeholder emoji instead of the real party logos.
+  function paintPlayerIdentity() {
+    COLORS.p1 = game.players.p1.politician.primaryColor || '#E8871C';
+    COLORS.p2 = game.players.p2.politician.primaryColor || '#1C8A4B';
+    document.documentElement.style.setProperty('--p1', COLORS.p1);
+    document.documentElement.style.setProperty('--p2', COLORS.p2);
+    ['p1PartySymbol', 'cardP1Symbol'].forEach(function (id) { setPartySymbol($(id), game.players.p1.politician); });
+    ['p2PartySymbol', 'cardP2Symbol'].forEach(function (id) { setPartySymbol($(id), game.players.p2.politician); });
+    setPortrait($('p1Portrait'), game.players.p1.politician);
+    setPortrait($('p2Portrait'), game.players.p2.politician);
+    $('p1Name').textContent = game.players.p1.politician.name;
+    $('p2Name').textContent = game.players.p2.politician.name;
+  }
 
   var data = null, game = null, selectedId = 'INUP', armed = null; // armed: null | 'stateRally' | 'powerTarget'
   var replay = null; // non-null while a replay is playing: { rec, idx, speed, playing, timer, savedGame }
@@ -1508,20 +1528,7 @@
     // end-of-game sign-off still knows the match started as a tutorial.
     wasTutorialGame = tutorialMode;
 
-    // Map/UI colors and party symbols follow whichever politicians were
-    // actually picked, not a fixed p1=orange/p2=green default.
-    COLORS.p1 = game.players.p1.politician.primaryColor || '#E8871C';
-    COLORS.p2 = game.players.p2.politician.primaryColor || '#1C8A4B';
-    document.documentElement.style.setProperty('--p1', COLORS.p1);
-    document.documentElement.style.setProperty('--p2', COLORS.p2);
-    setPartySymbol($('p1PartySymbol'), game.players.p1.politician);
-    setPartySymbol($('p2PartySymbol'), game.players.p2.politician);
-    setPartySymbol($('cardP1Symbol'), game.players.p1.politician);
-    setPartySymbol($('cardP2Symbol'), game.players.p2.politician);
-    setPortrait($('p1Portrait'), game.players.p1.politician);
-    setPortrait($('p2Portrait'), game.players.p2.politician);
-    $('p1Name').textContent = game.players.p1.politician.name;
-    $('p2Name').textContent = game.players.p2.politician.name;
+    paintPlayerIdentity();
 
     armed = null; activeGroup = null; groupPinned = false; activeAgenda = null; activeAction = null; activeCluster = null;
     lastMapTapId = null; lastBtnTapId = null; timerPaused = false;
@@ -1742,16 +1749,7 @@
     window.__game = game;
     replay = { rec: rec, idx: 0, speed: 1, playing: true, timer: null, savedGame: savedGame };
 
-    COLORS.p1 = game.players.p1.politician.primaryColor || '#E8871C';
-    COLORS.p2 = game.players.p2.politician.primaryColor || '#1C8A4B';
-    document.documentElement.style.setProperty('--p1', COLORS.p1);
-    document.documentElement.style.setProperty('--p2', COLORS.p2);
-    setPartySymbol($('p1PartySymbol'), game.players.p1.politician);
-    setPartySymbol($('p2PartySymbol'), game.players.p2.politician);
-    setPortrait($('p1Portrait'), game.players.p1.politician);
-    setPortrait($('p2Portrait'), game.players.p2.politician);
-    $('p1Name').textContent = game.players.p1.politician.name;
-    $('p2Name').textContent = game.players.p2.politician.name;
+    paintPlayerIdentity();
 
     activeGroup = null; activeAgenda = null; activeAction = null; activeCluster = null; armed = null;
     $('endOverlay').hidden = true;
