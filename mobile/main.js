@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var E = window.PMEEngine, G = window.PMEGame;
-  var GAME_VERSION = '2.5.1';
+  var GAME_VERSION = '2.6.0';
   // Canonical public URL for the end-of-game "share result" link — hardcoded,
   // not location.href, so the shared link is always the clean site root and
   // never a /index.html deep link, a ?query string, or a Capacitor
@@ -34,6 +34,19 @@
   var START_LEVEL = 2;
   function lsGet(k, d) { try { var v = localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } }
   function lsSet(k, v) { try { localStorage.setItem(k, String(v)); } catch (e) { /* private mode */ } }
+
+  // Playtest override: unlock the whole roster and skip the install gate.
+  // PERSISTED, for the same reason forcedAIKey above is: a query param can't
+  // survive to where it's needed on a phone. The install gate forces a
+  // home-screen launch, and manifest.json's start_url is a bare
+  // './index.html' — so anything after the '?' is gone the moment the app
+  // opens from the icon. Visiting ?unlockall once in a browser tab records
+  // it; ?unlockall=0 clears it again. It also waives the install gate, or it
+  // could never be set on the one device that needs it (a tunnel URL is a
+  // fresh origin every session, so localStorage starts empty each time).
+  // >>> PLAYTEST BUILD: hardcoded on. Set back to false before deploying. <<<
+  // Unlocks the whole roster and waives the phone install gate.
+  var UNLOCK_ALL = true;
   function maxLevel() { return (window.PMEAI && window.PMEAI.MAX_LEVEL) || 8; }
   function clampLevel(n) { return Math.min(maxLevel(), Math.max(1, n | 0)); }
   // One number, nothing else: the slider shows it, the adaptive rule moves
@@ -124,7 +137,8 @@
   // small screen, and Add-to-Home-Screen is also what protects localStorage
   // (unlock progress) + the offline cache from iOS's 7-day ITP purge.
   // Desktop/mouse (no coarse pointer) and tablets (wider than a phone) skip it.
-  if (window.matchMedia('(pointer: coarse)').matches &&
+  if (!UNLOCK_ALL &&
+      window.matchMedia('(pointer: coarse)').matches &&
       window.matchMedia('(max-width: 700px)').matches &&
       !(window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true)) {
     document.getElementById('installGateOverlay').hidden = false;
@@ -163,6 +177,7 @@
   // (private browsing, quota, etc.) — null means "treat everyone as
   // unlocked" so a storage failure can't softlock the roster.
   function loadUnlockedPoliticians() {
+    if (UNLOCK_ALL) return null;
     try {
       var raw = localStorage.getItem(UNLOCK_KEY);
       if (!raw) return STARTER_POLITICIAN_IDS.slice();
@@ -834,6 +849,8 @@
   var sounds = {};
   ['cash_added', 'money_spent', 'invalid_action', 'fanfare', 'game_over', 'phase_reset', 'rally_sound']
     .forEach(function (name) { sounds[name] = new Audio('../sounds/' + name + '.mp3'); });
+  // Its own cue rather than reusing fanfare, which already means "rally held".
+  sounds.group_won = new Audio('../sounds/group_won.wav');
   sounds.bg_music = new Audio('../sounds/bg_music.mp3');
   sounds.intro_music = new Audio('../sounds/saare_jahan_se_accha.mp3');
   var LOOP_TRACKS = ['bg_music', 'intro_music'];
@@ -1630,7 +1647,6 @@
       else showEndOverlay();
       return;
     }
-    if (game.log.slice(0, 10).some(function (e) { return e.msg.indexOf('💰 You hold') === 0; })) playSound('fanfare');
     renderAll();
     playSound('phase_reset');
     showToast('Phase ' + game.phase + ' begins');
@@ -2408,7 +2424,17 @@
     var box = $('groupsBox');
     box.innerHTML = '';
     groupChipEls = {};
-    var rows = [game.groups.slice(0, 8), game.groups.slice(8)];
+    prevCapturedP1 = {};
+    game.groups.forEach(function (g) {
+      prevCapturedP1[g.key] = E.dominanceActive(g, game.states, game.pop, 'p1',
+        game.cfg.regionalDominance.thresholdBps);
+    });
+    // Smallest group first, so the chip order reads as a size ranking. Sorts a
+    // COPY: ai.js draws its target group by index into game.groups, so
+    // reordering that array in place would change AI behaviour and break
+    // replay of existing action logs.
+    var ordered = game.groups.slice().sort(function (a, b) { return a.seats - b.seats; });
+    var rows = [ordered.slice(0, 8), ordered.slice(8)];
     rows.forEach(function (rowMembers, i) {
       var row = document.createElement('div');
       row.className = 'hex-row ' + (i === 0 ? 'row-a' : 'row-b');
@@ -2731,15 +2757,33 @@
   // doesn't. Reads live game.pop via E.dominanceActive rather than game's
   // payout-gating dominanceHeld flag, since that flag exists only to avoid
   // re-paying a bonus and is beside the point for a live visual readout.
+  // Last-seen capture state per group, so a false->true flip can be heard the
+  // moment it happens. Seeded in buildGroupsBox at game start, or a fresh
+  // game (and every replay) would fire on its first render for any group the
+  // starting position already hands you.
+  var prevCapturedP1 = {};
   function renderGroupCaptureBadges() {
     var threshold = game.cfg.regionalDominance.thresholdBps;
     game.groups.forEach(function (g) {
       var chip = groupChipEls[g.key]; // cached in buildGroupsBox; never replaced
       if (!chip) return;
-      var p1 = E.dominanceActive(g, game.states, game.pop, 'p1', threshold);
-      var p2 = E.dominanceActive(g, game.states, game.pop, 'p2', threshold);
-      chip.classList.toggle('captured-p1', p1);
-      chip.classList.toggle('captured-p2', p2 && !p1);
+      // The border ring is a live gauge, not a capture flash: p1 fills it
+      // clockwise from the top, p2 fills it anticlockwise from the top, and
+      // a full ring in one colour means that player holds every member
+      // state (i.e. dominanceActive is true). Driven by two CSS custom
+      // properties so the whole thing is one conic-gradient in the sheet.
+      var f1 = E.dominanceProgress(g, game.states, game.pop, 'p1', threshold);
+      var f2 = E.dominanceProgress(g, game.states, game.pop, 'p2', threshold);
+      chip.style.setProperty('--ring-p1', f1);
+      chip.style.setProperty('--ring-p2', f2);
+      var held1 = f1 >= 1;
+      // Human captures only, matching spawnGroupEmojiReactions' human-only
+      // rule — the AI takes groups often enough that celebrating its captures
+      // too would just be noise. Re-fires if a group is lost and retaken.
+      if (held1 && !prevCapturedP1[g.key]) playSound('group_won');
+      prevCapturedP1[g.key] = held1;
+      chip.classList.toggle('captured-p1', held1);
+      chip.classList.toggle('captured-p2', f2 >= 1 && f1 < 1);
     });
   }
 

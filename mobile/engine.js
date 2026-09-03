@@ -313,6 +313,22 @@
     if (!members.length) return false;
     return members.every(function (s) { return pop[s.svgId][player] >= thresholdBps; });
   }
+  // Fraction of a group this player already holds (0..1), weighted by SEATS.
+  // dominanceActive is the all-or-nothing gate; this is the same per-state
+  // test summed instead of .every()'d, so a partial ring can read as progress
+  // toward it. Seat-weighted, not state-counted: a group mixing Uttar Pradesh
+  // with a 1-seat UT would otherwise show the same progress for either, which
+  // playtested as misleading. Still exactly 1 only when every member state is
+  // held, so a full ring continues to mean dominanceActive is true.
+  function dominanceProgress(group, states, pop, player, thresholdBps) {
+    var members = states.filter(function (s) { return s.tags.indexOf(group.key) !== -1; });
+    var total = 0, held = 0;
+    members.forEach(function (s) {
+      total += s.seats;
+      if (pop[s.svgId][player] >= thresholdBps) held += s.seats;
+    });
+    return total ? held / total : 0;
+  }
   function groupSeats(group, states) {
     return states.filter(function (s) { return s.tags.indexOf(group.key) !== -1; })
       .reduce(function (a, s) { return a + s.seats; }, 0);
@@ -347,6 +363,7 @@
     netAgendaEffectBps: netAgendaEffectBps,
     agendaTapDelta: agendaTapDelta,
     dominanceActive: dominanceActive,
+    dominanceProgress: dominanceProgress,
     dominancePayoutCr: dominancePayoutCr,
     dominanceHoldingPayoutCr: dominanceHoldingPayoutCr
   };
@@ -378,6 +395,26 @@ if (typeof module !== 'undefined' && require.main === module) {
     assert.strictEqual(gain, 200);
     assert.strictEqual(pop.p1, 10000);
     assert.strictEqual(pop.p1 + pop.p2 + pop.others, 10000);
+  })();
+
+  // dominanceProgress: seat-weighted, and agrees with dominanceActive at the
+  // boundaries (0 -> false, 1 -> true).
+  (function () {
+    var group = { key: 'G' };
+    var states = [{ svgId: 'A', tags: ['G'], seats: 80 }, { svgId: 'B', tags: ['G'], seats: 19 },
+                  { svgId: 'C', tags: ['G'], seats: 1 }, { svgId: 'D', tags: ['X'], seats: 40 }];
+    var pop = { A: { p1: 6000 }, B: { p1: 5000 }, C: { p1: 4999 }, D: { p1: 9999 } };
+    // 99 of 100 seats held: seat-weighted says 99%, a state count would say 67%.
+    assert.strictEqual(E.dominanceProgress(group, states, pop, 'p1', 5000), 0.99);
+    assert.strictEqual(E.dominanceActive(group, states, pop, 'p1', 5000), false);
+    // ...and the reverse: holding only the 1-seat member is 1%, not 33%.
+    pop.A.p1 = 0; pop.B.p1 = 0; pop.C.p1 = 5000;
+    assert.strictEqual(E.dominanceProgress(group, states, pop, 'p1', 5000), 0.01);
+    pop.A.p1 = 5000; pop.B.p1 = 5000;
+    assert.strictEqual(E.dominanceProgress(group, states, pop, 'p1', 5000), 1);
+    assert.strictEqual(E.dominanceActive(group, states, pop, 'p1', 5000), true);
+    // Non-member states never count toward the group (D is 40 seats of tag X).
+    assert.strictEqual(E.dominanceProgress({ key: 'Z' }, states, pop, 'p1', 5000), 0);
   })();
 
   // loseAt mirrors gainAt

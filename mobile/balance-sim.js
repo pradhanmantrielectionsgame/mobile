@@ -28,9 +28,10 @@ function homeStatesOf(pol) {
   return [pol.homeState].concat(pol.secondaryHomeStates || []);
 }
 
-function runOneGame(data, p1Id, p2Id, seedFn) {
+function runOneGame(data, p1Id, p2Id, seedFn, rung) {
   const game = Game.createGame(data, p1Id, p2Id, seedFn);
-  Game.setupAI(game, 'p1', seedFn);
+  Game.setupAI(game, 'p1', seedFn, rung);
+  Game.setupAI(game, 'p2', seedFn, rung);
   Game.runAIFull(game, 'p2');
   let iter = 0;
   let powerUsedPhase = null;
@@ -63,6 +64,8 @@ function runOneGame(data, p1Id, p2Id, seedFn) {
 
 const data = Game.loadGameDataSync(path.join(__dirname, '..', 'data'));
 const gamesPerOrderedPair = parseInt(process.argv[2], 10) || 3;
+// Optional 2nd arg: force both seats onto a named AI ladder rung (e.g. level-8).
+const rung = process.argv[3] || undefined;
 const logPath = path.join(__dirname, 'balance-log.jsonl');
 const rows = [];
 
@@ -71,7 +74,7 @@ data.politicians.forEach((p1) => {
     if (p1.id === p2.id) return;
     for (let s = 0; s < gamesPerOrderedPair; s++) {
       const seed = 1 + s * 7919 + p1.id.length * 31 + p2.id.length;
-      rows.push(runOneGame(data, p1.id, p2.id, mulberry32(seed)));
+      rows.push(runOneGame(data, p1.id, p2.id, mulberry32(seed), rung));
     }
   });
 });

@@ -4,7 +4,7 @@
       "tagEffects": { "Education": 8, "Manufacturing": 8 }
     },
     "Rural Development": {
-      "tagEffects": { "AgriculturalRegion": 8, "EasternBorder": 8, "IndustrialCorridor": -8, "Manufacturing": -8 }
+      "tagEffects": { "AgriculturalRegion": 8, "EasternBorder": 8, "IndustrialCorridor": -8, "Manufacturing": -4 }
     },
     "Women's Empowerment": {
       "nationwideBonus": 4
@@ -13,10 +13,10 @@
       "nationwideBonus": 4
     },
     "Land Reforms": {
-      "tagEffects": { "IndustrialCorridor": 8, "Manufacturing": 8, "AgriculturalRegion": -8, "TribalLands": -8 }
+      "tagEffects": { "IndustrialCorridor": 8, "Manufacturing": 4, "AgriculturalRegion": -8, "TribalLands": -8 }
     },
     "Agricultural Reforms": {
-      "tagEffects": { "AgriculturalRegion": 8, "IndustrialCorridor": -8, "Manufacturing": -8 }
+      "tagEffects": { "AgriculturalRegion": 8, "IndustrialCorridor": -8, "Manufacturing": -4 }
     },
     "Water and Mineral Rights": {
       "tagEffects": { "AgriculturalRegion": 4, "TribalLands": 4, "NaturalResources": 4, "IndustrialCorridor": -4, "Manufacturing": -4 }
@@ -25,7 +25,7 @@
       "tagEffects": { "IndustrialCorridor": 4, "Manufacturing": 4, "TribalLands": -4, "AgriculturalRegion": -4 }
     },
     "Economic Liberalization": {
-      "tagEffects": { "IndustrialCorridor": 12, "Manufacturing": 12, "CoastalIndia": 12, "AgriculturalRegion": -12, "TribalLands": -8, "NaturalResources": -8 }
+      "tagEffects": { "IndustrialCorridor": 12, "Manufacturing": 8, "CoastalIndia": 12, "AgriculturalRegion": -12, "TribalLands": -8, "NaturalResources": -8 }
     },
     "Privatization": {
       "tagEffects": { "IndustrialCorridor": 4, "Manufacturing": 4, "AgriculturalRegion": -4 }

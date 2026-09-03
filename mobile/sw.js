@@ -1,7 +1,7 @@
 // PME Mobile — minimal cache-first service worker for offline/installable
 // play. Precaches the app shell; everything else (data/*.json, sounds/*,
 // images) is cached opportunistically the first time it's fetched.
-var CACHE = 'pme-mobile-v12';
+var CACHE = 'pme-mobile-v14';
 // html2canvas.min.js is no longer a <script> tag in index.html — main.js injects
 // it on the first Share tap. It stays precached deliberately: install runs in the
 // background (off the boot critical path), and this keeps the share screenshot
