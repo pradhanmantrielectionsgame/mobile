@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [2.7.2] - 2026-09-04
+
+Fixed sounds silently dropping out after a deploy, filled the 9 policy tags that rendered as a generic pushpin, and added store/manifest screenshots ahead of the Android (TWA) packaging.
+
+### Fixed
+- **FIXED**: Sounds randomly going missing after a new version shipped. `mobile/sw.js`'s `activate()` evicted every cache whose key wasn't the current `CACHE`, and art/sounds lived in that same cache — so each code deploy dumped ~7MB of portraits and mp3s and forced a full re-download. The media branch of `fetch` then had no `.catch()` (unlike the app-shell branch), so any one of those re-fetches that failed on a flaky connection reached `respondWith()` as a network error and left that `<audio>` element dead for the rest of the session. Different files lost the race each time, hence "random". Media now lives in its own `MEDIA_CACHE` that a shell version bump doesn't touch, and a failed media fetch falls back to the cache instead of rejecting.
+- **FIXED**: `cache.put()` throwing on a 206 for audio — iOS Safari range-requests `<audio>`, and the cache guard tested `res.ok` (true for 206) rather than `res.status === 200`.
+- **FIXED**: 9 of 32 policy tags had no entry in `mobile/main.js`'s `AGENDA_ICONS` and fell through to the `'📌'` fallback on every platform — visible on the politician-select cards, where Rajinikanth showed three pushpins. Added Administrative Reform 🗄️, Coastal Economy ⚓, Environmental Conservation 🌳, Film and TV 🎬, Food Security 🍚, Foreign Policy & Diplomacy 🤝, Heritage and Tourism 📸, Nationalization 🚂, Sports and Entertainment 🏏. Also dropped a stranded `'Judicial Activism'` entry matching no tag.
+
+### Added
+- **ADDED**: `scripts/capture-screenshots.js` — drives the real app under Playwright/WebKit and writes nine screenshots: welcome, three politician cards, the campaign map, a state investment with money FX, a group quick-invest, and a special-ability activation. Emits `assets/screenshots/*.webp` (912KB, referenced by `manifest.json`) plus a side-padded PNG set in `design/play-listing/` for Play Console, which rejects any screenshot taller than 2× its width — 390×844 is 2.16:1.
+- **ADDED**: `mobile/sw-check.js`, wired into `npm test`. Runs `sw.js` in a fake service-worker scope and asserts the media cache survives a version bump, a rejected media fetch still resolves `respondWith()`, a 206 is never cached, and repeat media requests are served from cache. Both fixed regressions were verified to fail it.
+- **ADDED**: `screenshots`, `id`, `lang` and `categories` in `mobile/manifest.json`, for the PWABuilder/TWA Android package and the Chrome install prompt.
+- **ADDED**: `.nojekyll` and `mobile/.well-known/` passthrough in `scripts/deploy-mobile.js`. GitHub Pages' Jekyll pass drops dot-paths, which would 404 the `assetlinks.json` an Android TWA needs to verify domain ownership — without it the packaged app shows a Chrome address bar over the game.
+
 ## [2.7.1] - 2026-09-04
 
 Renamed the live game from "Kaun Banega Pradhan Mantri" to "PradhanMantri Elections Game" and moved off the `kaunbanegapradhanmantri.in` domain, onto `pradhanmantrielectionsgame.com`.

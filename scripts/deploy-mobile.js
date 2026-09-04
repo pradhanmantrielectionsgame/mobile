@@ -119,6 +119,22 @@ function main() {
   // web UI would vanish on the next push.
   fs.writeFileSync(path.join(WORKTREE, 'CNAME'), 'pradhanmantrielectionsgame.com\n');
 
+  // Jekyll (GitHub Pages' default build) drops every path starting with a dot,
+  // which would 404 the .well-known/assetlinks.json an Android TWA needs to
+  // verify it owns this domain. Without that verification the packaged app
+  // renders a Chrome address bar over the game. .nojekyll turns Jekyll off.
+  fs.writeFileSync(path.join(WORKTREE, '.nojekyll'), '');
+
+  // Digital Asset Links for the Play Store build. PWABuilder hands you the
+  // finished JSON (it carries your signing key's SHA-256 fingerprint) — save
+  // it as mobile/.well-known/assetlinks.json and it ships from here.
+  const WELL_KNOWN = path.join(MOBILE, '.well-known');
+  if (fs.existsSync(WELL_KNOWN)) {
+    fs.cpSync(WELL_KNOWN, path.join(WORKTREE, '.well-known'), { recursive: true });
+  } else {
+    console.log('Note: no mobile/.well-known/assetlinks.json - Android TWA will show a URL bar.');
+  }
+
   fs.cpSync(path.join(ROOT, 'assets'), path.join(WORKTREE, 'assets'), { recursive: true });
   fs.cpSync(path.join(ROOT, 'data'), path.join(WORKTREE, 'data'), { recursive: true });
   fs.cpSync(path.join(ROOT, 'sounds'), path.join(WORKTREE, 'sounds'), { recursive: true });

@@ -1,4 +1,10 @@
 {
+  "id": "/",
+  "lang": "en",
+  "categories": [
+    "games",
+    "entertainment"
+  ],
   "name": "PradhanMantri Elections Game",
   "short_name": "PME",
   "description": "Turn-based election simulation on a mobile-first interactive India map.",
@@ -9,9 +15,94 @@
   "background_color": "#EEF0F3",
   "theme_color": "#EEF0F3",
   "icons": [
-    { "src": "../assets/icons/pme-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "../assets/icons/pme-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "../assets/icons/pme-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
-    { "src": "../assets/icons/pme-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "../assets/icons/pme-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../assets/icons/pme-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../assets/icons/pme-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "../assets/icons/pme-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "../assets/screenshots/01-welcome.webp",
+      "sizes": "780x1688",
+      "type": "image/webp",
+      "form_factor": "narrow",
+      "label": "Twenty-one Indian leaders to campaign as"
+    },
+    {
+      "src": "../assets/screenshots/02-politician-card.webp",
+      "sizes": "780x1688",
+      "type": "image/webp",
+      "form_factor": "narrow",
+      "label": "Pick your leader: agenda kit and special ability"
+    },
+    {
+      "src": "../assets/screenshots/03-politician-card-2.webp",
+      "sizes": "780x1688",
+      "type": "image/webp",
+      "form_factor": "narrow",
+      "label": "Every leader has a different agenda and power"
+    },
+    {
+      "src": "../assets/screenshots/04-politician-card-3.webp",
+      "sizes": "780x1688",
+      "type": "image/webp",
+      "form_factor": "narrow",
+      "label": "Celebrity picks bring quirkier special abilities"
+    },
+    {
+      "src": "../assets/screenshots/05-map-board.webp",
+      "sizes": "780x1688",
+      "type": "image/webp",
+      "form_factor": "narrow",
+      "label": "Campaign across all 28 states and 8 union territories"
+    },
+    {
+      "src": "../assets/screenshots/06-state-action.webp",
+      "sizes": "780x1688",
+      "type": "image/webp",
+      "form_factor": "narrow",
+      "label": "Invest campaign funds to swing a state your way"
+    },
+    {
+      "src": "../assets/screenshots/07-group-invest.webp",
+      "sizes": "780x1688",
+      "type": "image/webp",
+      "form_factor": "narrow",
+      "label": "Quick-invest a whole region in one tap"
+    },
+    {
+      "src": "../assets/screenshots/08-special-ready.webp",
+      "sizes": "780x1688",
+      "type": "image/webp",
+      "form_factor": "narrow",
+      "label": "Craft rally tokens into your special ability"
+    },
+    {
+      "src": "../assets/screenshots/09-special-power.webp",
+      "sizes": "780x1688",
+      "type": "image/webp",
+      "form_factor": "narrow",
+      "label": "Unleash your leader's signature power"
+    }
   ]
 }

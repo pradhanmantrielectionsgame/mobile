@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var E = window.PMEEngine, G = window.PMEGame;
-  var GAME_VERSION = '2.7.1';
+  var GAME_VERSION = '2.7.2';
   // Canonical public URL for the end-of-game "share result" link — hardcoded,
   // not location.href, so the shared link is always the clean site root and
   // never a /index.html deep link, a ?query string, or a Capacitor
@@ -444,9 +444,12 @@
     'Land Reforms': '🗺️', 'Agricultural Reforms': '🚜', 'Water and Mineral Rights': '💧',
     'Infrastructure': '🏗️', 'Economic Liberalization': '💹', 'Privatization': '🏦',
     'Public Sector': '🏛️', 'Digital Transformation': '💻', 'Anti-Corruption': '🧹',
-    'Judicial Activism': '⚖️', 'Press Freedom': '📰', 'Law and Order': '👮', 'Hindi Language': '🅰️',
+    'Press Freedom': '📰', 'Law and Order': '👮', 'Hindi Language': '🅰️',
     'Hindutva': '🕉️', 'Secularism': '☮️', 'Indigenous Rights': '🏹', 'Caste Reservation': '📋',
-    'Uniform Civil Code': '📜', "State's Rights": '🚩', 'National Defense': '🛡️'
+    'Uniform Civil Code': '📜', "State's Rights": '🚩', 'National Defense': '🛡️',
+    'Administrative Reform': '🗄️', 'Coastal Economy': '⚓', 'Environmental Conservation': '🌳',
+    'Film and TV': '🎬', 'Food Security': '🍚', 'Foreign Policy & Diplomacy': '🤝',
+    'Heritage and Tourism': '📸', 'Nationalization': '🚂', 'Sports and Entertainment': '🏏'
   };
 
   // Every place the two players' identity is painted into the HUD: colors,
