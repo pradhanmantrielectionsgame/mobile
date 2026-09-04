@@ -103,7 +103,7 @@ Both tutorials are fully optional — skip by completing the final step or closi
 **No artifacts written at runtime** — the game is entirely in-memory. All tunable parameters (economy constants, politician roster, state groupings, policy magnitudes) live in `data/*.json` config files and are loaded at startup.
 
 **Test outputs:**
-- `npm test` runs `mobile/simulate.js`: executes 5 full 10-phase games plus all 20 politicians' special powers, validating that bps/seat totals stay consistent throughout (success = all assertions pass)
+- `npm test` runs `mobile/simulate.js` (executes 5 full 10-phase games plus all 20 politicians' special powers, validating that bps/seat totals stay consistent throughout) and `mobile/sw-check.js` (validates service-worker media cache versioning); success = all assertions pass
 - Screenshot/browser testing: use `npm run serve` + device browser, or Playwright's webkit engine with `devices['iPhone 14']` for Safari-specific checks
 
 ## Architecture & Decisions
