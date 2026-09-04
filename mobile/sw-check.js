@@ -52,14 +52,25 @@ function loadSW({ fetchImpl, cacheContents = {} }) {
 
 const MP3 = 'https://example.test/sounds/fanfare.mp3';
 
+// Read the keys out of sw.js rather than hardcoding them: scripts/deploy-mobile.js
+// rewrites the media key to a content hash of assets/ + sounds/ on the way out,
+// so a literal here would only ever describe the source copy.
+const SW_SRC = fs.readFileSync(path.join(__dirname, 'sw.js'), 'utf8');
+const constOf = name => {
+  const m = SW_SRC.match(new RegExp('var ' + name + " = '([^']+)'"));
+  assert.ok(m, name + ' not found in sw.js');
+  return m[1];
+};
+const MEDIA = constOf('MEDIA_CACHE');
+
 async function run() {
   // --- 1. a version bump must not evict the media cache ---
   {
     const { handlers, stores } = loadSW({
       fetchImpl: () => Promise.reject(new Error('offline')),
       cacheContents: {
-        'pme-mobile-v15': { './index.html': { body: 'old shell' } },     // stale shell
-        'pme-mobile-media-v1': { [MP3]: { body: 'cached audio' } },      // art + sounds
+        'pme-mobile-v0-stale': { './index.html': { body: 'old shell' } },  // superseded shell
+        [MEDIA]: { [MP3]: { body: 'cached audio' } },                     // art + sounds
       },
     });
     const waits = [];
@@ -67,8 +78,8 @@ async function run() {
     await Promise.all(waits);
 
     const names = Object.keys(stores);
-    assert.ok(!names.includes('pme-mobile-v15'), 'stale shell cache should be evicted');
-    assert.ok(names.includes('pme-mobile-media-v1'),
+    assert.ok(!names.includes('pme-mobile-v0-stale'), 'superseded shell cache should be evicted');
+    assert.ok(names.includes(MEDIA),
       'MEDIA_CACHE must survive a shell version bump — otherwise every deploy re-downloads all art and sounds');
   }
 
@@ -90,7 +101,7 @@ async function run() {
     handlers.fetch({ request: { method: 'GET', url: MP3, mode: 'no-cors' }, respondWith: p => { responded = p; } });
     await responded;
     await new Promise(r => setImmediate(r));
-    const media = stores['pme-mobile-media-v1'];
+    const media = stores[MEDIA];
     assert.ok(!media || !media.has(MP3),
       'cache.put() throws on a 206 — iOS Safari range-requests audio, so guard on status 200');
   }

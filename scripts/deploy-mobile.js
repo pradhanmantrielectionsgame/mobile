@@ -19,6 +19,7 @@
 const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
+const crypto = require('crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const WORKTREE = path.join(ROOT, '.deploy-worktree');
@@ -57,6 +58,51 @@ function wipeWorktree() {
 function copyTransformed(srcRel, destRel) {
   const text = fs.readFileSync(path.join(MOBILE, srcRel), 'utf8');
   fs.writeFileSync(path.join(WORKTREE, destRel), stripRelativePaths(text));
+}
+
+// Media (art + sounds) lives in its own service-worker cache, deliberately not
+// keyed to sw.js's CACHE: that key bumps on every code deploy, and wiping ~7MB
+// of portraits and mp3s on a CSS tweak is what used to make sounds vanish (a
+// forced re-download that failed on a flaky connection left that <audio> dead).
+//
+// So the media key is stamped here from a hash of what actually ships in
+// assets/ + sounds/. It rotates when media content changes and never on a
+// code-only deploy — which closes the one case a stable key gets wrong,
+// replacing a file's contents under the same name. Adding a new file already
+// works without a bump (cache miss -> network), and activate() drops the old
+// key's entries once this rotates, so orphaned media doesn't accumulate either.
+// Hand-bumping a constant would have been a third silently-failing manual step
+// in this script; the allowlist and the '../' rewrite are enough of those.
+function hashMediaTree(dirs) {
+  const h = crypto.createHash('sha256');
+  for (const dir of dirs) {
+    const root = path.join(ROOT, dir);
+    const walk = rel => {
+      const abs = path.join(root, rel);
+      for (const name of fs.readdirSync(abs).sort()) {
+        const childRel = rel ? rel + '/' + name : name;
+        const st = fs.statSync(path.join(abs, name));
+        if (st.isDirectory()) walk(childRel);
+        // Path as well as bytes: a pure rename must rotate the key too.
+        else { h.update(dir + '/' + childRel); h.update(fs.readFileSync(path.join(abs, name))); }
+      }
+    };
+    walk('');
+  }
+  return h.digest('hex').slice(0, 12);
+}
+
+// sw.js is copied with that hash substituted for the placeholder key. Asserts
+// the swap landed: a silent miss here would ship a key that never rotates,
+// and the symptom (users keep hearing an old sound) is invisible from a deploy.
+function copyServiceWorker(mediaVersion) {
+  const src = fs.readFileSync(path.join(MOBILE, 'sw.js'), 'utf8');
+  const RE = /'pme-mobile-media-[^']*'/;
+  if (!RE.test(src)) {
+    console.error("Refusing to deploy: no 'pme-mobile-media-*' key found in mobile/sw.js.");
+    process.exit(1);
+  }
+  fs.writeFileSync(path.join(WORKTREE, 'sw.js'), src.replace(RE, "'pme-mobile-media-" + mediaVersion + "'"));
 }
 
 function copyVerbatim(srcRel, destRel) {
@@ -110,7 +156,9 @@ function main() {
   copyTransformed('manifest.json', 'manifest.json');
   copyVerbatim('engine.js', 'engine.js');
   copyVerbatim('ai.js', 'ai.js');
-  copyVerbatim('sw.js', 'sw.js');
+  const mediaVersion = hashMediaTree(['assets', 'sounds']);
+  copyServiceWorker(mediaVersion);
+  console.log('Media cache key: pme-mobile-media-' + mediaVersion);
   copyVerbatim('html2canvas.min.js', 'html2canvas.min.js');
   copyVerbatim('privacy.html', 'privacy.html');
 
