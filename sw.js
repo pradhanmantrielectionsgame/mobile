@@ -8,7 +8,7 @@ var CACHE = 'pme-mobile-v16';
 // and any one of those re-fetches that failed on a flaky connection left that
 // sound silently dead for the session. Bump this key by hand only when the
 // media itself changes; a code-only deploy now leaves it alone.
-var MEDIA_CACHE = 'pme-mobile-media-9404b3a159c9';
+var MEDIA_CACHE = 'pme-mobile-media-6463eefaa8c3';
 // html2canvas.min.js is no longer a <script> tag in index.html — main.js injects
 // it on the first Share tap. It stays precached deliberately: install runs in the
 // background (off the boot critical path), and this keeps the share screenshot
