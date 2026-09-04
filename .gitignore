@@ -3,3 +3,15 @@
 node_modules/
 mobile/balance-log.jsonl
 .deploy-worktree/
+
+# Android signing material and store packages. The PWABuilder zip contains
+# signing.keystore plus signing-key-info.txt (its passwords) — losing that key
+# means never being able to update the Play listing again, and publishing it
+# means anyone can sign as you. This repo pushes to a public remote: never
+# commit any of it. Keep the zip backed up somewhere outside the working tree.
+*.zip
+*.keystore
+*.jks
+*.aab
+*.apk
+signing-key-info.txt
