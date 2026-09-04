@@ -72,7 +72,35 @@ the main development repo by \`scripts/deploy-mobile.js\` and pushed here as-is.
 Don't hand-edit files here — edit the source repo and re-run that script.
 `;
 
+// Playtest switches in mobile/main.js that must never reach the live site:
+// both let a player skip the unlock progression (UNLOCK_ALL hides it outright,
+// PLAYTEST_BUILD arms a long-press that unlocks everything plus the ?vs=/?p1=
+// hooks). Their own comments say "flip it back before committing" — this is
+// what makes that true rather than remembered, since nothing else catches it:
+// npm test and npm run serve both read mobile/, where the flag being on is the
+// whole point, so the mistake is invisible right up until it is live.
+function assertPlaytestFlagsOff() {
+  const src = fs.readFileSync(path.join(MOBILE, 'main.js'), 'utf8');
+  // Regex literals, not new RegExp(string): the string form needs the
+  // backslashes double-escaped and a slip there fails open, silently matching
+  // nothing and waving the deploy through — which is exactly what it did on
+  // the first attempt at this check.
+  const FLAGS = [
+    ['UNLOCK_ALL', /var\s+UNLOCK_ALL\s*=\s*true/],
+    ['PLAYTEST_BUILD', /var\s+PLAYTEST_BUILD\s*=\s*true/],
+  ];
+  const on = FLAGS.filter(function (f) { return f[1].test(src); }).map(function (f) { return f[0]; });
+  if (on.length) {
+    console.error('');
+    console.error('Refusing to deploy: ' + on.join(' and ') + ' is true in mobile/main.js.');
+    console.error('Set it back to false, then deploy again.');
+    console.error('');
+    process.exit(1);
+  }
+}
+
 function main() {
+  assertPlaytestFlagsOff();
   ensureWorktree();
   wipeWorktree();
 

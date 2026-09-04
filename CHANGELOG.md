@@ -6,6 +6,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [2.7.0] - 2026-09-03
+
+Opponent-held states now show in group cards, a direct invest button on the state card, a readable-colour rule for same-hue matchups, toasts pinned to one spot, and a gated playtest mode for forcing exact matchups.
+
+### Added
+- **ADDED**: Group and cluster cards light a member state's LED chip in the **opponent's** colour when they hold it (`led-opp`), not just your own (`led-on`); states neither side has above the regional-dominance threshold stay grey. Previously the opponent's holdings were indistinguishable from uncontested ones. The subtitle still reads `leading X/N` — the chip colours carry the rest.
+- **ADDED**: A 💰 invest button in the state card's top-right corner, so a state reached by tapping an LED chip can be invested in without first finding it on the map. Same double-tap-to-spend gate as the map and the UT cluster buttons; the cost now also shows inline (`80 seats · ₹800Cr`). The tap FX still fires on the map at that state, which incidentally shows you where it is.
+- **ADDED**: `engine.js`'s `distinctPlayerColor()` — the opponent is redrawn in the nearest readable hue when their party colour is too close to yours. **The bar is hue separation (60°), not RGB distance**: the map spends the light/dark axis on lead *size*, and a typical lead renders at only ~0.26 intensity, so a full-strength RGB gap shrinks by that factor on screen. `startGame`'s same-party rule already excludes identical hexes, but 38 cross-party pairings sat under the bar (#0033A0 vs #004BA0 at 24 apart, #5CB85C vs #138808 at 6° of hue). Candidates come from one curated 12-colour ring, picked to move the opponent's hue as little as readability allows — 12° for Sivaji's teal against Congress green, 83° where both sides are green and green is simply taken. Only the opponent is ever recoloured; you always keep your real party colour.
+- **ADDED**: Playtest mode for forcing an exact matchup, **gated behind the new `PLAYTEST_BUILD` flag in `mobile/main.js`** (local only, defaults false). Long-pressing the welcome screen's version label for ~0.6s makes every politician playable regardless of unlock state, ignores charges/cooldowns, and turns the carousel into a two-step pick (your side, then the opponent) — reaching any of the 21×20 pairings including the same-party ones the normal draw excludes. Also `?vs=<p1>,<p2>` (fragments allowed: `?vs=tendulkar,nehru`), though **query strings have repeatedly failed to survive the trip to a real phone**, which is why the in-app path exists. Forced matches are unrated and spend no charge.
+- **ADDED**: `scripts/deploy-mobile.js` refuses to deploy while `UNLOCK_ALL` or `PLAYTEST_BUILD` is true (`assertPlaytestFlagsOff`, first thing in `main()`). Nothing else catches this — `npm test` and `npm run serve` both read `mobile/`, where the flag being on is the point, so the mistake would only surface live.
+
+### Changed
+- **CHANGED**: `BG_MUSIC_VOLUME` 0.07 → 0.18. v2.6.1 cut it 0.35 → 0.07, a 5× drop that read as silence on a phone; this is about half the original, audible but well under the SFX.
+- **CHANGED**: Toasts moved from a per-call `getBoundingClientRect()` anchor above Ladakh into their own chrome-less bar hung off the player strip's bottom edge (`top:100%`, so nothing hardcodes the strip's height; `right:5.9rem` to clear the agenda tray). Every toast now lands in exactly the same place regardless of message length, and being absolutely positioned it costs the strip no height.
+
+### Fixed
+- **FIXED**: Tapping the version label to force an AI profile stored the literal string `'max'`, which is not a profile key (they are `level-1`…`level-8`). `forcedAIKey()` rejected it, so the badge never tagged and every subsequent tap re-selected the same dead value instead of advancing — the playtest build-identity safeguard silently did nothing. The hardest key is now derived from `PMEAI.MAX_LEVEL`, and a stale `'max'` in storage self-heals.
+- **FIXED**: "Dadra And Nagar Haveli And Daman And Diu" rendered 437px wide in a 390px info panel, running off the edge — `.info-row h3` has `flex-shrink:0` with nothing capping it. Now `max-width:100%`, so it wraps to a second line. Pre-existing; found because the new invest button sits in its path.
+- **FIXED**: `exitReplay()` carried its own partial copy of `paintPlayerIdentity()`'s colour assignment and would have skipped the new distinctness rule; it calls the shared function now. Fifth instance of CLAUDE.md's "two places must agree" pattern.
+
 ## [2.6.2] - 2026-09-02
 
 Slower investment decay past the glide path, and the info bar's party symbols fixed in replays.

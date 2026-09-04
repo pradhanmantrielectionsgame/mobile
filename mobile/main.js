@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var E = window.PMEEngine, G = window.PMEGame;
-  var GAME_VERSION = '2.6.2';
+  var GAME_VERSION = '2.7.0';
   // Canonical public URL for the end-of-game "share result" link — hardcoded,
   // not location.href, so the shared link is always the clean site root and
   // never a /index.html deep link, a ?query string, or a Capacitor
@@ -25,6 +25,78 @@
     var key = stored || new URLSearchParams(location.search).get('ai');
     return (key && window.PMEAI && window.PMEAI.profileByKey(key)) ? key : null;
   }
+  // Playtest hooks: force the matchup outright. ?p2 alone has existed for a
+  // while, but the human's side could only be chosen through the select
+  // carousel, which obeys unlock state and the 3-charge cooldown -- so a
+  // pairing like Tendulkar vs Ambedkar had no organic route at all. Forcing p1
+  // skips the carousel entirely: no unlock check, no charge spent.
+  //
+  // ?vs=modi,vajpayee is the form to hand someone. ?p1=<id>&p2=<id> also works
+  // but needs an "&", and an "&" is exactly what gets eaten between a link and
+  // a phone -- terminals and chat clients linkify only as far as it, which is
+  // how the first forced-matchup link came out as an ordinary random match
+  // (2026-09-03; the ?ai= hook has its own note about the same class of loss).
+  // One param, one comma, no ampersand, so there is nothing to truncate.
+  //
+  // Either side accepts a full id or any unambiguous fragment of one, so
+  // "modi", "indira" and "narasimha" all resolve. "gandhi" (3 matches) and
+  // "rao" (2) do not, and come back null rather than guessing.
+  function polQueryTokens() {
+    var q = new URLSearchParams(location.search);
+    var vs = q.get('vs');
+    if (vs) { var parts = vs.split(','); return [parts[0] || null, parts[1] || null]; }
+    return [q.get('p1'), q.get('p2')];
+  }
+  // Raw token, no roster lookup: the version badge renders before the roster
+  // has loaded, and an unresolvable token showing up there is exactly what you
+  // want to see when a matchup didn't take.
+  function forcedPoliticianToken(which) {
+    return polQueryTokens()[which === 'p1' ? 0 : 1] || null;
+  }
+  function resolvePoliticianId(token) {
+    if (!token || !data) return null;
+    var ids = data.politicians.map(function (p) { return p.id; });
+    if (ids.indexOf(token) !== -1) return token;
+    var hits = ids.filter(function (id) { return id.indexOf(token) !== -1; });
+    return hits.length === 1 ? hits[0] : null; // ambiguous fragment resolves to nothing
+  }
+  function forcedPoliticianId(which) {
+    // Forcing p2 is old behaviour and harmless; forcing p1 hands the player a
+    // politician they may not have unlocked, so it needs the build switch.
+    if (which === 'p1' && !PLAYTEST_BUILD) return null;
+    return resolvePoliticianId(forcedPoliticianToken(which));
+  }
+  function isForcedMatchup() {
+    return !!(forcedPoliticianId('p1') || forcedPoliticianToken('p2') || playtestMode());
+  }
+
+  // ---- Playtest mode ----
+  // The URL hooks above are useless on a device that never receives the query
+  // string -- a home-screen launch uses manifest.json's bare './index.html'
+  // start_url, and links get mangled on the way to a phone besides. Confirmed
+  // 2026-09-03: three separate forced-matchup links all arrived with the whole
+  // query string gone (the badge read a bare version every time). So the same
+  // localStorage answer the ?ai= hook already landed on: a flag that survives
+  // reloads, home-screen launches and shared links alike, set from inside the
+  // app rather than from the address bar.
+  //
+  // On: every politician is playable regardless of unlock state, charges and
+  // cooldowns are ignored, and picking your politician leads to a second pick
+  // for the opponent instead of starting straight away -- so any of the 21x20
+  // pairings is reachable in two taps, including the same-party ones the
+  // normal opponent draw excludes.
+  var PLAYTEST_KEY = 'pme_playtest';
+  // Reads false in a shipped build even if the flag is somehow already in
+  // localStorage — from a local playtest on the same device, say.
+  function playtestMode() { return PLAYTEST_BUILD && lsGet(PLAYTEST_KEY, '') === '1'; }
+  function setPlaytestMode(on) {
+    if (on) lsSet(PLAYTEST_KEY, '1'); else { try { localStorage.removeItem(PLAYTEST_KEY); } catch (e) {} }
+    playtestP1 = null;
+  }
+  // Set once the human's side is chosen, while the carousel is reused to pick
+  // the opponent. Not persisted: a half-finished pick shouldn't outlive a reload.
+  var playtestP1 = null;
+
   // ---- AI difficulty ladder ----
   // Eight measured levels (mobile/ai.js). 'auto' adapts: three straight wins
   // moves up a level, three straight losses moves down. Draws (a hung
@@ -45,6 +117,21 @@
   // './index.html'), so this is a hand-flipped local build switch. Flip it
   // on to playtest, flip it back before committing.
   var UNLOCK_ALL = false;
+  // Playtest tooling switch, same rules as UNLOCK_ALL above: MUST BE false in
+  // any commit that can be deployed (scripts/deploy-mobile.js refuses to ship
+  // it true, so this is enforced, not just remembered). Flip it on locally to
+  // playtest over `npm run serve` / a cloudflared tunnel, flip it back before
+  // committing.
+  //
+  // Gates everything that can bypass the unlock progression: the long-press
+  // playtest toggle, and forcing the HUMAN's politician via ?vs=/?p1=. The
+  // older ?p2= and ?ai= hooks stay ungated — they only choose your opponent or
+  // the AI's difficulty, and never let a player reach a politician they
+  // haven't earned. That distinction is the whole point: the unlock progression
+  // is deliberately client-side and bypassable with devtools (see CLAUDE.md),
+  // but it shouldn't be bypassable by *accident*, by a curious player prodding
+  // at the footer or pasting a link someone shared.
+  var PLAYTEST_BUILD = false;
   function maxLevel() { return (window.PMEAI && window.PMEAI.MAX_LEVEL) || 8; }
   function clampLevel(n) { return Math.min(maxLevel(), Math.max(1, n | 0)); }
   // One number, nothing else: the slider shows it, the adaptive rule moves
@@ -94,6 +181,16 @@
     // identity safeguard that cost two inconclusive playtests to learn.
     var forced = forcedAIKey();
     var tag = forced ? '+' + forced : '';
+    // Same build-identity safeguard as the profile tag above: a forced
+    // matchup must be visible on screen, or a playtest that silently lost its
+    // query string is indistinguishable from one that took.
+    // Last id segment only ("narendra-modi" -> "modi"): two full ids wrap the
+    // badge onto a second line, which reflows the whole top strip mid-playtest.
+    var shortId = function (id) { return id ? id.split('-').pop() : '?'; };
+    var fp1 = PLAYTEST_BUILD ? forcedPoliticianToken('p1') : null;
+    var fp2 = forcedPoliticianToken('p2');
+    if (fp1 || fp2) tag += '+' + shortId(fp1) + '→' + shortId(fp2);
+    if (playtestMode()) tag += '+playtest';
     ['welcomeVersion', 'stageVersion'].forEach(function (id) {
       var el = document.getElementById(id);
       if (el) el.textContent = 'v' + GAME_VERSION + tag;
@@ -115,9 +212,16 @@
     el.style.cursor = 'pointer';
     el.style.padding = '8px 12px';
     el.addEventListener('click', function () {
-      // 'max' first — it is the one a ladder playtest almost always wants.
-      var others = window.PMEAI.AI_PROFILES.map(function (p) { return p.key; }).filter(function (k) { return k !== 'max'; });
-      var keys = ['', 'max'].concat(others);
+      // Hardest first — it is the one a ladder playtest almost always wants.
+      // This used to name a literal 'max', which is not a profile key (they are
+      // level-1..level-8), so forcedAIKey() rejected it: the tap stored a dead
+      // value, the badge never tagged, and every subsequent tap re-selected the
+      // same dead value instead of advancing. Derive the key from the profile
+      // list so it can't drift out of sync again.
+      var all = window.PMEAI.AI_PROFILES.map(function (p) { return p.key; });
+      var hardest = 'level-' + (window.PMEAI.MAX_LEVEL || all.length);
+      var others = all.filter(function (k) { return k !== hardest; });
+      var keys = [''].concat(window.PMEAI.profileByKey(hardest) ? [hardest] : [], others);
       var next = keys[(keys.indexOf(forcedAIKey() || '') + 1) % keys.length];
       try {
         if (next) localStorage.setItem(AI_FORCE_KEY, next);
@@ -126,6 +230,32 @@
       renderVersionLabels();
       showToast(next ? 'Next match vs: ' + next : 'AI profile: random (default)');
     });
+
+    // Long-press the same label for playtest mode. Same reasoning as the tap
+    // above — undiscoverable rather than build-flagged — and it has to live
+    // in-app rather than in the URL, since this device never receives one.
+    if (!PLAYTEST_BUILD) return; // no long-press toggle in a shipped build
+    var held = null, fired = false;
+    var start = function () {
+      fired = false;
+      held = setTimeout(function () {
+        fired = true;
+        setPlaytestMode(!playtestMode());
+        renderVersionLabels();
+        showToast(playtestMode()
+          ? '🧪 Playtest mode ON — all politicians, pick both sides'
+          : 'Playtest mode off');
+      }, 600);
+    };
+    var cancel = function () { clearTimeout(held); };
+    el.addEventListener('pointerdown', start);
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach(function (ev) {
+      el.addEventListener(ev, cancel);
+    });
+    // The long-press must not also register as the profile-cycling tap.
+    el.addEventListener('click', function (e) {
+      if (fired) { fired = false; e.stopImmediatePropagation(); e.preventDefault(); }
+    }, true);
   })();
 
   // Phone-only install gate. After the viewport migration (v2.0.0) the layout
@@ -328,7 +458,9 @@
   // hardcoded placeholder emoji instead of the real party logos.
   function paintPlayerIdentity() {
     COLORS.p1 = game.players.p1.politician.primaryColor || '#E8871C';
-    COLORS.p2 = game.players.p2.politician.primaryColor || '#1C8A4B';
+    // Nudged to the nearest readable hue if it's too close to the human's —
+    // see engine.js's distinctPlayerColor. Only the opponent ever moves.
+    COLORS.p2 = E.distinctPlayerColor(COLORS.p1, game.players.p2.politician.primaryColor || '#1C8A4B');
     document.documentElement.style.setProperty('--p1', COLORS.p1);
     document.documentElement.style.setProperty('--p2', COLORS.p2);
     ['p1PartySymbol', 'cardP1Symbol'].forEach(function (id) { setPartySymbol($(id), game.players.p1.politician); });
@@ -872,7 +1004,7 @@
   sounds.bg_music = new Audio('../sounds/bg_music.mp3');
   sounds.intro_music = new Audio('../sounds/saare_jahan_se_accha.mp3');
   var LOOP_TRACKS = ['bg_music', 'intro_music'];
-  var BG_MUSIC_VOLUME = 0.07, BG_MUSIC_DUCKED_VOLUME = 0;
+  var BG_MUSIC_VOLUME = 0.18, BG_MUSIC_DUCKED_VOLUME = 0;
   LOOP_TRACKS.forEach(function (name) { sounds[name].loop = true; sounds[name].volume = BG_MUSIC_VOLUME; });
   var currentMusicKey = null;
 
@@ -1171,15 +1303,6 @@
     clearTimeout(showToastSequence._h); // a plain toast cancels any pending part-2 handoff from a prior sequence
     var t = $('toast');
     t.textContent = msg;
-    // Anchor above Ladakh's actual on-screen top edge rather than a fixed
-    // pixel offset — toast height varies with message length (a short one
-    // is one line, a real payout message like the clean-sweep bonus wraps
-    // to two), and a fixed value either sits on the phase timer (too high)
-    // or overlaps the tappable map (too low). Falls back to a fixed spot
-    // pre-game, when the map/Ladakh isn't on screen yet to measure.
-    var ladakh = document.getElementById('INLA');
-    var lr = ladakh && ladakh.getBoundingClientRect();
-    t.style.top = (lr && lr.height ? Math.max(170, lr.top - 12 - t.offsetHeight) : 195) + 'px';
     t.classList.add('show');
     clearTimeout(showToast._h);
     showToast._h = setTimeout(function () { t.classList.remove('show'); }, 1600);
@@ -1187,8 +1310,8 @@
 
   // Two short toasts back-to-back instead of one long one — a combined
   // payout line like "You swept Uttar Pradesh 100% — +₹800Cr clean sweep
-  // bonus" wraps to two lines, which is too tall for the space between the
-  // topstrip and Ladakh (see showToast's positioning comment).
+  // bonus" wraps to two lines, which overflows the toast row's reserved
+  // height and grows the pill down over the map.
   function showToastSequence(parts) {
     showToast(parts[0]);
     clearTimeout(showToastSequence._h);
@@ -1394,6 +1517,21 @@
         showToast('Beat ' + p.name + ' in a match to unlock them — you\'re never matched against your own party, so pick someone from a different party to face them');
         return;
       }
+      // Playtest mode picks p1 then reuses this same carousel for p2, and
+      // skips the charge/cooldown gate outright — testing one pairing a few
+      // times shouldn't burn either politician into a 6h cooldown.
+      if (playtestMode()) {
+        if (!playtestP1) {
+          playtestP1 = p.id;
+          renderPlaytestPrompt();
+          showToast('Now pick the opponent');
+          return;
+        }
+        var mine = playtestP1;
+        playtestP1 = null;
+        startGame(mine, p.id);
+        return;
+      }
       var liveCharge = chargeState(p.id);
       if (liveCharge.cooldownMs) {
         showToast(p.name + ' is in their Cooldown Period — available again in ' + formatCooldown(liveCharge.cooldownMs));
@@ -1440,7 +1578,7 @@
       return (isPoliticianUnlocked(unlocked, a.id) ? 0 : 1) - (isPoliticianUnlocked(unlocked, b.id) ? 0 : 1);
     });
     data.politicians.forEach(function (p, i) {
-      track.appendChild(buildPolCard(p, !isPoliticianUnlocked(unlocked, p.id)));
+      track.appendChild(buildPolCard(p, !playtestMode() && !isPoliticianUnlocked(unlocked, p.id)));
       var dot = document.createElement('button');
       dot.className = 'pol-dot' + (i === 0 ? ' on' : '');
       dot.setAttribute('aria-label', p.name);
@@ -1468,8 +1606,27 @@
     });
   }, 1000);
 
-  function startGame(p1Id) {
-    useCharge(p1Id);
+  // p2Override is playtest mode's explicit opponent pick; without it the
+  // opponent is drawn as normal (or taken from the ?vs=/?p2= hook).
+  // The carousel is reused verbatim for the opponent pick; only the header
+  // says which side you're choosing.
+  function renderPlaytestPrompt() {
+    var el = $('selectTitle');
+    if (!el) return;
+    if (playtestMode() && playtestP1) {
+      var pol = data.politicians.filter(function (p) { return p.id === playtestP1; })[0];
+      el.textContent = '🧪 Opponent for ' + (pol ? pol.name : playtestP1) + '?';
+    } else if (playtestMode()) {
+      el.textContent = '🧪 Playtest — pick your side';
+    } else {
+      el.textContent = 'Pradhan Mantri Elections';
+    }
+  }
+
+  function startGame(p1Id, p2Override) {
+    // A forced playtest matchup spends no charge — otherwise testing one
+    // pairing a few times burns that politician into a 6h cooldown.
+    if (forcedPoliticianId('p1') !== p1Id && !playtestMode()) useCharge(p1Id);
     var p1Pol = data.politicians.filter(function (p) { return p.id === p1Id; })[0];
     // Same-party matchups don't make sense (e.g. two BJP candidates running
     // against each other) — "Independent" isn't a real shared affiliation,
@@ -1494,8 +1651,12 @@
     // Playtest hook: ?p2=<politician id> forces the opponent, bypassing the
     // unlock pool — pairs with ?ai= below so a specific kit can be retested
     // against a specific AI profile instead of waiting for the random draw.
-    var forcedP2 = new URLSearchParams(location.search).get('p2');
-    if (forcedP2 && !tutorialMode && data.politicians.some(function (p) { return p.id === forcedP2; })) p2Id = forcedP2;
+    var forcedP2 = forcedPoliticianId('p2');
+    if (forcedP2 && !tutorialMode) p2Id = forcedP2;
+    // Beats both the draw and the URL hook, and deliberately ignores the
+    // same-party exclusion above — an identical-colour matchup (two BJP, two
+    // Congress) is unreachable otherwise and is exactly what needs testing.
+    if (p2Override && !tutorialMode) p2Id = p2Override;
     // Seeded rng (not Math.random) so game.actionLog can be replayed back to
     // the same outcome from just the seed + the action list (see startReplay).
     var seed = (Date.now() ^ (Math.random() * 1e9)) >>> 0;
@@ -1511,9 +1672,10 @@
       var levelKey = forcedAI || ('level-' + effectiveLevel());
       G.setupAI(game, 'p2', G.mulberry32(seed ^ 0x5eed), levelKey);
       game.forcedAIProfile = forcedAI || null;
-      // A forced playtest profile isn't a real rung, so it can't move the
-      // ladder; every other non-tutorial match counts.
-      game.ratedMatch = !forcedAI;
+      // Neither a forced profile nor a forced matchup is a real rung, so
+      // playtesting can't drift the adaptive difficulty level; every other
+      // non-tutorial match counts.
+      game.ratedMatch = !forcedAI && !isForcedMatchup();
       if (forcedAI) showToast('AI profile: ' + forcedAI);
     }
     // Tutorial AI never crafts/activates its special power or nationwide
@@ -1826,10 +1988,7 @@
     window.__game = game;
     replay = null;
     $('replayBar').hidden = true;
-    COLORS.p1 = game.players.p1.politician.primaryColor || '#E8871C';
-    COLORS.p2 = game.players.p2.politician.primaryColor || '#1C8A4B';
-    document.documentElement.style.setProperty('--p1', COLORS.p1);
-    document.documentElement.style.setProperty('--p2', COLORS.p2);
+    paintPlayerIdentity();
     $('endOverlay').hidden = false;
   }
 
@@ -2210,6 +2369,9 @@
   }
 
   function updateCard() {
+    // Every renderer below already clears cardPinBtn itself; the invest button
+    // is cleared once here instead, since only renderStateCard wants it.
+    $('cardInvestBtn').hidden = true;
     if (activeAction) { renderActionInfo(activeAction); return; }
     if (activeAgenda) { renderAgendaCard(activeAgenda); return; }
     if (activeCluster) { renderClusterCard(activeCluster); return; }
@@ -2296,9 +2458,13 @@
     var s = game.statesById[selectedId], p = game.pop[selectedId];
     if (!s || !p) return;
     $('cardPinBtn').hidden = true;
+    // Invest without having to find the state on the map first — the way in is
+    // an LED chip in a group card, which names a state but doesn't tell a
+    // newer player where it is. The map tap still works exactly as before.
+    $('cardInvestBtn').hidden = false;
     $('cardVsBar').hidden = false;
     $('cardName').textContent = s.name;
-    $('cardSeats').textContent = s.seats + ' seats';
+    $('cardSeats').textContent = s.seats + ' seats · ₹' + E.investmentCostCr(s.seats, game.cfg.investment) + 'Cr';
     $('cardP1Fill').style.width = (p.p1 / 100) + '%';
     $('cardOthFill').style.width = (p.others / 100) + '%';
     $('cardP2Fill').style.width = (p.p2 / 100) + '%';
@@ -2330,6 +2496,14 @@
   // already uses: renderAll() runs this on every player tap AND every AI tick,
   // and it was wiping 5-15 buttons and rebinding a listener on each one every
   // time, even when nothing about the group had changed.
+  // '1' = you hold it, '2' = the opponent holds it, '0' = neither is over the
+  // regional-dominance bar yet. Both can never be '1'/'2' at once -- two 50%+
+  // shares don't fit in one state.
+  function ledState(svgId, threshold) {
+    var p = game.pop[svgId];
+    return p.p1 >= threshold ? '1' : p.p2 >= threshold ? '2' : '0';
+  }
+
   function renderMemberCard(members, title, subtitle, showPin) {
     var threshold = game.cfg.regionalDominance.thresholdBps;
     $('cardName').textContent = title;
@@ -2339,9 +2513,7 @@
     if (showPin) $('cardPinBtn').classList.toggle('on', groupPinned);
 
     var sorted = members.slice().sort(function (a, b) { return b.seats - a.seats; });
-    var key = sorted.map(function (s) {
-      return s.svgId + (game.pop[s.svgId].p1 >= threshold ? '1' : '0');
-    }).join(',');
+    var key = sorted.map(function (s) { return s.svgId + ledState(s.svgId, threshold); }).join(',');
     var ledEl = $('cardGroups');
     ledEl.className = 'led-grid';
     // The other card renderers repurpose #cardGroups and each clear this key,
@@ -2351,9 +2523,9 @@
 
     var frag = document.createDocumentFragment();
     sorted.forEach(function (s) {
-      var isLeading = game.pop[s.svgId].p1 >= threshold;
+      var lit = ledState(s.svgId, threshold);
       var chip = document.createElement('button');
-      chip.className = 'led-chip' + (isLeading ? ' led-on' : '');
+      chip.className = 'led-chip' + (lit === '1' ? ' led-on' : lit === '2' ? ' led-opp' : '');
       chip.title = s.name;
       chip.dataset.svgid = s.svgId;
       chip.innerHTML = '<span class="led-dot"></span><span>' + s.svgId.slice(2) + '</span>';
@@ -2834,6 +3006,12 @@
     handleMapTap(path.id, { x: e.clientX, y: e.clientY });
   });
   $('cardPinBtn').addEventListener('click', toggleGroupPin);
+  // Same double-tap-to-spend gate as the map and the UT cluster buttons, keyed
+  // per state so switching states can't inherit a half-finished confirm.
+  fastTap($('cardInvestBtn'), function () {
+    if (!selectedId) return;
+    handleButtonTap('cardInvest:' + selectedId, function () { investPaid(selectedId); });
+  });
   fastTap($('utsBtn'), function () {
     activeAgenda = null; activeAction = null; activeCluster = 'ALL_UTS'; updateCard();
     handleButtonTap('ALL_UTS', function () {
@@ -2884,6 +3062,8 @@
   $('playAgainBtn').addEventListener('click', function () {
     $('endOverlay').hidden = true;
     $('selectOverlay').hidden = false;
+    playtestP1 = null;
+    renderPlaytestPrompt();
     renderPolGrid(); // picks up any politician unlocked by the game just played
     // A tutorial game already flips tutorialMode off mid-match
     // (finishStageTutorial, around phase 6), but that alone leaves several
@@ -2953,10 +3133,17 @@
   }
 
   $('welcomeStartBtn').addEventListener('click', function () {
-    unlockSounds();
+    unlockSounds(); // must stay first — iOS only unlocks audio inside a real gesture
     setTutorialMode(false);
     $('welcomeOverlay').hidden = true;
+    // ?p1= drops straight into the match; the carousel would only re-impose
+    // the unlock/charge gates the hook exists to bypass.
+    var forcedP1 = forcedPoliticianId('p1');
+    if (forcedP1) { startGame(forcedP1); return; }
     $('selectOverlay').hidden = false;
+    playtestP1 = null;
+    renderPolGrid(); // cards bake in their locked state, so rebuild for playtest mode
+    renderPlaytestPrompt();
     switchMusic('intro_music');
   });
 

@@ -285,6 +285,80 @@
   function investmentCostCr(seats, cfg) { return seats * cfg.costPerSeatCr; }
 
   // ---------------------------------------------------------------------
+  // Player colours — keeping the two sides apart on the map
+  // ---------------------------------------------------------------------
+  // The map paints each state by mixing neutral grey toward whoever leads
+  // there, by how big the lead is. That spends the light/dark axis on lead
+  // SIZE, so only HUE is left to say whose lead it is. startGame's same-party
+  // rule keeps the identical hexes apart (8 politicians share Congress green
+  // #138808, 4 share BJP saffron), but 38 cross-party pairings still share a
+  // hue: #0033A0 vs #004BA0, #2196F3 vs #00AAFF, #5CB85C vs #138808.
+  //
+  // The bar is a HUE gap, not an RGB distance. RGB distance is measured at
+  // full colour, and the map almost never shows full colour: a typical lead
+  // is |p1-p2| ~ 2600bps, so states render at ~0.26 intensity and the gap
+  // between the two sides shrinks by the same factor. Two shades of one hue
+  // (a deep green against a light green) were tried first and failed exactly
+  // here -- 130 apart at full strength is 34 apart on screen, and worse, the
+  // light/dark difference is the SAME axis the map already uses for lead
+  // size, so "they hold it firmly" and "I hold it weakly" render alike.
+  // Measured against a matchup that reads fine untouched (Modi vs Rahul,
+  // 85 degrees apart), MIN_HUE_SEP of 60 is the floor.
+  //
+  // So the opponent is moved to the nearest hue that clears that bar: their
+  // colour changes as little as readability allows (12 degrees in the best
+  // case, e.g. Sivaji's teal against Congress green), and candidates come
+  // from one curated ring so the result always suits the app's palette.
+  var MIN_COLOR_DIST = 130;    // full-strength RGB distance, a secondary check
+  var MIN_HUE_SEP = 60;        // degrees; the metric that actually decides readability
+  var MIN_GREY_DIST = 110;     // closer to the neutral than this reads as "nobody leads"
+  var NEUTRAL_HEX = '#AEB4C0'; // must match --map-base / COLORS.others
+  // One trip round the hue wheel at this app's muted-but-clear weight.
+  var HUE_RING = ['#C62828', '#E8871C', '#C9A227', '#7CB342', '#2E9E4F', '#00897B',
+                  '#0097A7', '#2196F3', '#3949AB', '#7E57C2', '#AB47BC', '#D81B60'];
+
+  function hexToRgbTriple(hex) {
+    var n = parseInt(String(hex).replace('#', ''), 16);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  }
+  function colorDistance(a, b) {
+    var x = hexToRgbTriple(a), y = hexToRgbTriple(b);
+    return Math.sqrt(Math.pow(x[0] - y[0], 2) + Math.pow(x[1] - y[1], 2) + Math.pow(x[2] - y[2], 2));
+  }
+  // 0..1 round the wheel. Grey has no hue; 0 is as good an answer as any.
+  function hueOf(hex) {
+    var c = hexToRgbTriple(hex).map(function (v) { return v / 255; });
+    var mx = Math.max(c[0], c[1], c[2]), mn = Math.min(c[0], c[1], c[2]);
+    if (mx === mn) return 0;
+    var d = mx - mn, h;
+    if (mx === c[0]) h = (c[1] - c[2]) / d + (c[1] < c[2] ? 6 : 0);
+    else if (mx === c[1]) h = (c[2] - c[0]) / d + 2;
+    else h = (c[0] - c[1]) / d + 4;
+    return h / 6;
+  }
+  function hueSeparation(a, b) {
+    var d = Math.abs(hueOf(a) - hueOf(b)) * 360 % 360;
+    return Math.min(d, 360 - d);
+  }
+
+  // Returns the colour the OPPONENT should be drawn in, unchanged whenever the
+  // two already read apart. Callers must never recolour the human by this.
+  function distinctPlayerColor(ownHex, opponentHex) {
+    if (hueSeparation(ownHex, opponentHex) >= MIN_HUE_SEP &&
+        colorDistance(ownHex, opponentHex) >= MIN_COLOR_DIST) return opponentHex;
+    var usable = HUE_RING.filter(function (c) {
+      return hueSeparation(ownHex, c) >= MIN_HUE_SEP &&
+             colorDistance(c, ownHex) >= MIN_COLOR_DIST &&
+             colorDistance(c, NEUTRAL_HEX) >= MIN_GREY_DIST;
+    }).sort(function (a, b) {
+      return hueSeparation(a, opponentHex) - hueSeparation(b, opponentHex);
+    });
+    // The ring spans the wheel evenly, so something always clears a 60 degree
+    // gap; the fallback is belt-and-braces for a future ring edit.
+    return usable.length ? usable[0] : '#7E57C2';
+  }
+
+  // ---------------------------------------------------------------------
   // Agenda commitment — net-first-apply-once, per-tap proration
   // ---------------------------------------------------------------------
   function netAgendaEffectBps(state, policyDef) {
@@ -360,6 +434,12 @@
     generateStartingPosition: generateStartingPosition,
     investmentBoostBps: investmentBoostBps,
     investmentCostCr: investmentCostCr,
+    colorDistance: colorDistance,
+    hueOf: hueOf,
+    hueSeparation: hueSeparation,
+    distinctPlayerColor: distinctPlayerColor,
+    MIN_COLOR_DIST: MIN_COLOR_DIST,
+    MIN_HUE_SEP: MIN_HUE_SEP,
     netAgendaEffectBps: netAgendaEffectBps,
     agendaTapDelta: agendaTapDelta,
     dominanceActive: dominanceActive,
@@ -495,6 +575,36 @@ if (typeof module !== 'undefined' && require.main === module) {
       assert.strictEqual(p.p1 + p.p2 + p.others, 10000);
       assert.ok(p.p1 >= 0 && p.p2 >= 0 && p.others >= 0);
     });
+  })();
+
+  (function distinctPlayerColorCheck() {
+    // Already readable -> passed through untouched.
+    assert.strictEqual(E.distinctPlayerColor('#FF9933', '#138808'), '#138808');
+
+    // Every reachable same-hue pairing must come back readable. This is the
+    // regression guard for the shade-of-the-same-hue approach that shipped
+    // first and failed: it cleared MIN_COLOR_DIST while sitting 6 degrees
+    // from the human's own hue, which is invisible at real lead sizes.
+    [['#0033A0', '#004BA0'], ['#2196F3', '#00AAFF'], ['#00A651', '#00897B'],
+     ['#138808', '#5CB85C'], ['#5CB85C', '#138808'], ['#00A651', '#138808'],
+     ['#138808', '#00A651'], ['#B8860B', '#FF9933'], ['#FF9933', '#B8860B'],
+     ['#2196F3', '#004BA0'], ['#138808', '#00897B']
+    ].forEach(function (pair) {
+      var out = E.distinctPlayerColor(pair[0], pair[1]);
+      assert.ok(E.hueSeparation(out, pair[0]) >= E.MIN_HUE_SEP,
+        'hue too close to own colour: ' + pair + ' -> ' + out);
+      assert.ok(E.colorDistance(out, pair[0]) >= E.MIN_COLOR_DIST,
+        'too close to own colour: ' + pair + ' -> ' + out);
+      assert.ok(E.colorDistance(out, '#AEB4C0') >= 110,
+        'too close to neutral: ' + pair + ' -> ' + out);
+    });
+
+    // Moves the opponent as little as readability allows: Sivaji's teal is
+    // only 12 degrees off against Congress green, not flung across the wheel.
+    assert.ok(E.hueSeparation(E.distinctPlayerColor('#138808', '#00897B'), '#00897B') <= 20);
+
+    // Never returns the human's own colour.
+    assert.notStrictEqual(E.distinctPlayerColor('#138808', '#00A651'), '#138808');
   })();
 
   console.log('mobile/engine.js self-check: all assertions passed.');

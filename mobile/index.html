@@ -94,12 +94,12 @@ button{ font-family:inherit; border: none; background:none; color:inherit; }
 .topstrip{ flex:0 0 auto; padding: calc(env(safe-area-inset-top,0px) + 0.3rem) 0.675rem 0.3rem; background:var(--surface); border-bottom: 2px solid var(--line); }
 .seatbar{ display:flex; height: 0.3rem; border: 2px solid var(--line); border-radius:var(--radius-sm); overflow:hidden; background:var(--track); margin-bottom: 0.25rem; }
 .seatbar .seg.p1{ background:var(--p1); } .seatbar .seg.p2{ background:var(--p2); } .seatbar .seg.oth{ background:transparent; }
-.topstrip-row{ display:flex; align-items:center; justify-content:space-between; }
-.phase-chip{ font-family:var(--font-mono); font-size:var(--fs-5); font-weight:700; color:var(--ink-soft); letter-spacing:.01em; }
+.topstrip-row{ display:flex; align-items:center; justify-content:space-between; gap: 0.4rem; }
+.phase-chip{ font-family:var(--font-mono); font-size:var(--fs-5); font-weight:700; color:var(--ink-soft); letter-spacing:.01em; white-space:nowrap; flex:0 0 auto; }
 .phase-chip b{ color:var(--accent); }
 .top-actions{ display:flex; align-items:center; gap: 0.3rem; }
 .ver-badge{ font-family:var(--font-mono); font-size: 0.5rem; color:var(--ink-soft); opacity:.55; }
-.ver-badge-stage{ margin-right: 0.05rem; }
+.ver-badge-stage{ margin-right: 0.05rem; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .ver-badge-end{ display:block; margin: 0 0 0.2rem; }
 .iconbtn{ width: 1.65rem; height: 1.65rem; border-radius:var(--radius-md); background:var(--surface); border: 2px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:var(--fs-4); color:var(--ink); box-shadow: var(--shadow-md); }
 .iconbtn:active{ transform: translate(2.5px,2.5px); box-shadow: none; }
@@ -300,17 +300,21 @@ button{ font-family:inherit; border: none; background:none; color:inherit; }
 .news-ticker .feed .track span{ font-family:var(--font-mono); font-size:var(--fs-3); font-weight:700; color:var(--page); }
 @keyframes ticker-scroll{ from{ transform: translateX(0); } to{ transform: translateX(-50%); } }
 
-/* top:195px is only the pre-game fallback (before the map/Ladakh exists to
-   measure) — main.js's showToast() overrides this per-call, anchored just
-   above Ladakh's live getBoundingClientRect() top, since toast height
-   varies with message length (one line vs. a wrapped two-line payout
-   message) and a fixed pixel value can't clear both the topstrip above
-   (~161px) and Ladakh below (~311px) at once. Confirmed via Playwright on
-   the iPhone 14 profile 2026-08-23 — this app's missing viewport meta puts
-   every fixed-position value in the ~980px virtual-canvas coordinate
-   space, not real device px. max-width keeps most messages to one line so
-   the anchor doesn't have to grow upward as often. */
-.toast{ position:fixed; left:50%; top: 4.875rem; transform: translate(-50%,0); z-index:65; background:var(--ink); color:var(--page); font-size:var(--fs-3); font-weight:700; padding: 0.45rem 0.825rem; border-radius:var(--radius-md); box-shadow: 2.5px 2.5px 0 var(--accent); opacity:0; pointer-events:none; transition:opacity .25s ease; max-width: min(23rem,94vw); width:max-content; text-align:center; }
+/* Toasts always land in one place: their own chrome-less bar hung off the
+   bottom edge of the player strip. Replaces a per-call
+   getBoundingClientRect() anchor above Ladakh, which moved the toast around
+   depending on message length and map layout.
+   - top:100% keeps it glued to the strip's bottom edge, so nothing here
+     hardcodes the strip's height (unlike .ne-actions' own top offset).
+   - right clears .ne-actions (5.2rem block + 0.3rem padding each side),
+     which starts at top:4.125rem and would otherwise sit under a wide toast.
+   - position:absolute means the bar costs the strip no layout height, so an
+     empty (or a wrapped two-line) toast shifts nothing either way.
+   The bar itself is invisible — no background, no border; only the pill
+   inside it is ever drawn. */
+.toast-bar{ position:absolute; top: calc(100% + 0.3rem); left:0; right: 5.9rem; z-index:65;
+  display:flex; justify-content:center; pointer-events:none; }
+.toast{ min-height: 1.4rem; background:var(--ink); color:var(--page); font-size:var(--fs-3); font-weight:700; padding: 0.2rem 0.6rem; border-radius:var(--radius-md); box-shadow: 2px 2px 0 var(--accent); opacity:0; transition:opacity .25s ease; max-width:100%; width:max-content; text-align:center; display:flex; align-items:center; justify-content:center; }
 .toast.show{ opacity:1; }
 
 /* ---- info panel: fixed, non-interactive readout for the tapped state, kept
@@ -319,13 +323,13 @@ button{ font-family:inherit; border: none; background:none; color:inherit; }
    Doesn't expand, doesn't drag, doesn't cover the map. Investing still
    happens by tapping the map directly. ---- */
 .info-panel{ position:relative; flex:0 0 auto; padding: 0.45rem calc(0.7rem + 1.5rem) calc(env(safe-area-inset-bottom,0px) + 0.3rem) 0.7rem; background:var(--surface); border-top: 2px solid var(--line); }
-.info-row{ display:flex; align-items:center; gap: 0.4rem; flex-wrap:wrap; }
+.info-row{ display:flex; align-items:center; gap: 0.4rem; flex-wrap:wrap; padding-right: 0.4rem; }
 /* flex-shrink:0 — for the one or two longest state names, this drops
    "seats" onto its own line below the name instead of squeezing the name
    itself into an awkward internal wrap (mid-word, shrunk) to make room for
    both on one line. Every other (shorter) name already fits with seats
    alongside it, so this only ever changes the outlier cases. */
-.info-row h3{ margin:0; font-size:var(--fs-6); font-weight:800; letter-spacing:-.01em; flex-shrink:0; }
+.info-row h3{ margin:0; font-size:var(--fs-6); font-weight:800; letter-spacing:-.01em; flex-shrink:0; max-width:100%; }
 .info-row .seats{ font-family:var(--font-mono); font-size:var(--fs-3); color:var(--ink-soft); font-weight:600; white-space:nowrap; }
 .seat-preview{ font-weight:800; }
 .seat-preview.gain{ color:#1C8A4B; }
@@ -342,6 +346,9 @@ button{ font-family:inherit; border: none; background:none; color:inherit; }
 .pin-btn:active{ transform: translate(2.5px,2.5px); box-shadow: none; }
 .pin-btn.on{ background:var(--accent); border-color:var(--accent); color:#fff; }
 .pin-btn[hidden]{ display:none; }
+/* Invest sits in the OPPOSITE corner from the pin: top-right, level with the
+   state's name, clear of the vs-bar's opponent symbol at the bottom right. */
+.pin-btn.top-right{ top: 0.45rem; bottom:auto; }
 
 /* Always its own row below the name/seats line (never squeezed inline next
    to them) — a state's name length and its number of group tags both vary
@@ -369,6 +376,8 @@ button{ font-family:inherit; border: none; background:none; color:inherit; }
 .led-dot{ width: 0.35rem; height: 0.35rem; border-radius:50%; background:var(--track); border: 1.5px solid var(--ink-faint); flex:0 0 auto; }
 .led-chip.led-on{ border-color:var(--p1); color:var(--ink); }
 .led-chip.led-on .led-dot{ background:var(--p1); border-color:var(--p1); }
+.led-chip.led-opp{ border-color:var(--p2); color:var(--ink); }
+.led-chip.led-opp .led-dot{ background:var(--p2); border-color:var(--p2); }
 
 /* Agenda-info mode — same info-panel real estate again, this time as a
    region-effect breakdown (led-chip's pill shape, colored by support/oppose
@@ -820,14 +829,13 @@ button{ font-family:inherit; border: none; background:none; color:inherit; }
   </div>
 </div>
 
-<div class="toast" id="toast"></div>
 <div class="tutorial-navbar" id="tutorialNavbar" hidden>
   <span class="tutorial-navbar-label">🎓 Tutorial</span>
 </div>
 
 <div class="overlay" id="selectOverlay" hidden>
   <div class="overlay-header">
-    <h1>Pradhan Mantri Elections</h1>
+    <h1 id="selectTitle">Pradhan Mantri Elections</h1>
   </div>
   <div class="tutorial-coach" id="tutorialCoach" hidden>
     <div class="tutorial-coach-title" id="tutorialCoachTitle" hidden></div>
@@ -922,7 +930,8 @@ button{ font-family:inherit; border: none; background:none; color:inherit; }
   <div class="overlay-header"><h1>Settings</h1></div>
   <div class="settings-body">
     <button class="settings-row" id="soundToggleBtn">🔊 Sound: <span id="soundToggleState">On</span></button>
-    <button class="settings-row" id="musicToggleBtn">🎵 Music: <span id="musicToggleState">On</span></button>
+    <button class="settings-row" id="musicToggleBtn">🎵 Music: <span id="musicToggleState">On</span></button>
+
     <div class="settings-row settings-slider">🎯 Difficulty: <span id="difficultyState">Auto</span>
       <input type="range" id="difficultyRange" min="1" max="8" step="1" value="2" aria-label="AI difficulty level">
       <div class="slider-ticks"><span>Easiest</span><span>Hardest</span></div>
@@ -1145,6 +1154,7 @@ button{ font-family:inherit; border: none; background:none; color:inherit; }
         <span class="pstrip-funds" id="p2Funds">₹2500Cr</span>
         <span class="pstrip-seats" id="p2Seats">— seats</span>
       </div>
+      <div class="toast-bar"><div class="toast" id="toast"></div></div>
     </div>
 
     <div class="ne-actions action-block">
@@ -1180,6 +1190,9 @@ button{ font-family:inherit; border: none; background:none; color:inherit; }
     <div class="info-row">
       <h3 id="cardName">Uttar Pradesh</h3><span class="seats" id="cardSeats">80 seats</span>
       <button class="pin-btn" id="cardPinBtn" title="Pin this group's view open" hidden>📌</button>
+      <!-- Same reserved bottom-right gutter as the pin button; the two are
+           never shown at once (pin = group cards, invest = state cards). -->
+      <button class="pin-btn top-right" id="cardInvestBtn" title="Invest in this state" hidden>💰</button>
     </div>
     <div class="info-groups" id="cardGroups"></div>
     <div class="vs-bar" id="cardVsBar">
