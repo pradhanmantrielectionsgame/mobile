@@ -1,6 +1,6 @@
 {
   "name": "pradhanmantri-elections-game-mobile",
-  "version": "2.7.0",
+  "version": "2.7.1",
   "description": "A turn-based election simulation game on a mobile-first interactive India map. Players invest resources in states, manage regional dominance bonuses, and deploy rally tokens to shift vote share. Built with vanilla HTML/CSS/JavaScript for iOS and Android via Capacitor.",
   "main": "check_data_consistency.js",
   "directories": {

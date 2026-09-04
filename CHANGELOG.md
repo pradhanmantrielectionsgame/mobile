@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [2.7.1] - 2026-09-04
+
+Renamed the live game from "Kaun Banega Pradhan Mantri" to "PradhanMantri Elections Game" and moved off the `kaunbanegapradhanmantri.in` domain, onto `pradhanmantrielectionsgame.com`.
+
+### Changed
+- **CHANGED**: `kaunbanegapradhanmantri.in` → `pradhanmantrielectionsgame.com` as the live domain. The `.in` registration hit a NIXI `serverHold` (registry-level WHOIS-accuracy/e-KYC enforcement, confirmed via Porkbun's compliance notice) days after registration, and separately, "Kaun Banega X" is a naming pattern Sony has litigated before over its KBC format rights — both risks are avoided by the new name and a generic `.com` TLD, which carries neither NIXI's registry-level review nor the KBC-adjacent branding. Updated everywhere the old name/domain appeared: `mobile/index.html`'s title/canonical/OG/Twitter meta, `mobile/main.js`'s `SITE_URL` and share-result text, `mobile/privacy.html`, and `scripts/deploy-mobile.js`'s `CNAME` output and deploy README.
+
 ## [2.7.0] - 2026-09-03
 
 Opponent-held states now show in group cards, a direct invest button on the state card, a readable-colour rule for same-hue matchups, toasts pinned to one spot, and a gated playtest mode for forcing exact matchups.
