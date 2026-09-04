@@ -6,7 +6,7 @@
     "entertainment"
   ],
   "name": "PradhanMantri Elections Game",
-  "short_name": "PME",
+  "short_name": "PradhanMantri",
   "description": "Turn-based election simulation on a mobile-first interactive India map.",
   "start_url": "./index.html",
   "scope": "./",
