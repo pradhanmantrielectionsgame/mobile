@@ -149,6 +149,12 @@ See the "Key Architectural Decisions" table above for framework selection, multi
 
 ## Current Status
 
+### ⚠️ OPEN ISSUE — Live Site Down (DNS/Registrar, Not Deploy)
+
+**`kaunbanegapradhanmantri.in` is currently down** due to a **registry-level `serverHold` status** placed by the NIXI `.in` registry on 2026-09-03. This is **not** a code issue, not a deploy failure, and not a GitHub Pages outage — it is a registrar-side block that only Porkbun support can lift. Full diagnosis: `findings.md` entry dated 2026-09-03 at the top. **Next action:** check the registrant inbox for a post-registration verification email (most likely cause), then open a Porkbun support ticket with the domain and the `serverHold` status. Contacts: `tech@porkbun.com`, `abuse+registries@porkbun.com`, +1.503.850.8351. Meanwhile, the build is testable via `npm run serve` + a `cloudflared tunnel --url http://localhost:8934` tunnel (`npx -y cloudflared tunnel --url http://localhost:8934` works without install).
+
+### Game Engine & Build Status
+
 **Game Engine (Complete):** `mobile/engine.js` + `mobile/game.js` + `mobile/index.html` form a fully playable, single-player-vs-AI game. All 10-phase loop, economy mechanics (investment, rally, agenda, dominance), special powers, and AI opponent are functional and validated via regression tests (`mobile/simulate.js`).
 
 **Game Design (Finalized):** All mechanics fully implemented and documented in `docs/wiki.html` (the authoritative reference for economy scale, phase count, starting position, redistribution rule, agenda/rally/dominance/special-power formulas, 20-politician roster with verified powers, ladder strengths, and player progression).
