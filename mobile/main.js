@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var E = window.PMEEngine, G = window.PMEGame;
-  var GAME_VERSION = '2.7.3';
+  var GAME_VERSION = '2.7.5';
   // Canonical public URL for the end-of-game "share result" link — hardcoded,
   // not location.href, so the shared link is always the clean site root and
   // never a /index.html deep link, a ?query string, or a Capacitor
@@ -999,8 +999,16 @@
   sounds.bell_chime = new Audio('../sounds/bell_chime.mp3');
   sounds.bg_music = new Audio('../sounds/bg_music.mp3');
   sounds.intro_music = new Audio('../sounds/jana_gana_mana.mp3');
+  // Nationwide Rally's own cue instead of the generic fanfare. Cut to length in
+  // JS rather than shipping a trimmed second copy, so the full track stays
+  // available for reuse elsewhere. Living in `sounds` also means unlockSounds()
+  // picks it up automatically — required, since the AI can fire this from a
+  // timer with no user gesture behind it.
+  sounds.nationwide_anthem = new Audio('../sounds/saare_jahan_se_accha.mp3');
   var LOOP_TRACKS = ['bg_music', 'intro_music'];
-  var BG_MUSIC_VOLUME = 0.18, BG_MUSIC_DUCKED_VOLUME = 0;
+  // No DUCKED_VOLUME counterpart any more — ducking pauses the track instead
+  // of zeroing its volume, because iOS ignores volume writes. See duckMusic().
+  var BG_MUSIC_VOLUME = 0.18;
   LOOP_TRACKS.forEach(function (name) { sounds[name].loop = true; sounds[name].volume = BG_MUSIC_VOLUME; });
   var currentMusicKey = null;
 
@@ -1060,6 +1068,50 @@
     a.currentTime = 0;
     a.play().catch(function () {});
   }
+  // Nationwide Rally cue: the first 6s of Saare Jahan Se Accha, matched to the
+  // burst animation's own 6s so audio and visual end together. Ducks the bg
+  // music for its duration the same way playPowerSound does — two music beds
+  // over each other is worse than either alone. Re-entrant: a second rally
+  // (the AI's, moments after yours) restarts the clip and its stop timer
+  // rather than letting the first timer un-duck under the second.
+  // Ducking has to pause the track, not zero its volume: iOS Safari treats
+  // HTMLMediaElement.volume as read-only (level is hardware-controlled there)
+  // and silently ignores the write, so volume-based ducking works on desktop
+  // and does nothing on an iPhone. The duck was always a full duck
+  // (BG_MUSIC_DUCKED_VOLUME is 0), so pause/resume is the same intent and
+  // works everywhere. Keyed off currentMusicKey rather than bg_music so it
+  // ducks whichever loop is actually playing.
+  // Depth-counted because a special power and a Nationwide Rally can overlap;
+  // the music comes back only when the last of them finishes.
+  var musicDuckDepth = 0;
+  function duckMusic() {
+    musicDuckDepth++;
+    if (currentMusicKey) sounds[currentMusicKey].pause();
+  }
+  function unduckMusic() {
+    if (musicDuckDepth > 0) musicDuckDepth--;
+    if (musicDuckDepth > 0) return;
+    if (musicEnabled && currentMusicKey && !timerPaused) playSound(currentMusicKey);
+  }
+
+  var NATIONWIDE_SFX_MS = 6000;
+  var nationwideStopTimer = null;
+  function playNationwideAnthem() {
+    if (!soundEnabled) return;
+    var a = sounds.nationwide_anthem;
+    // A rally landing while one is still playing restarts the clip but must not
+    // stack a second duck, or the counter never returns to zero.
+    if (nationwideStopTimer) clearTimeout(nationwideStopTimer); else duckMusic();
+    a.currentTime = 0;
+    a.play().catch(function () { /* timer below still restores the music */ });
+    nationwideStopTimer = setTimeout(function () {
+      nationwideStopTimer = null;
+      a.pause();
+      a.currentTime = 0;
+      unduckMusic();
+    }, NATIONWIDE_SFX_MS);
+  }
+
   // Switches between the two looping tracks (welcome/select-screen theme vs
   // in-game theme) — pauses whichever one is playing before starting the
   // other, so they never both play at once.
@@ -1134,8 +1186,13 @@
     }
     if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
     a.currentTime = 0;
-    var restore = function () { sounds.bg_music.volume = BG_MUSIC_VOLUME; };
-    if (musicEnabled) sounds.bg_music.volume = BG_MUSIC_DUCKED_VOLUME;
+    // Was a volume-based duck, which iOS Safari ignores outright — see
+    // duckMusic() above. restore() must run exactly once per duck, hence the
+    // `once` listeners and the single restore reference threaded through the
+    // fallback path below.
+    var restored = false;
+    var restore = function () { if (!restored) { restored = true; unduckMusic(); } };
+    duckMusic();
     a.addEventListener('ended', restore, { once: true });
     a.play().catch(function () {
       // no dedicated file for this politician — duck stays applied for the fanfare fallback too
@@ -1170,9 +1227,15 @@
     $('fxLayer').appendChild(el);
     setTimeout(function () { el.remove(); }, 700);
   }
-  function spawnPowerBurst(playerKey, powerName, politicianName, emoji) {
+  // One shared burst for special powers and the Nationwide Rally, so the
+  // duration is a parameter rather than a second copy of the effect. The CSS
+  // reads --burst-dur (default 5s in the stylesheet); only the Nationwide
+  // Rally overrides it, to run alongside its 6s anthem.
+  function spawnPowerBurst(playerKey, powerName, politicianName, emoji, durationMs) {
+    var ms = durationMs || 5000;
     var el = document.createElement('div');
     el.className = 'power-burst';
+    el.style.setProperty('--burst-dur', (ms / 1000) + 's');
     el.style.setProperty('--glow-color', playerKey === 'p2' ? COLORS.p2 : COLORS.p1);
     var glow = document.createElement('div'); glow.className = 'glow';
     var rays = document.createElement('div'); rays.className = 'rays';
@@ -1183,7 +1246,7 @@
     card.appendChild(bolt); card.appendChild(name); card.appendChild(who);
     el.appendChild(glow); el.appendChild(rays); el.appendChild(card);
     $('fxLayer').appendChild(el);
-    setTimeout(function () { el.remove(); }, 5000);
+    setTimeout(function () { el.remove(); }, ms);
   }
 
   // Same full-screen glow+rays treatment as spawnPowerBurst above, but with
@@ -1789,8 +1852,8 @@
         spawnPowerBurst(pk, game.players[pk].politician.power.name, game.players[pk].politician.name);
       }
     } else if (action.type === 'nationwide') {
-      if (withSound) playSound('fanfare');
-      spawnPowerBurst(pk, 'Nationwide Rally', game.players[pk].politician.name, '🇮🇳');
+      if (withSound) playNationwideAnthem();
+      spawnPowerBurst(pk, 'Nationwide Rally', game.players[pk].politician.name, '🇮🇳', NATIONWIDE_SFX_MS);
     }
   }
 
@@ -2880,8 +2943,8 @@
     }
     var r = G.activateNationwideRally(game, 'p1');
     renderAll();
-    playSound('fanfare');
-    spawnPowerBurst('p1', 'Nationwide Rally', game.players.p1.politician.name, '🇮🇳');
+    playNationwideAnthem();
+    spawnPowerBurst('p1', 'Nationwide Rally', game.players.p1.politician.name, '🇮🇳', NATIONWIDE_SFX_MS);
     showToast('🇮🇳 Nationwide Rally activated');
     if (tutorialMode && r.ok) { tutorialNationwideRallyLaunched = true; renderTutorialStageStep(); }
   }

@@ -720,16 +720,19 @@ button{ font-family:inherit; border: none; background:none; color:inherit; }
   30%,50%,70%{ transform: translate(-2.5px,0); } 40%,60%{ transform: translate(2.5px,0); } }
 .shake{ animation:fx-shake .4s ease; }
 
-.power-burst{ position:fixed; inset:0; z-index:90; display:flex; align-items:center; justify-content:center; }
+/* --burst-dur defaults to 5s here and is overridden inline by spawnPowerBurst's
+   durationMs argument — the Nationwide Rally runs 6s to match its anthem. Keep
+   the three animations below reading the same variable so they can't drift. */
+.power-burst{ --burst-dur: 5s; position:fixed; inset:0; z-index:90; display:flex; align-items:center; justify-content:center; }
 .power-burst .glow{ position:absolute; inset:0;
   background:radial-gradient(circle at 50% 50%, var(--glow-color) 0%, transparent 62%);
-  opacity:0; animation:power-glow-pulse 5s ease forwards; }
+  opacity:0; animation:power-glow-pulse var(--burst-dur) ease forwards; }
 .power-burst .rays{ position:absolute; width: 37.5rem; height: 37.5rem; border-radius:50%;
   background:repeating-conic-gradient(var(--glow-color) 0deg 4deg, transparent 4deg 18deg);
-  opacity:0; animation:power-rays-spin 5s linear forwards; }
+  opacity:0; animation:power-rays-spin var(--burst-dur) linear forwards; }
 .power-burst .card{ position:relative; background:var(--paper); border: 2.5px solid var(--ink); border-radius: 0.875rem;
   box-shadow: 5px 5px 0 var(--ink); padding: 1.125rem 1.875rem; text-align:center; transform: scale(0);
-  animation:power-card-pop 5s cubic-bezier(.34,1.56,.64,1) forwards; }
+  animation:power-card-pop var(--burst-dur) cubic-bezier(.34,1.56,.64,1) forwards; }
 .power-burst .card .bolt{ font-size: 2.75rem; line-height:1; }
 .power-burst .card .name{ font-family:var(--font-mono); font-weight:800; font-size: 1.05rem; color:var(--ink);
   margin-top: 0.3rem; text-transform:uppercase; letter-spacing:.03em; }
