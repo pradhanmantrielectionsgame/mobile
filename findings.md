@@ -1,5 +1,40 @@
 # Findings
 
+## 2026-09-05 — `.gitignore` has no effect on an already-tracked file, and the silence looks like safety
+**Finding:** The PWABuilder zip (`signing.keystore` + `signing-key-info.txt` with plaintext passwords) was committed to the **public** repo in `ee13456` at 11:53. The `*.zip`/`*.keystore` rules landed in `a6588b0` at 11:58 — five minutes later, and therefore inert, because Git ignores `.gitignore` for paths already in the index. `git status` then read clean, and `git check-ignore -v` reported the file as *matching* the pattern, so every available signal said "handled" while the key sat exposed.
+**Context:** Found while looking for the APK to install on the emulator — `git ls-files` showed the zip as tracked even though `git status` was empty.
+**Implication:** Before trusting an ignore rule on anything sensitive, run `git ls-files | grep -i <pattern>`. Tracked state is the only thing that matters; neither a clean `git status` nor a positive `git check-ignore` is evidence of safety. Keep store packages in `D:\keys\`, never in the working tree *or its parent directory*.
+
+## 2026-09-05 — A force-push does not remove a blob from GitHub
+**Finding:** After `git filter-repo` purged the keystore zip from all history (241 → 196 commits) and a `--force` push updated `mobile/source`, the file was still downloadable: `raw/ee13456/PradhanMantri%20-%20Google%20Play%20package.zip` returned **HTTP 200 with all 5,294,959 bytes**, and `api/commits/ee13456` still resolved. GitHub retains unreachable objects and serves them by sha until it runs GC, which only GitHub can trigger.
+**Context:** Verified by curl immediately after the force-push, while confirming the purge had worked.
+**Implication:** History rewriting is not remediation for a leaked credential — it only removes the file from the branch tip. The credential must be rotated, or the repo deleted, or GitHub Support asked to GC. Rotation is the only remedy that does not depend on a third party acting.
+
+## 2026-09-05 — The TWA APK contains no game code at all
+**Finding:** Unzipping the packaged APK yields `AndroidManifest.xml`, `classes.dex`, `res/`, `resources.arsc`, `kotlin/` — and no `.html`, `.js`, `.mp3` or `.webp`. It is a 2.7 MB `androidbrowserhelper` wrapper whose only payload is the baked URL `https://pradhanmantrielectionsgame.com/index.html`. The game the emulator rendered was streamed live from GitHub Pages.
+**Context:** User asked whether the APK predated a change made during the session; inspection showed the question does not apply.
+**Implication:** Game changes ship via `deploy-mobile.js` alone — installed apps pick them up on next launch, with no APK rebuild, no store review, no user update. The APK is only rebuilt for wrapper-level changes (package name, icon, splash, launch URL, target SDK). The corollary is that a bad deploy breaks every installed app instantly, with no store-review buffer: `npm test` before `--push` carries more weight than it appears to.
+
+## 2026-09-05 — Emulator volume makes correctly-playing background music inaudible
+**Finding:** "No background music in the APK build" was not a bug. Chrome held an active `state:started`, `USAGE_MEDIA` audio player (`dumpsys audio`, uid `com.android.chrome`) the whole time. The Android emulator boots with media volume at 5/15; against the app's deliberate `BG_MUSIC_VOLUME = 0.18`, effective output was ~6% of full scale.
+**Context:** Reported as a build-specific bug; ruled out deploy paths, asset 404s, and autoplay blocking before checking the mixer.
+**Implication:** Raise emulator media volume (`adb shell input keyevent 24`) before drawing any conclusion about game audio, and confirm real playback via `dumpsys audio` rather than by listening. Do not "fix" `BG_MUSIC_VOLUME` on emulator evidence — it is correct on real hardware.
+
+## 2026-09-05 — LM Studio hoards superseded inference backends; deleting them did not free disk space
+**Finding:** `~/.lmstudio/extensions/backends` held 57 directories, 51 of them superseded `llama.cpp-win-x86_64-nvidia-cuda-avx2-1.x` builds totalling 18.9 GB (the current family is `cuda12-avx2-2.x`). All 51 shared a three-minute timestamp window, so they arrived in one bulk drop rather than accumulating per update. Models were never on C: — they live on `D:\LMStudio`. After deletion, `.lmstudio` measured 21.9 → 3.0 GB and `cmd /c dir` independently confirmed 7 directories remained, **but C: free space did not change** (19.5 GB before and after, across three separate APIs). Recycle Bin empty, no shadow copies, Claude's sandbox VM disk unchanged. Unexplained.
+**Context:** Investigating why C: kept filling despite a 9.4 GB cleanup earlier the same session.
+**Implication:** Verify disk reclamation in Explorer, outside the agent's process, before reporting space as freed. Two independent tools agreeing that files are gone is not sufficient evidence that the volume reclaimed the space.
+
+## 2026-09-05 — PKCS12 keystore and apksigner quoting constraints
+**Finding:** Two toolchain constraints hit while rotating the signing key. `keytool -keypasswd` fails on a PKCS12 keystore with `UnsupportedOperationException: -keypasswd commands not supported if -storetype is PKCS12` — PKCS12 uses a single password for both store and key, so `-storepasswd` alone rotates both. Separately, `apksigner.bat` cannot parse a `--ks-pass pass:<value>` whose value contains shell metacharacters; it fails with `Unexpected parameter(s) after input APK`.
+**Context:** Both surfaced while re-signing the APK with a freshly generated keystore.
+**Implication:** Generate keystore passwords from an alphanumeric alphabet only — they pass through `keytool`, `apksigner.bat`, Gradle and PWABuilder unquoted. Verify a signed artifact with `keytool -printcert -jarfile <file>`, which reads the public certificate and never needs the password, so there is no reason to open key material to check a build.
+
+## 2026-09-05 — The Android emulator must be launched detached or the harness kills it
+**Finding:** Launching `emulator.exe` as a normal backgrounded tool command produced a window, a boot, then a graceful self-shutdown a few seconds later (`Wait for emulator ... to shutdown gracefully`, snapshot saved, exit 0) — the tool harness tears down the child process tree. Launching the identical command via `Start-Process` left it running indefinitely (`qemu-system-x86_64`, pid stable).
+**Context:** First emulator launch died before `adb` could ever see the device.
+**Implication:** Always `Start-Process` the emulator. A clean exit code from it means it shut down, not that it ran.
+
 ## 2026-09-04 — PowerShell 5.1 turns a native command's stderr into a terminating error
 **Finding:** With `$ErrorActionPreference = 'Stop'`, redirecting a native executable's stderr via `2>&1` inside PowerShell 5.1 wraps each stderr line as a `NativeCommandError` record, which is then treated as terminating. `java -version` writes its version banner to stderr, so an install script died on a *logging* line — `Log ("java: " + (& java.exe -version 2>&1 ...))` — after the JDK had installed perfectly fine (openjdk 17.0.20.1).
 **Context:** First Android SDK install attempt exited 1 with the JDK fully extracted and working.

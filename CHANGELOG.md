@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [2.7.3] - 2026-09-05
+
+Fixed rally button behavior under phase caps, disarm logic per state vs. global caps, and music continuing to play during pause. Rotated the Android signing key after an accidental keystore commit, upgraded the intro music track, and adjusted the starting difficulty level.
+
+### Fixed
+- **FIXED**: Rally button now correctly greys out when the phase-level rally cap is reached, mirroring the engine's rejection reason.
+- **FIXED**: Rally action disarms only on global-cap rejections (`no_tokens`, `spend_cap`), never on per-state-cap rejections. After a state is capped, every other state is still a legal target, so disarming would force re-arming just to retarget. Only global caps mean no further rally play is possible this phase.
+- **FIXED**: Music no longer continues playing when the game is paused via the pause button or tutorial gates. `setPaused()` now owns the timer, pause-button chrome, and music mute state, called from four sites: pause button + three tutorial gates.
+
+### Changed
+- **CHANGED**: Intro music replaced with `sounds/jana_gana_mana.mp3` (new recording). The previous track remains available but is no longer referenced.
+- **CHANGED**: `START_LEVEL` in `mobile/main.js` lowered from 2 → 1, affecting new-player difficulty on their first game only.
+- **CHANGED**: Android signing key rotated to `D:\keys\pme-release.keystore` after a `signing.keystore` zip with plaintext passwords was accidentally committed to the public repo in an earlier session. The leaked blob remains downloadable by SHA from GitHub until they run garbage collection; rotation is the only remedy fully under the user's control. New `.gitignore` rules now track `.env`, `*.pem`, `*.p12`, `*.pfx` (kept outside the repo), and the Play package zip is untracked via `git rm --cached`.
+- **CHANGED**: Git history purged via `git filter-repo` to remove the keystore zip from all commits (241 → 196 commits, force-pushed to `mobile/source`). Note: force-push does not remove the blob from GitHub's unreachable-object store — it remains accessible by SHA until GitHub runs GC.
+
+### Added
+- **ADDED**: `sounds/jana_gana_mana.mp3` — new intro track.
+
 ## [2.7.2] - 2026-09-04
 
 Fixed sounds silently dropping out after a deploy, filled the 9 policy tags that rendered as a generic pushpin, and added store/manifest screenshots ahead of the Android (TWA) packaging.
