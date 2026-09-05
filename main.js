@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var E = window.PMEEngine, G = window.PMEGame;
-  var GAME_VERSION = '2.7.2';
+  var GAME_VERSION = '2.7.3';
   // Canonical public URL for the end-of-game "share result" link — hardcoded,
   // not location.href, so the shared link is always the clean site root and
   // never a /index.html deep link, a ?query string, or a Capacitor
@@ -103,7 +103,7 @@
   // parliament, the most common single outcome) count as neither, so a run of
   // them leaves the level where it is rather than drifting it.
   var AI_LEVEL_KEY = 'pme_ai_level', AI_STREAK_KEY = 'pme_ai_streak';
-  var START_LEVEL = 2;
+  var START_LEVEL = 1;
   function lsGet(k, d) { try { var v = localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } }
   function lsSet(k, v) { try { localStorage.setItem(k, String(v)); } catch (e) { /* private mode */ } }
 
@@ -737,9 +737,7 @@
   var wasTutorialGame = false; // sticky for the whole match, unlike tutorialMode which turns off mid-game once coaching finishes
 
   function startStageTutorial() {
-    timerPaused = true;
-    clearInterval(timerHandle);
-    $('pauseToggleBtn').textContent = '▶'; $('pauseToggleBtn').title = 'Resume';
+    setPaused(true);
     tutorialStageStep = 0;
     tutorialMapTapped = false;
     tutorialGujaratInvested = false;
@@ -765,9 +763,7 @@
     if (prevAgendaBtn) prevAgendaBtn.classList.remove('tutorial-target');
     var prevGroupChip = document.querySelector('.gchip.tutorial-target');
     if (prevGroupChip) prevGroupChip.classList.remove('tutorial-target');
-    timerPaused = false;
-    resumePhaseTimer();
-    $('pauseToggleBtn').textContent = '⏸'; $('pauseToggleBtn').title = 'Pause';
+    setPaused(false);
   }
 
   // Simulates investCash's own math (tap boost + gainAt redistribution) on a
@@ -918,9 +914,7 @@
   function enterTutorialPhaseWait() {
     tutorialWaitingForPhase = true;
     $('tutorialCoachStage').hidden = true;
-    timerPaused = false;
-    resumePhaseTimer();
-    $('pauseToggleBtn').textContent = '⏸'; $('pauseToggleBtn').title = 'Pause';
+    setPaused(false);
   }
 
   // Called from doEndPhase once game.phase has just advanced. Returns true
@@ -931,8 +925,7 @@
     var step = TUTORIAL_STAGE_STEPS[tutorialStageStep];
     if (!step || !step.waitForPhase || game.phase < step.waitForPhase) return false;
     tutorialWaitingForPhase = false;
-    timerPaused = true; clearInterval(timerHandle);
-    $('pauseToggleBtn').textContent = '▶'; $('pauseToggleBtn').title = 'Resume';
+    setPaused(true);
     $('tutorialCoachStage').hidden = false;
     enterTutorialStageStep();
     return true;
@@ -1005,7 +998,7 @@
   // Its own cue rather than reusing fanfare, which already means "rally held".
   sounds.bell_chime = new Audio('sounds/bell_chime.mp3');
   sounds.bg_music = new Audio('sounds/bg_music.mp3');
-  sounds.intro_music = new Audio('sounds/saare_jahan_se_accha.mp3');
+  sounds.intro_music = new Audio('sounds/jana_gana_mana.mp3');
   var LOOP_TRACKS = ['bg_music', 'intro_music'];
   var BG_MUSIC_VOLUME = 0.18, BG_MUSIC_DUCKED_VOLUME = 0;
   LOOP_TRACKS.forEach(function (name) { sounds[name].loop = true; sounds[name].volume = BG_MUSIC_VOLUME; });
@@ -1074,6 +1067,29 @@
     currentMusicKey = name;
     LOOP_TRACKS.forEach(function (n) { if (n !== name) sounds[n].pause(); });
     playSound(name);
+  }
+
+  // Single owner of the paused transition: timer, button chrome, and music.
+  // Four call sites (pause button + three tutorial gates) each re-derived the
+  // first two independently and all four forgot the third, so music played on
+  // over a paused game. Anything that pauses must go through here.
+  // Note the game-start reset near paintPlayerIdentity() deliberately does not
+  // — it clears timerPaused without starting a timer, and the start sequence
+  // starts one itself.
+  function setPaused(paused) {
+    timerPaused = paused;
+    var btn = $('pauseToggleBtn');
+    if (btn) {
+      btn.textContent = paused ? '▶' : '⏸';
+      btn.title = paused ? 'Resume' : 'Pause';
+    }
+    if (paused) {
+      clearInterval(timerHandle);
+      LOOP_TRACKS.forEach(function (n) { sounds[n].pause(); });
+    } else {
+      resumePhaseTimer();
+      if (musicEnabled && currentMusicKey) playSound(currentMusicKey);
+    }
   }
 
   // Some sounds (game_over, cash_added, phase_reset) only ever fire from a
@@ -2774,7 +2790,7 @@
   function renderTokens() {
     var pl = game.players.p1;
     $('rallyBadge').textContent = pl.tokens.stateRally;
-    $('rallyBtn').classList.toggle('depleted', pl.tokens.stateRally <= 0);
+    $('rallyBtn').classList.toggle('depleted', rallyBlockedReason() !== null);
     $('rallyBtn').classList.toggle('armed', armed === 'stateRally');
 
     [['special', 'specialBtn', 'specialBadge', game.cfg.rally.specialPowerupCraftCost],
@@ -2796,9 +2812,21 @@
     renderTokens();
   }
 
+  // Mirrors both global rejections playRallyToken can return. The button used
+  // to check only the token count, so once the per-phase spend cap was hit it
+  // still armed happily — and every later map tap was swallowed by a rejection
+  // toast until the player manually un-armed it.
+  function rallyBlockedReason() {
+    var pl = game.players.p1;
+    if (pl.tokens.stateRally <= 0) return 'No State Rally tokens';
+    if (pl.tokensSpentThisPhase >= game.cfg.rally.maxTokenSpendPerPhase) return 'Rally limit reached this phase';
+    return null;
+  }
+
   function onRallyBtn() {
     activeAgenda = null; activeAction = 'rally'; updateCard();
-    if (game.players.p1.tokens.stateRally <= 0) { showToast('No State Rally tokens'); shakeInvalid($('rallyBtn')); return; }
+    var blocked = rallyBlockedReason();
+    if (blocked) { showToast(blocked); shakeInvalid($('rallyBtn')); return; }
     setArmed('stateRally');
     if (armed) showToast('Tap a state to deploy');
   }
@@ -2905,7 +2933,20 @@
     selectState(svgId);
     if (armed === 'stateRally') {
       var r = G.playRallyToken(game, 'p1', svgId);
-      if (!r.ok) { showToast(r.reason === 'state_cap' ? 'This state is capped at 2 rally plays' : 'Spend cap reached this phase'); shakeInvalid(document.getElementById(svgId)); return; }
+      if (!r.ok) {
+        // state_cap is local — every other state is still a legal target, so
+        // stay armed. no_tokens/spend_cap are global: disarm, or the armed
+        // button swallows every subsequent tap into this same toast.
+        if (r.reason === 'state_cap') {
+          showToast('This state is capped at ' + game.cfg.rally.maxPlaysPerStateShared + ' rally plays');
+        } else {
+          showToast(rallyBlockedReason() || 'Rally limit reached this phase');
+          armed = null;
+        }
+        shakeInvalid(document.getElementById(svgId));
+        renderTokens();
+        return;
+      }
       showToast('📢 State Rally deployed'); playSound('rally_sound'); armed = null; renderAll();
       if (tutorialMode) onTutorialRally(svgId);
       return;
@@ -3102,11 +3143,7 @@
     else { sounds.bg_music.pause(); sounds.intro_music.pause(); }
   });
   $('pauseToggleBtn').addEventListener('click', function () {
-    timerPaused = !timerPaused;
-    var btn = $('pauseToggleBtn');
-    btn.textContent = timerPaused ? '▶' : '⏸';
-    btn.title = timerPaused ? 'Resume' : 'Pause';
-    if (timerPaused) clearInterval(timerHandle); else resumePhaseTimer();
+    setPaused(!timerPaused);
   });
 
   if ('serviceWorker' in navigator) {
