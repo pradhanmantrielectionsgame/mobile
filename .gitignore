@@ -15,3 +15,11 @@ mobile/balance-log.jsonl
 *.aab
 *.apk
 signing-key-info.txt
+
+# Defensive: generic secret material. Note that adding a pattern here does
+# NOTHING for a file Git already tracks — that needs `git rm --cached`.
+.env
+.env.*
+*.pem
+*.p12
+*.pfx
