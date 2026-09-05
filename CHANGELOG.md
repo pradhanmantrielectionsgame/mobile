@@ -6,6 +6,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [2.7.5] - 2026-09-05
+
+Nationwide Rally feature with a national anthem cue, and fixed iOS audio ducking that had silently broken special power audio mixing on phones.
+
+### Added
+- **ADDED**: Nationwide Rally — a new level-4+ special powerup (`playNationwideAnthem()`) that plays `sounds/saare_jahan_se_accha.mp3` (first 6 seconds via a `setTimeout` stop, not a trimmed asset). Ducks the background music for the full 6s duration using the new pause-based ducking (see below) and spawns a 6s celebration burst (parameterised per action, not hardcoded). Triggered from the UI as a button press or via the token craft action (`NationwideCraft` action type).
+- **ADDED**: `mobile/main.js` `duckMusic()` and `unduckMusic()` audio-level helpers that pause and resume the current looping track instead of writing to `.volume`. iOS Safari treats `HTMLMediaElement.volume` as read-only (hardware-controlled audio level), so all volume-based ducking silently failed on phones. The new helpers use depth-counting so overlapping sound cues (e.g. a special power and the Nationwide Rally firing in rapid sequence) restore the music only once the last finishes. Keys off `currentMusicKey` rather than a hardcoded `bg_music`.
+
+### Changed
+- **CHANGED**: `spawnPowerBurst()` now accepts a `durationMs` parameter (default 5000ms) and writes it to a `--burst-dur` CSS variable, which the three power-burst animations read. Special powers stay at 5000ms; Nationwide Rally passes `NATIONWIDE_SFX_MS` (6000ms) so its animation matches the audio. Centralises the timing so sound and animation cannot drift apart.
+- **CHANGED**: `playPowerSound()` switched to `duckMusic()`/`unduckMusic()`, fixing audio ducking that had never worked on iOS.
+- **CHANGED**: `mobile/index.html` `.power-burst` animations now read `var(--burst-dur)` for their durations, default 5s, overridden inline per burst. Ensures special powers see the exact same timing they did before the parameterisation.
+
+### Removed
+- **REMOVED**: `BG_MUSIC_DUCKED_VOLUME` constant — no longer referenced after the switch to pause-based ducking.
+
+### Fixed
+- **FIXED**: Background music now correctly ducks during special power activation on iOS phones, a regression that had existed since the feature was first added (special powers had **never** ducked the music on any iPhone, not a new break).
+
 ## [2.7.3] - 2026-09-05
 
 Fixed rally button behavior under phase caps, disarm logic per state vs. global caps, and music continuing to play during pause. Rotated the Android signing key after an accidental keystore commit, upgraded the intro music track, and adjusted the starting difficulty level.
