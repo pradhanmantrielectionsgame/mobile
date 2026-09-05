@@ -1,5 +1,40 @@
 # Findings
 
+## 2026-09-04 — PowerShell 5.1 turns a native command's stderr into a terminating error
+**Finding:** With `$ErrorActionPreference = 'Stop'`, redirecting a native executable's stderr via `2>&1` inside PowerShell 5.1 wraps each stderr line as a `NativeCommandError` record, which is then treated as terminating. `java -version` writes its version banner to stderr, so an install script died on a *logging* line — `Log ("java: " + (& java.exe -version 2>&1 ...))` — after the JDK had installed perfectly fine (openjdk 17.0.20.1).
+**Context:** First Android SDK install attempt exited 1 with the JDK fully extracted and working.
+**Implication:** Never use `2>&1` on a native exe in a PowerShell 5.1 script that sets `ErrorActionPreference='Stop'`. Either drop the redirect or set `'Continue'` around native calls. This is already documented in the environment's own PowerShell tool guidance — it was not heeded.
+
+## 2026-09-04 — sdkmanager invoked through `cmd /c` silently installs nothing and still exits 0
+**Finding:** Calling `& cmd /c "\"$sdkm\" --sdk_root=\"$SDK\" platform-tools emulator ..."` mangled the argument list through the nested quoting; sdkmanager received no usable package list, printed `Computing updates... 100%` in about two seconds, downloaded nothing, and returned success. The failure only surfaced two steps later at `avdmanager create avd`, as `Error: Package path is not valid. Valid system image paths are: null`. Passing the same packages as a native PowerShell argument array directly to `sdkmanager.bat` worked immediately.
+**Context:** A run that reported `exit=0` had installed only cmdline-tools; the log showed a 2-second "install" of a nominal 2GB of packages.
+**Implication:** Call `.bat` wrappers directly with a PowerShell argument array, never through `cmd /c` with nested quotes. And never treat a zero exit code from sdkmanager as proof of installation — verify the expected files exist on disk (`emulator.exe`, `system.img`) and exit non-zero if they don't. That verification is now in the script.
+
+## 2026-09-04 — sdkmanager licence acceptance cannot be driven by piping into a non-interactive shell
+**Finding:** `"y`n" * 60 | sdkmanager --licenses` completed in about two seconds having accepted nothing — the piped stdin reaches EOF immediately in a non-interactive shell. Writing the accepted-hash files directly works: `$SDK\licenses\android-sdk-license` containing the SHA1 hashes `24333f8a63b6825ea9c5514f83c2829b004d1fee`, `8933bad161af4178b1185d1a37fbf41ea5269c55`, `d56f5187479451eabf01fb78af6dfcb131a6481e`, plus `android-sdk-preview-license` containing `84831b9409646a918e30573bab4c9c91346d8abd`.
+**Context:** Found alongside the `cmd /c` fault, while diagnosing why nothing installed.
+**Implication:** Pre-write the licence hash files in any automated Android SDK setup rather than trying to answer the prompt.
+
+## 2026-09-04 — `avdmanager` writes the AVD to C: by default, which this machine cannot afford
+**Finding:** `avdmanager create avd` places the AVD under `%USERPROFILE%\.android\avd` on C: regardless of where the SDK lives. C: has 2.3 GB free of 219 GB; a single AVD's userdata can exceed that. Overridden with `ANDROID_AVD_HOME=D:\Android\avd`.
+**Context:** Noticed while fixing the install script, before any AVD had been created.
+**Implication:** Always set `ANDROID_AVD_HOME` explicitly on this machine — putting the SDK on D: is not sufficient, the AVD location is a separate setting.
+
+## 2026-09-04 — A nearly-full C: causes OOM process kills even with RAM free, via pagefile starvation
+**Finding:** Two consecutive Android system-image installs were killed by the OS for low memory while 4.4-4.6 GB of 31.6 GB RAM was free. C: had 2.3 GB free. Windows sizes its pagefile on C:, so with almost no room to page, memory pressure that would normally be absorbed instead gets resolved by killing the largest process — and unpacking a ~1.5 GB system image is exactly that. sdkmanager also stages downloads through temp on C:, which had less free space than the image being unpacked.
+**Context:** Found after the second kill, when the memory numbers alone did not explain the failures.
+**Implication:** Free space on C: before retrying — this is the blocking condition, not RAM. Worth doing for general machine stability regardless: Windows degrades below roughly 10% free on the system drive.
+
+## 2026-09-04 — bash `*` skips dot-directories, which caused a false "no progress" report
+**Finding:** `du -sh /d/Android/sdk/*` reported roughly 1.25 GB across visible subdirectories, and the system-image directory held only a 1 KB `.installer` marker — reported to the user as the download having made no progress. PowerShell's own enumeration showed 3,350 MB. The difference was `D:\Android\sdk\.temp\PackageOperation01`, holding 2.2 GB of successfully downloaded system image that bash's `*` glob had skipped because the directory name begins with a dot.
+**Context:** Noticed only when a PowerShell directory listing disagreed with the earlier `du` output by ~2 GB.
+**Implication:** The download was never the failure — the unpack step is. When measuring a directory that tooling may use for hidden staging, enumerate with `ls -la` or `du -sh dir` on the parent, not a `dir/*` glob. And cross-check a "nothing happened" conclusion against a second measurement before reporting it.
+
+## 2026-09-04 — Android toolchain state on this machine, resumable
+**Finding:** `D:\Android` holds a partially complete Android setup: `jdk` (303 MB, Temurin 17, working), `sdk\cmdline-tools` (147 MB, sdkmanager/avdmanager working), `sdk\emulator` (1.1 GB, installed), `sdk\licenses` (pre-accepted hash files), and `sdk\.temp\PackageOperation01` (2.2 GB, the `system-images;android-34;google_apis_playstore;x86_64` download, not yet unpacked). No AVD exists yet. Nothing is running.
+**Context:** State captured after the user deferred the APK-testing decision.
+**Implication:** Re-running the resume script (`install-sdk3.ps1` pattern: JAVA_HOME/ANDROID_HOME/ANDROID_AVD_HOME set, sdkmanager with a real argument array, then `avdmanager create avd -n pme_pixel -k <img> -d pixel_6`) picks up without re-downloading. Free C: space first. Use the `google_apis_playstore` image specifically — a TWA cannot launch without Chrome, which plain AOSP images do not ship. Alternatives that need none of this: Firebase Test Lab, a tester's phone, or Play's internal testing track.
+
 ## 2026-09-04 — Root cause of "sounds randomly disappear after a deploy": cache eviction plus a missing catch
 **Finding:** Two compounding faults in `mobile/sw.js`. (1) `activate()` deleted every cache whose key wasn't the current `CACHE`, and art/sounds lived in that same cache — so every code deploy evicted ~7MB of portraits and mp3s and forced a full re-download, even when no media had changed. (2) The media branch of `fetch` had no `.catch()` (the app-shell branch below it does), so any one of those forced re-fetches that failed on a flaky connection reached `respondWith()` as a network error and left that `<audio>` element dead for the rest of the session. A different subset lost the race each time, which is why it looked random and why it only happened right after a push. The server was never at fault — all 14 sound files were git-tracked and returning 200 throughout.
 **Context:** User reported sounds going missing after new versions shipped and asked whether it was a code bug. Checked git tracking and live HTTP status for all 14 files first (all clean), which pointed at the client.
