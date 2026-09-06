@@ -417,6 +417,9 @@ button{ font-family:inherit; border: none; background:none; color:inherit; }
 .welcome-start-btn:active{ transform: translate(2px,2px); box-shadow: none; }
 .welcome-start-btn[disabled], .welcome-howto-btn[disabled]{ opacity:.4; box-shadow: none; }
 .welcome-content .ver-badge{ margin-top: 0.4rem; color:#fff; }
+/* Always-on companion to the one-time #aboutOverlay: a reviewer or a returning
+   player who dismissed that notice still sees the non-affiliation line here. */
+.welcome-content .disclaimer{ display:block; max-width: 17rem; margin: 0.3rem auto 0; line-height:1.35; }
 .welcome-highscore{ color:#fff; font-family:var(--font-mono); font-weight:700; font-size: 0.8rem; letter-spacing:.03em;
   margin: 0 0 0.55rem; text-shadow: 0 2px 6px rgba(0,0,0,.55); }
 .welcome-highscore[hidden]{ display:none; }
@@ -566,6 +569,19 @@ button{ font-family:inherit; border: none; background:none; color:inherit; }
 .install-gate-steps{ background:var(--paper-dim); border: 1.5px solid var(--ink); border-radius: 0.75rem; padding: 0.75rem 0.875rem; text-align:left; }
 .install-gate-steps p{ font-size: 0.95rem; line-height:1.4; margin: 0 0 0.5rem; }
 .install-gate-steps p:last-child{ margin-bottom:0; }
+
+/* First-launch "About this game" notice: what the game is, and that its
+   scenarios are invented rather than a factual account of the real people
+   it names. Sits above the welcome screen (z-index 55) but below the
+   install gate (100), so a phone that has to install first sees that one. */
+.about-overlay{ z-index:60; align-items:center; justify-content:center; padding: 1rem; padding-top: calc(env(safe-area-inset-top,0px) + 2.25rem); }
+.about-body{ max-width: 19rem; margin:0 auto; }
+.about-body p{ font-size: 0.85rem; line-height:1.5; margin: 0 0 0.7rem; }
+.about-body p:last-of-type{ margin-bottom: 1rem; }
+.about-body a{ color:var(--ink); text-decoration:underline; }
+.about-ok-btn{ display:block; width:100%; max-width: 11rem; margin: 0 auto; font-family:var(--font-display); color:#fff; font-weight:700; font-size: 0.8rem; padding: 0.5rem 0.8rem;
+  background:var(--accent); border-radius: 2.5rem; border: 1.5px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); }
+.about-ok-btn:active{ transform: translate(2px,2px); box-shadow: none; }
 
 .tutorial-navbar{ position:fixed; top: calc(env(safe-area-inset-top,0px) + 0.35rem); left: calc(var(--gutter) + 0.35rem); z-index:62;
   background:var(--paper); color:var(--ink); padding: 0.25rem 0.5rem; border-radius: 2.5rem; border: 1.5px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); }
@@ -817,6 +833,7 @@ button{ font-family:inherit; border: none; background:none; color:inherit; }
     <button class="welcome-howto-btn" id="welcomeReplayBtn" hidden>▶ Watch last game</button>
     <a class="tip-link" id="tipLinkWelcome" href="#" target="_blank" rel="noopener">☕ Support the developer</a>
     <span class="ver-badge" id="welcomeVersion"></span>
+    <span class="ver-badge disclaimer">An educational strategy game. Fictional scenarios, not affiliated with any party or person.</span>
   </div>
 </div>
 
@@ -829,6 +846,17 @@ button{ font-family:inherit; border: none; background:none; color:inherit; }
       <p><b>iPhone (Safari):</b> Tap the Share icon, then "Add to Home Screen."</p>
       <p><b>Android (Chrome):</b> Tap the menu (⋮), then "Add to Home Screen" or "Install app."</p>
     </div>
+  </div>
+</div>
+
+<div class="overlay about-overlay" id="aboutOverlay" hidden>
+  <div class="overlay-header"><h1>About this game</h1></div>
+  <div class="about-body">
+    <p>Pradhan Mantri Elections is an educational strategy game about how Indian general elections work — 543 Lok Sabha seats, real states and regions, and the way public opinion shifts across them.</p>
+    <p>The leaders you play are <b>based on</b> real public figures, but the scenarios, powers and outcomes are <b>fictional dramatizations created for gameplay</b>. Nothing here is a factual account of any real person's actions, a prediction about any real election, or a comment on any real political event.</p>
+    <p>This game is not affiliated with, endorsed by, or sponsored by any political party, individual, or government body. It does not endorse or solicit support for any party or candidate.</p>
+    <p>Made for entertainment and learning. No account, no ads, no data collected — see the <a href="privacy.html" target="_blank" rel="noopener">privacy policy</a>.</p>
+    <button class="about-ok-btn" id="aboutOkBtn">Got it</button>
   </div>
 </div>
 

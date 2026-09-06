@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var E = window.PMEEngine, G = window.PMEGame;
-  var GAME_VERSION = '2.7.5';
+  var GAME_VERSION = '2.8.0';
   // Canonical public URL for the end-of-game "share result" link — hardcoded,
   // not location.href, so the shared link is always the clean site root and
   // never a /index.html deep link, a ?query string, or a Capacitor
@@ -272,6 +272,35 @@
     document.getElementById('installGateOverlay').hidden = false;
     document.getElementById('welcomeOverlay').hidden = true;
   }
+
+  // First-launch "About this game" notice: what the game is, and that its
+  // scenarios are invented rather than a factual account of the real people
+  // it names. Shown once per browser profile, then acknowledged for good.
+  //
+  // Deliberately a notice, not a consent gate — nothing is collected, so
+  // there is nothing to consent to, and a wall in front of a free game costs
+  // first-time players for no legal gain. The always-on line under the
+  // version badge on the welcome screen is what carries this when the notice
+  // has been dismissed (or when iOS ITP clears the flag after ~7 days on a
+  // tab that was never added to the Home Screen — it reappearing is fine).
+  //
+  // Skipped while the install gate is up: that screen is the one thing the
+  // player must act on first, and stacking two overlays reads as broken.
+  var ABOUT_KEY = 'pme_about_ack';
+  (function () {
+    var overlay = document.getElementById('aboutOverlay');
+    var btn = document.getElementById('aboutOkBtn');
+    var gate = document.getElementById('installGateOverlay');
+    if (!overlay || !btn || (gate && !gate.hidden)) return;
+    if (lsGet(ABOUT_KEY, '') === '1') return;
+    overlay.hidden = false;
+    // click, not fastTap: fastTap gates on actionsLocked(), which is true
+    // before a match starts, and this is chrome rather than a game action.
+    btn.addEventListener('click', function () {
+      overlay.hidden = true;
+      lsSet(ABOUT_KEY, '1');
+    });
+  })();
 
   var TIP_URL = 'https://buymeacoffee.com/pradhanmantri';
   ['tipLinkWelcome', 'tipLinkEnd'].forEach(function (id) {
