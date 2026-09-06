@@ -1,0 +1,102 @@
+{
+  "gameSettings": {
+    "totalPhases": 10,
+    "phaseDurationSeconds": 30,
+    "refreshFundsPerPhase": 1000
+  },
+  "playerSettings": {
+    "startingFunds": 2500
+  },
+  "investmentSystem": {
+    "baseCostPerSeat": 10,
+    "basePopularityBoost": 5,
+    "finalPopularityBoost": 2,
+    "glidePathInvestments": 20,
+    "minimumBoost": 2
+  },
+  "rallySystem": {
+    "maxRalliesPerState": 2,
+    "popularityBoost": 8,
+    "tokensPerPhase": 1,
+    "simpleRallyTokens": 1,
+    "specialRallyTokens": 1,
+    "regularTokenBoost": 4,
+    "specialTokenBoost": 4,
+    "specialTokenProbability": 0.05
+  },
+  "campaign": {
+    "maxContributionsPerPhase": 5
+  },
+  "bonuses": {
+    "campaignCompletion": 300,
+    "regionalDominance": {
+      "baseBonus": 200,
+      "carryForwardBonus": 50
+    }
+  },
+  "gameBalance": {
+    "dominantTerritoryMinPopularity": 35,
+    "dominantTerritoryMaxPopularity": 60,
+    "competitiveMaxPopularity": 34
+  },
+  "audio": {
+    "enableSounds": true,
+    "volume": 0.5
+  },
+  "ui": {
+    "showCountdownWarning": true,
+    "countdownWarningSeconds": 10,
+    "autoAdvancePhases": true
+  },
+  "mobileEconomy": {
+    "_comment": "Canonical constants for the mobile Booth Ink engine (mobile/engine.js), per design/economy-status-map.md. Namespaced separately from the sections above, which the legacy desktop build (index.html/js/*) reads directly with different key names/values — kept untouched so this doesn't regress that build.",
+    "totalPhases": 10,
+    "phaseDurationSeconds": 45,
+    "startingFundsCr": 5000,
+    "fundsRefreshPerPhaseCr": 2500,
+    "totalSeats": 543,
+    "seatsToWin": 272,
+    "investment": {
+      "costPerSeatCr": 10,
+      "boostStartBps": 500,
+      "boostFloorBps": 200,
+      "boostGlidePathTaps": 20,
+      "boostDecayRate": 0.933
+    },
+    "rally": {
+      "tokenIncomePerPhase": 2,
+      "maxTokenSpendPerPhase": 2,
+      "maxPlaysPerStateShared": 2,
+      "tokenBoostBps": 500,
+      "specialPowerupCraftCost": 6,
+      "specialPowerupMinPhase": 0,
+      "nationwideRallyCraftCost": 12,
+      "nationwideRallyMinPhase": 6,
+      "nationwideRallyBoostBps": 500,
+      "agendaTokenBonusPerCompletion": 2,
+      "agendaTokenBonusMax": 8
+    },
+    "agenda": {
+      "costPerTapCr": 500,
+      "tapsToComplete": 4
+    },
+    "regionalDominance": {
+      "thresholdBps": 5000,
+      "payoutCrPerSeat": 5,
+      "holdingBonusCrPerSeat": 0.5
+    },
+    "cleanSweep": {
+      "payoutCrPerSeat": 5
+    },
+    "scoring": {
+      "_comment": "Composite end-of-game 'Final score' (mobile/game.js computeScore). First-pass weights — tune with beta feedback. Pure function of final game state so the same number is reproducible server-side from a replayed action log. Scaled x100 so the number reads big.",
+      "seatWeight": 100,
+      "marginWeight": 50,
+      "winBonus": 50000,
+      "drawBonus": 15000,
+      "groupWeight": 4000,
+      "agendaWeight": 1500,
+      "cleanSweepWeight": 2500
+    }
+  }
+}

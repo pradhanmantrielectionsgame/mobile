@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.pradhanmantrielectionsgame.twa",
+        "sha256_cert_fingerprints": ["CF:C3:E0:14:78:D6:E5:9D:24:52:1E:52:68:E5:AB:CA:B7:5C:FE:36:F3:98:CE:4E:7E:67:BD:B3:EA:2E:60:98"]
+      }
+    }]

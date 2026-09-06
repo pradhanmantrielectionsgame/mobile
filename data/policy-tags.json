@@ -1,0 +1,100 @@
+{
+  "policyTags": {
+    "Education": {
+      "tagEffects": { "Education": 8, "Manufacturing": 8 }
+    },
+    "Rural Development": {
+      "tagEffects": { "AgriculturalRegion": 8, "EasternBorder": 8, "IndustrialCorridor": -8, "Manufacturing": -4 }
+    },
+    "Women's Empowerment": {
+      "nationwideBonus": 4
+    },
+    "Healthcare": {
+      "nationwideBonus": 4
+    },
+    "Land Reforms": {
+      "tagEffects": { "IndustrialCorridor": 8, "Manufacturing": 4, "AgriculturalRegion": -8, "TribalLands": -8 }
+    },
+    "Agricultural Reforms": {
+      "tagEffects": { "AgriculturalRegion": 8, "IndustrialCorridor": -8, "Manufacturing": -4 }
+    },
+    "Water and Mineral Rights": {
+      "tagEffects": { "AgriculturalRegion": 4, "TribalLands": 4, "NaturalResources": 4, "IndustrialCorridor": -4, "Manufacturing": -4 }
+    },
+    "Infrastructure": {
+      "tagEffects": { "IndustrialCorridor": 4, "Manufacturing": 4, "TribalLands": -4, "AgriculturalRegion": -4 }
+    },
+    "Economic Liberalization": {
+      "tagEffects": { "IndustrialCorridor": 12, "Manufacturing": 8, "CoastalIndia": 12, "AgriculturalRegion": -12, "TribalLands": -8, "NaturalResources": -8 }
+    },
+    "Privatization": {
+      "tagEffects": { "IndustrialCorridor": 4, "Manufacturing": 4, "AgriculturalRegion": -4 }
+    },
+    "Public Sector": {
+      "tagEffects": { "IndustrialCorridor": 4, "Manufacturing": 4, "TribalLands": 4, "AgriculturalRegion": -4 }
+    },
+    "Digital Transformation": {
+      "tagEffects": { "Education": 8, "IndustrialCorridor": 8, "AgriculturalRegion": -4, "Pilgrimage": -4, "TribalLands": -4 }
+    },
+    "Anti-Corruption": {
+      "nationwideBonus": 4
+    },
+    "Administrative Reform": {
+      "tagEffects": { "Education": 8, "IndustrialCorridor": 8, "Manufacturing": 8, "TribalLands": -4, "AgriculturalRegion": -4 }
+    },
+    "Press Freedom": {
+      "tagEffects": { "Education": 8, "MinorityAreas": 8, "TribalLands": 4 }
+    },
+    "Law and Order": {
+      "tagEffects": { "EasternBorder": 4, "WesternBorder": 4, "IndustrialCorridor": 4, "MinorityAreas": -4, "TravelAndTourism": -4 }
+    },
+    "Hindi Language": {
+      "tagEffects": { "HindiHeartland": 8, "SouthIndia": -8, "EasternBorder": -4, "MinorityAreas": -8 }
+    },
+    "Hindutva": {
+      "tagEffects": { "HindiHeartland": 12, "Pilgrimage": 12, "MinorityAreas": -12, "SouthIndia": -12, "EasternBorder": -12 }
+    },
+    "Secularism": {
+      "tagEffects": { "MinorityAreas": 12, "Education": 12, "HindiHeartland": -12, "Pilgrimage": -12 }
+    },
+    "Indigenous Rights": {
+      "tagEffects": { "TribalLands": 8, "EasternBorder": 8, "IndustrialCorridor": -4, "Manufacturing": -8 }
+    },
+    "Caste Reservation": {
+      "tagEffects": { "HindiHeartland": 12, "SouthIndia": 4, "Education": -12 }
+    },
+    "Uniform Civil Code": {
+      "tagEffects": { "HindiHeartland": 12, "MinorityAreas": -12 }
+    },
+    "State's Rights": {
+      "tagEffects": { "SouthIndia": 8, "EasternBorder": 8, "HindiHeartland": -8 }
+    },
+    "National Defense": {
+      "tagEffects": { "EasternBorder": 12, "WesternBorder": 12, "MinorityAreas": -4 }
+    },
+    "Film and TV": {
+      "tagEffects": { "Education": 8, "TribalLands": 12 }
+    },
+    "Coastal Economy": {
+      "tagEffects": { "CoastalIndia": 12, "NaturalResources": 8, "AgriculturalRegion": -4 }
+    },
+    "Food Security": {
+      "tagEffects": { "AgriculturalRegion": 8, "SouthIndia": 8, "MinorityAreas": 4 }
+    },
+    "Heritage and Tourism": {
+      "tagEffects": { "TravelAndTourism": 12, "Pilgrimage": 8 }
+    },
+    "Environmental Conservation": {
+      "tagEffects": { "NationalParksWildlife": 12, "TribalLands": 8, "Manufacturing": -8, "IndustrialCorridor": -8 }
+    },
+    "Sports and Entertainment": {
+      "tagEffects": { "Education": 8, "TravelAndTourism": 8, "Manufacturing": 4 }
+    },
+    "Nationalization": {
+      "tagEffects": { "AgriculturalRegion": 8, "IndustrialCorridor": 8, "Manufacturing": 8, "CoastalIndia": -8 }
+    },
+    "Foreign Policy & Diplomacy": {
+      "nationwideBonus": 4
+    }
+  }
+}
