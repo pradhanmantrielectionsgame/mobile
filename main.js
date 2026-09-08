@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var E = window.PMEEngine, G = window.PMEGame;
-  var GAME_VERSION = '2.9.0';
+  var GAME_VERSION = '2.10.0';
   // Canonical public URL for the end-of-game "share result" link — hardcoded,
   // not location.href, so the shared link is always the clean site root and
   // never a /index.html deep link, a ?query string, or a Capacitor
@@ -361,6 +361,20 @@
   // politician has 3 "ink" charges (diamonds on their card); playing them
   // spends one. Hit zero and they're out of ink for a 6h cooldown, then
   // refill to 3. Storage: { [id]: { used: 0-3, cooldownStart: ms|null } }.
+  // Politicians the player has actually won an election with — drives the
+  // "ELECTED" stamp on their carousel card. Same client-side, bypassable
+  // storage as the unlock progression, deliberately (see CLAUDE.md).
+  var WON_WITH_KEY = 'pme_won_with';
+  function loadWonWith() {
+    try { return JSON.parse(lsGet(WON_WITH_KEY, '[]')) || []; } catch (e) { return []; }
+  }
+  function recordWin(id) {
+    var won = loadWonWith();
+    if (won.indexOf(id) !== -1) return;
+    won.push(id);
+    lsSet(WON_WITH_KEY, JSON.stringify(won));
+  }
+
   var CHARGES_KEY = 'pme_politician_charges';
   var MAX_CHARGES = 3;
   var CHARGE_COOLDOWN_MS = 6 * 60 * 60 * 1000;
@@ -1581,6 +1595,17 @@
     ballot.querySelector('.pol-art-img-slot').replaceWith(img);
     ballot.querySelector('.pol-seal-slot').replaceWith(partyBadge(p));
 
+    if (!locked && loadWonWith().indexOf(p.id) !== -1) {
+      var won = document.createElement('div');
+      won.className = 'pol-won-stamp';
+      won.setAttribute('aria-label', 'Won an election as ' + p.name);
+      // Each clone needs its own arc-path ids: a <textPath href="#..."> that
+      // resolves into a *different* <svg> root silently renders nothing in
+      // WebKit, so duplicate ids would blank the curved text on every card.
+      won.innerHTML = $('declareStamp').innerHTML.replace(/stampArc/g, 'stampArc' + p.id);
+      ballot.appendChild(won);
+    }
+
     var agList = ballot.querySelector('.pol-agendas');
     var openChip = null;
     p.policies.forEach(function (pl) {
@@ -2153,6 +2178,7 @@
     var seal, headline, sub;
     if (game.winner === 'p1') {
       seal = '🏆'; headline = 'You won the election'; sub = 'You crossed 272 seats.';
+      recordWin(game.players.p1.politician.id);
       if (unlockPolitician(game.players.p2.politician.id)) {
         sub += ' 🔓 ' + game.players.p2.politician.name + ' unlocked!';
         spawnUnlockCelebration(game.players.p2.politician);
@@ -2165,6 +2191,11 @@
       sub = 'Neither side reached 272 seats.';
     }
     else { seal = '💔'; headline = 'You lost the election'; sub = game.players.p2.politician.name + ' crossed 272 seats.'; }
+    // Re-trigger the slam animation on every win (the node is reused across
+    // matches, so the animation only replays after a reflow).
+    var stamp = $('declareStamp');
+    stamp.hidden = game.winner !== 'p1';
+    if (!stamp.hidden) { stamp.style.animation = 'none'; void stamp.offsetWidth; stamp.style.animation = ''; }
     $('declareSeal').textContent = seal;
     $('endHeadline').textContent = headline;
     $('endSub').textContent = sub;

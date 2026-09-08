@@ -443,8 +443,14 @@ button{ font-family:inherit; border: none; background:none; color:inherit; }
    and rationale). Swipe/scroll-snap between them (native CSS, no drag JS). */
 #polCarousel{ flex:1 1 auto; min-height:0; display:flex; overflow-x:auto; overflow-y:hidden; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; }
 .pol-card{ flex:0 0 100%; scroll-snap-align:center; scroll-snap-stop:always; display:flex; flex-direction:column; overflow-y:auto; padding: 0.45rem 0.45rem 0.3rem; }
-.ballot-card{ --acc:#999; flex:1 1 auto; min-height:0; zoom:.95; background:var(--paper); color:var(--ink); border-radius: 1.125rem; border: 2px solid var(--ink);
+.ballot-card{ position:relative; --acc:#999; flex:1 1 auto; min-height:0; zoom:.95; background:var(--paper); color:var(--ink); border-radius: 1.125rem; border: 2px solid var(--ink);
   box-shadow: 3px 3px 0 var(--ink); overflow:hidden; display:flex; flex-direction:column; }
+
+/* "won with this politician" badge — same stamp art as the declare card's,
+   shrunk and static (no slam) so the carousel stays calm. */
+.pol-won-stamp{ position:absolute; top: 0.7rem; right: 0.9rem; width: 5.2rem; height: 5.2rem;
+  pointer-events:none; mix-blend-mode:multiply; opacity:.85; z-index:2; transform: rotate(-14deg); }
+.pol-won-stamp svg{ width:100%; height:100%; display:block; }
 
 .tricolor{ width:100%; height: 0.25rem; display:flex; flex:0 0 auto; }
 .tricolor span{ flex:1; }
@@ -506,8 +512,23 @@ button{ font-family:inherit; border: none; background:none; color:inherit; }
 /* ---- end-of-game "declaration" card — same ballot-card materials as the
    select screen's, so the game opens and closes inside one visual world. ---- */
 .end-overlay{ align-items:center; justify-content:flex-start; text-align:center; gap:0; padding: 0.5rem; }
-.declare-card{ width:100%; background:var(--paper); color:var(--ink); border-radius: 1.125rem; border: 2px solid var(--ink);
+.declare-card{ position:relative; width:100%; background:var(--paper); color:var(--ink); border-radius: 1.125rem; border: 2px solid var(--ink);
   box-shadow: 3.5px 3.5px 0 var(--ink); overflow:hidden; display:flex; flex-direction:column; align-items:center; }
+/* victory rubber stamp — slams onto the declare card's top-right when the
+   human wins. Inline SVG (not an asset) so html2canvas ships it in the
+   shared screenshot too. */
+.declare-stamp{ position:absolute; top: 1rem; right: 1.3rem; width: 6.5rem; height: 6.5rem;
+  pointer-events:none; mix-blend-mode:multiply; opacity:.88; z-index:3;
+  animation: stamp-slam .5s cubic-bezier(.2,1.5,.4,1) .35s both; }
+.declare-stamp[hidden]{ display:none; }
+.declare-stamp svg{ width:100%; height:100%; display:block; }
+@keyframes stamp-slam{
+  0%{ transform: scale(3.2) rotate(-38deg); opacity:0; }
+  60%{ transform: scale(.92) rotate(-11deg); opacity:.95; }
+  80%{ transform: scale(1.04) rotate(-15deg); }
+  100%{ transform: scale(1) rotate(-14deg); opacity:.88; }
+}
+@media (prefers-reduced-motion: reduce){ .declare-stamp{ animation:none; transform: rotate(-14deg); } }
 .declare-crest{ display:flex; flex-direction:row; align-items:center; justify-content:center; gap: 0.9rem; margin-top: 0.6rem; }
 .declare-seal{ width: 3.75rem; height: 3.75rem; border-radius:50%; background:var(--ink); border: 2px solid #C9A227;
   display:flex; align-items:center; justify-content:center; font-size: 1.9rem; box-shadow: 0 0 0 2px rgba(0,0,0,.12); flex:0 0 auto; }
@@ -908,6 +929,27 @@ button{ font-family:inherit; border: none; background:none; color:inherit; }
 <div class="overlay end-overlay" id="endOverlay" hidden>
   <div class="declare-card">
     <div class="tricolor"><span class="saffron"></span><span class="white"></span><span class="green"></span></div>
+    <div class="declare-stamp" id="declareStamp" hidden aria-hidden="true">
+      <svg viewBox="0 0 120 120">
+        <defs>
+          <path id="stampArcTop" d="M60,60 m-39,0 a39,39 0 1,1 78,0" fill="none"></path>
+          <path id="stampArcBot" d="M60,60 m-39,0 a39,39 0 1,0 78,0" fill="none"></path>
+        </defs>
+        <g fill="none" stroke="#C0261B" stroke-width="3.5">
+          <circle cx="60" cy="60" r="55"></circle>
+          <circle cx="60" cy="60" r="47.5" stroke-width="1.8"></circle>
+        </g>
+        <text fill="#C0261B" font-family="Georgia,serif" font-weight="700" font-size="6.6" letter-spacing="0.15">
+          <textPath href="#stampArcTop" startOffset="50%" text-anchor="middle">ELECTION COMMISSION OF INDIA</textPath>
+        </text>
+        <text fill="#C0261B" font-family="Georgia,serif" font-weight="700" font-size="7" letter-spacing="0.55">
+          <textPath href="#stampArcBot" startOffset="50%" text-anchor="middle">RESULT DECLARED</textPath>
+        </text>
+        <rect x="16" y="49" width="88" height="24" rx="2" fill="none" stroke="#C0261B" stroke-width="2"></rect>
+        <text x="60" y="66" fill="#C0261B" font-family="Georgia,serif" font-weight="700" font-size="14"
+              letter-spacing="1.5" text-anchor="middle">ELECTED</text>
+      </svg>
+    </div>
     <div class="declare-crest">
       <div class="declare-seal" id="declareSeal">🏆</div>
       <img class="end-winner-portrait" id="endWinnerPortrait" alt="" hidden>
