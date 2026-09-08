@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var E = window.PMEEngine, G = window.PMEGame;
-  var GAME_VERSION = '2.8.0';
+  var GAME_VERSION = '2.9.0';
   // Canonical public URL for the end-of-game "share result" link — hardcoded,
   // not location.href, so the shared link is always the clean site root and
   // never a /index.html deep link, a ?query string, or a Capacitor
@@ -1236,8 +1236,10 @@
   // non-blocking, never gates the next action.
   // ---------------------------------------------------------------------
   function viewportPoint(el) {
-    if (!el) return { x: window.innerWidth / 2, y: window.innerHeight / 2 };
-    var r = el.getBoundingClientRect();
+    var r = el && el.getBoundingClientRect();
+    // A display:none element reports an all-zero rect, which would park the FX
+    // in the viewport's top-left corner. Fall back to centre screen instead.
+    if (!r || (!r.width && !r.height)) return { x: window.innerWidth / 2, y: window.innerHeight / 2 };
     return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
   }
   function spawnFlash(x, y, colorClass) {
@@ -1843,10 +1845,18 @@
   // looks instant or dead) — same total spend as before, evenly paced
   // rather than fixed-interval-and-often-incomplete.
   // ---------------------------------------------------------------------
-  var AI_MIN_TICK_MS = 300, AI_MAX_TICK_MS = 4000;
-  var aiTickIntervalMs = 3000;
+  // The floor is now per-difficulty, not one global constant: each ladder rung
+  // carries its own `actionsPerSecond` (mobile/ai.js), and speed is a measured
+  // strength knob rather than an incidental clamp. It also keeps the standing
+  // rule that AI strength must come from decision quality, not from acting
+  // faster than a human can — levels 1/4/5 are held to a literal 1 action per
+  // second, and only the top rungs are allowed 2.
+  var AI_DEFAULT_APS = 1, AI_MAX_TICK_MS = 4000;
+  var aiTickIntervalMs = 3000, aiMinTickMs = 1000 / AI_DEFAULT_APS;
 
   function planAITickPacing(game) {
+    var prof = (game.players.p2 || {}).aiProfile;
+    aiMinTickMs = 1000 / ((prof && prof.actionsPerSecond) || AI_DEFAULT_APS);
     if (typeof structuredClone !== 'function') return; // keep prior default
     var rng = game.rng;
     game.rng = null; // functions aren't structured-cloneable
@@ -1857,7 +1867,7 @@
     while (G.aiStep(clone) && count < 500) count++;
     var phaseMs = game.cfg.phaseDurationSeconds * 1000;
     var interval = count > 0 ? phaseMs / count : AI_MAX_TICK_MS;
-    aiTickIntervalMs = Math.max(AI_MIN_TICK_MS, Math.min(AI_MAX_TICK_MS, interval));
+    aiTickIntervalMs = Math.max(aiMinTickMs, Math.min(AI_MAX_TICK_MS, interval));
   }
 
   // Visual FX for one action, from either the live AI tick or a replay step.
@@ -1868,6 +1878,9 @@
     pk = pk || 'p2';
     if (action.svgId) {
       var el = document.getElementById(action.svgId);
+      // INLD/INAN are display:none on the map (played via the Small-UTs cluster
+      // button instead), so their rect is 0,0 — flash the button the human uses.
+      if (el && !el.getClientRects().length) el = $('utsBtn');
       var pt = viewportPoint(el);
       if (el && el.animate) el.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.03)' }, { transform: 'scale(1)' }], { duration: 220 });
       spawnFlash(pt.x, pt.y, pk);

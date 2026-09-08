@@ -30,32 +30,59 @@
   // rather than difficulty and are gone; git history has them if the
   // match-to-match variety is missed.
   var LADDER_BASE = { agendaTapCapPerPolicyPerPhase: 4, craftsTokens: true, groupFocus: false };
-  function rung(key, flags) {
-    var p = { key: key };
+  function rung(key, actionsPerSecond, flags) {
+    var p = { key: key, actionsPerSecond: actionsPerSecond };
     Object.keys(LADDER_BASE).forEach(function (k) { p[k] = LADDER_BASE[k]; });
     Object.keys(flags).forEach(function (k) { p[k] = flags[k]; });
     return p;
   }
-  // Level 1-8, weakest to strongest. Ordering measured over 2,700 games with
-  // mobile/ladder-sim.js (mean seat margin vs the whole field, in comments
-  // below); every step clears its error bar. Two earlier profiles are
-  // deliberately absent: 'medium' (seatRankedAgendas alone) measured WEAKER
-  // than level 1, and 'cap0' lost to level 4 - both broke the ordering.
+  // Level 1-8, weakest to strongest. The flag-sets and their ORDER are the
+  // original ladder, unchanged. What is new (2026-09-07) is `actionsPerSecond`:
+  // a hard cap on how fast the bot may act in real time, enforced by main.js's
+  // planAITickPacing().
+  //
+  // Speed is a FAIRNESS cap here, not a difficulty knob. Measured over 6,000
+  // games at the real 45s phase, 2/s vs 1/s is within noise for seven of the
+  // eight rungs - at 45 moves a phase even the strongest flag-set gets to do
+  // everything it wants, so holding the bot to a human-matchable 1 action per
+  // second costs nothing. (An earlier pass appeared to show speed worth up to
+  // 110 seats; that was an artefact of simulating a 30s phase, which this game
+  // does not have. Don't re-derive it without checking the phase length.)
+  //
+  // level-3 is the one real exception: smartGroupTarget without spreadInvest
+  // needs the extra moves to finish a group, and at 1/s it measures WEAKER
+  // than level-1 (-110 vs -114), which breaks the ladder outright. It gets 2/s
+  // purely to sit in the right place. If that rung is ever reworked, re-check
+  // whether it still needs the exemption.
+  //
+  // Margins below are mean seat margin vs this 8-entrant field over 2,800
+  // games; every level beats the one below it.
   var AI_PROFILES = [
-    rung('level-1', {}),                                                                    // -101  was 'easy'
-    rung('level-2', { seatRankedAgendas: true, tokenDiscipline: true }),                    //  -61  was 'hard'
-    rung('level-3', { seatRankedAgendas: true, tokenDiscipline: true,
-                      smartGroupTarget: true }),                                            //  -43  was 'expert'
-    rung('level-4', { seatRankedAgendas: true, tokenDiscipline: true,
-                      spreadInvest: true, groupObsession: 2 }),                             //  -22  was 'regional-2'
-    rung('level-5', { seatRankedAgendas: true, tokenDiscipline: true,
-                      smartGroupTarget: true, spreadInvest: true, groupCap: 1 }),           //  +10  was 'cap1'
-    rung('level-6', { seatRankedAgendas: true, tokenDiscipline: true,
-                      smartGroupTarget: true, spreadInvest: true, groupCap: 2 }),           //  +55  was 'cap2'
-    rung('level-7', { seatRankedAgendas: true, tokenDiscipline: true,
-                      smartGroupTarget: true, spreadInvest: true, groupCap: 4 }),           // +109  was 'cap4'
-    rung('level-8', { seatRankedAgendas: true, tokenDiscipline: true,
-                      smartGroupTarget: true, spreadInvest: true })                         // +180  was 'max'
+    rung('level-1', 1, {}),                                                                 // -122  was 'easy'
+    rung('level-2', 1, { seatRankedAgendas: true, tokenDiscipline: true }),                 //  -76  was 'hard'
+    rung('level-3', 2, { seatRankedAgendas: true, tokenDiscipline: true,
+                         smartGroupTarget: true }),                                         //  -48  was 'expert'
+    rung('level-4', 1, { seatRankedAgendas: true, tokenDiscipline: true,
+                         spreadInvest: true, groupObsession: 2 }),                          //  -20  was 'regional-2'
+    rung('level-5', 1, { seatRankedAgendas: true, tokenDiscipline: true,
+                         smartGroupTarget: true, spreadInvest: true, groupCap: 1 }),        //   +7  was 'cap1'
+    rung('level-6', 1, { seatRankedAgendas: true, tokenDiscipline: true,
+                         smartGroupTarget: true, spreadInvest: true, groupCap: 2 }),        //  +49  was 'cap2'
+    rung('level-7', 1, { seatRankedAgendas: true, tokenDiscipline: true,
+                         smartGroupTarget: true, spreadInvest: true, groupCap: 4 }),        //  +93  was 'cap4'
+    rung('level-8', 1, { seatRankedAgendas: true, tokenDiscipline: true,
+                         smartGroupTarget: true, spreadInvest: true }),                     // +117  was 'max'
+    // Levels 9-10 are the level-8 flag-set again, unthrottled further. This is
+    // the one place speed genuinely buys strength: the top flag-set is the only
+    // one that still has moves queued when a 1/s cap runs out (it wants ~170 in
+    // a big phase), so 1.5/s and 2/s are real, separable rungs rather than
+    // relabelled copies. Deliberately the only levels that outpace a human -
+    // they are labelled as the hardest settings, and everything below stays at
+    // a human-matchable 1 action per second.
+    rung('level-9', 1.5, { seatRankedAgendas: true, tokenDiscipline: true,
+                           smartGroupTarget: true, spreadInvest: true }),
+    rung('level-10', 2, { seatRankedAgendas: true, tokenDiscipline: true,
+                          smartGroupTarget: true, spreadInvest: true })
   ];
   var MAX_LEVEL = AI_PROFILES.length;
 
@@ -508,6 +535,10 @@
   // Fast-forwards the AI's whole turn in one call — for Node tests/
   // simulation only, which don't need real-time pacing. The browser never
   // calls this; it ticks aiStep() on a timer instead (see main.js).
+  // IGNORES the rung's `actionsPerSecond` cap, so it is an upper bound on that
+  // rung's strength, not the strength a player actually faces. Any harness
+  // comparing rungs to each other must cap the turn itself — see
+  // mobile/ladder-sim.js's runTurn().
   function runAIFull(game, playerKey) {
     var guard = 0;
     while (aiStep(game, playerKey) && guard++ < 2000) {}
