@@ -457,7 +457,15 @@
     var pl = game.players[playerKey];
     var craftedFlag = flavor === 'special' ? 'craftedSpecial' : 'craftedNationwide';
     var usedFlag = flavor === 'special' ? 'usedSpecial' : 'usedNationwide';
-    if (pl[usedFlag] || pl[craftedFlag]) return { ok: false, reason: 'already_done' };
+    // The Special Powerup is once per match. The Nationwide Rally is capped
+    // only by the token budget: a match yields at most 28 tokens (2/phase x
+    // 10, plus 8 from agendas), so after the standard special(6) +
+    // nationwide(12) line nobody can reach a second 12 — except Rajiv, whose
+    // Telecom Revolution refunds what he has already spent. A hard flag was
+    // therefore redundant with the arithmetic, and it was what made his power
+    // pay out into nothing.
+    if (pl[craftedFlag]) return { ok: false, reason: 'already_done' };
+    if (flavor === 'special' && pl[usedFlag]) return { ok: false, reason: 'already_done' };
     var cost = flavor === 'special' ? game.cfg.rally.specialPowerupCraftCost : game.cfg.rally.nationwideRallyCraftCost;
     var minPhase = flavor === 'special' ? game.cfg.rally.specialPowerupMinPhase : game.cfg.rally.nationwideRallyMinPhase;
     if (game.phase < minPhase) return { ok: false, reason: 'too_early' };
@@ -473,8 +481,9 @@
 
   function activateNationwideRally(game, playerKey) {
     var pl = game.players[playerKey];
-    if (!pl.craftedNationwide || pl.usedNationwide) return { ok: false, reason: 'not_ready' };
+    if (!pl.craftedNationwide) return { ok: false, reason: 'not_ready' };
     recordAction(game, 'activateNationwideRally', playerKey, []);
+    pl.craftedNationwide = false;
     pl.usedNationwide = true;
     var boost = game.cfg.rally.nationwideRallyBoostBps;
     if (pl.nationwideRallyBonusArmedPhase != null) {

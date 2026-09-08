@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var E = window.PMEEngine, G = window.PMEGame;
-  var GAME_VERSION = '2.10.0';
+  var GAME_VERSION = '2.11.0';
   // Canonical public URL for the end-of-game "share result" link — hardcoded,
   // not location.href, so the shared link is always the clean site root and
   // never a /index.html deep link, a ?query string, or a Capacitor
@@ -1822,7 +1822,14 @@
     // game.js's AI logic. The nationwide rally is scripted as a player-only
     // moment (tutorial grants the player tokens for it at phase 6) — without
     // this the AI could craft/launch its own first.
-    if (tutorialMode) { game.players.p2.usedSpecial = true; game.players.p2.usedNationwide = true; }
+    if (tutorialMode) {
+      game.players.p2.usedSpecial = true;
+      // Both flags: usedNationwide alone no longer blocks a craft now that the
+      // rally is repeatable, and craftedNationwide can never clear here
+      // because activation is blocked by usedNationwide.
+      game.players.p2.usedNationwide = true;
+      game.players.p2.craftedNationwide = true;
+    }
     // tutorialMode itself flips false once coaching finishes (around phase
     // 6, after the nationwide rally) — this survives to phase 10 so the
     // end-of-game sign-off still knows the match started as a tutorial.
@@ -2917,8 +2924,11 @@
     var pl = game.players.p1;
     var usedFlag = flavor === 'special' ? 'usedSpecial' : 'usedNationwide';
     var craftedFlag = flavor === 'special' ? 'craftedSpecial' : 'craftedNationwide';
-    if (pl[usedFlag]) return 'used';
     if (pl[craftedFlag]) return 'ready';
+    // Only the Special Powerup is spent for good. A fired Nationwide Rally
+    // falls back to craftable so a player who can still afford another (in
+    // practice only Rajiv, post-refund) can launch it.
+    if (flavor === 'special' && pl[usedFlag]) return 'used';
     var cost = flavor === 'special' ? game.cfg.rally.specialPowerupCraftCost : game.cfg.rally.nationwideRallyCraftCost;
     return pl.tokens.stateRally >= cost ? 'craftable' : 'locked';
   }

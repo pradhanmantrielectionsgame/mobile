@@ -492,7 +492,7 @@
       }
     }
 
-    if (pl.craftedNationwide && !pl.usedNationwide) {
+    if (pl.craftedNationwide) { // fires any crafted charge, first or second
       if (G().activateNationwideRally(game, playerKey).ok) return { type: 'nationwide', svgId: null, costCr: null };
     }
 
