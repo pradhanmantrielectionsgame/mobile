@@ -607,6 +607,27 @@
     return pl.craftedSpecial && !pl.usedSpecial;
   }
 
+  // Every timing/resource condition on a politician's power, as one reason
+  // string (or null when it can fire right now). Deliberately excludes the
+  // target-selection checks in activatePower, which need `opts` the caller
+  // hasn't chosen yet — this answers "could the player press the button",
+  // which is what the HUD needs to grey the slot out. Single source of truth:
+  // activatePower calls this too, so the button and the engine cannot drift.
+  function powerBlockedReason(game, playerKey) {
+    var pl = game.players[playerKey], power = pl.politician.power;
+    if (power.requiresMinPhase && game.phase < power.requiresMinPhase) return 'too_early';
+    if (power.requiresMinFundsCr && pl.fundsCr < power.requiresMinFundsCr) return 'insufficient_funds';
+    if (pl.fundsCr < powerFundsCost(power)) return 'insufficient_funds';
+    if (powerFundsCost(power) > 0 && fundsFrozen(pl, game)) return 'funds_frozen';
+    if (power.requiresCompletedAgenda) {
+      var done = Object.keys(pl.agendaProgress).filter(function (k) {
+        return pl.agendaProgress[k] >= game.cfg.agenda.tapsToComplete;
+      });
+      if (!done.length) return 'no_completed_agenda';
+    }
+    return null;
+  }
+
   function powerFundsCost(power) {
     var total = 0;
     (power.costs || []).forEach(function (e) { if (e.kind === 'funds' && e.target === 'self') total += -e.amountCr; });
@@ -630,10 +651,8 @@
       if (!done.length) return { ok: false, reason: 'no_completed_agenda' };
       if (!opts.targetAgendaName || done.indexOf(opts.targetAgendaName) === -1) return { ok: false, reason: 'bad_target_agenda' };
     }
-    if (power.requiresMinPhase && game.phase < power.requiresMinPhase) return { ok: false, reason: 'too_early' };
-    if (power.requiresMinFundsCr && pl.fundsCr < power.requiresMinFundsCr) return { ok: false, reason: 'insufficient_funds' };
-    if (pl.fundsCr < powerFundsCost(power)) return { ok: false, reason: 'insufficient_funds' };
-    if (powerFundsCost(power) > 0 && fundsFrozen(pl, game)) return { ok: false, reason: 'funds_frozen' };
+    var blocked = powerBlockedReason(game, playerKey);
+    if (blocked) return { ok: false, reason: blocked };
 
     recordAction(game, 'activatePower', playerKey, [{ targetStateSvgId: opts.targetStateSvgId || null, targetAgendaName: opts.targetAgendaName || null }]);
     pl.usedSpecial = true;
@@ -748,6 +767,7 @@
     finalizeGame: finalizeGame,
     computeScore: computeScore,
     investCash: investCash,
+    powerBlockedReason: powerBlockedReason,
     playRallyToken: playRallyToken,
     craftToken: craftToken,
     activateNationwideRally: activateNationwideRally,

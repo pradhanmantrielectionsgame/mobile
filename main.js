@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var E = window.PMEEngine, G = window.PMEGame;
-  var GAME_VERSION = '2.11.0';
+  var GAME_VERSION = '2.12.0';
   // Canonical public URL for the end-of-game "share result" link — hardcoded,
   // not location.href, so the shared link is always the clean site root and
   // never a /index.html deep link, a ?query string, or a Capacitor
@@ -137,25 +137,35 @@
   // One number, nothing else: the slider shows it, the adaptive rule moves
   // it, the player can drag it. No separate auto/manual mode.
   function effectiveLevel() { return clampLevel(parseInt(lsGet(AI_LEVEL_KEY, START_LEVEL), 10) || START_LEVEL); }
+  // w/l are consecutive wins/losses; d is games since the last win, counting
+  // draws too. Old saves have no `d` and default to 0, which just means an
+  // existing player's drought clock starts now.
   function loadStreak() {
     var raw = lsGet(AI_STREAK_KEY, '');
-    try { var o = JSON.parse(raw); return { w: o.w | 0, l: o.l | 0 }; } catch (e) { return { w: 0, l: 0 }; }
+    try { var o = JSON.parse(raw); return { w: o.w | 0, l: o.l | 0, d: o.d | 0 }; }
+    catch (e) { return { w: 0, l: 0, d: 0 }; }
   }
-  function saveStreak(st) { lsSet(AI_STREAK_KEY, JSON.stringify({ w: st.w, l: st.l })); }
+  function saveStreak(st) { lsSet(AI_STREAK_KEY, JSON.stringify({ w: st.w, l: st.l, d: st.d })); }
+  var WIN_STREAK_UP = 3, LOSS_STREAK_DOWN = 3, DROUGHT_DOWN = 7;
 
   // Called once per completed rated match (game.ratedMatch is a one-shot flag
   // set at creation, so the tutorial sign-off path and replays can't count).
   function updateLadderAfterMatch() {
     if (!game || !game.ratedMatch) return;
     game.ratedMatch = false;
-    if (game.winner !== 'p1' && game.winner !== 'p2') return; // draw: no change
     var st = loadStreak(), lvl = effectiveLevel();
-    if (game.winner === 'p1') { st.w++; st.l = 0; } else { st.l++; st.w = 0; }
-    if (st.w >= 3) {
+    // A draw no longer breaks the win/loss streaks, but it does advance the
+    // drought counter: hung parliament is the most common outcome on the
+    // harder rungs, so a player could otherwise sit at a level they cannot
+    // beat indefinitely, never losing three in a row and never moving.
+    if (game.winner === 'p1') { st.w++; st.l = 0; st.d = 0; }
+    else if (game.winner === 'p2') { st.l++; st.w = 0; st.d++; }
+    else { st.d++; }
+    if (st.w >= WIN_STREAK_UP) {
       st.w = 0;
       if (lvl < maxLevel()) { lvl++; showToast('Difficulty up — Level ' + lvl); }
-    } else if (st.l >= 3) {
-      st.l = 0;
+    } else if (st.l >= LOSS_STREAK_DOWN || st.d >= DROUGHT_DOWN) {
+      st.l = 0; st.d = 0;
       if (lvl > 1) { lvl--; showToast('Difficulty down — Level ' + lvl); }
     }
     lsSet(AI_LEVEL_KEY, lvl); saveStreak(st);
@@ -2920,17 +2930,42 @@
   // ---------------------------------------------------------------------
   // Tokens: State Rally / Special Powerup / Nationwide Rally
   // ---------------------------------------------------------------------
+  // 'used' | 'ready' | 'craftable' | 'blocked' | 'locked'. Order matters:
+  // craftedSpecial stays true forever once crafted, so the used check has to
+  // come first or a spent power reads as permanently ready.
   function craftSlotState(flavor) {
     var pl = game.players.p1;
     var usedFlag = flavor === 'special' ? 'usedSpecial' : 'usedNationwide';
     var craftedFlag = flavor === 'special' ? 'craftedSpecial' : 'craftedNationwide';
-    if (pl[craftedFlag]) return 'ready';
     // Only the Special Powerup is spent for good. A fired Nationwide Rally
-    // falls back to craftable so a player who can still afford another (in
-    // practice only Rajiv, post-refund) can launch it.
+    // clears craftedNationwide instead, so it falls back through to craftable
+    // for anyone who can still afford another (in practice only Rajiv).
     if (flavor === 'special' && pl[usedFlag]) return 'used';
+    // A crafted power still has to clear its own phase/funds conditions
+    // before it can actually fire — show that rather than a lying READY.
+    if (pl[craftedFlag]) {
+      return (flavor === 'special' && G.powerBlockedReason(game, 'p1')) ? 'blocked' : 'ready';
+    }
     var cost = flavor === 'special' ? game.cfg.rally.specialPowerupCraftCost : game.cfg.rally.nationwideRallyCraftCost;
-    return pl.tokens.stateRally >= cost ? 'craftable' : 'locked';
+    if (pl.tokens.stateRally < cost) return 'locked';
+    var minPhase = flavor === 'special' ? game.cfg.rally.specialPowerupMinPhase : game.cfg.rally.nationwideRallyMinPhase;
+    if (minPhase && game.phase < minPhase) return 'blocked';
+    return 'craftable';
+  }
+
+  // Short badge text naming what a 'blocked' slot is still waiting on.
+  function craftBlockedBadge(flavor) {
+    var pl = game.players.p1;
+    var minPhase = flavor === 'special' ? game.cfg.rally.specialPowerupMinPhase : game.cfg.rally.nationwideRallyMinPhase;
+    if (!pl[flavor === 'special' ? 'craftedSpecial' : 'craftedNationwide'] && minPhase && game.phase < minPhase) {
+      return 'P' + minPhase;
+    }
+    var reason = G.powerBlockedReason(game, 'p1');
+    if (reason === 'too_early') return 'P' + pl.politician.power.requiresMinPhase;
+    if (reason === 'insufficient_funds') return '₹';
+    if (reason === 'funds_frozen') return '❄';
+    if (reason === 'no_completed_agenda') return '⚑';
+    return '—';
   }
 
   function renderTokens() {
@@ -2946,6 +2981,7 @@
         var state = craftSlotState(flavor);
         btn.classList.remove('locked', 'craftable', 'used', 'armed');
         if (state === 'locked') { btn.classList.add('locked'); badge.textContent = pl.tokens.stateRally + '/' + cost; }
+        else if (state === 'blocked') { btn.classList.add('locked'); badge.textContent = craftBlockedBadge(flavor); }
         else if (state === 'craftable') { btn.classList.add('craftable'); badge.textContent = pl.tokens.stateRally + '/' + cost; }
         else if (state === 'ready') { btn.classList.toggle('armed', armed === flavor); badge.textContent = 'READY'; }
         else { btn.classList.add('used'); badge.textContent = '✓'; }
@@ -2977,11 +3013,30 @@
     if (armed) showToast('Tap a state to deploy');
   }
 
+  // Plain-English version of craftBlockedBadge, for the tap toast.
+  function craftBlockedMessage(flavor) {
+    var pl = game.players.p1;
+    var minPhase = flavor === 'special' ? game.cfg.rally.specialPowerupMinPhase : game.cfg.rally.nationwideRallyMinPhase;
+    if (!pl[flavor === 'special' ? 'craftedSpecial' : 'craftedNationwide'] && minPhase && game.phase < minPhase) {
+      return 'Unlocks at phase ' + minPhase;
+    }
+    var power = pl.politician.power;
+    switch (G.powerBlockedReason(game, 'p1')) {
+      case 'too_early': return power.name + ' unlocks at phase ' + power.requiresMinPhase;
+      case 'insufficient_funds':
+        return 'Need ₹' + Math.max(power.requiresMinFundsCr || 0, G.powerFundsCost(power)).toLocaleString() + ' Cr';
+      case 'funds_frozen': return 'Your funds are frozen';
+      case 'no_completed_agenda': return 'Complete an agenda first';
+      default: return 'Not ready yet';
+    }
+  }
+
   function onSpecialBtn() {
     activeAgenda = null; activeAction = 'special'; updateCard();
     var state = craftSlotState('special');
     if (state === 'locked') { showToast('Need ' + game.cfg.rally.specialPowerupCraftCost + ' tokens (have ' + game.players.p1.tokens.stateRally + ')'); shakeInvalid($('specialBtn')); return; }
     if (state === 'used') return;
+    if (state === 'blocked') { showToast(craftBlockedMessage('special')); shakeInvalid($('specialBtn')); return; }
     if (state === 'craftable') {
       var r = G.craftToken(game, 'p1', 'special');
       renderAll();
@@ -3018,6 +3073,7 @@
     var state = craftSlotState('nationwide');
     if (state === 'locked') { showToast('Need ' + game.cfg.rally.nationwideRallyCraftCost + ' tokens (have ' + game.players.p1.tokens.stateRally + ')'); shakeInvalid($('nationwideBtn')); return; }
     if (state === 'used') return;
+    if (state === 'blocked') { showToast(craftBlockedMessage('nationwide')); shakeInvalid($('nationwideBtn')); return; }
     if (state === 'craftable') {
       var r = G.craftToken(game, 'p1', 'nationwide');
       renderAll();
