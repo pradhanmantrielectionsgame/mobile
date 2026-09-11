@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var E = window.PMEEngine, G = window.PMEGame;
-  var GAME_VERSION = '2.12.0';
+  var GAME_VERSION = '2.12.1';
   // Canonical public URL for the end-of-game "share result" link — hardcoded,
   // not location.href, so the shared link is always the clean site root and
   // never a /index.html deep link, a ?query string, or a Capacitor
@@ -1834,11 +1834,13 @@
     // this the AI could craft/launch its own first.
     if (tutorialMode) {
       game.players.p2.usedSpecial = true;
-      // Both flags: usedNationwide alone no longer blocks a craft now that the
-      // rally is repeatable, and craftedNationwide can never clear here
-      // because activation is blocked by usedNationwide.
+      // usedNationwide stops the AI banking tokens toward a rally; the
+      // craftsTokens:false profile copy is what actually blocks the craft
+      // (aiStep's only nationwide-craft path). Never pre-seed
+      // craftedNationwide here — that is a live charge, and the AI fired it
+      // for free on its first phase-1 tick.
       game.players.p2.usedNationwide = true;
-      game.players.p2.craftedNationwide = true;
+      game.players.p2.aiProfile = Object.assign({}, game.players.p2.aiProfile, { craftsTokens: false });
     }
     // tutorialMode itself flips false once coaching finishes (around phase
     // 6, after the nationwide rally) — this survives to phase 10 so the

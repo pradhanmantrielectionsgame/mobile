@@ -482,6 +482,9 @@
   function activateNationwideRally(game, playerKey) {
     var pl = game.players[playerKey];
     if (!pl.craftedNationwide) return { ok: false, reason: 'not_ready' };
+    // Also gated here, not just at craft: a charge seeded outside craftToken
+    // (the old tutorial setup did exactly this) must still not fire early.
+    if (game.phase < game.cfg.rally.nationwideRallyMinPhase) return { ok: false, reason: 'too_early' };
     recordAction(game, 'activateNationwideRally', playerKey, []);
     pl.craftedNationwide = false;
     pl.usedNationwide = true;
