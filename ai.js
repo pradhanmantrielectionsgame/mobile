@@ -86,6 +86,14 @@
   ];
   var MAX_LEVEL = AI_PROFILES.length;
 
+  // The Elo anchor: uniformly random legal moves, no planning, 1 action/s.
+  // Pinned at 1000 Elo in mobile/ladder-sim.js, so every rating is measured
+  // against it. FROZEN - any change to it or to randomStep() silently
+  // rescales every rating ever taken; compare ratings across code versions
+  // only while this stays byte-identical. Not a ladder rung (not in
+  // AI_PROFILES), but reachable in-browser via ?ai=anchor.
+  var ANCHOR_PROFILE = { key: 'anchor', actionsPerSecond: 1, random: true };
+
   // Fallback only. The real choice is main.js's adaptive level, which passes
   // an explicit profileKey to setupAI; this covers callers that pass none
   // (the headless harnesses). Never random - a random *difficulty* is a worse
@@ -106,7 +114,7 @@
   //                       per-state boost decay; seats-per-crore is otherwise
   //                       identical for every state (see investmentCostCr)
   function profileByKey(key) {
-    return AI_PROFILES.filter(function (p) { return p.key === key; })[0] || null;
+    return AI_PROFILES.concat([ANCHOR_PROFILE]).filter(function (p) { return p.key === key; })[0] || null;
   }
 
   // Flags a player slot as AI-controlled and gives it a personality profile
@@ -440,6 +448,7 @@
     var pl = game.players[playerKey];
     if (!pl.isAI || game.winner) return null;
     var profile = pl.aiProfile || AI_PROFILES[0];
+    if (profile.random) return randomStep(game, playerKey);
 
     // One rally attempt per tick, at a random top-10-largest state — not a
     // retry loop. A rejected placement (state already at its shared 2-play
@@ -529,6 +538,50 @@
       }
     }
 
+    return null;
+  }
+
+  // The anchor's whole brain (see ANCHOR_PROFILE - frozen). Tries every kind
+  // of move in random order, each with a random target, and plays the first
+  // legal one. Small UTs go through the batch, as they do for a human.
+  function randomStep(game, playerKey) {
+    var g = G(), pl = game.players[playerKey];
+    function pick(xs) { return xs[Math.floor(game.rng() * xs.length)]; }
+    var states = game.states.map(function (s) { return s.svgId; })
+      .filter(function (id) { return g.SMALL_UT_BATCH_IDS.indexOf(id) === -1; });
+    var moves = [
+      function () {
+        var id = pick(states), r = g.investCash(game, playerKey, id);
+        return r.ok && { type: 'invest', svgId: id, costCr: r.cost };
+      },
+      function () {
+        var cost = 0;
+        g.SMALL_UT_BATCH_IDS.forEach(function (id) { var r = g.investCash(game, playerKey, id); if (r.ok) cost += r.cost; });
+        return cost > 0 && { type: 'invest', svgId: g.SMALL_UT_BATCH_IDS[0], costCr: cost };
+      },
+      function () {
+        return g.tapAgenda(game, playerKey, pick(pl.politician.policies).name).ok &&
+          { type: 'agenda', svgId: null, costCr: game.cfg.agenda.costPerTapCr };
+      },
+      function () {
+        var id = pick(states);
+        return g.playRallyToken(game, playerKey, id).ok && { type: 'rally', svgId: id, costCr: null };
+      },
+      function () { return g.craftToken(game, playerKey, 'special').ok && { type: 'craftSpecial', svgId: null, costCr: null }; },
+      function () { return g.craftToken(game, playerKey, 'nationwide').ok && { type: 'craftNationwide', svgId: null, costCr: null }; },
+      function () { return g.activateNationwideRally(game, playerKey).ok && { type: 'nationwide', svgId: null, costCr: null }; },
+      function () {
+        var done = Object.keys(pl.agendaProgress)
+          .filter(function (k) { return pl.agendaProgress[k] >= game.cfg.agenda.tapsToComplete; });
+        var opts = { targetStateSvgId: pick(states), targetAgendaName: done.length ? pick(done) : undefined };
+        var r = g.activatePower(game, playerKey, opts);
+        return r.ok && { type: 'power', svgId: opts.targetStateSvgId, costCr: null, nullified: !!r.nullified };
+      }
+    ];
+    while (moves.length) {
+      var res = moves.splice(Math.floor(game.rng() * moves.length), 1)[0]();
+      if (res) return res;
+    }
     return null;
   }
 
