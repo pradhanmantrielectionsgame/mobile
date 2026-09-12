@@ -18,17 +18,22 @@
   // yet at load time, hence the per-call lookup.
   function G() { return root.PMEGame; }
 
-  // The difficulty ladder (ADR-0016). Each rung is the previous rung plus
-  // exactly one capability flag, and every other knob is held constant, so
-  // (rung N margin - rung N-1 margin) is that one capability's worth in
-  // seats. Order matters: index 0 is the weakest rung and the fallback.
+  // The difficulty ladder (ADR-0016, rebuilt 2026-09-11 from the anchored-Elo
+  // staircase experiment in mobile/bot-bank.js/findings.md). Picked to land
+  // close to an even ~55-Elo step between rungs (measured range: anchor 1000
+  // to the top flag-set's 1545, so (1545-1000)/10 ~= 54.5), NOT "one flag
+  // change per rung" the way the previous two reorders were — gameplay
+  // smoothness won over that architectural cleanliness on purpose, so which
+  // flag flips between two consecutive levels varies rung to rung. See
+  // mobile/bot-bank.js's third-generation comment block for the full
+  // per-bot measured Elo and the reasoning for each pick.
   //
-  // 'easy' reproduces the old shipped 'policy-rusher' bot exactly, so the
-  // bottom of the ladder is the difficulty the game shipped with rather than
-  // a newly-invented weak bot. The three other old personality profiles
-  // (aggressive-investor, rally-spammer, group-bonus-rusher) were flavour
-  // rather than difficulty and are gone; git history has them if the
-  // match-to-match variety is missed.
+  // Two previous reorders are preserved verbatim, under stable names
+  // decoupled from "level-N", in mobile/bot-bank.js — use that if you need a
+  // bot with a specific already-measured Elo regardless of what level-N
+  // means today. groupObsession's code stays live (see
+  // pickAIInvestmentTarget) only because those archived rungs still use it;
+  // nothing on the current ladder does.
   var LADDER_BASE = { agendaTapCapPerPolicyPerPhase: 4, craftsTokens: true, groupFocus: false };
   function rung(key, actionsPerSecond, flags) {
     var p = { key: key, actionsPerSecond: actionsPerSecond };
@@ -36,53 +41,41 @@
     Object.keys(flags).forEach(function (k) { p[k] = flags[k]; });
     return p;
   }
-  // Level 1-8, weakest to strongest. The flag-sets and their ORDER are the
-  // original ladder, unchanged. What is new (2026-09-07) is `actionsPerSecond`:
-  // a hard cap on how fast the bot may act in real time, enforced by main.js's
-  // planAITickPacing().
+  // `actionsPerSecond` is a fairness cap on real-time speed, not a difficulty
+  // knob — see planAITickPacing() in main.js. Levels 1-8 stay at a human-
+  // matchable 1/s; only 9-10 deliberately outpace a human (see below). If
+  // re-measurement (mobile/ladder-sim.js) finds a rung scores weaker than the
+  // one below it at 1/s, that specific rung is the one to grant a speed
+  // exemption to — don't apply it pre-emptively.
   //
-  // Speed is a FAIRNESS cap here, not a difficulty knob. Measured over 6,000
-  // games at the real 45s phase, 2/s vs 1/s is within noise for seven of the
-  // eight rungs - at 45 moves a phase even the strongest flag-set gets to do
-  // everything it wants, so holding the bot to a human-matchable 1 action per
-  // second costs nothing. (An earlier pass appeared to show speed worth up to
-  // 110 seats; that was an artefact of simulating a 30s phase, which this game
-  // does not have. Don't re-derive it without checking the phase length.)
-  //
-  // level-3 is the one real exception: smartGroupTarget without spreadInvest
-  // needs the extra moves to finish a group, and at 1/s it measures WEAKER
-  // than level-1 (-110 vs -114), which breaks the ladder outright. It gets 2/s
-  // purely to sit in the right place. If that rung is ever reworked, re-check
-  // whether it still needs the exemption.
-  //
-  // Margins below are mean seat margin vs this 8-entrant field over 2,800
-  // games; every level beats the one below it.
+  // Measured Elo (mobile/bot-bank.js bank name in parens; level-4's is a
+  // placeholder estimate from a small side-comparison, not a full round
+  // robin — see patient_egret's own comment):
+  //   L1  1068 (sleepy_sloth)         L6  1379 (focused_falcon)
+  //   L2  1120 (jumping_gopher)       L7  1416 (guarded_blackbuck)
+  //   L3  1166 (silent_myna)          L8  1448 (steadfast_porcupine)
+  //   L4 ~1235 (patient_egret, est.)  L9  1501 (greedy_gharial)
+  //   L5  1296 (steady_stork)         L10 1545 (lightning_leopard)
   var AI_PROFILES = [
-    rung('level-1', 1, {}),                                                                 // -122  was 'easy'
-    rung('level-2', 1, { seatRankedAgendas: true, tokenDiscipline: true }),                 //  -76  was 'hard'
-    rung('level-3', 2, { seatRankedAgendas: true, tokenDiscipline: true,
-                         smartGroupTarget: true }),                                         //  -48  was 'expert'
-    rung('level-4', 1, { seatRankedAgendas: true, tokenDiscipline: true,
-                         spreadInvest: true, groupObsession: 2 }),                          //  -20  was 'regional-2'
-    rung('level-5', 1, { seatRankedAgendas: true, tokenDiscipline: true,
-                         smartGroupTarget: true, spreadInvest: true, groupCap: 1 }),        //   +7  was 'cap1'
-    rung('level-6', 1, { seatRankedAgendas: true, tokenDiscipline: true,
-                         smartGroupTarget: true, spreadInvest: true, groupCap: 2 }),        //  +49  was 'cap2'
-    rung('level-7', 1, { seatRankedAgendas: true, tokenDiscipline: true,
-                         smartGroupTarget: true, spreadInvest: true, groupCap: 4 }),        //  +93  was 'cap4'
-    rung('level-8', 1, { seatRankedAgendas: true, tokenDiscipline: true,
-                         smartGroupTarget: true, spreadInvest: true }),                     // +117  was 'max'
-    // Levels 9-10 are the level-8 flag-set again, unthrottled further. This is
-    // the one place speed genuinely buys strength: the top flag-set is the only
-    // one that still has moves queued when a 1/s cap runs out (it wants ~170 in
-    // a big phase), so 1.5/s and 2/s are real, separable rungs rather than
-    // relabelled copies. Deliberately the only levels that outpace a human -
-    // they are labelled as the hardest settings, and everything below stays at
-    // a human-matchable 1 action per second.
-    rung('level-9', 1.5, { seatRankedAgendas: true, tokenDiscipline: true,
-                           smartGroupTarget: true, spreadInvest: true }),
-    rung('level-10', 2, { seatRankedAgendas: true, tokenDiscipline: true,
-                          smartGroupTarget: true, spreadInvest: true })
+    rung('level-1', 1, {}),
+    rung('level-2', 1, { seatRankedAgendas: true, tokenDiscipline: true }),
+    rung('level-3', 1, { seatRankedAgendas: true, spreadInvest: true }),
+    rung('level-4', 1, { seatRankedAgendas: true, spreadInvest: true, tokenDisciplineLite: true }),
+    rung('level-5', 1, { seatRankedAgendas: true, spreadInvest: true, tokenDiscipline: true }),
+    rung('level-6', 1, { seatRankedAgendas: true, spreadInvest: true, tokenDiscipline: true,
+                         smartGroupTarget: true, groupCap: 1 }),
+    rung('level-7', 1, { seatRankedAgendas: true, spreadInvest: true,
+                         smartGroupTarget: true, groupCap: 2 }),
+    rung('level-8', 1, { seatRankedAgendas: true, spreadInvest: true,
+                         smartGroupTarget: true, groupCap: 4 }),
+    rung('level-9', 1, { seatRankedAgendas: true, spreadInvest: true, tokenDiscipline: true,
+                         smartGroupTarget: true, groupCap: 4 }),
+    // Level 10 is level-9's flag-set with the cap removed and speed raised —
+    // deliberately the only level that outpaces a human. See bot-bank.js's
+    // lightning_leopard/swift_serval comments for why speed is a real,
+    // separable lever only at this top flag-set.
+    rung('level-10', 2, { seatRankedAgendas: true, spreadInvest: true, tokenDiscipline: true,
+                          smartGroupTarget: true })
   ];
   var MAX_LEVEL = AI_PROFILES.length;
 
@@ -96,15 +89,43 @@
   // What each flag turns on:
   //   seatRankedAgendas - rank agenda taps by real seat delta, and skip any
   //                       tap worth less than the same cash spent on investment
+  //   valueRallyTarget  - score every open rally target the way an attractive
+  //                       investment is scored, and draw weighted by that
+  //                       score across the whole map instead of a random
+  //                       top-10 — a spray, but a smarter one
   //   tokenDiscipline   - bank rally tokens toward the Nationwide Rally unless
   //                       a state rally beats it per token (only the two
-  //                       biggest states do)
+  //                       biggest states do). Wins over valueRallyTarget if
+  //                       both are set — hoarding is the stronger of the two
+  //   tokenDisciplineLite - same idea, but only saves toward the cheaper
+  //                       Special Powerup goal, not the Nationwide Rally
+  //                       too — a genuine half-strength discipline, reaches
+  //                       its (smaller) savings goal sooner and starts
+  //                       spending freely again earlier. (Saving toward the
+  //                       Nationwide goal instead was the first attempt and
+  //                       measured identical to full discipline — the
+  //                       unconditional special-power auto-craft in aiStep
+  //                       already covers that cost for free along the way,
+  //                       so only the smaller goal actually shortens the
+  //                       picky window.) Wins over valueRallyTarget if both
+  //                       are set, loses to full tokenDiscipline if both
+  //                       are set
   //   smartGroupTarget  - chase the group with the best payout per crore still
   //                       needed, re-picked live, instead of one random group
-  //                       fixed at game start
+  //                       fixed at game start. Only takes effect together
+  //                       with spreadInvest — see pickAIInvestmentTarget
   //   spreadInvest      - invest for maximum delivered bps, which dodges the
   //                       per-state boost decay; seats-per-crore is otherwise
   //                       identical for every state (see investmentCostCr)
+  //   groupObsession(N) - lock onto N random groups at game start and refuse
+  //                       to invest outside them, ever. A cruder, no-longer-
+  //                       used alternative to smartGroupTarget+spreadInvest;
+  //                       kept for bot-bank.js's archived rungs, not on the
+  //                       live ladder
+  //   groupCap(N)       - stop chasing NEW groups once N are already held.
+  //                       The one dial that weakens the bot on purpose (group
+  //                       capture snowballs otherwise). Only checked inside
+  //                       smartGroupTarget+spreadInvest's live re-pick
   function profileByKey(key) {
     return AI_PROFILES.filter(function (p) { return p.key === key; })[0] || null;
   }
@@ -155,13 +176,13 @@
   // draw lands on a state that's already capped (playRallyToken rejects
   // it), the token is just left unspent for that phase rather than retried
   // elsewhere — it banks toward the auto-craft threshold in aiStep instead.
-  function pickAIRallyTarget(game, profile, playerKey) {
-    if (!profile || !profile.tokenDiscipline) {
-      var top10 = game.states.slice().sort(function (a, b) { return b.seats - a.seats; }).slice(0, 10);
-      if (!top10.length) return null;
-      return top10[Math.floor(game.rng() * top10.length)].svgId;
-    }
-    return pickDisciplinedRallyTarget(game, playerKey);
+  function pickAIRallyTarget(game, profile, playerKey, oppKey) {
+    if (profile && profile.tokenDiscipline) return pickDisciplinedRallyTarget(game, playerKey, false);
+    if (profile && profile.tokenDisciplineLite) return pickDisciplinedRallyTarget(game, playerKey, true);
+    if (profile && profile.valueRallyTarget) return pickValueRallyTarget(game, playerKey, oppKey);
+    var top10 = game.states.slice().sort(function (a, b) { return b.seats - a.seats; }).slice(0, 10);
+    if (!top10.length) return null;
+    return top10[Math.floor(game.rng() * top10.length)].svgId;
   }
 
   // A token banked toward the Nationwide Rally is worth
@@ -176,25 +197,68 @@
       (game.cfg.rally.nationwideRallyCraftCost * game.cfg.rally.tokenBoostBps);
   }
 
-  // Seat-weighted random draw. Used instead of picking the single biggest
-  // state so the bot doesn't rally the same two states every game: value
-  // scales linearly with seats, so weighting by seats keeps most of the
-  // expected value while making the target genuinely unpredictable.
-  function weightedRallyPick(game, pool) {
-    var total = pool.reduce(function (a, s) { return a + s.seats; }, 0);
+  // Weighted random draw by an arbitrary positive per-state value. Used
+  // instead of an argmax so the bot doesn't rally the same states every
+  // game — value scales the odds, it doesn't force the outcome.
+  function weightedPick(game, pool, valueFn) {
+    var total = 0;
+    var weights = pool.map(function (s) { var v = valueFn(s); total += v; return v; });
     if (total <= 0) return pool[0].svgId;
     var r = game.rng() * total;
     for (var i = 0; i < pool.length; i++) {
-      r -= pool[i].seats;
+      r -= weights[i];
       if (r <= 0) return pool[i].svgId;
     }
     return pool[pool.length - 1].svgId;
   }
+  function weightedRallyPick(game, pool) {
+    return weightedPick(game, pool, function (s) { return s.seats; });
+  }
 
-  function pickDisciplinedRallyTarget(game, playerKey) {
+  // valueRallyTarget profile flag: score every open rally target the same
+  // way an attractive investment is scored — real seats swung by the token
+  // (capped by remaining headroom) plus a small nudge toward states the
+  // opponent already leads in — then draw weighted by that score across
+  // every eligible state, not a fixed top-N or top-10. A state worth
+  // investing in is worth rallying too, so this reuses that idea instead of
+  // a separate one. Weighted, not argmax, on purpose (see pickBestValueGroup
+  // for the same reasoning) — rally targets are drawn from a pool a human
+  // opponent can also play into.
+  function scoreRallyValue(game, s, playerKey, oppKey) {
+    var headroom = E.BPS - game.pop[s.svgId][playerKey];
+    if (headroom <= 0) return 0;
+    var gain = Math.min(game.cfg.rally.tokenBoostBps, headroom);
+    var seatsSwung = gain * s.seats / E.BPS;
+    var contestBonus = Math.max(0, game.pop[s.svgId][oppKey] - game.pop[s.svgId][playerKey]) / 100;
+    return seatsSwung + contestBonus;
+  }
+  function pickValueRallyTarget(game, playerKey, oppKey) {
+    var pool = game.states.filter(function (s) {
+      var plays = game.rallyPlaysByState[s.svgId] || [];
+      return plays.length < game.cfg.rally.maxPlaysPerStateShared && game.pop[s.svgId][playerKey] < E.BPS;
+    });
+    if (!pool.length) return null;
+    return weightedPick(game, pool, function (s) { return scoreRallyValue(game, s, playerKey, oppKey); });
+  }
+
+  // liteMode (tokenDisciplineLite): saves only toward the Special Powerup
+  // cost (the cheaper of the two goals), not the Nationwide Rally. Saving
+  // for the Nationwide goal instead measured statistically identical to
+  // full discipline (see findings.md, 2026-09-11): aiStep's unconditional
+  // auto-craft already builds the special power the instant 6 tokens are
+  // banked regardless of this "owed" figure, so a bot hoarding toward 12
+  // passes through that auto-craft for free along the way and gets no
+  // weaker for it. Targeting the smaller 6-token goal instead means "spare"
+  // turns positive right as the special auto-crafts, so the picky window
+  // is genuinely short - the bot reverts to free spending much sooner than
+  // full discipline (which keeps saving to 18) but still hoards with real
+  // intent early on, unlike rally=none.
+  function pickDisciplinedRallyTarget(game, playerKey, liteMode) {
     var pl = game.players[playerKey];
-    var owed = (pl.craftedSpecial || pl.usedSpecial ? 0 : game.cfg.rally.specialPowerupCraftCost) +
-      (pl.craftedNationwide || pl.usedNationwide ? 0 : game.cfg.rally.nationwideRallyCraftCost);
+    var owed = liteMode
+      ? (pl.craftedSpecial || pl.usedSpecial ? 0 : game.cfg.rally.specialPowerupCraftCost)
+      : (pl.craftedSpecial || pl.usedSpecial ? 0 : game.cfg.rally.specialPowerupCraftCost) +
+        (pl.craftedNationwide || pl.usedNationwide ? 0 : game.cfg.rally.nationwideRallyCraftCost);
     var spare = pl.tokens.stateRally - owed;
     var pool = game.states.filter(function (s) {
       var plays = game.rallyPlaysByState[s.svgId] || [];
@@ -452,7 +516,7 @@
     // silently halving the AI's rally usage versus a human every game
     // (found 2026-08-26 from a user report of a lopsided AI-vs-human game).
     if (pl.tokensSpentThisPhase < game.cfg.rally.maxTokenSpendPerPhase && pl.tokens.stateRally > 0) {
-      var rallyTarget = pickAIRallyTarget(game, profile, playerKey);
+      var rallyTarget = pickAIRallyTarget(game, profile, playerKey, oppKey);
       if (rallyTarget && G().playRallyToken(game, playerKey, rallyTarget).ok) {
         return { type: 'rally', svgId: rallyTarget, costCr: null };
       }
