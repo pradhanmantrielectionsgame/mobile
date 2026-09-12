@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var E = window.PMEEngine, G = window.PMEGame;
-  var GAME_VERSION = '2.13.0';
+  var GAME_VERSION = '2.13.1';
   // Canonical public URL for the end-of-game "share result" link — hardcoded,
   // not location.href, so the shared link is always the clean site root and
   // never a /index.html deep link, a ?query string, or a Capacitor
@@ -1282,6 +1282,20 @@
     $('fxLayer').appendChild(el);
     setTimeout(function () { el.remove(); }, 700);
   }
+  // Nehru's Non-Alignment secretly nullifies the opponent's power — they're
+  // only meant to find out when THEY try to activate theirs and it fizzles.
+  // A full-screen "Jawaharlal Nehru invoked Non-Alignment" burst leaks that
+  // instantly (worst when the AI plays Nehru: the human would see it fire
+  // and immediately know their own power is dead). Only the special-power
+  // burst/sound is gated — NOT the Nationwide Rally, which has no secrecy
+  // angle and stays a loud, visible event for anyone. This check has
+  // regressed more than once because the burst/sound fire from 3 separate
+  // call sites (live p1 tap, live AI tick, replay) — route ALL of them
+  // through this one helper rather than re-adding the id check inline.
+  function powerIsSecret(politician) {
+    return politician.id === 'jawaharlal-nehru';
+  }
+
   // One shared burst for special powers and the Nationwide Rally, so the
   // duration is a parameter rather than a second copy of the effect. The CSS
   // reads --burst-dur (default 5s in the stylesheet); only the Nationwide
@@ -1933,7 +1947,7 @@
     if (action.type === 'power') {
       if (action.nullified) {
         showToast(game.players[pk].politician.name + '’s power fizzled — you had nullified it');
-      } else {
+      } else if (!powerIsSecret(game.players[pk].politician)) {
         if (withSound) playPowerSound(game.players[pk].politician.name);
         spawnPowerBurst(pk, game.players[pk].politician.power.name, game.players[pk].politician.name);
       }
@@ -2952,6 +2966,10 @@
     if (pl.tokens.stateRally < cost) return 'locked';
     var minPhase = flavor === 'special' ? game.cfg.rally.specialPowerupMinPhase : game.cfg.rally.nationwideRallyMinPhase;
     if (minPhase && game.phase < minPhase) return 'blocked';
+    // Craft and activate unlock together (engine's craftToken enforces this
+    // too) — don't show 'craftable' if the politician's own power can't fire
+    // yet, or tapping it would spend the tokens into an immediately-blocked slot.
+    if (flavor === 'special' && G.powerBlockedReason(game, 'p1')) return 'blocked';
     return 'craftable';
   }
 
@@ -3062,7 +3080,7 @@
     var r = G.activatePower(game, 'p1', opts);
     renderAll();
     if (!r.ok) { showToast('Cannot activate: ' + r.reason); shakeInvalid($('specialBtn')); return; }
-    if (!r.nullified) {
+    if (!r.nullified && !powerIsSecret(game.players.p1.politician)) {
       playPowerSound(game.players.p1.politician.name);
       spawnPowerBurst('p1', game.players.p1.politician.power.name, game.players.p1.politician.name);
     }

@@ -470,6 +470,15 @@
     var minPhase = flavor === 'special' ? game.cfg.rally.specialPowerupMinPhase : game.cfg.rally.nationwideRallyMinPhase;
     if (game.phase < minPhase) return { ok: false, reason: 'too_early' };
     if (pl.tokens.stateRally < cost) return { ok: false, reason: 'insufficient_tokens' };
+    // A Special Powerup must not lock in its token cost before the politician's
+    // own power could immediately fire — craft and activate unlock together,
+    // not craft-then-wait on a phase/funds/agenda gate the token can't help
+    // with. powerBlockedReason() is the same check activatePower uses, minus
+    // the opts-dependent target-selection checks it doesn't need yet.
+    if (flavor === 'special') {
+      var powerBlocked = powerBlockedReason(game, playerKey);
+      if (powerBlocked) return { ok: false, reason: powerBlocked };
+    }
     recordAction(game, 'craftToken', playerKey, [flavor]);
     pl.tokens.stateRally -= cost;
     pl.tokensSpentTotal += cost;

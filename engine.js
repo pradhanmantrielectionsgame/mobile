@@ -607,5 +607,44 @@ if (typeof module !== 'undefined' && require.main === module) {
     assert.notStrictEqual(E.distinctPlayerColor('#138808', '#00A651'), '#138808');
   })();
 
+  // generateStartingPosition itself must apply the home bonus to EVERY name
+  // in the array, not just the first (the multi-home primitive). This is the
+  // low-level half of the check — mobile/simulate.js separately confirms
+  // game.js's createGame actually passes homeStatesOf()'s array through
+  // rather than falling back to the raw `.homeState` field.
+  (function multiHomeStateBonusCheck() {
+    var constRng = function () { return 0.5; }; // deterministic: every randInt(500,2900) resolves to 1700
+    var states = [
+      { svgId: 'A', name: 'Alpha', seats: 80 }, { svgId: 'B', name: 'Beta', seats: 40 },
+      { svgId: 'C', name: 'Gamma', seats: 20 }, { svgId: 'D', name: 'Delta', seats: 10 }
+    ];
+    var pop = E.generateStartingPosition(states, ['Alpha', 'Beta'], 'Gamma', constRng);
+    assert.strictEqual(pop.A.p1, 1700 + 2500, 'first home state must get the home bonus');
+    assert.strictEqual(pop.B.p1, 1700 + 2500, 'second home state must ALSO get the home bonus (multi-home politician)');
+    assert.strictEqual(pop.C.p2, 1700 + 2500, 'opponent\'s own home state gets its own bonus independently');
+    assert.strictEqual(pop.D.p1, 1700, 'a non-home state gets no bonus');
+  })();
+
+  // investmentBoostBps: past the glide path, decay must keep compounding
+  // geometrically, never flatten to a permanent floor (CLAUDE.md: a cheap
+  // state flattening to a fixed cost becomes a free permanent dominance veto).
+  (function boostDecayGeometricCheck() {
+    var cfg = { boostGlidePathTaps: 5, boostStartBps: 500, boostFloorBps: 100, boostDecayRate: 0.85 };
+    var prev = E.investmentBoostBps(cfg.boostGlidePathTaps, cfg);
+    assert.strictEqual(prev, cfg.boostFloorBps);
+    var sawDecrease = false;
+    for (var extra = 1; extra <= 40; extra++) {
+      var v = E.investmentBoostBps(cfg.boostGlidePathTaps + extra, cfg);
+      assert.ok(v <= prev, 'boost must never increase past the glide path (extra tap ' + extra + '): ' + v + ' > ' + prev);
+      if (v < prev) sawDecrease = true;
+      prev = v;
+    }
+    assert.ok(sawDecrease, 'boost never decreased past the glide path over 40 extra taps — decay is not being applied (permanent-floor regression)');
+    // Decay compounds geometrically (constant ratio), not linearly, while still above the 1bps rounding floor.
+    var early = E.investmentBoostBps(cfg.boostGlidePathTaps + 1, cfg);
+    var later = E.investmentBoostBps(cfg.boostGlidePathTaps + 2, cfg);
+    assert.strictEqual(later, Math.max(1, Math.round(early * cfg.boostDecayRate)), 'decay must compound geometrically, not linearly');
+  })();
+
   console.log('mobile/engine.js self-check: all assertions passed.');
 }
