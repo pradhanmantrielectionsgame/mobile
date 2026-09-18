@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var E = window.PMEEngine, G = window.PMEGame;
-  var GAME_VERSION = '2.13.2';
+  var GAME_VERSION = '2.13.3';
   // Canonical public URL for the end-of-game "share result" link — hardcoded,
   // not location.href, so the shared link is always the clean site root and
   // never a /index.html deep link, a ?query string, or a Capacitor
@@ -849,11 +849,29 @@
   // real testing against the (much bigger) Eastern Border group — Western
   // Border is cheaper, but this stays generic/exact rather than re-guessing
   // a new flat number for whichever group TUTORIAL_GROUP_KEY points at.
-  function enterTargetGroupStep() {
-    activeGroup = TUTORIAL_GROUP_KEY; groupPinned = true;
-    document.querySelectorAll('.gchip').forEach(function (x) { x.classList.toggle('on', x.dataset.key === activeGroup); });
+  // Selects a group for a coaching step the way a real .gchip tap does
+  // (setActiveGroup), minus the toggle-off-if-already-active branch and the
+  // onTutorialGroupClick callback — neither of which a scripted selection
+  // wants. The three clears are the whole point: activeAction, activeAgenda
+  // and activeCluster ALL outrank activeGroup in updateCard(), and the steps
+  // immediately before both callers tell the player to tap the rally button
+  // and the small-UT/Northeast cluster buttons. Leaving those set meant
+  // updateCard() kept rendering that cluster or action card, so the group
+  // card never appeared — and with it went the #cardGroups LED grid that the
+  // Puducherry highlight is attached to. It only showed when the player
+  // actually tapped the buttons the previous step points at, which is why it
+  // looked intermittent rather than broken.
+  function tutorialShowGroup(key) {
+    activeAgenda = null; activeAction = null; activeCluster = null;
+    activeGroup = key;
+    document.querySelectorAll('.gchip').forEach(function (x) { x.classList.toggle('on', x.dataset.key === key); });
     applyGroupHighlight();
     updateCard();
+  }
+
+  function enterTargetGroupStep() {
+    groupPinned = true;
+    tutorialShowGroup(TUTORIAL_GROUP_KEY);
     if (tutorialGroupFundsGranted) return;
     tutorialGroupFundsGranted = true;
     var members = game.states.filter(function (s) { return s.tags.indexOf(TUTORIAL_GROUP_KEY) !== -1; });
@@ -1014,7 +1032,7 @@
     // Passive illustration (no funds grant, no pin) — just auto-selects the
     // group card so the concrete Puducherry example is visible without
     // requiring the player to tap anything.
-    if (step.pulse === 'utexample') { activeGroup = step.targetGroupKey; updateCard(); }
+    if (step.pulse === 'utexample') tutorialShowGroup(step.targetGroupKey);
     if (step.unpinGroupOnEnter) { groupPinned = false; updateCard(); }
     // Token grants live here (not just in the phase-gate resolver) so a step
     // reached by a plain Next click — not a waitForPhase gate — still tops
