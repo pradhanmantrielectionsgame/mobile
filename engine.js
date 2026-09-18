@@ -646,5 +646,29 @@ if (typeof module !== 'undefined' && require.main === module) {
     assert.strictEqual(later, Math.max(1, Math.round(early * cfg.boostDecayRate)), 'decay must compound geometrically, not linearly');
   })();
 
+  // netAgendaEffectBps already sums every matching tag into one net value
+  // before returning (the "net first" half). This proves why the caller's
+  // "apply once" half also matters: near the 100%-ownership cap, applying a
+  // strong tag alone can clip and destroy the headroom a second, opposing
+  // tag needed — the net (smaller, uncapped) effect is correct; applying the
+  // two raw tag magnitudes as separate sequential transactions is not.
+  (function netFirstApplyOnceCheck() {
+    var policy = { tagEffects: { TagPos: 30, TagNeg: -10 } };
+    var state = { tags: ['TagPos', 'TagNeg'] };
+    var net = E.netAgendaEffectBps(state, policy);
+    assert.strictEqual(net, 2000, 'tag effects must sum to one net value before being applied');
+
+    var oneShot = { p1: 8000, p2: 1500, others: 500 };
+    E.applySigned(oneShot, 'p1', net, 'both');
+    assert.strictEqual(oneShot.p1, 10000, 'the net +20% correctly reaches full ownership from 80%');
+
+    var twoStep = { p1: 8000, p2: 1500, others: 500 };
+    E.applySigned(twoStep, 'p1', 3000, 'both');   // TagPos alone (+30%) — clips at 100%, wasting the last 10%
+    E.applySigned(twoStep, 'p1', -1000, 'both');  // TagNeg alone (-10%), as a second transaction
+
+    assert.notStrictEqual(oneShot.p1, twoStep.p1,
+      'per-tag sequential application must diverge from the net application near the ownership cap — got the same result, so this test stopped guarding the bug');
+  })();
+
   console.log('mobile/engine.js self-check: all assertions passed.');
 }

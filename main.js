@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var E = window.PMEEngine, G = window.PMEGame;
-  var GAME_VERSION = '2.13.1';
+  var GAME_VERSION = '2.13.2';
   // Canonical public URL for the end-of-game "share result" link — hardcoded,
   // not location.href, so the shared link is always the clean site root and
   // never a /index.html deep link, a ?query string, or a Capacitor
@@ -211,6 +211,11 @@
     // that would then disagree with the row above it.
     var endEl = document.getElementById('endVersion');
     if (endEl) endEl.textContent = 'v' + GAME_VERSION;
+    // Driven off SITE_URL rather than written into the markup: the live
+    // domain has already changed once, and a stale link printed onto every
+    // shared screenshot is the one copy nobody can correct after the fact.
+    var urlEl = document.getElementById('endUrl');
+    if (urlEl) urlEl.textContent = 'Play at ' + SITE_URL.replace(/^https?:\/\//, '').replace(/\/$/, '');
   }
   renderVersionLabels();
   // Playtest hook: tap the version label to cycle opponent AI profile ->
@@ -675,12 +680,12 @@
       body: 'Option 2: Rallies. Rallies are a cheap way to increase your popularity in any given region. You receive 2 free rally tokens per phase.'
     },
     {
-      pulse: 'rally', requireRallyPlaysInGujarat: 1, title: 'Rallies',
-      body: 'Click on rally tokens and then click on Gujarat to hold a rally there. Each rally gives a 5% popularity boost.'
+      pulse: 'rally', requireRallyPlays: 1, title: 'Rallies',
+      body: 'Click on rally tokens and then click a state to hold a rally there — Gujarat is a good choice. Each rally gives a 5% popularity boost.'
     },
     {
-      pulse: 'gujarat', requireRallyPlaysInGujarat: 2, title: 'Rallies',
-      body: 'Place another rally token in Gujarat. You may only place 2 rally tokens in any given phase of the game.'
+      pulse: 'gujarat', requireRallyPlays: 2, title: 'Rallies',
+      body: 'Place your second rally token. You may only place 2 rally tokens in any given phase of the game.'
     },
     {
       pulse: 'gujarat', title: 'Rallies',
@@ -864,11 +869,58 @@
     renderAll();
   }
 
+  // Counts only p1's own rally plays, across every state. Deliberately not
+  // scoped to Gujarat: the rally steps' token budget (2 tokens/phase, 2
+  // spends/phase) is exactly what those two steps ask for, so a single token
+  // placed elsewhere left the gate unreachable for that phase — and the
+  // tutorial pauses the clock while it waits, so the phase never ends and
+  // tokens never refresh. Players reported getting stuck there. The lesson is
+  // "arm a token, tap a state", which the location doesn't change; Gujarat
+  // stays the suggested target in the copy and the glow.
+  // p1-only on purpose too — rallyPlaysByState records every player's plays,
+  // so the old Gujarat-scoped count could be satisfied by the opponent's
+  // rally rather than the player's own.
+  function p1RallyPlayCount() {
+    var n = 0;
+    Object.keys(game.rallyPlaysByState).forEach(function (id) {
+      game.rallyPlaysByState[id].forEach(function (pk) { if (pk === 'p1') n++; });
+    });
+    return n;
+  }
+
+  // Same trap as the rally gate above, for the funds-gated steps: the clock is
+  // paused while a step waits, but funds only refresh when a phase ends — so a
+  // player who spends their funds anywhere other than the step's target is
+  // left with a gate they can no longer afford and no way to earn more. Tops
+  // up the exact shortfall, never a flat guess (same reasoning as
+  // enterTargetGroupStep's grant, which this reuses estimateInvestCostToReach
+  // from).
+  // ponytail: no per-step cap, so a player who keeps spending elsewhere can
+  // keep drawing top-ups. Harmless — the tutorial is not a rated match — and
+  // capping it would reopen the dead end. Add a cap only if the free funds
+  // start visibly distorting the coached path.
+  function ensureTutorialStepAffordable(step) {
+    var need = 0;
+    if (step.requireGujaratPopularityBps) {
+      need = estimateInvestCostToReach(TUTORIAL_GUJARAT_ID, step.requireGujaratPopularityBps);
+    } else if (step.requireInvestGujarat && !tutorialGujaratInvested) {
+      need = game.statesById[TUTORIAL_GUJARAT_ID].seats * game.cfg.investment.costPerSeatCr;
+    } else if (step.requireAgendaComplete) {
+      var done = game.players.p1.agendaProgress[step.requireAgendaComplete] || 0;
+      need = Math.max(game.cfg.agenda.tapsToComplete - done, 0) * game.cfg.agenda.costPerTapCr;
+    }
+    if (need <= 0 || game.players.p1.fundsCr >= need) return;
+    var grant = need - game.players.p1.fundsCr;
+    game.players.p1.fundsCr += grant;
+    showToast('🎁 +₹' + grant + 'Cr tutorial bonus funds');
+    renderAll();
+  }
+
   function tutorialStageStepSatisfied(step) {
     if (step.requireMapTap) return tutorialMapTapped;
     if (step.requireInvestGujarat) return tutorialGujaratInvested;
     if (step.requireGujaratPopularityBps) return (game.pop[TUTORIAL_GUJARAT_ID].p1 >= step.requireGujaratPopularityBps);
-    if (step.requireRallyPlaysInGujarat) return (game.rallyPlaysByState[TUTORIAL_GUJARAT_ID] || []).length >= step.requireRallyPlaysInGujarat;
+    if (step.requireRallyPlays) return p1RallyPlayCount() >= step.requireRallyPlays;
     if (step.requireAgendaComplete) return (game.players.p1.agendaProgress[step.requireAgendaComplete] || 0) >= game.cfg.agenda.tapsToComplete;
     if (step.requireGroupClick) return tutorialGroupClicked;
     if (step.requireGroupDominance) {
@@ -893,7 +945,20 @@
   }
 
   function renderTutorialStageStep() {
+    // Nothing to render during a waitForPhase gap — the coach is hidden and
+    // the player is playing freely. Guarded here, in the one funnel, rather
+    // than in each onTutorial* hook: the hooks now re-render on every action,
+    // and without this they'd light up the *pending* step's highlight mid-play
+    // (and enterTutorialStageStep is only ever reached after the gate has
+    // already cleared this flag, so the entry path is unaffected).
+    if (tutorialWaitingForPhase) return;
     var step = TUTORIAL_STAGE_STEPS[tutorialStageStep];
+    // One funnel for the affordability net: every entry path reaches this
+    // function (enterTutorialStageStep calls it last), and so does every
+    // post-action refresh from the onTutorial* hooks — so checking here covers
+    // both "landed on the step already broke" and "spent the funds elsewhere
+    // after landing" without a second call site that could drift out of sync.
+    ensureTutorialStepAffordable(step);
     $('tutorialCoachStageTitle').innerHTML = step.title || '';
     $('tutorialCoachStageTitle').hidden = !step.title;
     $('tutorialCoachStageBody').innerHTML = step.body;
@@ -1002,26 +1067,34 @@
     }
   }
 
+  // These gates are all computed live from game state (rally plays, agenda
+  // progress, group dominance) rather than a one-time flag, so re-rendering
+  // after any player action is enough to keep Next's disabled state correct.
+  //
+  // All three hooks below re-render unconditionally rather than testing which
+  // gate the current step uses. They used to filter — onTutorialInvest only
+  // re-rendered on the Gujarat/group steps, onTutorialAgendaInvest only on a
+  // tap of that step's own named agenda — which starved
+  // ensureTutorialStepAffordable of the one call path it needs: a player
+  // sitting on the National Defense step who spent their funds on states
+  // instead produced no re-render at all, so the shortfall was never noticed,
+  // and the agenda tap that would notice it bails out early on
+  // insufficient_funds before reaching this hook. Re-rendering on every action
+  // is both the smaller code and the only version that can't miss.
   function onTutorialInvest(svgId) {
     if (!tutorialMode || tutorialStageStep >= TUTORIAL_STAGE_STEPS.length) return;
     if (svgId === TUTORIAL_GUJARAT_ID) tutorialGujaratInvested = true;
-    var step = TUTORIAL_STAGE_STEPS[tutorialStageStep];
-    if (step.requireInvestGujarat || step.requireGujaratPopularityBps || step.requireGroupDominance) renderTutorialStageStep();
+    renderTutorialStageStep();
   }
 
-  // These gates are all computed live from game state (rally plays, agenda
-  // progress, group dominance) rather than a one-time flag, so re-rendering
-  // after any relevant action is enough to keep Next's disabled state correct.
   function onTutorialRally(svgId) {
-    if (!tutorialMode) return;
-    var step = TUTORIAL_STAGE_STEPS[tutorialStageStep];
-    if (step && step.requireRallyPlaysInGujarat) renderTutorialStageStep();
+    if (!tutorialMode || tutorialStageStep >= TUTORIAL_STAGE_STEPS.length) return;
+    renderTutorialStageStep();
   }
 
   function onTutorialAgendaInvest(name) {
-    if (!tutorialMode) return;
-    var step = TUTORIAL_STAGE_STEPS[tutorialStageStep];
-    if (step && step.requireAgendaComplete === name) renderTutorialStageStep();
+    if (!tutorialMode || tutorialStageStep >= TUTORIAL_STAGE_STEPS.length) return;
+    renderTutorialStageStep();
   }
 
   function onTutorialGroupClick(key) {
