@@ -32,6 +32,42 @@
 <link rel="icon" href="assets/icons/pme-icon-192.png" type="image/png" sizes="192x192">
 <link rel="apple-touch-icon" href="assets/icons/pme-icon-180.png">
 <style>
+/* ---------------------------------------------------------------------------
+   Self-hosted webfonts (2026-09-19). Replaces the old all-system-font stack,
+   which rendered as a different product on every OS — Rockwell in particular
+   did not exist on Windows or Android, so every heading there silently fell
+   back to Georgia.
+
+   Sora    — geometric sans, display only (headings, names, buttons).
+   Manrope — geometric sans, all UI text, labels and numbers.
+   Both are variable, so one file per subset covers every weight: four files,
+   ~77 KB. Replaced Bitter + Mukta on 2026-09-19 — the slab-serif heading sat
+   too heavy against the new icon art.
+
+   Self-hosted rather than linked from the Google Fonts CDN: this ships as an
+   installed PWA/TWA, so type has to work offline and must not cost a
+   third-party connection on first paint.
+
+   latin-ext is NOT optional — the rupee sign (U+20B9) lives in that subset and
+   it appears on nearly every HUD screen.
+
+   The 'assets/' prefixes are the literal form scripts/deploy-mobile.js
+   string-matches when it flattens the build. Don't refactor them into a
+   variable or the rewrite silently misses them and the fonts 404 in prod.
+--------------------------------------------------------------------------- */
+@font-face{ font-family:'Sora'; font-style:normal; font-weight:100 900; font-display:swap;
+  src:url(assets/fonts/sora-latin.woff2) format('woff2');
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face{ font-family:'Sora'; font-style:normal; font-weight:100 900; font-display:swap;
+  src:url(assets/fonts/sora-latin-ext.woff2) format('woff2');
+  unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
+@font-face{ font-family:'Manrope'; font-style:normal; font-weight:100 900; font-display:swap;
+  src:url(assets/fonts/manrope-latin.woff2) format('woff2');
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face{ font-family:'Manrope'; font-style:normal; font-weight:100 900; font-display:swap;
+  src:url(assets/fonts/manrope-latin-ext.woff2) format('woff2');
+  unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
+
 :root{
   --page:#EEF0F3; --surface:#FFFFFF; --surface2:#F7F8FA; --track:#E4E7EC;
   --ink:#14161C; --ink-soft:#4B5160; --ink-faint:#8890A0;
@@ -39,13 +75,20 @@
   --accent:#2451D6; --accent-ink:#FFFFFF;
   --stamp:#B3311D;
   --p1:#E8871C; --p2:#1C8A4B; --map-base:#AEB4C0; --map-stroke:#14161C;
-  --font: -apple-system, "SF Pro Text", "Segoe UI", sans-serif;
-  --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
-  --font-display: Rockwell, "Roboto Slab", Georgia, "Noto Serif", serif;
+  /* Two faces, no third. The old code-font token was doing duty as the app's
+     real UI font (22 call sites against 3 for --font), which is why every
+     label and figure in the HUD read as console output. It's all --font now. */
+  --font: 'Manrope', -apple-system, "Segoe UI", sans-serif;
+  --font-display: 'Sora', -apple-system, "Segoe UI", sans-serif;
   /* Ballot-card motif (politician select, end-of-game results) — a warm
      paper/brass/stamp world layered on top of the app's own ink/surface
      tokens above, not a separate theme: see design/prototypes/pol-card-mockup.html. */
   --paper:#FBF8EF; --paper-dim:#F1EAD6; --brass:#9C7A1E; --seal-green:#128807;
+  /* Map-screen chrome. Every tray/panel is warm paper; the buttons sitting
+     on them stay --surface white so they still read as tappable rather
+     than dissolving into the tray. --tray-rule is the warm counterpart to
+     --rule, which is a cool grey and goes muddy against cream. */
+  --tray:#FBF8EF; --tray-rule:#E6DEC6;
 
   /* Type/shape scale — now used app-wide (was HUD-only). Expressed in rem
      against the fluid root font-size set on :root below; the whole stylesheet
@@ -71,7 +114,17 @@
 :root{ font-size:16px; font-size:clamp(15px, 4vw, 16.5px); }
 *{box-sizing:border-box; -webkit-tap-highlight-color:transparent; touch-action:pan-x pan-y;}
 html,body{height:100%; margin:0; overscroll-behavior:none;}
-body{ font-family:var(--font); background:var(--ink); color:var(--ink); }
+body{ font-family:var(--font); background:var(--ink); color:var(--ink);
+  /* Came free with a code font; has to be asked for with a proportional
+     one. Without it the countdown and the seat/funds readouts jitter in
+     width on every tick. */
+  font-variant-numeric:tabular-nums; font-feature-settings:'tnum' 1;
+  /* Explicit, so no element silently inherits the font's own default line
+     box. Mukta ships tall metrics (it carries Devanagari), and leaving
+     line-height at `normal` made every small label ~25% taller than the
+     code font it replaced — which cost the politician card 37px of art,
+     since .pol-art is the flex item that absorbs whatever text leaves. */
+  line-height:1.3; }
 
 /* Full-screen chrome layers are capped to a centred column — see the
    centring block at the very end of the stylesheet (it has to land after
@@ -91,14 +144,14 @@ button{ font-family:inherit; border: none; background:none; color:inherit; }
 
 /* ---- topstrip: ballot-header band. Seat bar + phase, then a slim players
    readout — small, glanceable. ---- */
-.topstrip{ flex:0 0 auto; padding: calc(env(safe-area-inset-top,0px) + 0.3rem) 0.675rem 0.3rem; background:var(--surface); border-bottom: 2px solid var(--line); }
+.topstrip{ flex:0 0 auto; padding: calc(env(safe-area-inset-top,0px) + 0.3rem) 0.675rem 0.3rem; background:var(--tray); border-bottom: 2px solid var(--line); }
 .seatbar{ display:flex; height: 0.3rem; border: 2px solid var(--line); border-radius:var(--radius-sm); overflow:hidden; background:var(--track); margin-bottom: 0.25rem; }
 .seatbar .seg.p1{ background:var(--p1); } .seatbar .seg.p2{ background:var(--p2); } .seatbar .seg.oth{ background:transparent; }
 .topstrip-row{ display:flex; align-items:center; justify-content:space-between; gap: 0.4rem; }
-.phase-chip{ font-family:var(--font-mono); font-size:var(--fs-5); font-weight:700; color:var(--ink-soft); letter-spacing:.01em; white-space:nowrap; flex:0 0 auto; }
+.phase-chip{ font-family:var(--font); font-size:var(--fs-5); font-weight:700; color:var(--ink-soft); letter-spacing:.01em; white-space:nowrap; flex:0 0 auto; }
 .phase-chip b{ color:var(--accent); }
 .top-actions{ display:flex; align-items:center; gap: 0.3rem; }
-.ver-badge{ font-family:var(--font-mono); font-size: 0.5rem; color:var(--ink-soft); opacity:.55; }
+.ver-badge{ font-family:var(--font); font-size: 0.5rem; color:var(--ink-soft); opacity:.55; }
 .ver-badge-stage{ margin-right: 0.05rem; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .ver-badge-end{ display:block; margin: 0 0 0.2rem; }
 .iconbtn{ width: 1.65rem; height: 1.65rem; border-radius:var(--radius-md); background:var(--surface); border: 2px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:var(--fs-4); color:var(--ink); box-shadow: var(--shadow-md); }
@@ -119,7 +172,7 @@ button{ font-family:inherit; border: none; background:none; color:inherit; }
    color tweak. ---- */
 .map-row{ flex:1 1 auto; display:flex; flex-direction:row; min-height:0; }
 .groups-bar{ flex:0 0 3.2rem; display:flex; flex-direction:column; gap: 0.2rem;
-  padding: 0.25rem; background:var(--surface); border-right: 1px solid var(--rule); overflow-y:auto; }
+  padding: 0.25rem; background:var(--tray); border-right: 1px solid var(--tray-rule); overflow-y:auto; }
 .hex-row{ display:contents; }
 /* flex:1 1 0 (not aspect-ratio:1) so all 15 chips divide whatever vertical
    space the sidebar actually has evenly between them — no scrolling, chips
@@ -205,9 +258,9 @@ button{ font-family:inherit; border: none; background:none; color:inherit; }
    it (there's room) so this strip can run nearly full width instead of
    stopping short to clear it. */
 .player-strip{ position:absolute; top: 0.35rem; left: 0.35rem; right: 0.35rem; z-index:7;
-  background:var(--surface); border: 1px solid var(--rule); border-radius:var(--radius-md); box-shadow: var(--shadow-sm);
+  background:var(--tray); border: 1px solid var(--tray-rule); border-radius:var(--radius-md); box-shadow: var(--shadow-sm);
   display:flex; flex-direction:column; gap: 0.2rem; padding: 0.25rem 0.35rem; }
-.pstrip-row{ display:flex; align-items:center; gap: 0.25rem; font-family:var(--font-mono); font-weight:700; font-size:var(--fs-3); min-width:0; }
+.pstrip-row{ display:flex; align-items:center; gap: 0.25rem; font-family:var(--font); font-weight:700; font-size:var(--fs-3); min-width:0; }
 .pstrip-row.p1{ color:var(--p1); } .pstrip-row.p2{ color:var(--p2); }
 .pstrip-portrait{ width: 0.85rem; height: 0.85rem; border-radius:50%; object-fit:cover; border: 1.5px solid var(--line); background:var(--surface2); flex:0 0 auto; }
 .pstrip-row .pname{ flex:1 1 auto; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
@@ -219,10 +272,10 @@ button{ font-family:inherit; border: none; background:none; color:inherit; }
    system as everywhere else (radius-md, shadow-sm), just floating with a
    small inset instead of glued flush to the corner. */
 .ne-actions{ position:absolute; top: 4.125rem; right: 0.35rem; z-index:7;
-  background:var(--surface); border: 1px solid var(--rule); border-radius:var(--radius-md); box-shadow: var(--shadow-sm);
+  background:var(--tray); border: 1px solid var(--tray-rule); border-radius:var(--radius-md); box-shadow: var(--shadow-sm);
   display:flex; flex-direction:column; align-items:center; padding: 0.3rem; }
 .se-actions{ position:absolute; bottom: 5.625rem; right: 0.35rem; z-index:7;
-  background:var(--surface); border: 1px solid var(--rule); border-radius:var(--radius-md); box-shadow: var(--shadow-sm);
+  background:var(--tray); border: 1px solid var(--tray-rule); border-radius:var(--radius-md); box-shadow: var(--shadow-sm);
   display:flex; flex-direction:column; align-items:center; padding: 0.3rem; }
 .ne-actions .action-block, .se-actions .action-block{ width: 5.2rem; }
 .ne-actions .action-btn, .se-actions .action-btn{ font-size: 1.25rem; }
@@ -241,10 +294,13 @@ button{ font-family:inherit; border: none; background:none; color:inherit; }
    — flex:1+aspect-ratio:1 made them balloon into oversized squares. */
 .ut-bar{ position:absolute; left: 0.35rem; right: 0.35rem; bottom: 0.35rem; z-index:7;
   display:flex; flex-direction:row; align-items:center; justify-content:space-between; padding: 0.25rem 0.35rem;
-  background:var(--surface); border: 1px solid var(--rule); border-radius:var(--radius-md); box-shadow: var(--shadow-sm); }
+  background:var(--tray); border: 1px solid var(--tray-rule); border-radius:var(--radius-md); box-shadow: var(--shadow-sm); }
 .corner-top-left, .corner-top-right, .corner-left{ display:contents; }
 .uts-btn{ flex:0 0 auto; width: 2.3rem; height: 2.3rem; display:flex; flex-direction:column; align-items:center; justify-content:center; gap: 0.075rem; border-radius:var(--radius-sm); background:var(--surface); border: 1.5px solid var(--line); box-shadow: var(--shadow-sm); font-size: 0.85rem; }
-.uts-btn .lb{ font-size: 0.375rem; font-weight:800; letter-spacing:.02em; color:var(--ink-soft); }
+.uts-btn .lb{ font-size: 0.375rem; font-weight:800; letter-spacing:.02em; color:var(--ink-soft);
+  /* Tighter than the body 1.3: "SMALL UTS" wraps to two lines inside a fixed
+     2.3rem button, and at body rhythm the second line clips off the bottom. */
+  line-height:1.05; text-align:center; }
 .uts-btn:active{ transform: translate(2px,2px); box-shadow: none; }
 
 .action-block{ display:flex; flex-direction:column; gap: 0.15rem; }
@@ -260,7 +316,7 @@ button{ font-family:inherit; border: none; background:none; color:inherit; }
 .action-btn-wide .special-label{ font-family:var(--font-display); font-weight:800; font-size: 0.575rem; line-height:1.15;
   text-align:left; color:var(--ink); }
 .action-btn .badge{ position:absolute; top: -0.325rem; right: -0.325rem; min-width: 0.85rem; height: 0.85rem; padding: 0 0.15rem;
-  border-radius: 0.425rem; background:var(--ink); color:var(--page); font-family:var(--font-mono); font-size: 0.4rem;
+  border-radius: 0.425rem; background:var(--ink); color:var(--page); font-family:var(--font); font-size: 0.4rem;
   font-weight:800; display:flex; align-items:center; justify-content:center; line-height:1; }
 .action-btn .badge[hidden]{ display:none; }
 .action-btn .agenda-bar{ position:absolute; left: 0.225rem; top: 0.3rem; bottom: 0.3rem; display:flex; flex-direction:column; justify-content:space-between; align-items:center; }
@@ -294,10 +350,10 @@ button{ font-family:inherit; border: none; background:none; color:inherit; }
    echoing the same events that already fire showToast (rallies, crafts,
    phase turns) as a scrolling wire-service feed instead of a one-off popup. ---- */
 .news-ticker{ flex:0 0 auto; height: 1.6rem; background:var(--ink); display:flex; align-items:stretch; box-shadow: 0 2px 0 var(--stamp); }
-.news-ticker .tag{ flex:0 0 auto; display:flex; align-items:center; padding: 0 0.45rem; background:var(--stamp); color:#fff; font-family:var(--font-mono); font-size:var(--fs-2); font-weight:800; letter-spacing:.05em; }
+.news-ticker .tag{ flex:0 0 auto; display:flex; align-items:center; padding: 0 0.45rem; background:var(--stamp); color:#fff; font-family:var(--font); font-size:var(--fs-2); font-weight:800; letter-spacing:.05em; }
 .news-ticker .feed{ flex:1 1 auto; overflow:hidden; white-space:nowrap; }
 .news-ticker .feed .track{ display:inline-flex; align-items:center; height: 1.6rem; gap: 1.2rem; padding-left: 1.2rem; animation:ticker-scroll 22s linear infinite; }
-.news-ticker .feed .track span{ font-family:var(--font-mono); font-size:var(--fs-3); font-weight:700; color:var(--page); }
+.news-ticker .feed .track span{ font-family:var(--font); font-size:var(--fs-3); font-weight:700; color:var(--page); }
 @keyframes ticker-scroll{ from{ transform: translateX(0); } to{ transform: translateX(-50%); } }
 
 /* Toasts always land in one place: their own chrome-less bar hung off the
@@ -322,7 +378,7 @@ button{ font-family:inherit; border: none; background:none; color:inherit; }
    of icon-only group chips, one single tug-of-war bar for both players.
    Doesn't expand, doesn't drag, doesn't cover the map. Investing still
    happens by tapping the map directly. ---- */
-.info-panel{ position:relative; flex:0 0 auto; padding: 0.45rem calc(0.7rem + 1.5rem) calc(env(safe-area-inset-bottom,0px) + 0.3rem) 0.7rem; background:var(--surface); border-top: 2px solid var(--line); }
+.info-panel{ position:relative; flex:0 0 auto; padding: 0.45rem calc(0.7rem + 1.5rem) calc(env(safe-area-inset-bottom,0px) + 0.3rem) 0.7rem; background:var(--tray); border-top: 2px solid var(--line); }
 .info-row{ display:flex; align-items:center; gap: 0.4rem; flex-wrap:wrap; padding-right: 0.4rem; }
 /* flex-shrink:0 — for the one or two longest state names, this drops
    "seats" onto its own line below the name instead of squeezing the name
@@ -330,7 +386,7 @@ button{ font-family:inherit; border: none; background:none; color:inherit; }
    both on one line. Every other (shorter) name already fits with seats
    alongside it, so this only ever changes the outlier cases. */
 .info-row h3{ margin:0; font-size:var(--fs-6); font-weight:800; letter-spacing:-.01em; flex-shrink:0; max-width:100%; }
-.info-row .seats{ font-family:var(--font-mono); font-size:var(--fs-3); color:var(--ink-soft); font-weight:600; white-space:nowrap; }
+.info-row .seats{ font-family:var(--font); font-size:var(--fs-3); color:var(--ink-soft); font-weight:600; white-space:nowrap; }
 .seat-preview{ font-weight:800; }
 .seat-preview.gain{ color:#1C8A4B; }
 .seat-preview.loss{ color:var(--stamp); }
@@ -356,13 +412,25 @@ button{ font-family:inherit; border: none; background:none; color:inherit; }
    different row count (2 or 3) depending on the state, which also made the
    map above it resize taller/shorter every tap. Fixed row structure now:
    name+seats, then groups, then the popularity meter, always in that order. */
+/* Regional-group icons: drawn art from assets/icons/groups/, replacing the
+   emoji that rendered in a different font on every OS. One base rule plus a
+   size modifier per context — the art is square with its own internal margin,
+   so it only ever needs a box to sit in. */
+.gicon{ display:block; object-fit:contain; user-select:none; -webkit-user-drag:none; pointer-events:none; }
+.gchip .hex .gicon{ width:92%; height:92%; }
+.info-groups .chip .gicon{ width:88%; height:88%; }
+/* Inline with text (card heading, agenda breakdown pills): sized off the text
+   itself, nudged up so it sits on the optical centre of the line rather than
+   the baseline. */
+.gicon.title-icon, .gicon.chip-icon{ display:inline-block; width:1.15em; height:1.15em; vertical-align:-0.28em; }
+
 .info-groups{ display:flex; flex-wrap:wrap; gap: 0.25rem; width:100%; margin-top: 0.3rem; }
 .info-groups .chip{ width: 1.2rem; height: 1.2rem; display:flex; align-items:center; justify-content:center; font-size: 0.775rem; background:var(--surface2); border-radius: 0.275rem; }
 .info-groups .none{ font-size: 0.6rem; color:var(--ink-faint); line-height: 1.2rem; }
 
 .vs-bar{ display:flex; align-items:center; gap: 0.4rem; margin-top: 0.4rem; }
 .vs-bar[hidden]{ display:none; }
-.vs-label{ font-family:var(--font-mono); font-size:var(--fs-4); font-weight:800; white-space:nowrap; }
+.vs-label{ font-family:var(--font); font-size:var(--fs-4); font-weight:800; white-space:nowrap; }
 .vs-label.p1{ color:var(--p1); } .vs-label.p2{ color:var(--p2); }
 .vs-track{ flex:1 1 auto; display:flex; height: 0.675rem; border: 2px solid var(--line); border-radius:var(--radius-sm); overflow:hidden; background:var(--track); }
 .vs-seg.p1{ background:var(--p1); } .vs-seg.p2{ background:var(--p2); } .vs-seg.oth{ background:transparent; }
@@ -371,7 +439,7 @@ button{ font-family:inherit; border: none; background:none; color:inherit; }
    single-state card (cardGroups + vs-bar) when a group chip is active. */
 .led-grid{ display:flex; flex-wrap:wrap; gap: 0.2rem; margin-top: 0.525rem; width:100%; }
 .led-chip{ display:flex; align-items:center; gap: 0.175rem; padding: 0.2rem 0.3rem; border-radius: 2.5rem;
-  background:var(--surface2); border: 1.5px solid var(--line); font-family:var(--font-mono);
+  background:var(--surface2); border: 1.5px solid var(--line); font-family:var(--font);
   font-weight:700; font-size: 0.425rem; color:var(--ink-soft); }
 .led-dot{ width: 0.35rem; height: 0.35rem; border-radius:50%; background:var(--track); border: 1.5px solid var(--ink-faint); flex:0 0 auto; }
 .led-chip.led-on{ border-color:var(--p1); color:var(--ink); }
@@ -420,14 +488,14 @@ button{ font-family:inherit; border: none; background:none; color:inherit; }
 /* Always-on companion to the one-time #aboutOverlay: a reviewer or a returning
    player who dismissed that notice still sees the non-affiliation line here. */
 .welcome-content .disclaimer{ display:block; max-width: 17rem; margin: 0.3rem auto 0; line-height:1.35; }
-.welcome-highscore{ color:#fff; font-family:var(--font-mono); font-weight:700; font-size: 0.8rem; letter-spacing:.03em;
+.welcome-highscore{ color:#fff; font-family:var(--font); font-weight:700; font-size: 0.8rem; letter-spacing:.03em;
   margin: 0 0 0.55rem; text-shadow: 0 2px 6px rgba(0,0,0,.55); }
 .welcome-highscore[hidden]{ display:none; }
 .welcome-loading{ width:100%; max-width: 11rem; margin: 0 auto 0.55rem; }
 .welcome-loading[hidden]{ display:none; }
 .welcome-loading-track{ width:100%; height: 0.5rem; background:rgba(255,255,255,.25); border-radius: 2.5rem; overflow:hidden; border: 1.3px solid rgba(255,255,255,.4); }
 .welcome-loading-fill{ width:35%; height:100%; background:var(--accent); border-radius: 2.5rem; animation:welcome-loading-sweep 1.1s ease-in-out infinite; }
-.welcome-loading-label{ margin-top: 0.25rem; color:rgba(255,255,255,.85); font-family:var(--font-mono); font-size: 0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; }
+.welcome-loading-label{ margin-top: 0.25rem; color:rgba(255,255,255,.85); font-family:var(--font); font-size: 0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; }
 @keyframes welcome-loading-sweep{
   0%{ transform: translateX(-100%); }
   100%{ transform: translateX(285%); } }
@@ -471,9 +539,9 @@ button{ font-family:inherit; border: none; background:none; color:inherit; }
   display:flex; align-items:center; justify-content:center; font-size: 1.05rem; overflow:hidden; box-shadow: 0 0 0 1.5px rgba(0,0,0,.15); }
 .pol-seal img{ width: 2.2rem; height: 2.2rem; object-fit:contain; }
 .party-symbol-icon{ width:1.15em; height:1.15em; object-fit:contain; vertical-align:-0.2em; flex:0 0 auto; }
-.pol-meta{ display:flex; justify-content:flex-start; align-items:center; gap: 0.5rem; margin-bottom: 0.15rem; font-size: 0.75rem; font-family:var(--font-mono); color:var(--brass); }
+.pol-meta{ display:flex; justify-content:flex-start; align-items:center; gap: 0.5rem; margin-bottom: 0.15rem; font-size: 0.75rem; font-family:var(--font); color:var(--brass); }
 .pol-party-pill{ color:var(--ink); background:var(--paper-dim); font-weight:700; padding: 0.075rem 0.5rem; border-radius: 0.25rem; font-size: 0.7rem; }
-.pol-section-label{ font-family:var(--font-mono); font-size: 0.625rem; font-weight:700; text-transform:uppercase; letter-spacing:.12em; color:var(--brass); margin: 0.45rem 0 0.2rem; padding-bottom: 0.25rem; border-bottom: 1px solid rgba(20,22,28,.15); }
+.pol-section-label{ font-family:var(--font); font-size: 0.625rem; font-weight:700; text-transform:uppercase; letter-spacing:.12em; color:var(--brass); margin: 0.45rem 0 0.2rem; padding-bottom: 0.25rem; border-bottom: 1px solid rgba(20,22,28,.15); }
 .pol-agendas{ display:flex; flex-direction:column; }
 .pol-agenda-chip{ width:100%; text-align:left; background:none; border-radius:0; padding: 0.325rem 0.125rem; display:flex; align-items:center; gap: 0.575rem; font-size: 0.85rem; font-weight:600; min-width:0; border-bottom: 1px solid rgba(20,22,28,.15); }
 .pol-agenda-chip:nth-last-child(2){ border-bottom: none; }
@@ -487,15 +555,15 @@ button{ font-family:inherit; border: none; background:none; color:inherit; }
 .pol-agenda-chip.active .chev{ transform: rotate(90deg); color:var(--stamp); }
 .pol-agenda-detail{ display:none; flex-wrap:wrap; gap: 0.375rem; padding: 0.125rem 0.125rem 0.625rem 2.2rem; }
 .pol-agenda-detail.show{ display:flex; }
-.pol-eff-chip{ padding: 0.2rem 0.5rem; border-radius: 2.5rem; background:var(--paper-dim); border: 1px solid var(--rule); font-family:var(--font-mono); font-weight:700; font-size: 0.625rem; }
+.pol-eff-chip{ padding: 0.2rem 0.5rem; border-radius: 2.5rem; background:var(--paper-dim); border: 1px solid var(--rule); font-family:var(--font); font-weight:700; font-size: 0.625rem; }
 .pol-eff-chip.eff-pos{ border-color:#1C8A4B; color:#1C8A4B; }
 .pol-eff-chip.eff-neg{ border-color:var(--stamp); color:var(--stamp); }
 .pol-power{ position:relative; width:100%; background:rgba(179,49,29,.06); border: 1px solid rgba(179,49,29,.4); border-radius: 0.625rem; padding: 0.45rem 0.75rem 0.45rem 2.5rem; margin-bottom: 0.45rem; }
 .pow-seal{ position:absolute; left: 0.55rem; top: 0.45rem; width: 1.375rem; height: 1.375rem; border-radius:50%; background:var(--stamp); display:flex; align-items:center; justify-content:center; font-size: 0.7rem; transform: rotate(-8deg); box-shadow: 0 1px 2.5px rgba(20,22,28,.3); }
 .pow-name{ font-family:var(--font-display); font-weight:700; font-size: 0.85rem; margin-bottom: 0.15rem; }
-.pow-benefit{ font-family:var(--font-mono); font-size: 0.625rem; color:var(--seal-green); font-weight:700; text-transform:uppercase; letter-spacing:.02em; margin-bottom: 0.15rem; }
-.pow-cost{ font-family:var(--font-mono); font-size: 0.625rem; color:var(--stamp); font-weight:700; text-transform:uppercase; letter-spacing:.02em; }
-.pow-unlock{ font-family:var(--font-mono); font-size: 0.625rem; color:var(--ink-soft); font-weight:700; text-transform:uppercase; letter-spacing:.02em; margin-top: 0.15rem; }
+.pow-benefit{ font-family:var(--font); font-size: 0.625rem; color:var(--seal-green); font-weight:700; text-transform:uppercase; letter-spacing:.02em; margin-bottom: 0.15rem; }
+.pow-cost{ font-family:var(--font); font-size: 0.625rem; color:var(--stamp); font-weight:700; text-transform:uppercase; letter-spacing:.02em; }
+.pow-unlock{ font-family:var(--font); font-size: 0.625rem; color:var(--ink-soft); font-weight:700; text-transform:uppercase; letter-spacing:.02em; margin-top: 0.15rem; }
 .pol-footer{ flex:0 0 auto; border-top: 1px solid rgba(20,22,28,.18); padding: 0.5rem 0.875rem 0.6rem; display:flex; flex-direction:column; align-items:center; justify-content:center; gap: 0.35rem; }
 .pol-charges{ display:flex; gap: 0.35rem; }
 .pol-diamond{ font-size: 1rem; line-height:1; color:rgba(20,22,28,.25); }
@@ -543,7 +611,7 @@ button{ font-family:inherit; border: none; background:none; color:inherit; }
 .end-parliament svg{ width:100%; height:auto; display:block; }
 .end-parliament circle{ transition:fill .4s ease; }
 .declare-ledger{ width:100%; padding: 0.45rem 1rem 0.15rem; }
-.ledger-row{ display:flex; align-items:center; gap: 0.5rem; padding: 0.3rem 0; border-bottom: 1px dashed rgba(20,22,28,.16); font-family:var(--font-mono); font-size: 0.8rem; }
+.ledger-row{ display:flex; align-items:center; gap: 0.5rem; padding: 0.3rem 0; border-bottom: 1px dashed rgba(20,22,28,.16); font-family:var(--font); font-size: 0.8rem; }
 .ledger-row:last-child{ border-bottom: none; }
 .ledger-row.winner{ font-weight:700; }
 .ledger-row.others{ color:var(--ink-soft); font-style:italic; }
@@ -554,7 +622,7 @@ button{ font-family:inherit; border: none; background:none; color:inherit; }
 .ledger-seats{ font-weight:700; font-variant-numeric:tabular-nums; white-space:nowrap; }
 .declare-stats{ width:100%; padding: 0.125rem 1rem 0.15rem; }
 .declare-stats .pol-section-label{ text-align:left; }
-.stat-row{ display:flex; align-items:center; gap: 0.375rem; padding: 0.225rem 0; border-bottom: 1px dashed rgba(20,22,28,.16); font-family:var(--font-mono); font-size: 0.7rem; }
+.stat-row{ display:flex; align-items:center; gap: 0.375rem; padding: 0.225rem 0; border-bottom: 1px dashed rgba(20,22,28,.16); font-family:var(--font); font-size: 0.7rem; }
 .stat-row:last-child{ border-bottom: none; }
 .stat-label{ flex:1; text-align:center; color:var(--ink-soft); }
 .stat-val{ font-weight:700; text-align:center; min-width: 2.75rem; font-variant-numeric:tabular-nums; }
@@ -611,7 +679,7 @@ button{ font-family:inherit; border: none; background:none; color:inherit; }
   background:var(--paper); color:var(--ink); padding: 0.25rem 0.5rem; border-radius: 2.5rem; border: 1.5px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); }
 .tutorial-navbar[hidden]{ display:none; }
 .tutorial-navbar-label{ font-family:var(--font-display); font-weight:700; font-size: 0.65rem; letter-spacing: .5px; }
-.tutorial-step-counter{ font-family:var(--font-mono); font-weight:700; font-size: 0.6rem; color:var(--ink-faint); align-self:center; }
+.tutorial-step-counter{ font-family:var(--font); font-weight:700; font-size: 0.6rem; color:var(--ink-faint); align-self:center; }
 .tutorial-nav-btn{ font-family:var(--font-display); font-weight:700; font-size: 0.7rem; color:#fff; background:var(--accent);
   border: 1.5px solid var(--ink); border-radius: 2.5rem; padding: 0.35rem 0.7rem; flex:0 0 auto; box-shadow: 2px 2px 0 var(--ink); }
 .tutorial-nav-btn:active{ transform: translate(2px,2px); box-shadow: none; }
@@ -741,7 +809,7 @@ button{ font-family:inherit; border: none; background:none; color:inherit; }
   animation:fx-flash-anim .45s ease-out forwards; }
 .fx-flash.p2{ background:var(--p2); }
 @keyframes fx-flash-anim{ from{ transform:scale(.1455); opacity:.55; } to{ transform:scale(1); opacity:0; } }
-.fx-money{ position:absolute; transform: translate(-50%,-50%); font-family:var(--font-mono); font-weight:800; font-size: 1.5rem;
+.fx-money{ position:absolute; transform: translate(-50%,-50%); font-family:var(--font); font-weight:800; font-size: 1.5rem;
   animation:fx-money-anim .7s ease-out forwards; white-space:nowrap; }
 .fx-money.spend{ color:var(--stamp); }
 .fx-money.gain{ color:#1C8A4B; }
@@ -774,7 +842,7 @@ button{ font-family:inherit; border: none; background:none; color:inherit; }
   box-shadow: 5px 5px 0 var(--ink); padding: 1.125rem 1.875rem; text-align:center; transform: scale(0);
   animation:power-card-pop var(--burst-dur) cubic-bezier(.34,1.56,.64,1) forwards; }
 .power-burst .card .bolt{ font-size: 2.75rem; line-height:1; }
-.power-burst .card .name{ font-family:var(--font-mono); font-weight:800; font-size: 1.05rem; color:var(--ink);
+.power-burst .card .name{ font-family:var(--font); font-weight:800; font-size: 1.05rem; color:var(--ink);
   margin-top: 0.3rem; text-transform:uppercase; letter-spacing:.03em; }
 .power-burst .card .who{ font-size: 0.675rem; color:var(--ink-soft); margin-top: 0.2rem; font-weight:600; }
 @keyframes power-glow-pulse{

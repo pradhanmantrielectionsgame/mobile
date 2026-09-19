@@ -42,21 +42,21 @@
 
   var NON_GROUP_FIELDS = { State: true, LokSabhaSeats: true, SvgId: true, UnionTerritory: true };
   var GROUP_META = [
-    { key: 'WesternBorder', icon: '🏔️', label: 'Western Border' },
-    { key: 'TribalLands', icon: '🌳', label: 'Tribal Lands' },
-    { key: 'MinorityAreas', icon: '🕌', label: 'Minority Areas' },
-    { key: 'NationalParksWildlife', icon: '🐅', label: 'National Parks & Wildlife' },
-    { key: 'SouthIndia', icon: '🌴', label: 'South India' },
-    { key: 'EasternBorder', icon: '🌄', label: 'Eastern Border' },
-    { key: 'TravelAndTourism', icon: '✈️', label: 'Travel & Tourism' },
-    { key: 'Education', icon: '🎓', label: 'Education' },
-    { key: 'Manufacturing', icon: '⚙️', label: 'Manufacturing' },
-    { key: 'NaturalResources', icon: '⛏️', label: 'Natural Resources' },
-    { key: 'HindiHeartland', icon: '🕉️', label: 'Hindi Heartland' },
-    { key: 'IndustrialCorridor', icon: '🏭', label: 'Industrial Corridor' },
-    { key: 'Pilgrimage', icon: '🙏', label: 'Pilgrimage' },
-    { key: 'CoastalIndia', icon: '🌊', label: 'Coastal India' },
-    { key: 'AgriculturalRegion', icon: '🌾', label: 'Agricultural Region' }
+    { key: 'WesternBorder', icon: '🏔️', img: 'western-border.webp', label: 'Western Border' },
+    { key: 'TribalLands', icon: '🌳', img: 'tribal-lands.webp', label: 'Tribal Lands' },
+    { key: 'MinorityAreas', icon: '🕌', img: 'minority-areas.webp', label: 'Minority Areas' },
+    { key: 'NationalParksWildlife', icon: '🐅', img: 'wildlife.webp', label: 'National Parks & Wildlife' },
+    { key: 'SouthIndia', icon: '🌴', img: 'south-india.webp', label: 'South India' },
+    { key: 'EasternBorder', icon: '🌄', img: 'eastern-border.webp', label: 'Eastern Border' },
+    { key: 'TravelAndTourism', icon: '✈️', img: 'travel-tourism.webp', label: 'Travel & Tourism' },
+    { key: 'Education', icon: '🎓', img: 'education.webp', label: 'Education' },
+    { key: 'Manufacturing', icon: '⚙️', img: 'manufacturing.webp', label: 'Manufacturing' },
+    { key: 'NaturalResources', icon: '⛏️', img: 'natural-resources.webp', label: 'Natural Resources' },
+    { key: 'HindiHeartland', icon: '🕉️', img: 'hindi-heartland.webp', label: 'Hindi Heartland' },
+    { key: 'IndustrialCorridor', icon: '🏭', img: 'industrial-corridor.webp', label: 'Industrial Corridor' },
+    { key: 'Pilgrimage', icon: '🙏', img: 'pilgrimage.webp', label: 'Pilgrimage' },
+    { key: 'CoastalIndia', icon: '🌊', img: 'coastal-india.webp', label: 'Coastal India' },
+    { key: 'AgriculturalRegion', icon: '🌾', img: 'agricultural.webp', label: 'Agricultural Region' }
   ];
 
   function stripBOM(s) { return s.charCodeAt(0) === 0xFEFF ? s.slice(1) : s; }
@@ -92,7 +92,7 @@
     });
     var groups = GROUP_META.map(function (g) {
       return {
-        key: g.key, icon: g.icon, label: g.label,
+        key: g.key, icon: g.icon, img: g.img, label: g.label,
         seats: states.filter(function (s) { return s.tags.indexOf(g.key) !== -1; })
           .reduce(function (a, s) { return a + s.seats; }, 0)
       };

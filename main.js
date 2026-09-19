@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var E = window.PMEEngine, G = window.PMEGame;
-  var GAME_VERSION = '2.13.3';
+  var GAME_VERSION = '2.14.1';
   // Canonical public URL for the end-of-game "share result" link — hardcoded,
   // not location.href, so the shared link is always the clean site root and
   // never a /index.html deep link, a ?query string, or a Capacitor
@@ -1616,7 +1616,7 @@
     var chips = [];
     if (!policy) return chips;
     if (policy.nationwideBonus) {
-      chips.push({ cls: 'eff-pos', text: '🇮🇳 Nationwide +' + policy.nationwideBonus });
+      chips.push({ cls: 'eff-pos', html: '🇮🇳 Nationwide +' + policy.nationwideBonus });
       return chips;
     }
     var effects = policy.tagEffects || {};
@@ -1624,7 +1624,8 @@
       .forEach(function (key) {
         var g = data.groups.filter(function (x) { return x.key === key; })[0];
         var val = effects[key];
-        chips.push({ cls: val > 0 ? 'eff-pos' : 'eff-neg', text: (g ? g.icon + ' ' + g.label : key) + ' ' + (val > 0 ? '+' : '') + val });
+        chips.push({ cls: val > 0 ? 'eff-pos' : 'eff-neg',
+          html: (g ? groupIconHtml(g, 'chip-icon') + ' ' + g.label : key) + ' ' + (val > 0 ? '+' : '') + val });
       });
     return chips;
   }
@@ -1739,7 +1740,7 @@
       agendaEffectChips(pl.name).forEach(function (c) {
         var pill = document.createElement('span');
         pill.className = 'pol-eff-chip ' + c.cls;
-        pill.textContent = c.text;
+        pill.innerHTML = c.html;
         detail.appendChild(pill);
       });
       chip.addEventListener('click', function () {
@@ -2728,7 +2729,7 @@
     chips.forEach(function (c) {
       var chip = document.createElement('span');
       chip.className = 'led-chip ' + c.cls;
-      chip.textContent = c.text;
+      chip.innerHTML = c.html;
       el.appendChild(chip);
     });
   }
@@ -2757,7 +2758,7 @@
     else s.tags.forEach(function (key) {
       var g = game.groups.filter(function (x) { return x.key === key; })[0]; if (!g) return;
       var chip = document.createElement('span');
-      chip.className = 'chip'; chip.title = g.label; chip.textContent = g.icon;
+      chip.className = 'chip'; chip.title = g.label; chip.innerHTML = groupIconHtml(g);
       groupsEl.appendChild(chip);
     });
   }
@@ -2785,7 +2786,7 @@
 
   function renderMemberCard(members, title, subtitle, showPin) {
     var threshold = game.cfg.regionalDominance.thresholdBps;
-    $('cardName').textContent = title;
+    $('cardName').innerHTML = title;   // markup: carries the group icon <img>
     $('cardSeats').textContent = subtitle;
     $('cardVsBar').hidden = true;
     $('cardPinBtn').hidden = !showPin;
@@ -2821,7 +2822,7 @@
     var threshold = game.cfg.regionalDominance.thresholdBps;
     var members = game.states.filter(function (s) { return s.tags.indexOf(key) !== -1; });
     var leadingCount = members.filter(function (s) { return game.pop[s.svgId].p1 >= threshold; }).length;
-    renderMemberCard(members, g.icon + ' ' + g.label,
+    renderMemberCard(members, groupIconHtml(g, 'title-icon') + ' ' + g.label,
       g.seats + ' seats · leading ' + leadingCount + '/' + members.length +
         (leadingCount === members.length ? ' — bonus qualified!' : ''),
       true);
@@ -2839,6 +2840,21 @@
     var totalSeats = members.reduce(function (sum, s) { return sum + s.seats; }, 0);
     renderMemberCard(members, c.icon + ' ' + c.label,
       totalSeats + ' seats · leading ' + leadingCount + '/' + members.length, false);
+  }
+
+  // Regional-group icons are drawn art (assets/icons/groups/), not emoji, so
+  // they render identically on every OS instead of picking up Apple's, Google's
+  // or Microsoft's emoji font. `icon` is kept on the group as the fallback for
+  // anything without art yet.
+  //
+  // The 'assets/' prefix is written as a literal here because
+  // scripts/deploy-mobile.js rewrites that exact string when it flattens the
+  // build — building the path from a variable makes the rewrite miss it and the
+  // icons 404 in production.
+  function groupIconHtml(g, cls) {
+    if (!g || !g.img) return '<span class="' + (cls || '') + '">' + (g ? g.icon : '') + '</span>';
+    return '<img class="gicon ' + (cls || '') + '" src="' + 'assets/icons/groups/' + g.img +
+           '" alt="" draggable="false">';
   }
 
   function selectState(id) {
@@ -2912,7 +2928,7 @@
       rowMembers.forEach(function (g) {
         var b = document.createElement('button');
         b.className = 'gchip'; b.dataset.key = g.key; b.title = g.label + ' — ' + g.seats + ' seats';
-        b.innerHTML = '<span class="hex">' + g.icon + '</span><span class="badge"></span>';
+        b.innerHTML = '<span class="hex">' + groupIconHtml(g) + '</span><span class="badge"></span>';
         fastTap(b, function () { setActiveGroup(g.key); });
         // Kept in a side map, NOT on the group object: `game` gets
         // structuredClone()d by planAITickPacing, and a DOM node is not

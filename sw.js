@@ -8,7 +8,7 @@ var CACHE = 'pme-mobile-v16';
 // and any one of those re-fetches that failed on a flaky connection left that
 // sound silently dead for the session. Bump this key by hand only when the
 // media itself changes; a code-only deploy now leaves it alone.
-var MEDIA_CACHE = 'pme-mobile-media-ed3d15038376';
+var MEDIA_CACHE = 'pme-mobile-media-ee2f7e21396c';
 // html2canvas.min.js is no longer a <script> tag in index.html — main.js injects
 // it on the first Share tap. It stays precached deliberately: install runs in the
 // background (off the boot critical path), and this keeps the share screenshot
@@ -34,10 +34,13 @@ self.addEventListener('activate', function (e) {
   self.clients.claim();
 });
 
-// Big immutable-ish media (portraits, sounds, icons): serve from cache when
-// present, only hit the network on a miss. Kept in MEDIA_CACHE so a code
-// deploy doesn't evict it — see the note on that constant above.
-var MEDIA_RE = /\.(png|jpg|jpeg|svg|webp|mp3|ogg|wav)$/i;
+// Big immutable-ish media (portraits, sounds, icons, webfonts): serve from
+// cache when present, only hit the network on a miss. Kept in MEDIA_CACHE so a
+// code deploy doesn't evict it — see the note on that constant above.
+// woff2 belongs here, not on the network-first shell path: the font files never
+// change without their filename changing, and {cache:'reload'} on them would
+// re-download ~139KB of type on every single load.
+var MEDIA_RE = /\.(png|jpg|jpeg|svg|webp|mp3|ogg|wav|woff2)$/i;
 
 self.addEventListener('fetch', function (e) {
   if (e.request.method !== 'GET') return;
