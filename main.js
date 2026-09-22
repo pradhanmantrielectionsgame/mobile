@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var E = window.PMEEngine, G = window.PMEGame;
-  var GAME_VERSION = '2.14.1';
+  var GAME_VERSION = '2.16.0';
   // Canonical public URL for the end-of-game "share result" link — hardcoded,
   // not location.href, so the shared link is always the clean site root and
   // never a /index.html deep link, a ?query string, or a Capacitor
@@ -1373,6 +1373,426 @@
     $('fxLayer').appendChild(el);
     setTimeout(function () { el.remove(); }, 700);
   }
+
+  // ---- Group-capture payout fx -----------------------------------------
+  // The engine pays the regional-dominance crossing bonus inside
+  // applyRegionalDominancePayouts() and announces it only through the news
+  // ticker, so a capture is invisible on the map. Rather than give the engine
+  // an fx channel, the display layer spots the capture itself by diffing
+  // game.dominanceHeld between renders (checkGroupCaptureFx below) — that
+  // works identically for p1 taps, AI ticks and replay, all of which already
+  // route through renderAll().
+  var COIN_COUNT = 12;
+  var COIN_MS = 620;
+  var ROLL_MS = 280;
+
+  function spawnCoin(from, to, delay, onArrive) {
+    var el = document.createElement('div');
+    el.className = 'fx-coin';
+    el.textContent = '₹';
+    el.style.left = from.x + 'px';
+    el.style.top = from.y + 'px';
+    $('fxLayer').appendChild(el);
+    var dx = to.x - from.x, dy = to.y - from.y;
+    // Arc rather than a straight slide: lift above the chord at the midpoint,
+    // plus a per-coin sideways drift so twelve coins read as a stream instead
+    // of one thick line. transform/opacity only — compositor work, no layout.
+    var lift = Math.min(90, Math.abs(dy) * 0.42 + 30);
+    var drift = (Math.random() - 0.5) * 44;
+    var anim = el.animate([
+      { transform: 'translate(-50%,-50%) scale(.55)', opacity: 0 },
+      { transform: 'translate(calc(-50% + ' + (dx * 0.18 + drift) + 'px), calc(-50% + ' + (dy * 0.18 - lift * 0.65) + 'px)) scale(1.12)', opacity: 1, offset: 0.22 },
+      { transform: 'translate(calc(-50% + ' + (dx * 0.55 + drift * 0.5) + 'px), calc(-50% + ' + (dy * 0.55 - lift) + 'px)) scale(1)', opacity: 1, offset: 0.6 },
+      { transform: 'translate(calc(-50% + ' + dx + 'px), calc(-50% + ' + dy + 'px)) scale(.42)', opacity: 0.9 }
+    ], { duration: COIN_MS, delay: delay, easing: 'cubic-bezier(.36,.06,.32,1)', fill: 'both' });
+    anim.onfinish = function () { el.remove(); onArrive(); };
+  }
+
+  // While a roll is running it owns the funds element — renderHeader() skips
+  // that player's write, or it would stamp the final figure over the count-up
+  // on the very next AI tick. The token guards against a second capture
+  // starting mid-roll: the older roll sees a changed token and stops.
+  var fundsRollToken = { p1: 0, p2: 0 };
+  function rollFunds(pk, fromCr) {
+    var el = $(pk + 'Funds');
+    var token = ++fundsRollToken[pk];
+    var t0 = performance.now();
+    function step(now) {
+      if (fundsRollToken[pk] !== token) return;
+      var k = Math.min(1, (now - t0) / ROLL_MS);
+      var target = game.players[pk].fundsCr;
+      var v = fromCr + (target - fromCr) * (1 - Math.pow(1 - k, 3));
+      el.textContent = '₹' + Math.round(v) + 'Cr';
+      if (k < 1) { requestAnimationFrame(step); return; }
+      fundsRollToken[pk] = 0;
+      el.textContent = '₹' + game.players[pk].fundsCr + 'Cr';
+    }
+    requestAnimationFrame(step);
+  }
+
+  // ---------------------------------------------------------------------
+  // Procedural terrain for the board behind the map
+  //
+  // Fractal value noise (five octaves of hash-seeded lattice noise, each half
+  // the amplitude and twice the frequency of the last), biased by latitude so
+  // the north of the board is continental and the south is open water, then
+  // read through an elevation ramp and hill-shaded off its own slope.
+  //
+  // Generated rather than drawn because generated is the only thing that
+  // actually looks like terrain: every hand-authored version of this -- flat
+  // fill, drifting haze, a checkerboard, soft radial patches -- was either
+  // too regular or too uniform, which is the one thing real landforms never
+  // are.
+  //
+  // Runs exactly once per session. The canvas is small and CSS stretches it,
+  // so a resize costs nothing and there is no per-frame work at all.
+  // ---------------------------------------------------------------------
+  var TERRAIN_SEED = 20260921;   // fixed: the board must not change per game
+  var TERRAIN_W = 256, TERRAIN_H = 448;
+
+  function terrainHash(x, y, seed) {
+    var n = (x * 374761393 + y * 668265263 + seed * 1274126177) | 0;
+    n = (n ^ (n >>> 13)) | 0;
+    n = Math.imul(n, 1274126177) | 0;
+    return ((n ^ (n >>> 16)) >>> 0) / 4294967295;
+  }
+  function terrainNoise(x, y, seed) {
+    var xi = Math.floor(x), yi = Math.floor(y);
+    var xf = x - xi, yf = y - yi;
+    // smoothstep, so the lattice never shows as a grid of straight creases
+    var u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf);
+    var a = terrainHash(xi, yi, seed), b = terrainHash(xi + 1, yi, seed);
+    var c = terrainHash(xi, yi + 1, seed), d = terrainHash(xi + 1, yi + 1, seed);
+    return (a * (1 - u) + b * u) * (1 - v) + (c * (1 - u) + d * u) * v;
+  }
+  function terrainFbm(x, y) {
+    var v = 0, amp = 0.5, f = 1;
+    for (var i = 0; i < 5; i++) {
+      v += amp * terrainNoise(x * f, y * f, TERRAIN_SEED + i * 8191);
+      f *= 2; amp *= 0.5;
+    }
+    return v;
+  }
+
+  // Elevation -> colour. Kept pale on purpose: this sits UNDER the state fills
+  // and must never compete with a player's colour for attention.
+  var TERRAIN_BANDS = [
+    [0.00, 132, 163, 193],  // deep water
+    [0.30, 152, 180, 206],  // open shelf
+    [0.41, 175, 199, 219],  // shallows
+    [0.47, 196, 215, 229],  // surf
+    [0.50, 214, 207, 183],  // sand
+    [0.54, 203, 192, 160],  // lowland
+    [0.64, 196, 183, 146],  // scrub
+    [0.74, 186, 171, 133],  // upland
+    [0.85, 176, 161, 125],  // hill
+    [1.00, 190, 178, 152]   // bare rock, lighter again
+  ];
+  function terrainColor(h, out) {
+    var i = 1;
+    while (i < TERRAIN_BANDS.length - 1 && h > TERRAIN_BANDS[i][0]) i++;
+    var lo = TERRAIN_BANDS[i - 1], hi = TERRAIN_BANDS[i];
+    var t = (h - lo[0]) / (hi[0] - lo[0] || 1);
+    if (t < 0) t = 0; else if (t > 1) t = 1;
+    // Land bands blend; the waterline at 0.50 does not, so there is a real
+    // coast rather than a gradient fading into the sea.
+    if (lo[0] < 0.50 && hi[0] > 0.47 && hi[0] <= 0.50) t = t * t;
+    out[0] = lo[1] + (hi[1] - lo[1]) * t;
+    out[1] = lo[2] + (hi[2] - lo[2]) * t;
+    out[2] = lo[3] + (hi[3] - lo[3]) * t;
+  }
+
+  // A blurred silhouette of the real landmass, in terrain-canvas pixels.
+  // Without it the noise is free to raise ground anywhere, and it put coast
+  // out in the Arabian Sea and the Bay of Bengal where there is only water.
+  // Rasterised from the map's own <svg>, so it can never drift out of step
+  // with the shapes the player is looking at.
+  function buildLandMask(W, H, done) {
+    var svg = $('map'), wrap = document.querySelector('.map-wrap');
+    if (!svg || !wrap || typeof XMLSerializer === 'undefined') { done(null); return; }
+    var vb = (svg.getAttribute('viewBox') || '').split(/\s+/).map(Number);
+    if (vb.length !== 4 || !vb[2] || !vb[3]) { done(null); return; }
+    var clone = svg.cloneNode(true);
+    // Stretch to the box this code computes, rather than fitting itself into
+    // it a second time — the fit is worked out below from the LIVE element.
+    clone.setAttribute('preserveAspectRatio', 'none');
+    clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    // Fills come from the stylesheet, which a serialised copy does not carry.
+    var st = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+    st.textContent = 'path,circle{fill:#000;stroke:#000;stroke-width:3}';
+    clone.insertBefore(st, clone.firstChild);
+
+    var im = new Image();
+    im.onerror = function () { done(null); };
+    im.onload = function () {
+      try {
+        var mc = document.createElement('canvas');
+        mc.width = W; mc.height = H;
+        var mx = mc.getContext('2d');
+        // Where the landmass actually sits inside .map-wrap right now. The
+        // live <svg> is xMidYMid meet and carries a CSS scale, so its drawn
+        // content is a letterboxed sub-rect of its own box; getBoundingClientRect
+        // gives the transformed box and the viewBox ratio gives the rest.
+        var sr = svg.getBoundingClientRect(), wr = wrap.getBoundingClientRect();
+        if (!wr.width || !wr.height) { done(null); return; }
+        var vbAR = vb[2] / vb[3], cw, ch;
+        if (sr.width / sr.height > vbAR) { ch = sr.height; cw = ch * vbAR; }
+        else { cw = sr.width; ch = cw / vbAR; }
+        var cx = sr.left + (sr.width - cw) / 2, cy = sr.top + (sr.height - ch) / 2;
+        mx.drawImage(im,
+          (cx - wr.left) / wr.width * W, (cy - wr.top) / wr.height * H,
+          cw / wr.width * W, ch / wr.height * H);
+
+        var src = mx.getImageData(0, 0, W, H).data;
+        var m = new Float32Array(W * H);
+        for (var i = 0; i < W * H; i++) m[i] = src[i * 4 + 3] / 255;
+        // Three box-blur passes ~= a gaussian: turns the hard silhouette into
+        // a smooth "how close is land" field, which is what the height bias
+        // wants. Separable, so it is cheap.
+        var tmp = new Float32Array(W * H), r = 6, k;
+        for (var pass = 0; pass < 3; pass++) {
+          for (var y = 0; y < H; y++) {
+            for (var x = 0; x < W; x++) {
+              var sum = 0, n = 0;
+              for (k = -r; k <= r; k++) {
+                var xx = x + k; if (xx < 0 || xx >= W) continue;
+                sum += m[y * W + xx]; n++;
+              }
+              tmp[y * W + x] = sum / n;
+            }
+          }
+          for (var x2 = 0; x2 < W; x2++) {
+            for (var y2 = 0; y2 < H; y2++) {
+              var sum2 = 0, n2 = 0;
+              for (k = -r; k <= r; k++) {
+                var yy = y2 + k; if (yy < 0 || yy >= H) continue;
+                sum2 += tmp[yy * W + x2]; n2++;
+              }
+              m[y2 * W + x2] = sum2 / n2;
+            }
+          }
+        }
+        // Renormalise: three blurs flatten the peak well below 1.
+        var max = 0;
+        for (var j = 0; j < m.length; j++) if (m[j] > max) max = m[j];
+        if (max > 0) for (var j2 = 0; j2 < m.length; j2++) m[j2] = Math.min(1, m[j2] / max * 1.35);
+        done(m);
+      } catch (e) { done(null); }
+    };
+    im.src = 'data:image/svg+xml;charset=utf-8,' +
+      encodeURIComponent(new XMLSerializer().serializeToString(clone));
+  }
+
+  // Built lazily and once. It cannot be built at boot: the mask is aligned
+  // from the LIVE <svg>'s box, and at boot the map is still behind the welcome
+  // screen with #stage hidden, so every measurement comes back zero and the
+  // build bails. Call this whenever the map is put on screen instead.
+  var terrainMask = null, terrainMaskDone = false;
+  function ensureTerrain() {
+    if (terrainMaskDone) { drawTerrain(terrainMask); return; }
+    terrainMaskDone = true;
+    buildLandMask(TERRAIN_W, TERRAIN_H, function (mask) {
+      terrainMask = mask;
+      drawTerrain(mask);
+    });
+  }
+
+  function drawTerrain(mask) {
+    var cv = $('terrainCanvas');
+    if (!cv || !cv.getContext) return;
+    var W = TERRAIN_W, H = TERRAIN_H;
+    cv.width = W; cv.height = H;
+    var ctx = cv.getContext('2d');
+    if (!ctx) return;
+
+    // Height field first, whole. Shading needs each pixel's neighbours, and
+    // re-running five octaves of noise per neighbour would quadruple the cost.
+    var hgt = new Float32Array(W * H);
+    for (var y = 0; y < H; y++) {
+      var lat = y / (H - 1);
+      // Two sources of dry ground, whichever is stronger at this pixel:
+      //   - north of the country is continental in reality, and the map's own
+      //     silhouette stops at the border, so latitude has to supply it;
+      //   - everywhere else, only the neighbourhood of the real landmass.
+      // Without the second term the noise grew islands in open sea. Without
+      // the first, the Himalayan side of the board turned into ocean.
+      var north = (0.34 - lat) / 0.34;
+      if (north < 0) north = 0; else if (north > 1) north = 1;
+      for (var x = 0; x < W; x++) {
+        var near = mask ? mask[y * W + x] : 0;
+        var landness = north > near ? north : near;
+        // Calibrated so the noise can shape a coast but never override
+        // geography. fbm spans about 0.15..0.85, so at weight 0.38 it moves
+        // the height by at most 0.27 -- less than the 0.30 that landness
+        // itself is worth. The arithmetic that matters:
+        //   landness 0 -> 0.21..0.47, always below the 0.50 waterline;
+        //   landness 1 -> 0.51..0.77, always above it.
+        // So open sea can never grow an island and the interior can never
+        // flood, and the coastline is whatever the noise does in between.
+        // The looser weighting this replaces put dry ground out in the
+        // Arabian Sea and the Bay of Bengal.
+        var h = terrainFbm(x / 46, y / 46) * 0.38 + (0.15 + landness * 0.30);
+        hgt[y * W + x] = h < 0 ? 0 : h > 1 ? 1 : h;
+      }
+    }
+
+    var img = ctx.createImageData(W, H);
+    var d = img.data, rgb = [0, 0, 0];
+    for (var yy = 0; yy < H; yy++) {
+      for (var xx = 0; xx < W; xx++) {
+        var i = yy * W + xx;
+        var h2 = hgt[i];
+        terrainColor(h2, rgb);
+        // Hillshade from the local gradient, light from the upper left. Only
+        // above the waterline -- shading open water just makes it look dented.
+        var shade = 1;
+        if (h2 > 0.5) {
+          var dx = hgt[i + (xx < W - 1 ? 1 : 0)] - hgt[i - (xx > 0 ? 1 : 0)];
+          var dy = hgt[i + (yy < H - 1 ? W : 0)] - hgt[i - (yy > 0 ? W : 0)];
+          shade = 1 + (-dx - dy) * 2.2;
+          if (shade < 0.88) shade = 0.88; else if (shade > 1.1) shade = 1.1;
+        }
+        var o = i * 4;
+        d[o] = rgb[0] * shade;
+        d[o + 1] = rgb[1] * shade;
+        d[o + 2] = rgb[2] * shade;
+        d[o + 3] = 255;
+      }
+    }
+    ctx.putImageData(img, 0, 0);
+  }
+
+  // Live viewport centres of the given map states, for launching coins from.
+  function mapPointsFor(svgIds) {
+    var pts = [];
+    svgIds.forEach(function (id) {
+      // Uttarakhand/Ladakh/Himachal render as a duplicate-id circle on top of
+      // their path, so querySelectorAll (not getElementById) picks up both.
+      document.querySelectorAll('.india-map [id="' + id + '"]').forEach(function (el) {
+        var r = el.getBoundingClientRect();
+        if (r.width || r.height) pts.push({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
+      });
+    });
+    return pts;
+  }
+
+  // Shared by every payout that should feel like money arriving: regional
+  // dominance, a clean sweep, and the phase-start income.
+  function spawnPayoutCoins(pk, pts, payoutCr) {
+    var fundsEl = $(pk + 'Funds');
+    if (!fundsEl || !payoutCr || !pts.length) return;
+    var to = viewportPoint(fundsEl);
+    var startCr = game.players[pk].fundsCr - payoutCr;
+    var rolling = false;
+    for (var i = 0; i < COIN_COUNT; i++) {
+      var src = pts[i % pts.length];
+      spawnCoin(
+        { x: src.x + (Math.random() - 0.5) * 20, y: src.y + (Math.random() - 0.5) * 20 },
+        to, i * 48,
+        function () {
+          if (!rolling) { rolling = true; rollFunds(pk, startCr); }
+          fundsEl.classList.add('funds-hit');
+          setTimeout(function () { fundsEl.classList.remove('funds-hit'); }, 160);
+        }
+      );
+    }
+  }
+
+  // Keyed on the game object itself so a new match, a replay or a rematch
+  // reseeds the baseline without every createGame() call site having to.
+  var fxGame = null;
+  var lastDominanceHeld = null;
+  var lastCleanSweepHeld = null;
+  function checkGroupCaptureFx() {
+    var held = game.dominanceHeld || {};
+    if (fxGame !== game) {
+      fxGame = game;
+      lastDominanceHeld = Object.assign({}, held);
+      lastCleanSweepHeld = Object.assign({}, game.cleanSweepHeld || {});
+      return;
+    }
+    Object.keys(held).forEach(function (key) {
+      if (!held[key] || lastDominanceHeld[key]) return;
+      var parts = key.split('|'), gkey = parts[0], pk = parts[1];
+      var g = null;
+      game.groups.forEach(function (x) { if (x.key === gkey) g = x; });
+      if (!g) return;
+      var ids = [];
+      game.states.forEach(function (st) {
+        if (st.tags.indexOf(gkey) !== -1) ids.push(st.svgId);
+      });
+      spawnPayoutCoins(pk, mapPointsFor(ids), E.dominancePayoutCr(g, game.states, game.cfg.regionalDominance));
+    });
+    lastDominanceHeld = Object.assign({}, held);
+
+    // A clean sweep (one state at a literal 100%) pays its own per-seat bonus
+    // and, before this, showed only the persistent swept-* glow. Same
+    // held-map diff as above — game.cleanSweepHeld is keyed svgId|player.
+    var swept = game.cleanSweepHeld || {};
+    Object.keys(swept).forEach(function (key) {
+      if (!swept[key] || lastCleanSweepHeld[key]) return;
+      var parts = key.split('|'), svgId = parts[0], pk = parts[1];
+      var st = game.statesById[svgId];
+      if (!st) return;
+      spawnPayoutCoins(pk, mapPointsFor([svgId]), st.seats * game.cfg.cleanSweep.payoutCrPerSeat);
+    });
+    lastCleanSweepHeld = Object.assign({}, swept);
+  }
+
+  // Seat totals count up to their new value and flash green/red on the way,
+  // rather than silently swapping. fxGame is the same new-match guard the
+  // capture detector uses: the very first render of a match writes plainly.
+  var lastSeatShown = { p1: null, p2: null };
+  var seatRollToken = { p1: 0, p2: 0 };
+  function renderSeatTotal(pk, value) {
+    var el = $(pk + 'Seats');
+    var prev = lastSeatShown[pk];
+    lastSeatShown[pk] = value;
+    if (fxGame !== game || prev === null || prev === value) {
+      if (!seatRollToken[pk]) el.textContent = value + ' seats';
+      return;
+    }
+    el.classList.remove('seats-up', 'seats-down');
+    // reflow so a repeated change in the same direction re-runs the tint
+    void el.offsetWidth;
+    el.classList.add(value > prev ? 'seats-up' : 'seats-down');
+    setTimeout(function () { el.classList.remove('seats-up', 'seats-down'); }, 700);
+
+    var token = ++seatRollToken[pk];
+    var t0 = performance.now();
+    function step(now) {
+      if (seatRollToken[pk] !== token) return;
+      var k = Math.min(1, (now - t0) / ROLL_MS);
+      var v = prev + (value - prev) * (1 - Math.pow(1 - k, 3));
+      el.textContent = Math.round(v) + ' seats';
+      if (k < 1) { requestAnimationFrame(step); return; }
+      seatRollToken[pk] = 0;
+      el.textContent = lastSeatShown[pk] + ' seats';
+    }
+    requestAnimationFrame(step);
+  }
+
+  // Phase-start income (the flat refresh plus any group holding bonuses).
+  // Launched from up to six states the player currently leads, so the money
+  // visibly comes off their own map rather than out of nowhere; a player
+  // leading nothing gets it from the bottom of the map instead.
+  function spawnPhaseIncomeFx(pk, gainedCr) {
+    if (!gainedCr) return;
+    var mine = [];
+    game.states.forEach(function (st) {
+      var pop = game.pop[st.svgId];
+      if (!pop) return;
+      var lead = pk === 'p1' ? pop.p1 - pop.p2 : pop.p2 - pop.p1;
+      if (lead > 0) mine.push({ id: st.svgId, lead: lead });
+    });
+    mine.sort(function (a, b) { return b.lead - a.lead; });
+    var pts = mapPointsFor(mine.slice(0, 6).map(function (x) { return x.id; }));
+    if (!pts.length) {
+      var mr = $('map').getBoundingClientRect();
+      pts = [{ x: mr.left + mr.width / 2, y: mr.bottom - 10 }];
+    }
+    spawnPayoutCoins(pk, pts, gainedCr);
+  }
   // Nehru's Non-Alignment secretly nullifies the opponent's power — they're
   // only meant to find out when THEY try to activate theirs and it fizzles.
   // A full-screen "Jawaharlal Nehru invoked Non-Alignment" burst leaks that
@@ -1963,6 +2383,7 @@
     $('selectOverlay').hidden = true;
     $('endOverlay').hidden = true;
     $('stage').hidden = false;
+    ensureTerrain();
     $('tutorialNavbar').hidden = true; // select-screen's fixed nav is done; in-game coaching (if any) uses its own in-flow banner instead
 
     buildGroupsBox();
@@ -2071,10 +2492,29 @@
   // on every phase transition, even when a tutorial phase-gate is about to
   // keep the game paused (otherwise timeLeft stays at the ~0 it just hit,
   // and resuming later instantly re-triggers doEndPhase again).
+  // The countdown reddens and pulses for the last ten seconds of a phase.
+  // Driven from the one place timeLeft changes, so it can't go stale.
+  function paintPhaseTimer() {
+    var el = $('phaseTimer');
+    var urgent = timeLeft > 0 && timeLeft <= 10;
+    el.textContent = fmtClock(timeLeft);
+    el.classList.toggle('urgent', urgent);
+    // The same countdown as a bar under the header. Written from here rather
+    // than from its own timer because this is the only place timeLeft changes,
+    // so the two can never disagree. The phase length is read from the live
+    // game (45s in mobileEconomy), never hardcoded.
+    var drain = $('phaseDrain');
+    if (drain && game) {
+      var total = game.cfg.phaseDurationSeconds || 1;
+      drain.style.setProperty('--phase-left', Math.max(0, Math.min(1, timeLeft / total)));
+      drain.classList.toggle('urgent', urgent);
+    }
+  }
+
   function resetPhaseTimer() {
     clearInterval(timerHandle);
     timeLeft = game.cfg.phaseDurationSeconds;
-    $('phaseTimer').textContent = fmtClock(timeLeft);
+    paintPhaseTimer();
     planAITickPacing(game);
   }
 
@@ -2087,7 +2527,7 @@
     clearInterval(timerHandle);
     timerHandle = setInterval(function () {
       timeLeft--;
-      $('phaseTimer').textContent = fmtClock(timeLeft);
+      paintPhaseTimer();
       if (timeLeft <= 0) doEndPhase();
     }, 1000);
   }
@@ -2098,8 +2538,9 @@
     G.endPhase(game);
     var fundsGained = game.players.p1.fundsCr - fundsBefore;
     if (fundsGained > 0) {
-      var pt = viewportPoint($('p1Funds'));
-      spawnMoneyText(pt.x, pt.y, fundsGained, 1);
+      // Coins off the player's own strongest states rather than a bare label
+      // pinned to the counter. renderAll() below re-measures the map first,
+      // so the launch runs after it.
       playSound('cash_added');
     }
     if (game.winner) {
@@ -2113,6 +2554,7 @@
       return;
     }
     renderAll();
+    if (fundsGained > 0) spawnPhaseIncomeFx('p1', fundsGained);
     playSound('phase_reset');
     showToast('Phase ' + game.phase + ' begins');
     resetPhaseTimer(); // always give the new phase a full clock, whether or not a tutorial gate is about to pause it
@@ -2192,6 +2634,7 @@
     $('selectOverlay').hidden = true;
     $('welcomeOverlay').hidden = true;
     $('stage').hidden = false;
+    ensureTerrain();
     $('replayBar').hidden = false;
     buildGroupsBox();
     buildAgendaTray();
@@ -2582,12 +3025,33 @@
   // Clean-sweep glow is a live readout (like renderGroupCaptureBadges' own
   // dominance check) rather than reading game.cleanSweepHeld — that flag
   // exists only to gate the one-time payout, not to drive this visual.
+  // Who is ahead in a state right now, as a plain token so a change of hands
+  // can be spotted between paints. Ties count as their own state: flipping
+  // from a tie to a lead is a real event worth flashing.
+  function leaderOf(svgId) {
+    var p = game.pop[svgId];
+    if (!p || p.p1 === p.p2) return 'none';
+    return p.p1 > p.p2 ? 'p1' : 'p2';
+  }
+  var lastLeader = {};
   function paintMap() {
+    var fresh = (fxGame !== game);
     document.querySelectorAll('.india-map path[id], .india-map circle[id]').forEach(function (el) {
       el.style.fill = leaderColor(el.id);
       var p = game.pop[el.id];
       el.classList.toggle('swept-p1', !!p && p.p1 === E.BPS);
       el.classList.toggle('swept-p2', !!p && p.p2 === E.BPS);
+
+      var now = leaderOf(el.id);
+      var was = lastLeader[el.id];
+      lastLeader[el.id] = now;
+      if (fresh || was === undefined || was === now) return;
+      el.classList.remove('flip');
+      void el.getBoundingClientRect(); // restart the animation on a re-flip
+      el.classList.add('flip');
+      (function (node) {
+        setTimeout(function () { node.classList.remove('flip'); }, 460);
+      })(el);
     });
   }
 
@@ -2648,6 +3112,19 @@
     layer.appendChild(frag);
   }
 
+  // The info panel is a fixed height, so a title that wraps to a second line
+  // does not push the map -- it eats the panel's own room instead. Exactly one
+  // title in the game is long enough to wrap ("Dadra And Nagar Haveli And
+  // Daman And Diu"); measured, it needed 113px where all 74 other states
+  // needed 89px, so that one name was setting the panel's height, and the
+  // map was paying 24px for it on every screen. Stepping its size down keeps
+  // it on one line and loses nothing, where truncating it would.
+  function setCardTitle(html, isHtml) {
+    var el = $('cardName');
+    if (isHtml) el.innerHTML = html; else el.textContent = html;
+    el.classList.toggle('long', (el.textContent || '').length > 24);
+  }
+
   function updateCard() {
     // Every renderer below already clears cardPinBtn itself; the invest button
     // is cleared once here instead, since only renderStateCard wants it.
@@ -2671,13 +3148,13 @@
     el.className = 'info-groups desc';
     var rc = game.cfg.rally;
     if (kind === 'rally') {
-      $('cardName').textContent = '📢 State Rally';
+      setCardTitle('📢 State Rally');
       $('cardSeats').textContent = game.players.p1.tokens.stateRally + ' tokens';
       el.textContent = 'Free token, earned from investment milestones. Deploy on a state for +' +
         (rc.tokenBoostBps / 100) + '% popularity there (max ' + rc.maxPlaysPerStateShared + ' plays/state, shared with your opponent).';
     } else if (kind === 'nationwide') {
       var nState = craftSlotState('nationwide');
-      $('cardName').textContent = '🇮🇳 Nationwide Rally';
+      setCardTitle('🇮🇳 Nationwide Rally');
       $('cardSeats').textContent = nState === 'used' ? 'Used' : nState === 'ready' ? 'Ready' :
         game.players.p1.tokens.stateRally + '/' + rc.nationwideRallyCraftCost + ' tokens';
       el.textContent = 'Craft for ' + rc.nationwideRallyCraftCost + ' rally tokens (unlocks phase ' +
@@ -2685,17 +3162,26 @@
         '% popularity in every state at once.';
     } else if (kind === 'special') {
       var pol = game.players.p1.politician, power = pol.power, sState = craftSlotState('special');
-      $('cardName').textContent = '⭐ ' + power.name;
+      setCardTitle('⭐ ' + power.name);
       $('cardSeats').textContent = sState === 'used' ? 'Used' : sState === 'ready' ? 'Ready' :
         game.players.p1.tokens.stateRally + '/' + rc.specialPowerupCraftCost + ' tokens';
       // Same pol-power block (seal + benefit/cost/unlock) as the politician
       // select card, reused verbatim rather than the raw engine description
       // text, so the two places a player checks a power's details agree.
       el.className = 'pol-power';
-      el.innerHTML = '<div class="pow-seal">⚡</div><div class="pow-name">' + power.name + '</div>' +
+      // No .pow-name here, unlike the select card this block is shared with:
+      // the info panel's own header row directly above already reads
+      // "⭐ <power name>", so printing it again cost the panel a whole row —
+      // and it was the row that made the special-power mode the tallest of
+      // the four modes, which is what the panel's fixed height has to clear.
+      // Cost and unlock share a line here, unlike the select card: this panel
+      // is a fixed height and the special-power mode is the tallest of its
+      // four content modes, so the row this saves is a row every other mode
+      // was carrying empty.
+      el.innerHTML = '<div class="pow-seal">⚡</div>' +
         '<div class="pow-benefit">Benefit: ' + pol.specialPower.effect + '</div>' +
-        '<div class="pow-cost">Cost: ' + pol.specialPower.cost + '</div>' +
-        '<div class="pow-unlock">Unlocks at: Phase ' + (power.requiresMinPhase || 1) + '</div>';
+        '<div class="pow-cost">Cost: ' + pol.specialPower.cost +
+        ' <span class="pow-unlock">· Phase ' + (power.requiresMinPhase || 1) + '+</span></div>';
     }
   }
 
@@ -2707,7 +3193,7 @@
     var policy = game.policiesByName[name]; if (!policy) return;
     $('cardVsBar').hidden = true;
     $('cardPinBtn').hidden = true;
-    $('cardName').textContent = (AGENDA_ICONS[name] || '📜') + ' ' + name;
+    setCardTitle((AGENDA_ICONS[name] || '📜') + ' ' + name);
     var taps = game.players.p1.agendaProgress[name] || 0;
     var done = taps >= game.cfg.agenda.tapsToComplete;
     var seatsEl = $('cardSeats');
@@ -2743,7 +3229,7 @@
     // newer player where it is. The map tap still works exactly as before.
     $('cardInvestBtn').hidden = false;
     $('cardVsBar').hidden = false;
-    $('cardName').textContent = s.name;
+    setCardTitle(s.name);
     $('cardSeats').textContent = s.seats + ' seats · ₹' + E.investmentCostCr(s.seats, game.cfg.investment) + 'Cr';
     $('cardP1Fill').style.width = (p.p1 / 100) + '%';
     $('cardOthFill').style.width = (p.others / 100) + '%';
@@ -2786,7 +3272,7 @@
 
   function renderMemberCard(members, title, subtitle, showPin) {
     var threshold = game.cfg.regionalDominance.thresholdBps;
-    $('cardName').innerHTML = title;   // markup: carries the group icon <img>
+    setCardTitle(title, true);   // markup: carries the group icon <img>
     $('cardSeats').textContent = subtitle;
     $('cardVsBar').hidden = true;
     $('cardPinBtn').hidden = !showPin;
@@ -2892,10 +3378,26 @@
     }
     updateCard();
   }
+  // Neutral "not in the group you are looking at" land tone. Warm enough to
+  // read as land over the blue half of the board, flat enough that it never
+  // competes with either player's colour.
+  var MAP_OFFGROUP = '#D5D2C8';
   function applyGroupHighlight() {
     var members = !activeGroup ? null : game.states.filter(function (s) { return s.tags.indexOf(activeGroup) !== -1; }).map(function (s) { return s.svgId; });
     document.querySelectorAll('.india-map path[id], .india-map circle[id]').forEach(function (p) {
-      p.style.fillOpacity = (!members || members.indexOf(p.id) !== -1) ? '1' : '0';
+      // Out-of-group states are MUTED, never made transparent. They used to
+      // drop to fill-opacity 0, which worked while the board behind the map
+      // was a flat fill -- the states simply disappeared into it. The board
+      // is a land/sea tile mosaic now, so zero opacity punched ocean tiles
+      // through the middle of the landmass and the map came apart. An opaque
+      // neutral keeps the country whole; the group still reads because it is
+      // the only part still carrying a player's colour.
+      var inGroup = !members || members.indexOf(p.id) !== -1;
+      p.style.fillOpacity = '1';
+      // Authoritative on both branches rather than relying on paintMap having
+      // just run: clearing a group calls this without a repaint, and a
+      // one-sided restore would leave the muted fill stuck on.
+      p.style.fill = inGroup ? leaderColor(p.id) : MAP_OFFGROUP;
     });
     document.querySelectorAll('.gchip').forEach(function (c) { c.classList.remove('qualified'); });
     if (!members) return;
@@ -3305,14 +3807,11 @@
   // ---------------------------------------------------------------------
   function renderHeader() {
     var seats = E.nationalSeats(game.states, game.pop);
-    var total = game.cfg.totalSeats;
-    $('segP1').style.width = (seats.p1 / total * 100) + '%';
-    $('segOth').style.width = (seats.others / total * 100) + '%';
-    $('segP2').style.width = (seats.p2 / total * 100) + '%';
-    $('p1Funds').textContent = '₹' + game.players.p1.fundsCr + 'Cr';
-    $('p2Funds').textContent = '₹' + game.players.p2.fundsCr + 'Cr';
-    $('p1Seats').textContent = seats.p1 + ' seats';
-    $('p2Seats').textContent = seats.p2 + ' seats';
+    // Skipped while a payout count-up owns the element (see rollFunds).
+    if (!fundsRollToken.p1) $('p1Funds').textContent = '₹' + game.players.p1.fundsCr + 'Cr';
+    if (!fundsRollToken.p2) $('p2Funds').textContent = '₹' + game.players.p2.fundsCr + 'Cr';
+    renderSeatTotal('p1', seats.p1);
+    renderSeatTotal('p2', seats.p2);
     $('phaseNum').textContent = game.phase + '/' + game.cfg.totalPhases;
   }
 
@@ -3352,6 +3851,43 @@
     });
   }
 
+  // Grey out the corner quick-invest buttons you cannot pay for. Kept
+  // deliberately quiet: the louder version of this (a running balance and a
+  // shortfall inside the funds pill) was cut for crowding the readout.
+  var QUICK_INVEST_BTNS = { delhiBtn: ['INDL'], goaBtn: ['INGA'], keralaBtn: ['INKL'] };
+  function costOfIds(ids) {
+    var total = 0;
+    ids.forEach(function (id) {
+      var st = game.statesById[id];
+      if (st) total += E.investmentCostCr(st.seats, game.cfg.investment);
+    });
+    return total;
+  }
+  function renderAffordability() {
+    var funds = game.players.p1.fundsCr;
+
+    // The five corner buttons: a batch is affordable if ANY member is, which
+    // is exactly the rule the handlers use (they invest state by state and
+    // skip what they cannot pay for), so the greying never lies about what a
+    // tap would do.
+    Object.keys(QUICK_INVEST_BTNS).forEach(function (btnId) {
+      var btn = $(btnId); if (!btn) return;
+      btn.classList.toggle('cant-afford', costOfIds(QUICK_INVEST_BTNS[btnId]) > funds);
+    });
+    [['utsBtn', G.SMALL_UT_IDS.filter(function (id) { return id !== 'INDL' && id !== 'INGA'; })],
+     ['neBtn', G.NORTHEAST_IDS]].forEach(function (row) {
+      var btn = $(row[0]); if (!btn) return;
+      var cheapest = row[1].reduce(function (min, id) {
+        var st = game.statesById[id];
+        if (!st) return min;
+        var c = E.investmentCostCr(st.seats, game.cfg.investment);
+        return c < min ? c : min;
+      }, Infinity);
+      btn.classList.toggle('cant-afford', cheapest > funds);
+    });
+
+  }
+
   function renderAll() {
     paintMap();
     updateCard();
@@ -3359,6 +3895,7 @@
     renderHeader();
     renderTokens();
     renderAgendas();
+    renderAffordability();
     renderGroupCaptureBadges();
     syncNewsFeed();
     // Runs LAST, deliberately. It's a pure measure-then-place pass over the
@@ -3369,6 +3906,9 @@
     // which resizes .map-wrap and moves every state. Placing the dots before
     // that left them pinned to the previous layout until the next render.
     renderRallyTokens();
+    // After renderRallyTokens for the same reason it runs last: the coins are
+    // launched from live getBoundingClientRect positions on the map.
+    checkGroupCaptureFx();
   }
 
   // ---------------------------------------------------------------------
@@ -3475,8 +4015,26 @@
     setPaused(!timerPaused);
   });
 
+  // Service worker only on the real site. sw.js is network-first for code,
+  // but it gives up after 3.5s and serves its cached copy — which is correct
+  // for a player on a flaky connection and actively wrong when testing over a
+  // cloudflared tunnel or a LAN address, where a slow round trip is normal.
+  // The effect is that a change sometimes reaches the test device and
+  // sometimes silently doesn't, which is the worst possible way to fail: it
+  // reads as "the change didn't work" rather than "the file didn't arrive".
+  // Any worker already installed from a tunnel is unregistered on sight, so a
+  // device that has been through this once recovers by itself.
+  // Trade-off: Android's install prompt needs a service worker, so an
+  // installability check has to be done against the real domain, not a tunnel.
+  // iOS Add-to-Home-Screen needs only the manifest and is unaffected.
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').catch(function () {});
+    if (/(^|\.)pradhanmantrielectionsgame\.(com|github\.io)$/.test(location.hostname)) {
+      navigator.serviceWorker.register('sw.js').catch(function () {});
+    } else {
+      navigator.serviceWorker.getRegistrations().then(function (rs) {
+        rs.forEach(function (r) { r.unregister(); });
+      }).catch(function () {});
+    }
   }
 
   function setTutorialMode(on) {
@@ -3549,6 +4107,10 @@
   // No feedback loop: renderRallyTokens only writes into #rallyTokenLayer, a
   // position:fixed sibling that cannot affect .map-wrap's size.
   var mapWrap = document.querySelector('.map-wrap');
+  // Paint once at boot so the board is never bare behind the welcome screen;
+  // ensureTerrain() repaints it with the landmask the first time the map is
+  // actually shown, when there is a box to measure.
+  drawTerrain(null);
   if (mapWrap && typeof ResizeObserver === 'function') {
     new ResizeObserver(function () { if (game) renderRallyTokens(); }).observe(mapWrap);
   }
