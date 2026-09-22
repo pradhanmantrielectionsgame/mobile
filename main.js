@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var E = window.PMEEngine, G = window.PMEGame;
-  var GAME_VERSION = '2.16.2';
+  var GAME_VERSION = '2.16.3';
   // Canonical public URL for the end-of-game "share result" link — hardcoded,
   // not location.href, so the shared link is always the clean site root and
   // never a /index.html deep link, a ?query string, or a Capacitor
@@ -1533,17 +1533,27 @@
     // Indian Ocean: everything below the Kerala and Tamil Nadu tips, which end
     // at y=912 and y=918. Full width, so the corners of the board are water.
     [[-600, 922], [1900, 922], [1900, 1900], [-600, 1900]],
-    // Bay of Bengal: south of the Bangladesh coast, west of Myanmar, east of
-    // the Odisha / Andhra / Tamil Nadu shoreline, out to the eastern edge.
-    // The western edge is listed south-to-north and traces the real coast --
-    // Tamil Nadu's east edge is at x=433, Andhra's at 554, Odisha's at 628.
-    // A first version ran it up to 40 units offshore of Tamil Nadu and
-    // Andhra, which left a false strip of land along the coast that blurred
-    // into a continental shelf far wider than the west coast's.
-    [[640, 560], [700, 562], [778, 574], [802, 640], [842, 722], [882, 822],
-     [1900, 890], [1900, 1900], [420, 1900],
-     [428, 915], [440, 880], [460, 840], [495, 800], [535, 760], [556, 706],
-     [590, 660], [625, 610]]
+    // Bay of Bengal: south of the Bangladesh coast, west of Myanmar, out to
+    // the eastern edge of the board.
+    //
+    // Its western edge (listed south-to-north) runs deliberately INLAND of the
+    // east coast, about 75 units in, and does not try to trace the shoreline
+    // at all. Step 4 below repaints India's silhouette over the top, so the
+    // coast ends up exactly on the silhouette and the shelf is only as wide as
+    // the blur -- which is how the Arabian Sea side has always behaved.
+    //
+    // Two earlier attempts traced the coast by hand from the states' bounding
+    // boxes, which give each state's extreme extent rather than where its
+    // shore sits on any given row, and left the boundary ~80 units out in open
+    // water. That strip classified as land and blurred into a shelf. Measured
+    // east-coast shelf: 26.9px tracing the boxes, 5.7px on the west coast for
+    // comparison, 6px once the edge is pushed inland. The first attempt at
+    // this moved the line by an amount too small to matter -- 26.3px to
+    // 26.6px -- which is why it has a number attached to it now.
+    [[565, 560], [700, 562], [778, 574], [802, 640], [842, 722], [882, 822],
+     [1900, 890], [1900, 1900], [345, 1900],
+     [353, 915], [365, 880], [385, 840], [420, 800], [460, 760], [481, 706],
+     [515, 660], [550, 610]]
   ];
   // Sri Lanka, which the map does not draw and which would otherwise be a
   // hole in the Indian Ocean strip directly below the mainland.
