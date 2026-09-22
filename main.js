@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var E = window.PMEEngine, G = window.PMEGame;
-  var GAME_VERSION = '2.16.1';
+  var GAME_VERSION = '2.16.2';
   // Canonical public URL for the end-of-game "share result" link — hardcoded,
   // not location.href, so the shared link is always the clean site root and
   // never a /index.html deep link, a ?query string, or a Capacitor
@@ -1535,9 +1535,15 @@
     [[-600, 922], [1900, 922], [1900, 1900], [-600, 1900]],
     // Bay of Bengal: south of the Bangladesh coast, west of Myanmar, east of
     // the Odisha / Andhra / Tamil Nadu shoreline, out to the eastern edge.
-    [[625, 568], [700, 562], [778, 574], [802, 640], [842, 722], [882, 822],
-     [1900, 890], [1900, 1900], [392, 1900], [422, 908], [470, 840], [520, 780],
-     [560, 700], [600, 630]]
+    // The western edge is listed south-to-north and traces the real coast --
+    // Tamil Nadu's east edge is at x=433, Andhra's at 554, Odisha's at 628.
+    // A first version ran it up to 40 units offshore of Tamil Nadu and
+    // Andhra, which left a false strip of land along the coast that blurred
+    // into a continental shelf far wider than the west coast's.
+    [[640, 560], [700, 562], [778, 574], [802, 640], [842, 722], [882, 822],
+     [1900, 890], [1900, 1900], [420, 1900],
+     [428, 915], [440, 880], [460, 840], [495, 800], [535, 760], [556, 706],
+     [590, 660], [625, 610]]
   ];
   // Sri Lanka, which the map does not draw and which would otherwise be a
   // hole in the Indian Ocean strip directly below the mainland.
