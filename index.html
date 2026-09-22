@@ -1025,6 +1025,109 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
   animation:fx-flash-anim .45s ease-out forwards; }
 .fx-flash.p2{ background:var(--p2); }
 @keyframes fx-flash-anim{ from{ transform:scale(.1455); opacity:.55; } to{ transform:scale(1); opacity:0; } }
+
+/* ---- rally burst: two expanding shockwave rings plus a megaphone that pops
+   and floats, spawned on the state that just got a rally. Deliberately louder
+   than .fx-flash (the generic invest blob) — a rally is the cheap, noisy
+   action, so it should read as noise. The rings are ::before/::after on a
+   zero-size anchor div, so the whole thing is one element + one <b>.
+   Colour rides currentColor because --p1/--p2 are reassigned per politician
+   at match start; never hardcode an rgba() here. transform/opacity only. ---- */
+.fx-rally{ position:absolute; width:0; height:0; color:var(--p1); }
+.fx-rally.p2{ color:var(--p2); }
+.fx-rally::before, .fx-rally::after{ content:''; position:absolute; left:0; top:0;
+  width: 5.5rem; height: 5.5rem; margin: -2.75rem 0 0 -2.75rem; border-radius:50%;
+  border: 2px solid currentColor; will-change:transform,opacity;
+  /* `both`, not `forwards`: these are delayed to the END of the sequence, and
+     without a backwards fill each ring would sit on screen as a static
+     full-size circle for its whole delay before animating. */
+  animation:fx-rally-ring .85s cubic-bezier(.16,.8,.3,1) both; animation-delay:1s; }
+.fx-rally::after{ animation-delay:1.16s; }
+/* The 0% frame MUST be invisible. A backwards fill paints it for the whole
+   delay, so an opaque first frame parks a small bright dot on the map for a
+   full second before the ring expands — which is what made the sequence read
+   as parts appearing in random order rather than as a chain. Fade in over the
+   first sliver instead. Same trap applies to anything else here with a delay. */
+@keyframes fx-rally-ring{
+  0%{ transform:scale(.12); opacity:0; }
+  12%{ opacity:.8; }
+  100%{ transform:scale(1); opacity:0; } }
+.fx-rally b{ position:absolute; left:0; top:0; font-size: 1.4rem; font-weight:400;
+  will-change:transform,opacity; animation:fx-rally-mega 2.15s ease-out forwards; }
+/* The whole effect is a chain, not a simultaneous burst: megaphone rises
+   (0-0.35s), sound arcs puff (0.26-1.38s), shockwave rings expand (1.0-2.0s),
+   everything fades out together. Two things keep it reading as one event
+   rather than three unrelated ones: every stage starts from opacity 0 so
+   nothing is on screen before its turn, and the megaphone's drift is kept
+   small so it stays inside the rings that follow instead of sailing off and
+   leaving a circle behind it. These percentages and the ring/arc delays are
+   one schedule — shifting any one means re-checking the other two. */
+@keyframes fx-rally-mega{
+  0%{ transform:translate(-50%,-50%) scale(.4); opacity:0; }
+  9%{ transform:translate(-50%,-88%) scale(1.15); opacity:1; }
+  16%{ transform:translate(-50%,-96%) scale(1); opacity:1; }
+  72%{ transform:translate(-50%,-108%) scale(1); opacity:1; }
+  100%{ transform:translate(-50%,-128%) scale(.92); opacity:0; } }
+
+/* ---- rally shimmer: the state that just got the rally lights up twice. It's
+   a throwaway CLONE of the state's own map shape laid over the original, not
+   an animation on the real path: renderAll() owns that path's fill and
+   rewrites it on every render, so animating it directly would fight the game's
+   own colouring (and a CSS animation silently outranks the inline fill, which
+   would be worse — the state would look like it changed hands). ---- */
+/* Scoped under .india-map on purpose: `.india-map path, .india-map circle`
+   sets the base fill and, being class+type, outranks a bare `.state-shimmer`
+   — the clone came out map-grey instead of white. Two classes beats it. */
+/* The travelling band itself is an SVG gradient set inline by JS (see
+   buildRallyWave) — these fills are only the fallback for a browser with no
+   SMIL, where the state gets a plain colour pulse instead of a wave. Reads
+   --p1/--p2 live rather than baking a literal in: those tokens are reassigned
+   from each politician's own colour at match start, so a hardcoded value would
+   be wrong for most of the roster. Scoped under .india-map because
+   `.india-map path, .india-map circle` sets the base fill and, being
+   class+type, outranks a bare `.state-shimmer`. */
+.india-map .state-shimmer{ pointer-events:none; fill:var(--p1); stroke:none; opacity:0;
+  will-change:opacity; animation:state-shimmer 1.5s linear both; }
+.india-map .state-shimmer.p2{ fill:var(--p2); }
+/* Only an envelope — it fades the clone in and out so the wave doesn't pop
+   into existence at full strength. The left-right-left motion is the
+   gradient's, not this. */
+@keyframes state-shimmer{
+  0%{ opacity:0; }
+  8%{ opacity:1; }
+  88%{ opacity:1; }
+  100%{ opacity:0; } }
+
+/* Sound arcs off the megaphone's mouth. Three concentric arcs (the universal
+   "noise coming out of this" glyph), each fading outward on a stagger so they
+   read as a repeating pulse for as long as the megaphone is on screen. Nested
+   inside the <b> so they inherit its float transform for free instead of
+   needing a second copy of the same keyframes. */
+/* 📢's horn opens up-and-LEFT in Apple's emoji font, so the arcs live on that
+   side. They're authored pointing left directly (sweep-flag 0, radiating from
+   viewBox x=22) rather than drawn rightward and mirrored — the mirror made the
+   true origin land mid-icon and was impossible to reason about. `right:100%`
+   with no negative margin puts the svg's right edge exactly on the emoji's
+   left edge, and x=22 of 24 sits within a hair of that edge, so the arcs now
+   spring from the icon's leftmost point. rotate() pivots on that same point. */
+.fx-rally b svg{ position:absolute; right:100%; top:50%; width: 1.05rem; height: 1.05rem;
+  margin: -0.66rem 0 0 0; overflow:visible;
+  fill:none; stroke:currentColor; stroke-width:2.6; stroke-linecap:round;
+  transform:rotate(20deg); transform-origin:100% 50%; }
+/* Two puffs each, not infinite: the arcs are one link in the chain and must
+   clear the stage before the rings land. `both` again — without the backwards
+   fill the arcs show at full opacity through their stagger delay, and without
+   the forwards fill they snap back to visible after the last puff. */
+.fx-rally b svg path{ transform-box:view-box; transform-origin:22px 12px;
+  will-change:transform,opacity;
+  animation:fx-rally-wave .44s ease-out 2 both; animation-delay:.26s; }
+.fx-rally b svg path:nth-child(2){ animation-delay:.38s; }
+.fx-rally b svg path:nth-child(3){ animation-delay:.5s; }
+/* Drifts left, i.e. away from the horn — no mirror in play any more. */
+@keyframes fx-rally-wave{
+  0%{ opacity:0; transform:translateX(2px) scale(.62); }
+  28%{ opacity:.95; }
+  100%{ opacity:0; transform:translateX(-3px) scale(1.12); } }
 .fx-money{ position:absolute; transform: translate(-50%,-50%); font-family:var(--font); font-weight:800; font-size: 1.5rem;
   animation:fx-money-anim .7s ease-out forwards; white-space:nowrap; }
 .fx-money.spend{ color:var(--stamp); }
@@ -1104,6 +1207,10 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
 .power-burst .rays{ position:absolute; width: 37.5rem; height: 37.5rem; border-radius:50%;
   background:repeating-conic-gradient(var(--glow-color) 0deg 4deg, transparent 4deg 18deg);
   opacity:0; animation:power-rays-spin var(--burst-dur) linear forwards; }
+/* The Nationwide Rally drops the spinning starburst — the confetti already
+   carries the celebration, and the two together read as visual noise. Special
+   powers keep it. */
+.power-burst.no-rays .rays{ display:none; }
 .power-burst .card{ position:relative; background:var(--paper); border: 2.5px solid var(--ink); border-radius: 0.875rem;
   box-shadow: 5px 5px 0 var(--ink); padding: 1.125rem 1.875rem; text-align:center; transform: scale(0);
   animation:power-card-pop var(--burst-dur) cubic-bezier(.34,1.56,.64,1) forwards; }
@@ -1127,6 +1234,27 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
 /* Unlock celebration — same glow/rays as .power-burst above (shared
    classes), but its own bigger card: a real portrait that spins into view
    for the rarer "new politician unlocked" moment. */
+/* ---- nationwide-rally confetti: flag-palette paper falling across the whole
+   screen for the length of the burst. Deliberately z-index 91, i.e. ABOVE
+   .power-burst — its .glow is a full-screen translucent wash, so confetti
+   layered underneath would just be muted by it. A few small pieces crossing
+   the name card is the normal look and doesn't hurt readability.
+   One keyframe block serves every piece; each piece's drift, spin, size and
+   timing arrive as inline custom properties. transform/opacity only. ---- */
+.fx-confetti{ position:fixed; inset:0; z-index:91; overflow:hidden; pointer-events:none; }
+.fx-confetti i{ position:absolute; top:0; border-radius:1px;
+  /* the flag's white band vanishes on this light paper theme without it */
+  box-shadow:0 0 0 0.5px rgba(0,0,0,.16); will-change:transform,opacity;
+  /* `both`, not `forwards`: every piece is delayed, and without the backwards
+     fill each one sits fully visible at the top of the screen until its turn
+     comes — 110 static dots in a row, then a fall. */
+  animation-name:fx-confetti-fall; animation-timing-function:linear; animation-fill-mode:both; }
+@keyframes fx-confetti-fall{
+  0%{ transform:translate3d(0,-12vh,0) rotate(0deg); opacity:0; }
+  8%{ opacity:1; }
+  88%{ opacity:1; }
+  100%{ transform:translate3d(var(--dx),108vh,0) rotate(var(--spin)); opacity:0; } }
+
 .power-burst.unlock-burst{ perspective: 35rem; }
 .power-burst .unlock-card{ padding: 1.375rem 1.75rem; transform: scale(0); animation:unlock-card-spin 5s cubic-bezier(.34,1.56,.64,1) forwards; }
 .unlock-card-portrait{ width: 4.25rem; height: 4.25rem; border-radius:50%; object-fit:cover; border: 5px solid var(--ink); box-shadow: 0 3.5px 8.5px rgba(0,0,0,.3); display:block; margin:0 auto; }

@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var E = window.PMEEngine, G = window.PMEGame;
-  var GAME_VERSION = '2.16.3';
+  var GAME_VERSION = '2.17.0';
   // Canonical public URL for the end-of-game "share result" link — hardcoded,
   // not location.href, so the shared link is always the clean site root and
   // never a /index.html deep link, a ?query string, or a Capacitor
@@ -1228,7 +1228,9 @@
   // Depth-counted because a special power and a Nationwide Rally can overlap;
   // the music comes back only when the last of them finishes.
   var musicDuckDepth = 0;
+  var musicDuckStartedAt = 0;
   function duckMusic() {
+    if (musicDuckDepth === 0) musicDuckStartedAt = Date.now();
     musicDuckDepth++;
     if (currentMusicKey) sounds[currentMusicKey].pause();
   }
@@ -1237,6 +1239,34 @@
     if (musicDuckDepth > 0) return;
     if (musicEnabled && currentMusicKey && !timerPaused) playSound(currentMusicKey);
   }
+
+  // Watchdog for the background loop, because several things stop it without
+  // the app ever asking them to:
+  //   * iOS reconfigures the page's audio session when a Web Audio voice
+  //     starts, which pauses a plain <audio> element mid-playback — the tap
+  //     SFX (rally/spend/invalid) go through Web Audio, so an ordinary rally
+  //     tap can silently kill the music with nothing left to restart it;
+  //   * an OS interruption (call, alarm, another app taking the session);
+  //   * a duck whose release never arrives — see the restore timer in
+  //     playPowerSound(), where a suspended AudioContext stalls the clip so
+  //     its 'ended' event never fires at all.
+  // They all present identically: the track is paused and nobody is going to
+  // start it again. Rather than chase each cause separately, assert the
+  // invariant on a slow poll and restart when it doesn't hold.
+  // ponytail: one poll beats hooking every pause path — the caller list for
+  // "something stopped my audio" includes the OS, so it can never be complete.
+  var MUSIC_WATCHDOG_MS = 500;
+  var DUCK_STUCK_MS = 10000; // nothing legitimately ducks past the 6s anthem
+  setInterval(function () {
+    if (musicDuckDepth > 0) {
+      if (Date.now() - musicDuckStartedAt < DUCK_STUCK_MS) return;
+      musicDuckDepth = 0; // a release was lost; stop waiting for it
+    }
+    if (!musicEnabled || !currentMusicKey || timerPaused) return;
+    if (game && game.winner) return; // the end screen kills the music on purpose
+    var a = sounds[currentMusicKey];
+    if (a && a.paused) a.play().catch(function () {});
+  }, MUSIC_WATCHDOG_MS);
 
   var NATIONWIDE_SFX_MS = 6000;
   var nationwideStopTimer = null;
@@ -1314,6 +1344,9 @@
   // all clips since we can't listen to individually recalibrate; back off (or
   // add a per-key override) if a specific clip starts clipping/distorting.
   var POWER_SOUND_GAIN = 2.5;
+  // Longest any power clip is allowed to hold the music duck. Well past the
+  // real clips (~2-6s), short enough that a lost release isn't a dead match.
+  var POWER_SOUND_MAX_MS = 8000;
   function playPowerSound(politicianName) {
     if (!soundEnabled) return;
     var key = politicianName.replace(/\s+/g, '_');
@@ -1335,8 +1368,17 @@
     // `once` listeners and the single restore reference threaded through the
     // fallback path below.
     var restored = false;
-    var restore = function () { if (!restored) { restored = true; unduckMusic(); } };
+    var restore = function () {
+      if (restored) return;
+      restored = true; clearTimeout(restoreTimer); unduckMusic();
+    };
     duckMusic();
+    // Hard deadline on the restore. Once this element is routed through a
+    // GainNode, a suspended AudioContext stalls it outright: play() still
+    // resolves (so the fallback below never runs), currentTime never advances,
+    // and 'ended' never fires — verified in-browser, not assumed. Without a
+    // deadline that leaves the music ducked for the rest of the match.
+    var restoreTimer = setTimeout(restore, POWER_SOUND_MAX_MS);
     a.addEventListener('ended', restore, { once: true });
     a.play().catch(function () {
       // no dedicated file for this politician — duck stays applied for the fanfare fallback too
@@ -1363,6 +1405,126 @@
     el.style.left = x + 'px'; el.style.top = y + 'px';
     $('fxLayer').appendChild(el);
     setTimeout(function () { el.remove(); }, 500);
+  }
+  // Rally-specific fx (see .fx-rally): shockwave rings + a megaphone that pops,
+  // floats and puffs sound arcs, instead of the plain invest flash. Lifetime
+  // must outlast the 2.15s CSS chain or it vanishes mid-sequence. The three
+  // <path>s are the sound arcs — same origin (viewBox x=22, the icon's left
+  // edge), growing radius, bulging left, staggered in CSS.
+  // The arcs sit on the emoji's LEFT because that's the way 📢's horn points in
+  // Apple's emoji font. Fonts that point it right (Segoe/Noto) therefore show
+  // the arcs behind it — an emoji's orientation isn't ours to control, and
+  // iPhone is this app's design target. Drawing our own megaphone path is the
+  // only real fix if that ever matters.
+  function spawnRallyBurst(x, y, colorClass) {
+    var el = document.createElement('div');
+    el.className = 'fx-rally' + (colorClass ? ' ' + colorClass : '');
+    el.style.left = x + 'px'; el.style.top = y + 'px';
+    el.innerHTML = '<b>📢<svg viewBox="0 0 24 24">' +
+      '<path d="M22 7a5 5 0 0 0 0 10"/>' +
+      '<path d="M22 4a8 8 0 0 0 0 16"/>' +
+      '<path d="M22 1a11 11 0 0 0 0 22"/></svg></b>';
+    $('fxLayer').appendChild(el);
+    setTimeout(function () { el.remove(); }, 2250);
+  }
+  // ---- rally shimmer -----------------------------------------------------
+  // A band of the rallying player's colour sweeps across the state left to
+  // right and back, stadium-wave style. It has to be a gradient living inside
+  // the shape: a band travelling across an arbitrary map outline is positional,
+  // and no amount of animating the whole shape's opacity or transform gets
+  // there. The gradient's transform is animated with SMIL rather than CSS
+  // because CSS-animating a gradient's transform is still patchy in Safari and
+  // iPhone is this app's target.
+  var WAVE_MS = 1500;
+  var SVG_NS = 'http://www.w3.org/2000/svg';
+  var waveSeq = 0;
+
+  // Builds the travelling band for ONE rally: a gradient aimed along a random
+  // direction, swept from one side of the state to the other and back.
+  // A fresh gradient each time rather than a reused one — it has to be aimed
+  // at this particular state's box, so a shared element would be re-aimed out
+  // from under any shimmer still running on another state.
+  // The angle uses Math.random() deliberately, NOT game.rng: the seeded
+  // generator drives replay determinism, and spending a draw on a decoration
+  // would desync every recorded replay.
+  function buildRallyWave(ownerSvg, shape, color) {
+    var bb = shape.getBBox();
+    if (!bb.width || !bb.height) return null;
+    var defs = ownerSvg.querySelector('defs');
+    if (!defs) defs = ownerSvg.insertBefore(document.createElementNS(SVG_NS, 'defs'), ownerSvg.firstChild);
+    var ang = Math.random() * Math.PI * 2;
+    var dx = Math.cos(ang), dy = Math.sin(ang);
+    var cx = bb.x + bb.width / 2, cy = bb.y + bb.height / 2;
+    // Half-diagonal: the only radius that spans the shape at EVERY angle, so a
+    // steeply-angled band doesn't run out before it has crossed the corners.
+    var r = Math.sqrt(bb.width * bb.width + bb.height * bb.height) / 2;
+    var reach = r * 1.35; // band centre clears the far edge before turning back
+    var from = (-dx * reach).toFixed(2) + ' ' + (-dy * reach).toFixed(2);
+    var to = (dx * reach).toFixed(2) + ' ' + (dy * reach).toFixed(2);
+    var grad = document.createElementNS(SVG_NS, 'linearGradient');
+    grad.setAttribute('id', 'pmeRallyWave' + (++waveSeq));
+    // userSpaceOnUse rather than the default objectBoundingBox: that one
+    // squashes a unit square onto the box, so one angle would come out flat on
+    // a wide state and steep on a tall one. Real map units keep it honest.
+    grad.setAttribute('gradientUnits', 'userSpaceOnUse');
+    grad.setAttribute('x1', cx - dx * r); grad.setAttribute('y1', cy - dy * r);
+    grad.setAttribute('x2', cx + dx * r); grad.setAttribute('y2', cy + dy * r);
+    grad.setAttribute('gradientTransform', 'translate(' + from + ')'); // parked off one edge
+    // Transparent, bright band, transparent — only a slice is ever lit, which
+    // is what makes it read as a wave rather than the state flashing.
+    var stops = [[0, 0], [0.34, 0], [0.5, 0.9], [0.66, 0], [1, 0]];
+    for (var i = 0; i < stops.length; i++) {
+      var stop = document.createElementNS(SVG_NS, 'stop');
+      stop.setAttribute('offset', stops[i][0]);
+      stop.setAttribute('stop-opacity', stops[i][1]);
+      // stop-color can't be currentColor: a stop resolves it against the
+      // gradient element, not whatever references the gradient.
+      stop.setAttribute('stop-color', color);
+      grad.appendChild(stop);
+    }
+    var anim = document.createElementNS(SVG_NS, 'animateTransform');
+    anim.setAttribute('attributeName', 'gradientTransform');
+    anim.setAttribute('type', 'translate');
+    anim.setAttribute('values', from + '; ' + to + '; ' + from);
+    anim.setAttribute('dur', (WAVE_MS / 1000) + 's');
+    anim.setAttribute('begin', '0s'); // one gradient per rally, so it runs on insert
+    anim.setAttribute('fill', 'freeze');
+    grad.appendChild(anim);
+    defs.appendChild(grad);
+    return grad;
+  }
+
+  // Clones the map shape rather than styling the live one: renderAll() owns
+  // that path's fill and rewrites it every render, so animating it directly
+  // would fight the game's own colouring.
+  function spawnStateShimmer(svgId, colorClass) {
+    var src = document.getElementById(svgId);
+    // Small UTs are display:none on the map (played via the cluster button
+    // instead), so there's no shape to light — skip rather than clone a
+    // zero-size node into the map.
+    if (!src || !src.parentNode || !src.getClientRects().length || !src.ownerSVGElement) return;
+    var pk = colorClass === 'p2' ? 'p2' : 'p1';
+    var clone = src.cloneNode(false);
+    clone.removeAttribute('id');    // map lookups go by id; never leave two
+    clone.removeAttribute('style'); // drop renderAll()'s inline fill, which would outrank ours
+    clone.setAttribute('class', 'state-shimmer ' + pk);
+    var grad = null;
+    try {
+      // Read the live token — player colours are per-politician, not fixed.
+      var color = getComputedStyle(document.documentElement)
+        .getPropertyValue(pk === 'p2' ? '--p2' : '--p1').trim();
+      grad = buildRallyWave(src.ownerSVGElement, src, color);
+      // Inline, not an attribute: the CSS flat-colour fallback below would
+      // outrank an attribute, and this has to win when the gradient exists.
+      if (grad) clone.style.fill = 'url(#' + grad.id + ')';
+    } catch (e) {
+      // No SMIL / no getBBox — the CSS rule leaves a flat colour pulse.
+    }
+    src.parentNode.appendChild(clone); // last sibling = painted over its neighbours
+    setTimeout(function () {
+      clone.remove();
+      if (grad) grad.remove(); // one gradient per rally; don't let defs grow
+    }, WAVE_MS);
   }
   function spawnMoneyText(x, y, amountCr, sign, colorClass) {
     if (!amountCr) return;
@@ -1901,6 +2063,45 @@
     el.appendChild(glow); el.appendChild(rays); el.appendChild(card);
     $('fxLayer').appendChild(el);
     setTimeout(function () { el.remove(); }, ms);
+    return el;
+  }
+
+  // Confetti, for the Nationwide Rally only — the one action that's a national
+  // moment rather than a personal one, so it takes the flag palette instead of
+  // the player tint every other fx uses.
+  var CONFETTI_COLORS = ['#FF9933', '#FFFFFF', '#138808', '#0A2A66'];
+  var CONFETTI_COUNT = 110;
+  function spawnConfetti(durationMs) {
+    var ms = durationMs || 6000;
+    var wrap = document.createElement('div');
+    wrap.className = 'fx-confetti';
+    for (var i = 0; i < CONFETTI_COUNT; i++) {
+      var p = document.createElement('i');
+      p.style.left = (Math.random() * 100) + '%';
+      // Slightly smaller than the sparse version was: at this density, bigger
+      // pieces stop reading as confetti and start reading as a curtain.
+      p.style.width = (3 + Math.random() * 4).toFixed(1) + 'px';
+      p.style.height = (6 + Math.random() * 6).toFixed(1) + 'px';
+      p.style.background = CONFETTI_COLORS[i % CONFETTI_COLORS.length];
+      p.style.setProperty('--dx', Math.round(Math.random() * 140 - 70) + 'px');
+      p.style.setProperty('--spin', Math.round(Math.random() * 1080 - 540) + 'deg');
+      // Staggered starts over the first third, each fall sized so the last
+      // piece lands just before the burst itself is torn down.
+      p.style.animationDuration = Math.round(ms * (0.45 + Math.random() * 0.2)) + 'ms';
+      p.style.animationDelay = Math.round(Math.random() * ms * 0.42) + 'ms';
+      wrap.appendChild(p);
+    }
+    $('fxLayer').appendChild(wrap);
+    setTimeout(function () { wrap.remove(); }, ms);
+  }
+
+  // Both the live p1 tap and the AI/replay path raise the Nationwide Rally, so
+  // its burst-plus-confetti pairing lives here rather than in two places where
+  // one could later gain an effect the other misses.
+  function spawnNationwideBurst(pk, politicianName) {
+    var el = spawnPowerBurst(pk, 'Nationwide Rally', politicianName, '🇮🇳', NATIONWIDE_SFX_MS);
+    el.classList.add('no-rays'); // confetti replaces the starburst here
+    spawnConfetti(NATIONWIDE_SFX_MS);
   }
 
   // Same full-screen glow+rays treatment as spawnPowerBurst above, but with
@@ -2528,7 +2729,8 @@
       if (el && !el.getClientRects().length) el = $('utsBtn');
       var pt = viewportPoint(el);
       if (el && el.animate) el.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.03)' }, { transform: 'scale(1)' }], { duration: 220 });
-      spawnFlash(pt.x, pt.y, pk);
+      if (action.type === 'rally') { spawnRallyBurst(pt.x, pt.y, pk); spawnStateShimmer(action.svgId, pk); }
+      else spawnFlash(pt.x, pt.y, pk);
       if (action.costCr) spawnMoneyText(pt.x, pt.y, action.costCr, -1, pk);
     }
     if (action.type === 'power') {
@@ -2540,7 +2742,7 @@
       }
     } else if (action.type === 'nationwide') {
       if (withSound) playNationwideAnthem();
-      spawnPowerBurst(pk, 'Nationwide Rally', game.players[pk].politician.name, '🇮🇳', NATIONWIDE_SFX_MS);
+      spawnNationwideBurst(pk, game.players[pk].politician.name);
     }
   }
 
@@ -3786,7 +3988,7 @@
     var r = G.activateNationwideRally(game, 'p1');
     renderAll();
     playNationwideAnthem();
-    spawnPowerBurst('p1', 'Nationwide Rally', game.players.p1.politician.name, '🇮🇳', NATIONWIDE_SFX_MS);
+    spawnNationwideBurst('p1', game.players.p1.politician.name);
     showToast('🇮🇳 Nationwide Rally activated');
     if (tutorialMode && r.ok) { tutorialNationwideRallyLaunched = true; renderTutorialStageStep(); }
   }
@@ -3853,6 +4055,9 @@
         return;
       }
       showToast('📢 State Rally deployed'); playSound('rally_sound'); armed = null; renderAll();
+      // Reuse the AI/replay fx path rather than a second copy of the anchor +
+      // small-UT fallback logic; sound is already handled above, hence false.
+      playActionFx({ type: 'rally', svgId: svgId }, 'p1', false);
       if (tutorialMode) onTutorialRally(svgId);
       return;
     }
