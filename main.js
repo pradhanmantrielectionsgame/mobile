@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var E = window.PMEEngine, G = window.PMEGame;
-  var GAME_VERSION = '2.16.0';
+  var GAME_VERSION = '2.16.1';
   // Canonical public URL for the end-of-game "share result" link — hardcoded,
   // not location.href, so the shared link is always the clean site root and
   // never a /index.html deep link, a ?query string, or a Capacitor
@@ -1502,11 +1502,53 @@
     out[2] = lo[3] + (hi[3] - lo[3]) * t;
   }
 
-  // A blurred silhouette of the real landmass, in terrain-canvas pixels.
-  // Without it the noise is free to raise ground anywhere, and it put coast
-  // out in the Arabian Sea and the Bay of Bengal where there is only water.
-  // Rasterised from the map's own <svg>, so it can never drift out of step
-  // with the shapes the player is looking at.
+  // Where the water is, in the map's own viewBox coordinates (84 27 833 946).
+  //
+  // Stated rather than derived, because it cannot be derived: the map draws
+  // only India, so anything built from its silhouette alone concludes that
+  // Pakistan, Nepal, Bangladesh, China and Myanmar are open ocean. The first
+  // version did exactly that and flooded Bangladesh and Tibet.
+  //
+  // India has three seas and land on every other side, so naming the three is
+  // the whole of the geography. The numbers were read off the live map's own
+  // state bounding boxes -- Gujarat's west edge at x=100, Maharashtra's at
+  // 222, Kerala's at 283, Odisha's east edge at 628, Andhra's at 554, Tamil
+  // Nadu's at 433, and Bangladesh in the notch between West Bengal (ends
+  // x=694) and Tripura (starts x=729) -- so they follow the real coastline
+  // rather than a guess. They do not need to be exact: the mask is blurred
+  // into a gradient afterwards and the states are drawn opaque on top.
+  //
+  // Coordinates deliberately run far outside the viewBox (to -600 and 1900).
+  // The viewBox tightly bounds the landmass, but the board is a wider box than
+  // the map is drawn into, so there is canvas beyond every edge of it. A first
+  // version clamped these polygons to the viewBox and left a band of dry land
+  // along the whole bottom edge and in both bottom corners, which is open
+  // ocean. Anything not inside a sea polygon is land, so the seas have to be
+  // drawn out past the board, not up to the map.
+  var SEA_POLYS = [
+    // Arabian Sea: west of Gujarat, down the Konkan and Malabar coasts, and
+    // out to the western edge of the board. Pakistan is LAND above it.
+    [[-600, 480], [140, 458], [108, 525], [100, 577], [200, 624], [240, 690],
+     [262, 760], [283, 822], [300, 890], [305, 1900], [-600, 1900]],
+    // Indian Ocean: everything below the Kerala and Tamil Nadu tips, which end
+    // at y=912 and y=918. Full width, so the corners of the board are water.
+    [[-600, 922], [1900, 922], [1900, 1900], [-600, 1900]],
+    // Bay of Bengal: south of the Bangladesh coast, west of Myanmar, east of
+    // the Odisha / Andhra / Tamil Nadu shoreline, out to the eastern edge.
+    [[625, 568], [700, 562], [778, 574], [802, 640], [842, 722], [882, 822],
+     [1900, 890], [1900, 1900], [392, 1900], [422, 908], [470, 840], [520, 780],
+     [560, 700], [600, 630]]
+  ];
+  // Sri Lanka, which the map does not draw and which would otherwise be a
+  // hole in the Indian Ocean strip directly below the mainland.
+  var SEA_ISLANDS = [
+    [[365, 925], [408, 932], [418, 968], [392, 973], [366, 958]]
+  ];
+
+  // Land/sea mask in terrain-canvas pixels: land everywhere, the three seas
+  // punched out, then India's own silhouette painted back in so no state can
+  // end up underwater. Blurred into a "how much land is around here" field,
+  // which is what the height bias reads.
   function buildLandMask(W, H, done) {
     var svg = $('map'), wrap = document.querySelector('.map-wrap');
     if (!svg || !wrap || typeof XMLSerializer === 'undefined') { done(null); return; }
@@ -1514,7 +1556,7 @@
     if (vb.length !== 4 || !vb[2] || !vb[3]) { done(null); return; }
     var clone = svg.cloneNode(true);
     // Stretch to the box this code computes, rather than fitting itself into
-    // it a second time — the fit is worked out below from the LIVE element.
+    // it a second time -- the fit is worked out below from the LIVE element.
     clone.setAttribute('preserveAspectRatio', 'none');
     clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
     // Fills come from the stylesheet, which a serialised copy does not carry.
@@ -1531,25 +1573,48 @@
         var mx = mc.getContext('2d');
         // Where the landmass actually sits inside .map-wrap right now. The
         // live <svg> is xMidYMid meet and carries a CSS scale, so its drawn
-        // content is a letterboxed sub-rect of its own box; getBoundingClientRect
-        // gives the transformed box and the viewBox ratio gives the rest.
+        // content is a letterboxed sub-rect of its own box;
+        // getBoundingClientRect gives the transformed box and the viewBox
+        // ratio gives the rest.
         var sr = svg.getBoundingClientRect(), wr = wrap.getBoundingClientRect();
         if (!wr.width || !wr.height) { done(null); return; }
         var vbAR = vb[2] / vb[3], cw, ch;
         if (sr.width / sr.height > vbAR) { ch = sr.height; cw = ch * vbAR; }
         else { cw = sr.width; ch = cw / vbAR; }
         var cx = sr.left + (sr.width - cw) / 2, cy = sr.top + (sr.height - ch) / 2;
-        mx.drawImage(im,
-          (cx - wr.left) / wr.width * W, (cy - wr.top) / wr.height * H,
-          cw / wr.width * W, ch / wr.height * H);
+        var dx = (cx - wr.left) / wr.width * W, dy = (cy - wr.top) / wr.height * H;
+        var dw = cw / wr.width * W, dh = ch / wr.height * H;
+        // viewBox point -> canvas point, the same mapping the <svg> itself gets
+        function vx(x) { return dx + (x - vb[0]) / vb[2] * dw; }
+        function vy(y) { return dy + (y - vb[1]) / vb[3] * dh; }
+        function tracePoly(poly) {
+          mx.beginPath();
+          mx.moveTo(vx(poly[0][0]), vy(poly[0][1]));
+          for (var pi = 1; pi < poly.length; pi++) mx.lineTo(vx(poly[pi][0]), vy(poly[pi][1]));
+          mx.closePath();
+        }
+
+        // 1. land everywhere
+        mx.fillStyle = '#000';
+        mx.fillRect(0, 0, W, H);
+        // 2. punch out the seas. destination-out clears alpha, which is what
+        //    the mask is read from.
+        mx.globalCompositeOperation = 'destination-out';
+        SEA_POLYS.forEach(function (poly) { tracePoly(poly); mx.fill(); });
+        // 3. islands the map does not draw, back in as land
+        mx.globalCompositeOperation = 'source-over';
+        mx.fillStyle = '#000';
+        SEA_ISLANDS.forEach(function (poly) { tracePoly(poly); mx.fill(); });
+        // 4. India itself, so a coastline polygon can never cut into a state
+        mx.drawImage(im, dx, dy, dw, dh);
 
         var src = mx.getImageData(0, 0, W, H).data;
         var m = new Float32Array(W * H);
         for (var i = 0; i < W * H; i++) m[i] = src[i * 4 + 3] / 255;
-        // Three box-blur passes ~= a gaussian: turns the hard silhouette into
-        // a smooth "how close is land" field, which is what the height bias
+        // Three box-blur passes ~= a gaussian: turns the hard coastline into a
+        // smooth "how close is land" field, which is what the height bias
         // wants. Separable, so it is cheap.
-        var tmp = new Float32Array(W * H), r = 6, k;
+        var tmp = new Float32Array(W * H), r = 5, k;
         for (var pass = 0; pass < 3; pass++) {
           for (var y = 0; y < H; y++) {
             for (var x = 0; x < W; x++) {
@@ -1572,10 +1637,6 @@
             }
           }
         }
-        // Renormalise: three blurs flatten the peak well below 1.
-        var max = 0;
-        for (var j = 0; j < m.length; j++) if (m[j] > max) max = m[j];
-        if (max > 0) for (var j2 = 0; j2 < m.length; j2++) m[j2] = Math.min(1, m[j2] / max * 1.35);
         done(m);
       } catch (e) { done(null); }
     };
@@ -1610,17 +1671,14 @@
     var hgt = new Float32Array(W * H);
     for (var y = 0; y < H; y++) {
       var lat = y / (H - 1);
-      // Two sources of dry ground, whichever is stronger at this pixel:
-      //   - north of the country is continental in reality, and the map's own
-      //     silhouette stops at the border, so latitude has to supply it;
-      //   - everywhere else, only the neighbourhood of the real landmass.
-      // Without the second term the noise grew islands in open sea. Without
-      // the first, the Himalayan side of the board turned into ocean.
-      var north = (0.34 - lat) / 0.34;
+      // The mask already knows where every coast is. The latitude ramp is only
+      // the fallback for when it could not be built at all (no XMLSerializer,
+      // a canvas that refused to rasterise the svg): better a plain
+      // north-is-land board than a uniformly flooded one.
+      var north = (0.42 - lat) / 0.42;
       if (north < 0) north = 0; else if (north > 1) north = 1;
       for (var x = 0; x < W; x++) {
-        var near = mask ? mask[y * W + x] : 0;
-        var landness = north > near ? north : near;
+        var landness = mask ? mask[y * W + x] : north;
         // Calibrated so the noise can shape a coast but never override
         // geography. fbm spans about 0.15..0.85, so at weight 0.38 it moves
         // the height by at most 0.27 -- less than the 0.30 that landness
