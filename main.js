@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var E = window.PMEEngine, G = window.PMEGame;
-  var GAME_VERSION = '2.17.0';
+  var GAME_VERSION = '2.17.1';
   // Canonical public URL for the end-of-game "share result" link — hardcoded,
   // not location.href, so the shared link is always the clean site root and
   // never a /index.html deep link, a ?query string, or a Capacitor
@@ -1487,10 +1487,18 @@
     anim.setAttribute('type', 'translate');
     anim.setAttribute('values', from + '; ' + to + '; ' + from);
     anim.setAttribute('dur', (WAVE_MS / 1000) + 's');
-    anim.setAttribute('begin', '0s'); // one gradient per rally, so it runs on insert
+    // MUST be 'indefinite' + an explicit beginElement(), never begin="0s".
+    // SMIL timing is relative to the SVG document's own timeline, not to when
+    // the element was inserted — and by the time a rally happens that timeline
+    // is minutes old, so begin="0s" schedules the whole 1.5s interval in the
+    // past. With fill="freeze" the gradient then sits frozen on its final
+    // value, which is the band parked off the edge: a shimmer that never moves
+    // and is never visible. Shipped exactly that way in 2.17.0.
+    anim.setAttribute('begin', 'indefinite');
     anim.setAttribute('fill', 'freeze');
     grad.appendChild(anim);
     defs.appendChild(grad);
+    if (anim.beginElement) anim.beginElement(); // starts it NOW, from this moment
     return grad;
   }
 
