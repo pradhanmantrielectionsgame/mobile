@@ -1069,6 +1069,27 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
   72%{ transform:translate(-50%,-108%) scale(1); opacity:1; }
   100%{ transform:translate(-50%,-128%) scale(.92); opacity:0; } }
 
+/* ---- clean-sweep sparkles: a scatter of twinkles over a state taken to a
+   literal 100%. Tinted to the sweeping player from the live --p1/--p2 tokens,
+   same as every other player effect — those are reassigned per politician at
+   match start, so a literal would be wrong for most of the roster. Each
+   sparkle pops, turns a little and fades on its own stagger, so the state
+   glitters rather than blinking once.
+   `both`, not `forwards`: they're all delayed, and a forwards-only fill paints
+   the 0% frame through the delay — which is how the rings and confetti ended
+   up visible before their turn. 0% is scale(0) here, so this is belt and
+   braces, but the rule is the rule. ---- */
+.fx-sparkle{ position:absolute; display:block; color:var(--p1); background:currentColor;
+  clip-path:polygon(50% 0%, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0% 50%, 39% 39%);
+  opacity:0; will-change:transform,opacity;
+  animation:fx-sparkle-pop 1.4s ease-out both; }
+.fx-sparkle.p2{ color:var(--p2); }
+@keyframes fx-sparkle-pop{
+  0%{ opacity:0; transform:translate(-50%,-50%) scale(0) rotate(0deg); }
+  25%{ opacity:1; transform:translate(-50%,-50%) scale(1.15) rotate(35deg); }
+  55%{ opacity:.85; transform:translate(-50%,-50%) scale(.8) rotate(60deg); }
+  100%{ opacity:0; transform:translate(-50%,-50%) scale(0) rotate(90deg); } }
+
 /* ---- rally shimmer: the state that just got the rally lights up twice. It's
    a throwaway CLONE of the state's own map shape laid over the original, not
    an animation on the real path: renderAll() owns that path's fill and

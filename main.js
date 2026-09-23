@@ -1427,6 +1427,54 @@
     $('fxLayer').appendChild(el);
     setTimeout(function () { el.remove(); }, 2250);
   }
+  // ---- clean-sweep sparkles ----------------------------------------------
+  // Scattered twinkles over a state just taken to a literal 100% (see
+  // .fx-sparkle). Points are drawn inside the shape's own outline rather than
+  // its bounding box — on a state like Maharashtra or Gujarat a box scatters a
+  // good third of them into the sea.
+  var SPARKLE_COUNT = 14;
+  var SPARKLE_MS = 1400;        // must match the CSS animation's duration
+  var SPARKLE_STAGGER_MS = 700; // spread of the per-sparkle start delays
+  function spawnSweepSparkles(svgId, pk) {
+    var shape = document.getElementById(svgId);
+    // Small UTs are display:none on the map, so there's no outline to fill.
+    if (!shape || !shape.getBBox || !shape.getClientRects().length) return;
+    var bb = shape.getBBox();
+    var ctm = shape.getScreenCTM();
+    if (!bb.width || !bb.height || !ctm) return;
+    // Size and count follow the state's on-screen span. A flat 14-at-16px
+    // suits Maharashtra and completely buries Goa, which renders about 10px
+    // across — the sparkles would be wider than the state they celebrate.
+    var box = shape.getBoundingClientRect();
+    var span = Math.min(box.width, box.height);
+    var maxSize = Math.max(4, Math.min(16, span * 0.5));
+    var minSize = Math.max(2.5, maxSize * 0.45);
+    var count = Math.max(5, Math.min(SPARKLE_COUNT, Math.round(span / 7)));
+    var layer = $('fxLayer');
+    var made = [];
+    var tries = 0;
+    while (made.length < count && tries < count * 12) {
+      tries++;
+      var pt = new DOMPoint(bb.x + Math.random() * bb.width, bb.y + Math.random() * bb.height);
+      try {
+        if (shape.isPointInFill && !shape.isPointInFill(pt)) continue;
+      } catch (e) { /* no isPointInFill — fall back to the plain box scatter */ }
+      var at = pt.matrixTransform(ctm); // user units -> viewport, same space as .fx-layer
+      var el = document.createElement('i');
+      el.className = 'fx-sparkle' + (pk === 'p2' ? ' p2' : '');
+      var size = (minSize + Math.random() * (maxSize - minSize)).toFixed(1);
+      el.style.left = at.x + 'px'; el.style.top = at.y + 'px';
+      el.style.width = size + 'px'; el.style.height = size + 'px';
+      el.style.animationDelay = Math.round(Math.random() * SPARKLE_STAGGER_MS) + 'ms';
+      layer.appendChild(el);
+      made.push(el);
+    }
+    // Long enough for the last-delayed sparkle to finish its own run.
+    setTimeout(function () {
+      for (var i = 0; i < made.length; i++) made[i].remove();
+    }, SPARKLE_MS + SPARKLE_STAGGER_MS + 100);
+  }
+
   // ---- rally shimmer -----------------------------------------------------
   // A band of the rallying player's colour sweeps across the state left to
   // right and back, stadium-wave style. It has to be a gradient living inside
@@ -1979,6 +2027,7 @@
       var st = game.statesById[svgId];
       if (!st) return;
       spawnPayoutCoins(pk, mapPointsFor([svgId]), st.seats * game.cfg.cleanSweep.payoutCrPerSeat);
+      spawnSweepSparkles(svgId, pk);
     });
     lastCleanSweepHeld = Object.assign({}, swept);
   }
