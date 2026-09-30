@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var E = window.PMEEngine, G = window.PMEGame;
-  var GAME_VERSION = '2.18.0';
+  var GAME_VERSION = '2.18.1';
   // Canonical public URL for the end-of-game "share result" link — hardcoded,
   // not location.href, so the shared link is always the clean site root and
   // never a /index.html deep link, a ?query string, or a Capacitor
@@ -4746,6 +4746,7 @@
     updateCard();
     if (activeGroup) applyGroupHighlight();
     renderHeader();
+    $('endPhaseBtn').hidden = !!game.friendMatch;
     renderTokens();
     renderAgendas();
     renderAffordability();
@@ -4824,7 +4825,14 @@
   fastTap($('rallyBtn'), onRallyBtn);
   fastTap($('specialBtn'), onSpecialBtn);
   fastTap($('nationwideBtn'), onNationwideBtn);
-  $('endPhaseBtn').addEventListener('click', function () { if (!actionsLocked()) doEndPhase(); });
+  // No skip in a friend match: endPhase is a synced action, so one phone's tap would cut the phase short for both players.
+  $('endPhaseBtn').addEventListener('click', function () { if (!actionsLocked() && !game.friendMatch) doEndPhase(); });
+  // iOS Safari ignores CSS touch-action for pinch-zoom and only honours cancelling its own gesture events
+  // (Android never fires them, which is why only iPhones zoomed). The multi-finger touchmove guard covers older iOS.
+  ['gesturestart', 'gesturechange', 'gestureend'].forEach(function (t) {
+    document.addEventListener(t, function (e) { e.preventDefault(); }, { passive: false });
+  });
+  document.addEventListener('touchmove', function (e) { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
   $('playAgainBtn').addEventListener('click', function () {
     mpLeave();
     $('endOverlay').hidden = true;
