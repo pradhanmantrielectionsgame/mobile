@@ -3180,12 +3180,14 @@
   }
 
   function wireFriendControls() {
-    // "NEW" tag on the welcome button until the player has opened Play a Friend once.
-    var FRIEND_SEEN_KEY = 'pme_friend_seen';
-    $('friendNewBadge').hidden = lsGet(FRIEND_SEEN_KEY, '') === '1';
+    // "NEW" tag on the welcome button for 5 days from the first time this browser
+    // shows it, whether or not the player taps it. (If storage is unavailable
+    // the stamp can't stick, so the tag just stays — harmless.)
+    var FRIEND_NEW_KEY = 'pme_friend_new_since', FRIEND_NEW_DAYS = 5;
+    var newSince = Number(lsGet(FRIEND_NEW_KEY, 0));
+    if (!newSince) { newSince = Date.now(); lsSet(FRIEND_NEW_KEY, newSince); }
+    $('friendNewBadge').hidden = Date.now() - newSince > FRIEND_NEW_DAYS * 864e5;
     $('friendBtn').addEventListener('click', function () {
-      lsSet(FRIEND_SEEN_KEY, '1');
-      $('friendNewBadge').hidden = true;
       unlockSounds();
       openFriendMenu();
     });
