@@ -3180,7 +3180,12 @@
   }
 
   function wireFriendControls() {
+    // "NEW" tag on the welcome button until the player has opened Play a Friend once.
+    var FRIEND_SEEN_KEY = 'pme_friend_seen';
+    $('friendNewBadge').hidden = lsGet(FRIEND_SEEN_KEY, '') === '1';
     $('friendBtn').addEventListener('click', function () {
+      lsSet(FRIEND_SEEN_KEY, '1');
+      $('friendNewBadge').hidden = true;
       unlockSounds();
       openFriendMenu();
     });

@@ -704,6 +704,11 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
   background:var(--accent); border-radius: 2.5rem; border: 1.5px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); }
 .welcome-howto-btn{ width:100%; max-width: 11rem; margin-top: 0.4rem; font-family:var(--font-display); color:var(--ink); font-weight:700; font-size: 0.8rem; padding: 0.5rem 0.8rem;
   background:var(--paper-dim); border-radius: 2.5rem; border: 1.5px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); }
+#friendBtn{ position:relative; }
+.new-badge{ position:absolute; top:-0.45rem; right:-0.2rem; padding:0.1rem 0.4rem; border-radius:1rem; background:#FF9933; color:#fff; border:1.5px solid var(--ink); font-size:0.55rem; font-weight:800; letter-spacing:0.08em; line-height:1.2; pointer-events:none; animation: new-badge-pop 2.4s ease-in-out infinite; }
+.new-badge[hidden]{ display:none; }
+@keyframes new-badge-pop{ 0%,70%,100%{ transform:scale(1); } 80%{ transform:scale(1.18) rotate(-4deg); } 90%{ transform:scale(1) rotate(3deg); } }
+@media (prefers-reduced-motion: reduce){ .new-badge{ animation:none; } }
 .welcome-howto-btn:active{ transform: translate(2px,2px); box-shadow: none; }
 .welcome-start-btn:active{ transform: translate(2px,2px); box-shadow: none; }
 .welcome-start-btn[disabled], .welcome-howto-btn[disabled]{ opacity:.4; box-shadow: none; }
@@ -1411,7 +1416,7 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
     </div>
     <button class="welcome-start-btn" id="welcomeStartBtn" disabled>Begin Campaign</button>
     <button class="welcome-howto-btn" id="howToPlayBtn" disabled>How to Play</button>
-    <button class="welcome-howto-btn" id="friendBtn" disabled>👥 Play a Friend</button>
+    <button class="welcome-howto-btn" id="friendBtn" disabled>👥 Play a Friend<span class="new-badge" id="friendNewBadge">NEW</span></button>
     <button class="welcome-howto-btn" id="welcomeReplayBtn" hidden>▶ Watch last game</button>
     <a class="tip-link" id="tipLinkWelcome" href="#" target="_blank" rel="noopener">☕ Support the developer</a>
     <span class="ver-badge" id="welcomeVersion"></span>
