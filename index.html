@@ -714,6 +714,7 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
 .welcome-start-btn:active{ transform: translate(2px,2px); box-shadow: none; }
 .welcome-start-btn[disabled], .welcome-howto-btn[disabled]{ opacity:.4; box-shadow: none; }
 .welcome-content .ver-badge{ margin-top: 0.4rem; color:var(--accent-ink); }
+.welcome-content h1 .ver-badge{ margin: 0 0 0 0.1rem; font-size: var(--fs-1); font-weight:600; white-space:nowrap; text-shadow:none; opacity:.7; }
 /* Always-on companion to the one-time #aboutOverlay: a reviewer or a returning
    player who dismissed that notice still sees the non-affiliation line here. */
 .welcome-content .disclaimer{ display:block; max-width: 17rem; margin: 0.3rem auto 0; line-height:1.35; }
@@ -1400,7 +1401,7 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
   <div class="welcome-scrim"></div>
   <div class="welcome-content">
     <div class="tricolor"><span class="saffron"></span><span class="white"></span><span class="green"></span></div>
-    <h1>Pradhan Mantri Elections</h1>
+    <h1>Pradhan Mantri Elections <span class="ver-badge" id="welcomeVersion"></span></h1>
     <div class="welcome-highscore" id="welcomeHighScore" hidden>🏆 Best score <span id="welcomeHighScoreVal">0</span></div>
     <div class="welcome-loading" id="welcomeLoading">
       <div class="welcome-loading-track"><div class="welcome-loading-fill"></div></div>
@@ -1411,7 +1412,6 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
     <button class="welcome-howto-btn" id="friendBtn" disabled>👥 Play a Friend<span class="new-badge" id="friendNewBadge">NEW</span></button>
     <button class="welcome-howto-btn" id="welcomeReplayBtn" hidden>▶ Watch last game</button>
     <a class="tip-link" id="tipLinkWelcome" href="#" target="_blank" rel="noopener">☕ Support the developer</a>
-    <span class="ver-badge" id="welcomeVersion"></span>
     <span class="ver-badge disclaimer">An educational strategy game. Fictional scenarios, not affiliated with any party or person.</span>
   </div>
 </div>
