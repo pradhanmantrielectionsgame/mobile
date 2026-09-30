@@ -97,6 +97,18 @@
       "groupWeight": 4000,
       "agendaWeight": 1500,
       "cleanSweepWeight": 2500
+    },
+    "friendMatch": {
+      "_comment": "Live friend-match (mobile/net.js) rules. The host picks phase length and number of phases within these bounds (single-player keeps mobileEconomy's own phaseDurationSeconds/totalPhases). Pause rules: Either player may pause; it freezes both phones for at most pauseMaxSeconds, then auto-resumes. maxPausesPerPlayer counts each player separately.",
+      "pauseMaxSeconds": 10,
+      "maxPausesPerPlayer": 3,
+      "phaseSecondsDefault": 30,
+      "phaseSecondsMin": 30,
+      "phaseSecondsMax": 45,
+      "phaseSecondsStep": 5,
+      "totalPhasesDefault": 10,
+      "totalPhasesMin": 10,
+      "totalPhasesMax": 15
     }
   }
 }

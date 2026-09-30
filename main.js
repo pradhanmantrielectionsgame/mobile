@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var E = window.PMEEngine, G = window.PMEGame;
-  var GAME_VERSION = '2.17.1';
+  var GAME_VERSION = '2.18.0';
   // Canonical public URL for the end-of-game "share result" link — hardcoded,
   // not location.href, so the shared link is always the clean site root and
   // never a /index.html deep link, a ?query string, or a Capacitor
@@ -280,7 +280,12 @@
   // small screen, and Add-to-Home-Screen is also what protects localStorage
   // (unlock progress) + the offline cache from iOS's 7-day ITP purge.
   // Desktop/mouse (no coarse pointer) and tablets (wider than a phone) skip it.
-  if (!UNLOCK_ALL &&
+  // An invite link (?join=CODE) skips the gate: installing would throw the link
+  // away, and a guest who only wants one match shouldn't have to install first.
+  // Trade-off accepted 2026-09-29: an in-tab guest can lose saved progress to
+  // iOS's 7-day storage purge.
+  var inviteCodeInUrl = (new URLSearchParams(location.search).get('join') || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (!UNLOCK_ALL && inviteCodeInUrl.length !== 6 &&
       window.matchMedia('(pointer: coarse)').matches &&
       window.matchMedia('(max-width: 700px)').matches &&
       !(window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true)) {
@@ -442,6 +447,18 @@
     'JD(U)': '🏹', 'AIADMK': '🍃', 'Independent': '🗳️'
   };
   function partySymbol(party) { return PARTY_SYMBOLS[party] || '🗳️'; }
+
+  // Same markup as the static nationwideBtn SVG in index.html — hand-drawn
+  // because the 🇮🇳 flag emoji renders as bare "IN" letter tiles on Windows
+  // and some Android OEM fonts (no composed flag glyph), not just a
+  // different art style like the rest of the accepted emoji variance. Used
+  // only in innerHTML contexts (agenda chips, card title) — pushLog/
+  // showToast/spawnPowerBurst render plain text and keep the emoji.
+  var NATIONWIDE_FLAG_SVG = '<svg class="flag-icon" viewBox="0 0 36 24" aria-hidden="true">' +
+    '<rect width="36" height="8" fill="#FF9933"/><rect width="36" height="8" y="8" fill="#FAFAFA"/>' +
+    '<rect width="36" height="8" y="16" fill="#138808"/><g fill="none" stroke="#0F1E6E" stroke-width="0.9">' +
+    '<circle cx="18" cy="12" r="4.2"/><circle cx="18" cy="12" r="0.6" fill="#0F1E6E" stroke="none"/>' +
+    '<path d="M18 7.8V16.2M13.8 12H22.2M15.03 9.03L20.97 14.97M20.97 9.03L15.03 14.97"/></g></svg>';
 
   // Real party logo (data/politicians-data.json's partyLogo) where one
   // exists, falling back to the PARTY_SYMBOLS emoji otherwise/on load error.
@@ -2427,7 +2444,9 @@
     }
     var btn = card.querySelector('.pol-play-btn');
     if (btn && !locked) {
-      btn.textContent = charge.cooldownMs ? '🧊 Cooldown: ' + formatCooldown(charge.cooldownMs) :
+      // Friend matches spend no charge, so a cooldown never blocks them.
+      btn.textContent = (charge.cooldownMs && !friendMode) ? '🧊 Cooldown: ' + formatCooldown(charge.cooldownMs) :
+        (friendMode && !friendEligible(p.id)) ? friendBlockLabel(p.id) :
         'Play as ' + p.name.replace(/\s*\([^)]*\)\s*$/, '').split(' ').slice(-1)[0];
     }
     return charge;
@@ -2517,8 +2536,18 @@
     var btn = document.createElement('button');
     btn.className = 'pol-play-btn';
     btn.style.background = color;
-    btn.textContent = locked ? '🔒 Defeat to unlock' : 'Play as ' + p.name.replace(/\s*\([^)]*\)\s*$/, '').split(' ').slice(-1)[0];
+    var friendBlocked = !locked && friendMode && !friendEligible(p.id);
+    btn.textContent = locked ? '🔒 Defeat to unlock' : friendBlocked ? friendBlockLabel(p.id) : 'Play as ' + p.name.replace(/\s*\([^)]*\)\s*$/, '').split(' ').slice(-1)[0];
     btn.addEventListener('click', function () {
+      if (friendMode && !locked) {
+        if (!friendEligible(p.id)) {
+          showToast(p.id === friendMode.hostPol ? 'Your opponent already picked ' + p.name + ' — choose someone else'
+            : 'You can\'t face your own party — pick a leader from a different party');
+          return;
+        }
+        friendPicked(p.id);
+        return;
+      }
       if (locked) {
         showToast('Beat ' + p.name + ' in a match to unlock them — you\'re never matched against your own party, so pick someone from a different party to face them');
         return;
@@ -2705,6 +2734,12 @@
     // end-of-game sign-off still knows the match started as a tutorial.
     wasTutorialGame = tutorialMode;
 
+    beginMatchUI();
+  }
+
+  // Everything that turns a freshly built `game` into a visible match — shared
+  // by single-player startGame() and friend matches.
+  function beginMatchUI() {
     paintPlayerIdentity();
 
     armed = null; activeGroup = null; groupPinned = false; activeAgenda = null; activeAction = null; activeCluster = null;
@@ -2733,6 +2768,473 @@
     var name = game.players[pk].politician.homeState;
     var s = game.states.filter(function (st) { return st.name === name; })[0];
     return s ? s.svgId : 'INUP';
+  }
+
+  // ---------------------------------------------------------------------
+  // Live friend match (mobile/net.js). Both phones run the same deterministic
+  // game; each plays its own player as 'p1' and applies the other's recorded
+  // actions as 'p2'. Firebase only carries the action list. See net.js.
+  // ---------------------------------------------------------------------
+  var friendMode = null; // { role: 'host'|'guest', code? } while picking a leader
+  var mp = null;         // live match state, null outside a friend match
+
+  function friendStatus(text) { $('friendStatus').textContent = text; }
+
+  // The leader you picked, shown while you wait for the match to start.
+  function paintFriendMeCard(polId, settings) {
+    var p = polById(polId);
+    if (!p) return;
+    $('friendMeCard').style.setProperty('--friend-me-color', p.primaryColor || '#999');
+    setPortrait($('friendMePortrait'), p);
+    $('friendMeName').textContent = p.name;
+    $('friendMeSub').textContent = p.party + (p.homeState ? ' · ' + p.homeState : '');
+    $('friendMePower').textContent = p.power ? '⭐ ' + p.power.name : '';
+    $('friendMeAgendas').textContent = (p.policies || []).map(function (a) { return a.name; }).join(' · ');
+    $('friendMeRules').textContent = settings ? settings.totalPhases + ' phases of ' + settings.phaseSeconds + ' seconds' : '';
+    $('friendMeCard').hidden = false;
+  }
+
+  // Waiting-screen backdrop: every second, 5 random floor tiles flash. The timer
+  // cancels itself once the overlay is gone, so no call site has to stop it.
+  var friendTileTimer = null;
+  function startFriendTiles() {
+    var floor = $('friendTiles');
+    if (!floor.firstChild) {
+      for (var i = 0; i < 210; i++) { // 15 cols x 14 rows, colour = diagonal stripe
+        var t = document.createElement('i');
+        t.className = 'c' + ((i % 15 + Math.floor(i / 15)) % 3);
+        floor.appendChild(t);
+      }
+    }
+    if (friendTileTimer || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    friendTileTimer = setInterval(function () {
+      if ($('friendOverlay').hidden) { clearInterval(friendTileTimer); friendTileTimer = null; return; }
+      // Read every tile's position first, then write (one layout pass). Only tiles
+      // on the clearly visible part of the floor can be picked.
+      var tiles = floor.children, seen = [], vh = window.innerHeight, beams = $('friendBeams');
+      for (var j = 0; j < tiles.length; j++) {
+        var r = tiles[j].getBoundingClientRect();
+        if (r.top > vh * 0.5 && r.bottom < vh && r.right > 0 && r.left < window.innerWidth) seen.push({ el: tiles[j], r: r });
+      }
+      for (var n = 0; n < 5 && seen.length; n++) {
+        var pick = seen.splice(Math.floor(Math.random() * seen.length), 1)[0];
+        pick.el.classList.remove('lit');
+        void pick.el.offsetWidth; // restart the animation if this tile is still glowing
+        pick.el.classList.add('lit');
+        var beam = document.createElement('b'), w = pick.r.width; // beam base = the tile's own width
+        beam.style.cssText = 'left:' + (pick.r.left + pick.r.width / 2 - w / 2) + 'px;width:' + w + 'px;height:' + pick.r.bottom + 'px';
+        beams.appendChild(beam);
+        setTimeout(beam.remove.bind(beam), 1000);
+      }
+    }, 1000);
+  }
+
+  function showFriendWait(code) {
+    startFriendTiles();
+    $('friendMenu').hidden = true;
+    $('friendInvite').hidden = true;
+    $('friendWait').hidden = false;
+    $('friendCodeShown').textContent = code || '';
+    $('friendCodeShown').hidden = !code;
+    $('friendShareBtn').hidden = !code;
+    $('friendOverlay').hidden = false;
+  }
+
+  // Fills a <select> with min..max in `step`s, preselecting `dflt`. Bounds come
+  // from data/game-config.json's friendMatch block, never hardcoded here.
+  function fillSelect(id, min, max, step, dflt, suffix) {
+    var el = $(id);
+    if (el.options.length) return;
+    for (var v = min; v <= max; v += step) {
+      var o = document.createElement('option');
+      o.value = v; o.textContent = v + suffix;
+      if (v === dflt) o.selected = true;
+      el.appendChild(o);
+    }
+  }
+
+  function clampStep(v, min, max, step, dflt) {
+    v = Number(v);
+    if (!isFinite(v)) return dflt;
+    v = Math.round((v - min) / step) * step + min;
+    return Math.max(min, Math.min(max, v));
+  }
+
+  // Whatever the host sent, both phones clamp it to the configured bounds, so
+  // a hand-edited record can't produce a 1-second or 500-phase match.
+  function friendSettings(rec) {
+    var f = data.cfg.friendMatch;
+    return {
+      phaseSeconds: clampStep(rec.phaseSeconds, f.phaseSecondsMin, f.phaseSecondsMax, f.phaseSecondsStep, f.phaseSecondsDefault),
+      totalPhases: clampStep(rec.totalPhases, f.totalPhasesMin, f.totalPhasesMax, 1, f.totalPhasesDefault)
+    };
+  }
+
+  // ---- Invitee flow -------------------------------------------------------
+  // The Send-invite text carries a link ending in ?join=CODE. Opening it lands
+  // here: peek at the match, show who is challenging you and the rules, and one
+  // Accept button that goes straight to picking a leader — no typing the code.
+  var pendingInvite = null;
+
+  function showInviteCard(title, info) {
+    $('friendMenu').hidden = true;
+    $('friendWait').hidden = true;
+    $('friendInvite').hidden = false;
+    $('friendInviteTitle').textContent = title;
+    $('friendInviteCard').hidden = !info;
+    $('friendAcceptBtn').hidden = !info;
+    $('friendDeclineBtn').textContent = info ? 'Not now' : 'OK';
+    if (info) {
+      var host = polById(info.hostPol);
+      if (host) {
+        $('friendInviteCard').style.setProperty('--friend-me-color', host.primaryColor || '#999');
+        setPortrait($('friendInvitePortrait'), host);
+        $('friendInviteName').textContent = host.name;
+        $('friendInviteSub').textContent = host.party + (host.homeState ? ' · ' + host.homeState : '');
+        $('friendInvitePower').textContent = host.power ? '⭐ ' + host.power.name : '';
+      }
+      var st = friendSettings(info);
+      $('friendInviteRules').textContent = st.totalPhases + ' phases of ' + st.phaseSeconds + ' seconds';
+    }
+    // A link tapped in a chat app opens in the browser, never the installed app
+    // (iOS never does; Android only for the store build). Point installed-app
+    // owners at the code instead.
+    var inApp = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    $('friendInviteHint').hidden = !info || inApp;
+    if (info) $('friendInviteHint').textContent = 'Already have the app? Open it, tap Play a Friend and enter code ' + pendingInvite.code + '.';
+    startFriendTiles();
+    $('friendOverlay').hidden = false;
+  }
+
+  // Pulls a match code out of whatever was pasted: the ?join= link, "match code
+  // XXXXXX" from the invite text, or a bare code. Returns '' if none is found.
+  function extractInviteCode(text) {
+    var m = /join=([A-Za-z0-9]{6})\b/.exec(text) || /match code:?\s*([A-Za-z0-9]{6})\b/i.exec(text);
+    if (m) return m[1].toUpperCase();
+    var bare = PMENet.normalizeCode(text);
+    return String(text).trim().length <= 8 && bare.length === 6 ? bare : '';
+  }
+
+  // Called once game data is loaded. ?join= is dropped from the address bar
+  // either way, so a refresh or a Back can't re-open a stale invite.
+  function handleInviteLink() {
+    var code = PMENet.normalizeCode(new URLSearchParams(location.search).get('join') || '');
+    if (!code) return;
+    try { history.replaceState(null, '', location.pathname + location.hash); } catch (e) {}
+    if (code.length !== 6) return;
+    PMENet.peekMatch(code).then(function (info) {
+      pendingInvite = { code: code, info: info };
+      showInviteCard('You’re invited!', info);
+    }, function (err) {
+      showInviteCard(err && err.message === 'No open match with that code'
+        ? 'This invite has expired or the match already has two players'
+        : 'Couldn’t reach the match — check your connection', null);
+    });
+  }
+
+  function openFriendMenu() {
+    startFriendTiles();
+    $('friendMeCard').hidden = true;
+    $('friendInvite').hidden = true;
+    var f = data.cfg.friendMatch;
+    fillSelect('friendPhaseSecs', f.phaseSecondsMin, f.phaseSecondsMax, f.phaseSecondsStep, f.phaseSecondsDefault, ' sec');
+    fillSelect('friendPhaseCount', f.totalPhasesMin, f.totalPhasesMax, 1, f.totalPhasesDefault, ' phases');
+    $('friendMenu').hidden = false;
+    $('friendWait').hidden = true;
+    $('friendOverlay').hidden = false;
+  }
+
+  function polById(id) { return data.politicians.filter(function (p) { return p.id === id; })[0]; }
+
+  // Same rule that picks an AI opponent (startGame): never the same leader or
+  // the same party, and "Independent" isn't a shared party.
+  function friendEligible(polId) {
+    if (!friendMode || !friendMode.hostPol) return true;
+    var host = polById(friendMode.hostPol), me = polById(polId);
+    return !!host && !!me && me.id !== host.id && (host.party === 'Independent' || me.party !== host.party);
+  }
+
+  // Button text for a leader the guest can't take: says which rule blocked it.
+  function friendBlockLabel(polId) {
+    return friendMode && polId === friendMode.hostPol ? '🚫 Opponent\'s pick' : '🚫 Opponent\'s party';
+  }
+
+  function openFriendPicker(mode) {
+    friendMode = mode;
+    $('friendOverlay').hidden = true;
+    $('welcomeOverlay').hidden = true;
+    $('selectOverlay').hidden = false;
+    playtestP1 = null;
+    renderPolGrid();
+    var facing = mode.hostPol && polById(mode.hostPol);
+    $('selectTitle').textContent = facing ? 'Facing ' + facing.name : 'Pick your leader';
+    if (facing) {
+      var st = friendSettings(mode);
+      showToast('You will face ' + facing.name + ' (' + facing.party + ') · ' + st.totalPhases + ' phases of ' + st.phaseSeconds + 's');
+    }
+    switchMusic('intro_music');
+  }
+
+  function friendFail(err) {
+    console.error('[friend match]', err);
+    showToast(err && err.message ? err.message : 'Connection problem');
+    mpLeave();
+    $('friendOverlay').hidden = true;
+    $('selectOverlay').hidden = true;
+    $('welcomeOverlay').hidden = false;
+  }
+
+  function friendPicked(polId) {
+    var mode = friendMode;
+    friendMode = null;
+    $('selectOverlay').hidden = true;
+    showFriendWait('');
+    friendStatus('Connecting…');
+    paintFriendMeCard(polId, mode.role === 'host' ? friendSettings(mode.settings) : friendSettings(mode));
+    if (mode.role === 'host') {
+      PMENet.createMatch(polId, mode.settings).then(function (m) {
+        mp = { side: 'h', code: m.code, seed: m.seed, hostPol: polId, guestPol: null, pop0: null, unsubs: [], started: false, pauses: { h: 0, g: 0 } };
+        mp.settings = friendSettings(mode.settings);
+        showFriendWait(m.code);
+        friendStatus('Waiting for opponent…');
+        mp.unsubs.push(PMENet.watchMatch(m.code, function (rec) {
+          if (!mp || mp.started || !rec || !rec.guestUid || !rec.guestPol) return;
+          mp.started = true;
+          mp.guestPol = rec.guestPol;
+          // Host draws the starting map and shares it; the guest mirrors it.
+          mp.pop0 = PMENet.copyPop(G.createGame(data, mp.hostPol, mp.guestPol, G.mulberry32(mp.seed), { human: true }).pop);
+          PMENet.publishPop0(mp.code, mp.pop0).then(startFriendMatch, friendFail);
+        }));
+      }).catch(friendFail);
+    } else {
+      PMENet.joinMatch(mode.code, polId).then(function (rec) {
+        mp = { side: 'g', code: mode.code, seed: rec.seed, hostPol: rec.hostPol, guestPol: polId, pop0: null, unsubs: [], started: false, pauses: { h: 0, g: 0 } };
+        mp.settings = friendSettings(rec);
+        showFriendWait(mode.code);
+        var hostP = polById(rec.hostPol);
+        friendStatus('Joined — facing ' + (hostP ? hostP.name : 'your friend') + '. Starting…');
+        mp.unsubs.push(PMENet.watchMatch(mp.code, function (r) {
+          if (!mp || mp.started || !r || !r.pop0) return;
+          mp.started = true;
+          mp.pop0 = r.pop0;
+          startFriendMatch();
+        }));
+      }).catch(friendFail);
+    }
+  }
+
+  // One fresh game for this phone — also what a rebuild resets to.
+  function buildMpGame() {
+    // A copy of the config for this match only — the shared data.cfg (used by
+    // single-player) must never change.
+    var d = Object.assign({}, data, { cfg: Object.assign({}, data.cfg, {
+      phaseDurationSeconds: mp.settings.phaseSeconds, totalPhases: mp.settings.totalPhases }) });
+    var g = mp.side === 'h'
+      ? G.createGame(d, mp.hostPol, mp.guestPol, G.mulberry32(mp.seed), { human: true, startingPop: PMENet.copyPop(mp.pop0) })
+      : G.createGame(d, mp.guestPol, mp.hostPol, G.mulberry32(mp.seed), { human: true, startingPop: PMENet.mirrorPop(mp.pop0) });
+    g.seed = mp.seed;
+    g.friendMatch = true;
+    g.ratedMatch = false;
+    return g;
+  }
+
+  function startFriendMatch() {
+    setTutorialMode(false);
+    mp.applier = PMENet.createApplier(mpApplyOne, mpRebuild, mpAfterRebuild);
+    game = buildMpGame();
+    window.__game = game;
+    G.setRecordHook(mpRecordHook);
+    // Our own taps are added to the applier when we send them; only the
+    // other side's entries come in through here.
+    mp.unsubs.push(PMENet.watchEntries(mp.code, function (e) {
+      if (!mp || e.side === mp.side) return;
+      if (e.fn === 'pause' || e.fn === 'resume') mpRemotePause(e);
+      else mp.applier.add(e, false);
+    }));
+    $('friendOverlay').hidden = true;
+    $('selectOverlay').hidden = true;
+    $('welcomeOverlay').hidden = true;
+    beginMatchUI();
+  }
+
+  // game.js calls this for every committed action. Ships this phone's own
+  // taps (and phase endings) to the other phone.
+  function mpRecordHook(g, fn, pk, args) {
+    if (!mp || !mp.applier || g !== game || mp.applying) return;
+    if (fn !== 'endPhase' && pk !== 'p1') return;
+    if (PMENet.ALLOWED_FNS.indexOf(fn) === -1) return;
+    var phase = fn === 'endPhase' ? g.phase : null; // hook runs before the phase increments
+    var key = PMENet.pushEntry(mp.code, mp.side, fn, args, phase);
+    mp.applier.add({ key: key, side: mp.side, fn: fn, args: args, phase: phase }, true);
+  }
+
+  // Applies one entry to the live game — both a fresh remote action and each
+  // step of a rebuild replay (mp.quiet = no sound/FX/timer changes).
+  function mpApplyOne(e) {
+    mp.applying = true;
+    try {
+      var pk = e.side === mp.side ? 'p1' : 'p2';
+      if (e.fn === 'endPhase') {
+        if (game.phase !== e.phase || game.winner) return; // the other phone's timer got there second
+        var before = game.players.p1.fundsCr;
+        G.endPhase(game);
+        if (!mp.quiet) afterEndPhase(before);
+        return;
+      }
+      var action = applyReplayEntry({ fn: e.fn, pk: pk, args: e.args });
+      if (!mp.quiet && action) {
+        renderAll();
+        playActionFx(action, pk, true);
+        if (action.type === 'invest') playSound('money_spent');
+        else if (action.type === 'rally') playSound('rally_sound');
+      }
+    } finally { mp.applying = false; }
+  }
+
+  // Pausing in a friend match. Either player can pause; it freezes both
+  // phones for at most pauseMaxSeconds (data/game-config.json friendMatch),
+  // then both auto-resume on their own clocks. Each player gets
+  // maxPausesPerPlayer. Pause/resume travel as entries but bypass the ordered
+  // applier — they change timers, not game state.
+  function friendCfg() { return game.cfg.friendMatch; }
+
+  // by: which side paused. Only that player can resume early; the other
+  // phone just watches the countdown (⏸) until the auto-resume.
+  function mpStartPause(by) {
+    setPaused(true);
+    mp.pausedBy = by;
+    var icon = by === mp.side ? '▶ ' : '⏸ ';
+    var left = friendCfg().pauseMaxSeconds;
+    clearInterval(mp.pauseClock);
+    $('pauseToggleBtn').textContent = icon + left;
+    $('pauseToggleBtn').classList.add('counting');
+    mp.pauseClock = setInterval(function () {
+      left--;
+      if (left <= 0) { mpEndPause(); return; }
+      $('pauseToggleBtn').textContent = icon + left;
+    }, 1000);
+  }
+
+  function mpEndPause() {
+    clearInterval(mp.pauseClock);
+    mp.pauseClock = null;
+    mp.pausedBy = null;
+    $('pauseToggleBtn').classList.remove('counting');
+    if (timerPaused) setPaused(false);
+  }
+
+  function mpTogglePause() {
+    if (game.winner) return;
+    if (timerPaused) {
+      if (mp.pausedBy !== mp.side) { showToast('Your opponent paused — it resumes on its own shortly'); return; }
+      mpEndPause();
+      PMENet.pushEntry(mp.code, mp.side, 'resume', [], null);
+      return;
+    }
+    var max = friendCfg().maxPausesPerPlayer;
+    if (mp.pauses[mp.side] >= max) { showToast('No pauses left'); return; }
+    mp.pauses[mp.side]++;
+    mpStartPause(mp.side);
+    PMENet.pushEntry(mp.code, mp.side, 'pause', [], null);
+    showToast('Paused — ' + (max - mp.pauses[mp.side]) + ' left');
+  }
+
+  function mpRemotePause(e) {
+    if (e.fn === 'pause') {
+      mp.pauses[e.side]++;
+      if (!timerPaused) { mpStartPause(e.side); showToast('⏸ Your opponent paused'); }
+    } else if (timerPaused && e.side === mp.pausedBy) {
+      mpEndPause();
+      showToast('▶ Resumed');
+    }
+  }
+
+  function mpRebuild() {
+    mp.quiet = true;
+    mp.phaseBefore = game.phase;
+    game = buildMpGame();
+    window.__game = game;
+  }
+
+  function mpAfterRebuild() {
+    mp.quiet = false;
+    renderAll();
+    if (game.winner) {
+      clearInterval(timerHandle);
+      playSound('game_over');
+      showEndOverlay();
+    } else if (game.phase !== mp.phaseBefore) {
+      resetPhaseTimer();
+      if (!timerPaused) resumePhaseTimer();
+      showToast('Phase ' + game.phase + ' begins');
+    }
+  }
+
+  function mpLeave() {
+    friendMode = null;
+    if (!mp) return;
+    clearInterval(mp.pauseClock);
+    mp.unsubs.forEach(function (fn) { try { fn(); } catch (e) { /* already detached */ } });
+    G.setRecordHook(null);
+    mp = null;
+  }
+
+  function wireFriendControls() {
+    $('friendBtn').addEventListener('click', function () {
+      unlockSounds();
+      openFriendMenu();
+    });
+    $('friendAcceptBtn').addEventListener('click', function () {
+      if (!pendingInvite) return;
+      var i = pendingInvite.info;
+      unlockSounds();
+      openFriendPicker({ role: 'guest', code: pendingInvite.code, hostPol: i.hostPol, phaseSeconds: i.phaseSeconds, totalPhases: i.totalPhases });
+    });
+    $('friendDeclineBtn').addEventListener('click', function () { pendingInvite = null; $('friendOverlay').hidden = true; });
+    $('friendBackBtn').addEventListener('click', function () { $('friendOverlay').hidden = true; });
+    $('friendCreateBtn').addEventListener('click', function () {
+      var settings = { phaseSeconds: Number($('friendPhaseSecs').value), totalPhases: Number($('friendPhaseCount').value) };
+      PMENet.ensureFirebase().then(function () { openFriendPicker({ role: 'host', settings: settings }); }, friendFail);
+    });
+    function joinByCode(code) {
+      if (code.length !== 6) { showToast('Enter the 6-character code'); return; }
+      PMENet.peekMatch(code).then(function (info) {
+        openFriendPicker({ role: 'guest', code: code, hostPol: info.hostPol, phaseSeconds: info.phaseSeconds, totalPhases: info.totalPhases });
+      }, function (err) { showToast(err && err.message ? err.message : 'Connection problem'); });
+    }
+    $('friendJoinBtn').addEventListener('click', function () { joinByCode(PMENet.normalizeCode($('friendCodeInput').value)); });
+    // Pasting an invite joins straight away. It accepts the bare code, the whole
+    // invite message, or the link — whatever the friend copied from the chat.
+    $('friendCodeInput').addEventListener('paste', function (e) {
+      var text = (e.clipboardData || window.clipboardData).getData('text') || '';
+      var code = extractInviteCode(text);
+      if (!code) return; // not an invite: let the browser paste normally
+      e.preventDefault();
+      $('friendCodeInput').value = code;
+      joinByCode(code);
+    });
+    $('friendCodeInput').addEventListener('input', function () {
+      this.value = PMENet.normalizeCode(this.value); // typed text stays a clean 6-char code
+    });
+    // Tap the code you're waiting with to copy it.
+    $('friendCodeShown').addEventListener('click', function () {
+      var code = mp && mp.code;
+      if (code && navigator.clipboard) navigator.clipboard.writeText(code).then(function () { showToast('Code copied'); });
+    });
+    $('friendCancelBtn').addEventListener('click', function () {
+      mpLeave();
+      $('friendOverlay').hidden = true;
+      $('welcomeOverlay').hidden = false;
+    });
+    $('friendShareBtn').addEventListener('click', function () {
+      var code = mp && mp.code;
+      if (!code) return;
+      var me = polById(mp.hostPol);
+      var text = 'Play against ' + (me ? me.name + ' (' + me.party + ')' : 'me') + ' in Pradhan Mantri Elections — ' +
+        mp.settings.totalPhases + ' phases of ' + mp.settings.phaseSeconds + 's\nMatch code: ' + code + '\nTap to join: ' + location.origin + '/?join=' + code;
+      if (navigator.share) navigator.share({ text: text }).catch(function () {});
+      else if (navigator.clipboard) navigator.clipboard.writeText(text).then(function () { showToast('Copied'); });
+    });
   }
 
   // ---------------------------------------------------------------------
@@ -2869,6 +3371,13 @@
     clearInterval(timerHandle);
     var fundsBefore = game.players.p1.fundsCr;
     G.endPhase(game);
+    afterEndPhase(fundsBefore);
+  }
+
+  // Everything that follows a phase ending, whether this phone's own timer
+  // ended it or (friend match) the other phone's endPhase was applied here.
+  function afterEndPhase(fundsBefore) {
+    clearInterval(timerHandle);
     var fundsGained = game.players.p1.fundsCr - fundsBefore;
     if (fundsGained > 0) {
       // Coins off the player's own strongest states rather than a bare label
@@ -2891,7 +3400,7 @@
     playSound('phase_reset');
     showToast('Phase ' + game.phase + ' begins');
     resetPhaseTimer(); // always give the new phase a full clock, whether or not a tutorial gate is about to pause it
-    if (!checkTutorialPhaseGate()) resumePhaseTimer();
+    if (!checkTutorialPhaseGate() && !timerPaused) resumePhaseTimer();
   }
 
   // ---------------------------------------------------------------------
@@ -3079,8 +3588,8 @@
     var seal, headline, sub;
     if (game.winner === 'p1') {
       seal = '🏆'; headline = 'You won the election'; sub = 'You crossed 272 seats.';
-      recordWin(game.players.p1.politician.id);
-      if (unlockPolitician(game.players.p2.politician.id)) {
+      if (!game.friendMatch) recordWin(game.players.p1.politician.id);
+      if (!game.friendMatch && unlockPolitician(game.players.p2.politician.id)) {
         sub += ' 🔓 ' + game.players.p2.politician.name + ' unlocked!';
         spawnUnlockCelebration(game.players.p2.politician);
         playSound('fanfare');
@@ -3233,6 +3742,7 @@
   // adaptive ladder may already have promoted the player by the time this
   // card renders; the game's own profile is what was actually played.
   function aiSeatLabel() {
+    if (game.friendMatch) return 'Friend';
     var pr = game.players.p2.aiProfile;
     if (!pr) return 'AI';
     var m = /^level-(\d+)$/.exec(pr.key);
@@ -4309,6 +4819,7 @@
   fastTap($('nationwideBtn'), onNationwideBtn);
   $('endPhaseBtn').addEventListener('click', function () { if (!actionsLocked()) doEndPhase(); });
   $('playAgainBtn').addEventListener('click', function () {
+    mpLeave();
     $('endOverlay').hidden = true;
     $('selectOverlay').hidden = false;
     playtestP1 = null;
@@ -4348,6 +4859,7 @@
     else { sounds.bg_music.pause(); sounds.intro_music.pause(); }
   });
   $('pauseToggleBtn').addEventListener('click', function () {
+    if (mp) { mpTogglePause(); return; }
     setPaused(!timerPaused);
   });
 
@@ -4452,6 +4964,7 @@
   }
 
   scheduleAITick();
+  wireFriendControls();
 
   G.loadGameData('data/').then(function (d) {
     data = d;
@@ -4486,6 +4999,8 @@
       $('welcomeLoading').hidden = true;
       $('welcomeStartBtn').disabled = false;
       $('howToPlayBtn').disabled = false;
+      $('friendBtn').disabled = false;
+      handleInviteLink();
     });
   }).catch(function (err) {
     console.error('Failed to load game data — is this served over http(s), not file://?', err);

@@ -154,13 +154,18 @@
   function aiStep(game, playerKey) { return ai().aiStep(game, playerKey); }
   function runAIFull(game, playerKey) { return ai().runAIFull(game, playerKey); }
 
-  function createGame(data, p1PoliticianId, p2PoliticianId, rng) {
+  // opts (optional, live-multiplayer only): startingPop replaces the drawn
+  // starting position (the guest builds a role-swapped copy of the host's map),
+  // human:true skips AI setup so both seats are people. Omitted = today's exact
+  // single-player behaviour.
+  function createGame(data, p1PoliticianId, p2PoliticianId, rng, opts) {
+    opts = opts || {};
     rng = rng || Math.random;
     var p1Pol = data.politicians.filter(function (p) { return p.id === p1PoliticianId; })[0];
     var p2Pol = data.politicians.filter(function (p) { return p.id === p2PoliticianId; })[0];
     if (!p1Pol || !p2Pol) throw new Error('Unknown politician id');
 
-    var pop = E.generateStartingPosition(data.states, homeStatesOf(p1Pol), homeStatesOf(p2Pol), rng);
+    var pop = opts.startingPop || E.generateStartingPosition(data.states, homeStatesOf(p1Pol), homeStatesOf(p2Pol), rng);
     var statesById = {};
     data.states.forEach(function (s) { statesById[s.svgId] = s; });
     var policiesByName = data.policyTags;
@@ -186,7 +191,7 @@
       finalSeats: null,
       players: { p1: makePlayer(p1Pol, data.cfg, false), p2: makePlayer(p2Pol, data.cfg, false) }
     };
-    setupAI(game, 'p2', rng);
+    if (!opts.human) setupAI(game, 'p2', rng);
     startPhase(game);
     return game;
   }
@@ -217,7 +222,14 @@
   // an identical end state (see main.js startReplay).
   function recordAction(game, fn, playerKey, args) {
     if (game.actionLog) game.actionLog.push({ fn: fn, pk: playerKey || null, args: args || [] });
+    if (recordHook) recordHook(game, fn, playerKey, args || []);
   }
+
+  // Live multiplayer (main.js/net.js) subscribes here to ship each committed
+  // action to the other phone. Module-level, never on the game object, so
+  // structuredClone(game) in the AI pacing dry-run still works.
+  var recordHook = null;
+  function setRecordHook(fn) { recordHook = fn || null; }
 
   // ---------------------------------------------------------------------
   // Phase lifecycle
@@ -763,6 +775,7 @@
   }
 
   var API = {
+    setRecordHook: setRecordHook,
     mulberry32: mulberry32,
     SMALL_UT_IDS: SMALL_UT_IDS,
     SMALL_UT_BATCH_IDS: SMALL_UT_BATCH_IDS,

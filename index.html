@@ -238,6 +238,8 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
 .ver-badge-end{ display:block; margin: 0 0 0.2rem; }
 .iconbtn{ width: 1.65rem; height: 1.65rem; border-radius:var(--radius-md); background:var(--surface); border: 2px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:var(--fs-4); color:var(--ink); box-shadow: var(--shadow-md); }
 .iconbtn:active{ transform: translate(2.5px,2.5px); box-shadow: none; }
+/* Friend-match pause: the button carries "▶ 30" text, so it widens instead of clipping it. */
+.iconbtn.counting{ width:auto; min-width:1.65rem; padding:0 .5rem; white-space:nowrap; font-size:var(--fs-5); font-weight:700; font-variant-numeric:tabular-nums; }
 
 /* ---- REDESIGN A prototype (2026-07-27, vertical+squared): moved from a
    horizontal 2-row band above the map to a single-column sidebar on the
@@ -636,6 +638,15 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
    the baseline. */
 .gicon.title-icon, .gicon.chip-icon{ display:inline-block; width:1.15em; height:1.15em; vertical-align:-0.28em; }
 
+/* Nationwide Rally's 🇮🇳 flag emoji replaced with hand-drawn inline SVG —
+   the two-letter regional-indicator pair Windows/some Android OEM fonts
+   render for flag emoji (no composed flag glyph) made it read as "IN" tiles
+   instead of a flag, not just a different art style like the rest of the
+   accepted per-OS emoji variance. Same markup lives in main.js's
+   NATIONWIDE_FLAG_SVG constant (JS-rendered call sites) — keep both in sync
+   if this ever changes. */
+.flag-icon{ display:inline-block; width:1.5em; height:1em; vertical-align:-0.15em; flex:none; }
+
 .info-groups{ display:flex; flex-wrap:wrap; gap: 0.25rem; width:100%; margin-top: 0.22rem; }
 .info-groups .chip{ width: 1.2rem; height: 1.2rem; display:flex; align-items:center; justify-content:center; font-size: 0.775rem; background:var(--surface2); border-radius: 0.275rem; }
 .info-groups .none{ font-size: 0.6rem; color:var(--ink-faint); line-height: 1.2rem; }
@@ -890,6 +901,69 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
 .about-ok-btn{ display:block; width:100%; max-width: 11rem; margin: 0 auto; font-family:var(--font-display); color:#fff; font-weight:700; font-size: 0.8rem; padding: 0.5rem 0.8rem;
   background:var(--accent); border-radius: 2.5rem; border: 1.5px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); }
 .about-ok-btn:active{ transform: translate(2px,2px); box-shadow: none; }
+.friend-overlay{ z-index:65; }
+.friend-overlay [hidden]{ display:none !important; }
+.friend-overlay .about-body{ text-align:center; }
+.friend-overlay .about-ok-btn{ margin-top: 0.6rem; }
+.friend-setting{ display:flex; align-items:center; justify-content:space-between; gap:0.6rem; max-width: 16rem; margin: 0.5rem auto 0; font-size: 0.8rem; color: var(--ink); }
+.friend-setting select{ font-family: var(--font-display); font-weight:700; font-size: 0.85rem; padding: 0.3rem 0.4rem; border: 2px solid var(--ink); border-radius: 0.4rem; background:#fff; color: var(--ink); }
+.friend-wait-title{ font-family: var(--font-display); font-weight:800; font-size: 1.05rem; color: var(--ink); margin-bottom: 0.6rem; }
+.friend-me{ max-width: 16rem; margin: 1rem auto 0; padding: 0.8rem 0.9rem 0.9rem; background:#fff; border-radius: 0.8rem; border-top: 0.35rem solid var(--friend-me-color, var(--ink)); box-shadow: 0 1px 6px rgba(20,22,28,.18); text-align:center; }
+.friend-me-label{ font-size: 0.6rem; font-weight:700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-faint); }
+.friend-me-portrait{ display:block; width: 5.5rem; height: 5.5rem; margin: 0.5rem auto 0.4rem; border-radius: 50%; object-fit: cover; border: 3px solid var(--friend-me-color, var(--ink)); }
+.friend-me-name{ font-family: var(--font-display); font-weight:800; font-size: 1rem; color: var(--ink); }
+.friend-me-sub{ font-size: 0.72rem; color: var(--ink-faint); margin-top: 0.1rem; }
+.friend-me-power{ font-size: 0.78rem; font-weight:700; color: var(--ink); margin-top: 0.5rem; }
+.friend-me-agendas{ font-size: 0.68rem; color: var(--ink-faint); margin-top: 0.25rem; line-height: 1.35; }
+.friend-me-rules{ font-size: 0.7rem; font-weight:700; color: var(--ink); margin-top: 0.6rem; padding-top: 0.5rem; border-top: 1px dashed rgba(20,22,28,.25); }
+.friend-or{ margin: 1rem 0 0.4rem; font-size: 0.7rem; color: var(--ink-faint); }
+.friend-code-input, .friend-code{ display:block; width:100%; max-width: 11rem; margin: 0 auto; text-align:center; font-family: var(--font-display); font-weight:800; letter-spacing: 0.3em; text-transform: uppercase; }
+.friend-code-input{ font-size: 1.1rem; padding: 0.5rem 0.4rem; border: 2px solid var(--ink); border-radius: 0.5rem; background:#fff; color: var(--ink); }
+/* Waiting screen: pulsing dot beside the status, match code as a paper "ballot stub". */
+.friend-wait-title{ display:flex; align-items:center; justify-content:center; gap:0.5rem; }
+.friend-wait-title::before{ content:""; flex:0 0 auto; width:0.6rem; height:0.6rem; border-radius:50%; background:var(--brass); animation: friend-pulse 1.4s ease-in-out infinite; }
+@keyframes friend-pulse{ 0%,100%{ transform:scale(.7); opacity:.45; } 50%{ transform:scale(1.25); opacity:1; } }
+.friend-code{ font-size: 1.7rem; line-height:1.1; padding: 0.55rem 0 0.7rem 0.3em; margin-bottom: 0.7rem; max-width: 14rem; color:var(--ink); background:var(--paper); border:2px dashed var(--brass); border-radius:0.6rem; box-shadow: 0 1px 6px rgba(20,22,28,.18); }
+.friend-code::before{ content:"Your match code"; display:block; margin-bottom:0.3rem; font-family:var(--font); font-size:0.6rem; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--brass); }
+/* Backdrop: paper stock, tricolor stripe on top, saffron/green glows in opposite corners, faint dot grain. */
+.friend-overlay{
+  background:
+    linear-gradient(90deg,#FF9933 0 33.3%,#F5F1E4 33.3% 66.6%,#128807 66.6% 100%) 0 0/100% 0.25rem no-repeat,
+    radial-gradient(circle at 12% 8%, rgba(255,153,51,.30), transparent 45%),
+    radial-gradient(circle at 92% 96%, rgba(18,136,7,.22), transparent 50%),
+    var(--paper); }
+/* Tricolor tile floor (pastel saffron/white/green diagonal, tilted for depth); JS lights 5 random tiles each second. */
+.friend-tiles{ position:fixed; left:-70%; right:-70%; top:-80%; bottom:0; z-index:-1; pointer-events:none; display:grid; grid-template-columns:repeat(15,1fr); grid-template-rows:repeat(14,1fr); gap:0.25rem; transform-origin:50% 100%; transform:perspective(38rem) rotateX(58deg); -webkit-mask-image:linear-gradient(to top,#000 55%,transparent 98%); mask-image:linear-gradient(to top,#000 55%,transparent 98%); }
+/* Pastel saffron / white / green, diagonally alternating; a hard bottom edge gives each tile thickness. */
+.friend-tiles i{ position:relative; border-radius:0.3rem; opacity:.55; }
+.friend-tiles i.c0{ background:linear-gradient(145deg,#FFD9AE,#FFBF80); box-shadow:0 0.3rem 0 #E9A25A; }
+.friend-tiles i.c1{ background:linear-gradient(145deg,#FFFFFF,#EDE8D8); box-shadow:0 0.3rem 0 #CFC8B0; }
+.friend-tiles i.c2{ background:linear-gradient(145deg,#C4E6BC,#9ED393); box-shadow:0 0.3rem 0 #74B269; }
+.friend-tiles i::after{ content:""; position:absolute; inset:0; border-radius:inherit; background:radial-gradient(circle at 50% 50%, rgba(255,255,255,.95), rgba(255,255,255,0) 70%); opacity:0; }
+.friend-tiles i.lit{ animation: tile-spot 1s ease-out; }
+.friend-tiles i.lit::after{ animation: tile-spot-glow 1s ease-out; }
+@keyframes tile-spot{ 0%{ opacity:.55; transform:scale(1); } 25%{ opacity:1; transform:scale(1.1); } 100%{ opacity:.55; transform:scale(1); } }
+@keyframes tile-spot-glow{ 0%{ opacity:0; } 25%{ opacity:1; } 100%{ opacity:0; } }
+#friendWait, #friendMenu, #friendInvite{ position:relative; isolation:isolate; }
+/* The Share button sends out a ripple ring and a soft bounce, nudging you to send the code. */
+#friendShareBtn, #friendCreateBtn, #friendAcceptBtn{ position:relative; animation: friend-nudge 3s ease-in-out infinite; }
+#friendShareBtn::after, #friendCreateBtn::after, #friendAcceptBtn::after{ content:""; position:absolute; inset:0; border:2px solid #2550D8; border-radius:inherit; pointer-events:none; opacity:0; animation: friend-ripple 3s ease-out infinite; }
+@keyframes friend-ripple{ 0%{ transform:scale(1); opacity:.7; } 70%,100%{ transform:scale(1.35,1.9); opacity:0; } }
+@keyframes friend-nudge{ 0%,60%,100%{ transform:scale(1); } 10%{ transform:scale(1.05); } 20%{ transform:scale(1); } 30%{ transform:scale(1.03); } }
+/* Spotlight beams (built by JS): light falls from the top of the screen onto a lit tile. */
+.friend-beams{ position:fixed; inset:0; z-index:-1; pointer-events:none; overflow:hidden; }
+.friend-beams b{ position:absolute; top:0; clip-path:polygon(42% 0,58% 0,100% 100%,0 100%); background:linear-gradient(to bottom, rgba(255,247,210,0), rgba(255,247,210,.4)); opacity:0; animation: beam-flash 1s ease-out forwards; }
+@keyframes beam-flash{ 0%{ opacity:0; } 20%{ opacity:.8; } 100%{ opacity:0; } }
+/* Saffron/white/green motes drift upward behind everything. */
+#friendWait::after, #friendMenu::after, #friendInvite::after{ content:""; position:absolute; z-index:-1; pointer-events:none; left:50%; top:60%; width:0.5rem; height:0.5rem; border-radius:50%; background:#FF9933; opacity:.7;
+  box-shadow: -8rem 3rem 0 #128807, -5rem -2rem 0 0.1rem #FF9933, 6rem 1rem 0 #128807, 8.5rem -3rem 0 -0.05rem #FF9933, -9rem -6rem 0 -0.1rem #128807, 3rem 5rem 0 0.05rem #FF9933, 0 -5rem 0 -0.1rem #128807;
+  animation: friend-drift 9s ease-in-out infinite alternate; }
+@keyframes friend-drift{ from{ transform:translateY(1.5rem); opacity:.35; } to{ transform:translateY(-3rem); opacity:.8; } }
+.friend-me{ animation: friend-float 4s ease-in-out infinite; }
+@keyframes friend-float{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-0.3rem); } }
+.friend-me-portrait{ box-shadow: 0 0 0 4px var(--paper), 0 0 0 6px var(--friend-me-color, var(--ink)); }
+@media (prefers-reduced-motion: reduce){ .friend-wait-title::before, #friendShareBtn, #friendCreateBtn, #friendAcceptBtn, #friendShareBtn::after, #friendCreateBtn::after, #friendAcceptBtn::after, .friend-beams b, #friendWait::after, #friendMenu::after, #friendInvite::after, .friend-me, .friend-tiles i.lit, .friend-tiles i.lit::after{ animation:none; } }
+.friend-link-btn{ display:block; margin: 0.9rem auto 0; background:none; border:0; padding:0; font-size: 0.75rem; color: var(--ink-faint); text-decoration: underline; }
 
 .tutorial-navbar{ position:fixed; top: calc(env(safe-area-inset-top,0px) + 0.35rem); left: calc(var(--gutter) + 0.35rem); z-index:62;
   background:var(--paper); color:var(--ink); padding: 0.25rem 0.5rem; border-radius: 2.5rem; border: 1.5px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); }
@@ -1337,6 +1411,7 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
     </div>
     <button class="welcome-start-btn" id="welcomeStartBtn" disabled>Begin Campaign</button>
     <button class="welcome-howto-btn" id="howToPlayBtn" disabled>How to Play</button>
+    <button class="welcome-howto-btn" id="friendBtn" disabled>👥 Play a Friend</button>
     <button class="welcome-howto-btn" id="welcomeReplayBtn" hidden>▶ Watch last game</button>
     <a class="tip-link" id="tipLinkWelcome" href="#" target="_blank" rel="noopener">☕ Support the developer</a>
     <span class="ver-badge" id="welcomeVersion"></span>
@@ -1386,6 +1461,53 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
   </div>
   <div class="pol-carousel" id="polCarousel"></div>
   <div class="pol-dots" id="polDots"></div>
+</div>
+
+<div class="overlay friend-overlay" id="friendOverlay" hidden>
+  <div class="friend-tiles" id="friendTiles" aria-hidden="true"></div>
+  <div class="friend-beams" id="friendBeams" aria-hidden="true"></div>
+  <div class="overlay-header"><h1>Play a Friend</h1></div>
+  <div class="about-body">
+    <div id="friendMenu">
+      <p>You both need the game open. One of you creates a match and shares the code; the other joins with it.</p>
+      <div class="friend-setting"><label for="friendPhaseSecs">Phase length</label><select id="friendPhaseSecs"></select></div>
+      <div class="friend-setting"><label for="friendPhaseCount">Number of phases</label><select id="friendPhaseCount"></select></div>
+      <button class="about-ok-btn" id="friendCreateBtn">Create a match</button>
+      <div class="friend-or">or join a friend's match</div>
+      <input class="friend-code-input" id="friendCodeInput" placeholder="CODE" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false">
+      <button class="about-ok-btn" id="friendJoinBtn">Join match</button>
+      <button class="friend-link-btn" id="friendBackBtn">Back</button>
+    </div>
+    <div id="friendInvite" hidden>
+      <div class="friend-wait-title" id="friendInviteTitle">You’re invited!</div>
+      <div class="friend-me" id="friendInviteCard">
+        <div class="friend-me-label">Your opponent</div>
+        <img class="friend-me-portrait" id="friendInvitePortrait" alt="">
+        <div class="friend-me-name" id="friendInviteName"></div>
+        <div class="friend-me-sub" id="friendInviteSub"></div>
+        <div class="friend-me-power" id="friendInvitePower"></div>
+        <div class="friend-me-rules" id="friendInviteRules"></div>
+      </div>
+      <button class="about-ok-btn" id="friendAcceptBtn">Accept invite</button>
+      <button class="friend-link-btn" id="friendDeclineBtn">Not now</button>
+      <div class="friend-or" id="friendInviteHint" hidden></div>
+    </div>
+    <div id="friendWait" hidden>
+      <div class="friend-wait-title" id="friendStatus"></div>
+      <div class="friend-code" id="friendCodeShown" hidden></div>
+      <button class="about-ok-btn" id="friendShareBtn" hidden>Send invite</button>
+      <div class="friend-me" id="friendMeCard" hidden>
+        <div class="friend-me-label">Your leader</div>
+        <img class="friend-me-portrait" id="friendMePortrait" alt="">
+        <div class="friend-me-name" id="friendMeName"></div>
+        <div class="friend-me-sub" id="friendMeSub"></div>
+        <div class="friend-me-power" id="friendMePower"></div>
+        <div class="friend-me-agendas" id="friendMeAgendas"></div>
+        <div class="friend-me-rules" id="friendMeRules"></div>
+      </div>
+      <button class="friend-link-btn" id="friendCancelBtn">Cancel</button>
+    </div>
+  </div>
 </div>
 
 <div class="tutorial-overlay" id="tutorialOverlay" hidden>
@@ -1730,7 +1852,7 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
       <span class="action-block-label">RALLY</span>
       <div class="action-group" id="tokenTray">
         <button class="action-btn" id="rallyBtn" title="State Rally">📢<span class="badge" id="rallyBadge">5</span></button>
-        <button class="action-btn" id="nationwideBtn" title="Nationwide Rally">🇮🇳<span class="badge" id="nationwideBadge">5/12</span></button>
+        <button class="action-btn" id="nationwideBtn" title="Nationwide Rally"><svg class="flag-icon" viewBox="0 0 36 24" aria-hidden="true"><rect width="36" height="8" fill="#FF9933"/><rect width="36" height="8" y="8" fill="#FAFAFA"/><rect width="36" height="8" y="16" fill="#138808"/><g fill="none" stroke="#0F1E6E" stroke-width="0.9"><circle cx="18" cy="12" r="4.2"/><circle cx="18" cy="12" r="0.6" fill="#0F1E6E" stroke="none"/><path d="M18 7.8V16.2M13.8 12H22.2M15.03 9.03L20.97 14.97M20.97 9.03L15.03 14.97"/></g></svg><span class="badge" id="nationwideBadge">5/12</span></button>
         <button class="action-btn action-btn-wide" id="specialBtn" title="Special Powerup">⭐<span class="special-label">Special Ability</span><span class="badge" id="specialBadge">5/6</span></button>
       </div>
     </div>
@@ -1773,6 +1895,8 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
 <script src="engine.js"></script>
 <script src="game.js"></script>
 <script src="ai.js"></script>
+<script src="firebase-config.js"></script>
+<script src="net.js"></script>
 <script src="main.js"></script>
 
 <script data-goatcounter="https://pradhanmantrielections.goatcounter.com/count"
