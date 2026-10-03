@@ -192,6 +192,7 @@
       players: { p1: makePlayer(p1Pol, data.cfg, false), p2: makePlayer(p2Pol, data.cfg, false) }
     };
     if (!opts.human) setupAI(game, 'p2', rng);
+    setupAllies(game, opts.allyIds);
     startPhase(game);
     return game;
   }
@@ -230,6 +231,227 @@
   // structuredClone(game) in the AI pacing dry-run still works.
   var recordHook = null;
   function setRecordHook(fn) { recordHook = fn || null; }
+
+  // ---------------------------------------------------------------------
+  // Allies (design/allies-side-quests-spec.md)
+  // An ally is a labelled slice of the undecided ("others") pool in its
+  // footprint states — no new popularity bucket, so the engine is untouched.
+  // The slice is derived, never stored: targetSeats' worth of the footprint's
+  // *current* undecided (or all of it, if less is left), so a "35-seat" ally is
+  // 35 seats whatever the random starting map. Later it shrinks only when the
+  // footprint's undecided pool itself runs below the target.
+  // others, so it erodes in lockstep with the undecided pool. It only turns
+  // into seats at the end of the match, for an owner who didn't defect.
+  // ---------------------------------------------------------------------
+
+  // The 3-of-10 draw is seeded from the starting map's undecided shares, not
+  // from game.rng: that adds no rng draws (existing seeded runs stay
+  // identical), and a friend-match guest's mirrored map swaps only p1/p2, so
+  // both phones derive the same draw with nothing extra to transmit.
+  function allyDrawSeed(game) {
+    var h = 2166136261;
+    game.states.forEach(function (s) { h = Math.imul(h ^ game.pop[s.svgId].others, 16777619) >>> 0; });
+    return h;
+  }
+
+  function hashString(str, h) {
+    for (var i = 0; i < str.length; i++) h = Math.imul(h ^ str.charCodeAt(i), 16777619) >>> 0;
+    return h;
+  }
+
+  // Every ally has TWO ways in (dominate its group, or sweep its state to 100%;
+  // either one earns it) and, per player, ONE agenda that makes it leave: drawn
+  // from that player's own four, keyed on the politician (not p1/p2) so a
+  // friend-match guest's mirrored game picks the same one.
+  function setupAllies(game, forcedIds) {
+    var acfg = game.cfg.allies;
+    game.allies = [];
+    if (!acfg) return;
+    var list = acfg.list.slice();
+    var chosen;
+    var seed = allyDrawSeed(game);
+    if (forcedIds) {
+      chosen = forcedIds.map(function (id) { return list.filter(function (a) { return a.id === id; })[0]; });
+    } else {
+      var r = mulberry32(seed);
+      for (var i = 0; i < acfg.drawCount; i++) {
+        var j = i + Math.floor(r() * (list.length - i));
+        var t = list[i]; list[i] = list[j]; list[j] = t;
+      }
+      chosen = list.slice(0, acfg.drawCount);
+    }
+    var idByName = {};
+    game.states.forEach(function (s) { idByName[s.name] = s.svgId; });
+    // Each player's four agendas are shuffled once (keyed on the politician, not
+    // p1/p2, so a mirrored friend-match game matches); ally i takes the i-th, so
+    // the three drawn allies always get three DIFFERENT leave agendas.
+    var shuffled = {};
+    ['p1', 'p2'].forEach(function (pk) {
+      var pol = game.players[pk].politician;
+      var names = pol.policies.map(function (p) { return p.name; });
+      var rs = mulberry32(hashString(pol.id, seed));
+      for (var k = names.length - 1; k > 0; k--) {
+        var m = Math.floor(rs() * (k + 1)), tmp = names[k]; names[k] = names[m]; names[m] = tmp;
+      }
+      shuffled[pk] = names;
+    });
+    game.allies = chosen.map(function (a, idx) {
+      var leave = { p1: shuffled.p1[idx % 4], p2: shuffled.p2[idx % 4] };
+      return {
+        id: a.id, alias: a.alias, groupKey: a.groupKey, sweepSvgId: idByName[a.sweepState],
+        targetSeats: a.targetSeats, leaveAgenda: leave,
+        footprintSvgIds: a.footprint.map(function (n) { return idByName[n]; }),
+        owner: null, defectedBy: null, offered: { p1: false, p2: false }, offeredVia: { p1: null, p2: null }, bonusBps: {}
+      };
+    });
+  }
+
+  function allyById(game, id) {
+    return game.allies.filter(function (a) { return a.id === id; })[0] || null;
+  }
+
+  function allyRoutes(game, a, pk) {
+    var group = game.groups.filter(function (g) { return g.key === a.groupKey; })[0];
+    return {
+      group: E.dominanceActive(group, game.states, game.pop, pk, game.cfg.regionalDominance.thresholdBps),
+      sweep: game.pop[a.sweepSvgId][pk] === E.BPS
+    };
+  }
+
+  // Locked for good: this player already completed the agenda that would make
+  // the ally leave (agendas never un-complete). Covers both "maxed it before
+  // joining" and "joined, then maxed it" (the ally left).
+  function allyLocked(game, a, pk) {
+    return (game.players[pk].agendaProgress[a.leaveAgenda[pk]] || 0) >= game.cfg.agenda.tapsToComplete;
+  }
+
+  // The offer is sticky (`offered`): once a player has met the join condition
+  // the ally stays acceptable even if the opponent snipes the state, until
+  // someone claims it. Nobody owns it, nothing is locked, no queue.
+  function applyAllyRoutes(game) {
+    game.allies.forEach(function (a) {
+      if (a.owner) return;
+      ['p1', 'p2'].forEach(function (pk) {
+        if (a.offered[pk] || allyLocked(game, a, pk)) return;
+        var via = allyRoutes(game, a, pk);
+        // remember which route earned it: the offer never lapses, so the card must not recompute it live
+        if (via.group || via.sweep) { a.offered[pk] = true; a.offeredVia[pk] = via; }
+      });
+    });
+  }
+
+  function allyCanAccept(game, a, pk) {
+    return !a.owner && a.offered[pk] && !allyLocked(game, a, pk);
+  }
+
+  // The owner completing their leave agenda makes the ally leave (its seats
+  // return to undecided). It never joins the opponent, but it is up for grabs
+  // again: the opponent's sticky offer is re-checked live from scratch.
+  function allyTrigger(game, playerKey, agendaName) {
+    game.allies.forEach(function (a) {
+      if (a.owner !== playerKey || a.leaveAgenda[playerKey] !== agendaName) return;
+      a.owner = null;
+      a.bonusBps = {};
+      a.defectedBy = playerKey;
+      var other = playerKey === 'p1' ? 'p2' : 'p1';
+      a.offered[other] = false; a.offeredVia[other] = null;
+    });
+  }
+
+  // First to accept wins the ally; the other side's offer silently vanishes.
+  function acceptAlly(game, playerKey, allyId) {
+    var a = allyById(game, allyId);
+    if (!a || !allyCanAccept(game, a, playerKey)) return { ok: false, reason: 'no_offer' };
+    recordAction(game, 'acceptAlly', playerKey, [allyId]);
+    a.owner = playerKey;
+    return { ok: true, allyId: a.id };
+  }
+
+  // pop with every stable owned ally's slice moved from others into its
+  // owner's bucket. Allies are applied in draw order, each taking its share
+  // of what is still undecided, so overlapping footprints can never push
+  // others below zero — and the per-state p1+p2+others==BPS invariant holds,
+  // so total seats stay 543 and both sides can't both cross 272 on allies.
+  // Per footprint state, what the ally holds, split by where it came from:
+  //  - its base slice, from the undecided only (targetSeats' worth, as above)
+  //  - its accumulated lift (a.bonusBps[state], +1% a phase while allied),
+  //    drawn proportionally from EVERYONE left in the state: p1, p2 (the owner
+  //    included) and the undecided, so it never runs dry with the undecided
+  //    pool. Integer bps, remainder to the bucket with the most left.
+  function allyTakes(game, a, pop) {
+    var und = 0;
+    a.footprintSvgIds.forEach(function (id) { und += pop[id].others * game.statesById[id].seats / E.BPS; });
+    var f = und > a.targetSeats ? a.targetSeats / und : 1;
+    return a.footprintSvgIds.map(function (id) {
+      var base = Math.floor(f * pop[id].others);
+      var left = { p1: pop[id].p1, p2: pop[id].p2, others: pop[id].others - base };
+      var pool = left.p1 + left.p2 + left.others;
+      var claim = Math.min(a.bonusBps[id] || 0, pool), take = { p1: 0, p2: 0, others: 0 };
+      if (claim > 0) {
+        var rem = claim, best = 'others';
+        ['p1', 'p2', 'others'].forEach(function (k) {
+          take[k] = Math.floor(claim * left[k] / pool); rem -= take[k];
+          if (left[k] - take[k] > left[best] - take[best]) best = k;
+        });
+        take[best] += rem;
+      }
+      take.others += base;
+      take.total = take.p1 + take.p2 + take.others;
+      return take;
+    });
+  }
+
+  function allyEffectivePop(game, after) {
+    var eff = deepCopyPop(game.pop);
+    game.allies.forEach(function (a) {
+      if (!a.owner) return;
+      var takes = allyTakes(game, a, eff);
+      a.footprintSvgIds.forEach(function (id, i) {
+        eff[id].p1 -= takes[i].p1; eff[id].p2 -= takes[i].p2; eff[id].others -= takes[i].others;
+        eff[id][a.owner] += takes[i].total;
+      });
+      if (after) after(a, eff, takes);
+    });
+    return eff;
+  }
+
+  // Each held, stable ally's popularity (bps) in every state of its footprint,
+  // in draw order: { allyId: { svgId: bps } }.
+  function allyStateShares(game) {
+    var out = {};
+    allyEffectivePop(game, function (a, eff, takes) {
+      out[a.id] = {};
+      a.footprintSvgIds.forEach(function (id, i) { out[a.id][id] = takes[i].total; });
+    });
+    return out;
+  }
+
+  // Seats each held, stable ally adds to its owner, in draw order (so
+  // overlapping footprints are attributed consistently and sum to the total).
+  function allySeatsByAlly(game) {
+    var out = {}, prev = E.nationalSeats(game.states, game.pop);
+    allyEffectivePop(game, function (a, eff) {
+      var cur = E.nationalSeats(game.states, eff);
+      out[a.id] = cur[a.owner] - prev[a.owner];
+      prev = cur;
+    });
+    return out;
+  }
+
+  // Seats an ally would add to its owner right now (live: shrinks as the
+  // footprint's undecided pool erodes). Used for the card and the offer.
+  function allySliceSeats(game, a) {
+    var eff = deepCopyPop(game.pop);
+    var takes = allyTakes(game, a, eff);
+    a.footprintSvgIds.forEach(function (id, i) {
+      eff[id].p1 += takes[i].total; eff[id].others -= takes[i].others;
+    });
+    return E.nationalSeats(game.states, eff).p1 - E.nationalSeats(game.states, game.pop).p1;
+  }
+
+  function nationalSeatsWithAllies(game) {
+    return E.nationalSeats(game.states, allyEffectivePop(game));
+  }
 
   // ---------------------------------------------------------------------
   // Phase lifecycle
@@ -287,6 +509,19 @@
   function applyPayouts(game) {
     applyRegionalDominancePayouts(game);
     applyCleanSweepPayouts(game);
+    applyAllyRoutes(game);
+  }
+
+  // A held ally resists erosion: every phase it claims another 1% popularity
+  // in each state of its footprint, drawn from everyone there (see allyTakes).
+  // Only while allied; a defection resets it.
+  function applyAllyGrowth(game) {
+    game.allies.forEach(function (a) {
+      if (!a.owner) return;
+      a.footprintSvgIds.forEach(function (id) {
+        a.bonusBps[id] = Math.min(E.BPS, (a.bonusBps[id] || 0) + game.cfg.allies.growthPerPhaseBps);
+      });
+    });
   }
 
   // Smaller, flat bonus paid at the START of every phase a group is still
@@ -321,6 +556,7 @@
       pl.tokensSpentThisPhase = 0;
       if (pl.isAI) { pl.aiAgendaTapsThisPhase = {}; }
     });
+    applyAllyGrowth(game);
     applyPayouts(game);
     applyGroupHoldingBonus(game);
     // AI no longer auto-resolves its whole turn here — it acts one move at a
@@ -338,12 +574,19 @@
   }
 
   function finalizeGame(game) {
-    var seats = E.nationalSeats(game.states, game.pop);
+    var seats = nationalSeatsWithAllies(game);
     game.finalSeats = seats;
     var p1Threshold = game.players.p1.seatsToWinOverride || game.cfg.seatsToWin;
     var p2Threshold = game.players.p2.seatsToWinOverride || game.cfg.seatsToWin;
-    if (seats.p1 >= p1Threshold) { game.winner = 'p1'; }
-    else if (seats.p2 >= p2Threshold) { game.winner = 'p2'; }
+    var p1Wins = seats.p1 >= p1Threshold, p2Wins = seats.p2 >= p2Threshold;
+    if (p1Wins && p2Wins) {
+      // Only Rao's lowered target can let both sides qualify (250 + 272 <= 543);
+      // the player who lowered theirs wins, not whoever happens to be p1.
+      var p1Lowered = !!game.players.p1.seatsToWinOverride, p2Lowered = !!game.players.p2.seatsToWinOverride;
+      game.winner = (p1Lowered === p2Lowered) ? (seats.p1 >= seats.p2 ? 'p1' : 'p2') : (p1Lowered ? 'p1' : 'p2');
+    }
+    else if (p1Wins) { game.winner = 'p1'; }
+    else if (p2Wins) { game.winner = 'p2'; }
     else {
       // Hung parliament is always a draw — revised 2026-07-28, superseding
       // ADR-0006's "loss vs the AI fallback". With the roster now tuned to
@@ -539,6 +782,7 @@
     pl.agendaProgress[policyName] = progress + 1;
     var completed = pl.agendaProgress[policyName] >= game.cfg.agenda.tapsToComplete;
     if (completed) {
+      allyTrigger(game, playerKey, policyName);
       var bonusSoFar = pl.agendaTokenBonusEarned;
       if (bonusSoFar < game.cfg.rally.agendaTokenBonusMax) {
         var grant = Math.min(game.cfg.rally.agendaTokenBonusPerCompletion, game.cfg.rally.agendaTokenBonusMax - bonusSoFar);
@@ -798,6 +1042,16 @@
     activateNationwideRally: activateNationwideRally,
     tapAgenda: tapAgenda,
     activatePower: activatePower,
+    acceptAlly: acceptAlly,
+    allyCanAccept: allyCanAccept,
+    allyLocked: allyLocked,
+    allyRoutes: allyRoutes,
+    allyTakes: allyTakes,
+    allyEffectivePop: allyEffectivePop,
+    nationalSeatsWithAllies: nationalSeatsWithAllies,
+    allySliceSeats: allySliceSeats,
+    allySeatsByAlly: allySeatsByAlly,
+    allyStateShares: allyStateShares,
     canActivatePower: canActivatePower,
     totalNetEffect: totalNetEffect,
     previewAgendaTapSeatDelta: previewAgendaTapSeatDelta,

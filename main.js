@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var E = window.PMEEngine, G = window.PMEGame;
-  var GAME_VERSION = '2.18.2';
+  var GAME_VERSION = '2.20.0';
   // Canonical public URL for the end-of-game "share result" link — hardcoded,
   // not location.href, so the shared link is always the clean site root and
   // never a /index.html deep link, a ?query string, or a Capacitor
@@ -3459,7 +3459,8 @@
       : e.fn === 'activateNationwideRally' ? 'nationwide'
         : e.fn === 'investCash' ? 'invest'
           : e.fn === 'playRallyToken' ? 'rally'
-            : e.fn === 'tapAgenda' ? 'agenda' : 'craft';
+            : e.fn === 'tapAgenda' ? 'agenda'
+              : e.fn === 'acceptAlly' ? 'ally' : 'craft';
     return { type: type, pk: e.pk, svgId: svgId, costCr: r.cost || null };
   }
 
@@ -3523,7 +3524,7 @@
   function verifyReplay() {
     var want = replay.rec.finalSeats;
     if (want) {
-      var got = E.nationalSeats(game.states, game.pop);
+      var got = G.nationalSeatsWithAllies(game);
       if (got.p1 !== want.p1 || got.p2 !== want.p2 || got.others !== want.others) {
         console.error('[replay] final seats mismatch — got', got, 'expected', want,
           '(engine changed since this game was recorded?)');
@@ -3594,7 +3595,7 @@
     var seats = game.finalSeats;
     var seal, headline, sub;
     if (game.winner === 'p1') {
-      seal = '🏆'; headline = 'You won the election'; sub = 'You crossed 272 seats.';
+      seal = '🏆'; headline = allySeatsBy('p1') > 0 ? 'Allied victory' : 'You won the election'; sub = 'You crossed 272 seats.';
       if (!game.friendMatch) recordWin(game.players.p1.politician.id);
       if (!game.friendMatch && unlockPolitician(game.players.p2.politician.id)) {
         sub += ' 🔓 ' + game.players.p2.politician.name + ' unlocked!';
@@ -3607,7 +3608,10 @@
       headline = 'Hung parliament — a draw';
       sub = 'Neither side reached 272 seats.';
     }
-    else { seal = '💔'; headline = 'You lost the election'; sub = game.players.p2.politician.name + ' crossed 272 seats.'; }
+    else {
+      seal = '💔'; headline = 'You lost the election';
+      sub = game.players.p2.politician.name + ' crossed 272 seats' + (allySeatsBy('p2') > 0 ? ' with allied support.' : '.');
+    }
     // Re-trigger the slam animation on every win (the node is reused across
     // matches, so the animation only replays after a reflow).
     var stamp = $('declareStamp');
@@ -3634,7 +3638,7 @@
     var url = SITE_URL;
     var line;
     if (game.winner === 'p1') {
-      line = 'I just won India as ' + me + ' in PradhanMantri Elections Game (' + seats.p1 + '-' + seats.p2 + ')! Think you can do better?';
+      line = 'I just won India as ' + me + (allySeatsBy('p1') > 0 ? ' with allies' : '') + ' in PradhanMantri Elections Game (' + seats.p1 + '-' + seats.p2 + ')! Think you can do better?';
     } else if (game.winner === 'p2') {
       line = opp + ' just beat me ' + seats.p2 + '-' + seats.p1 + ' in PradhanMantri Elections Game. Think you can do better?';
     } else {
@@ -3756,17 +3760,30 @@
     return m ? 'AI ' + m[1] : 'AI ' + pr.key;
   }
 
+  // Seats an owner's stable allies added at the end of the match: final seats
+  // (which include allies) minus what the plain popularity split would give.
+  function allySeatsBy(pk) {
+    return game.finalSeats[pk] - E.nationalSeats(game.states, game.pop)[pk];
+  }
+  function alliesHeldBy(pk) {
+    return game.allies.filter(function (a) { return a.owner === pk; }).length;
+  }
+
+  function alliesLeftBy(pk) {
+    return game.allies.filter(function (a) { return a.defectedBy === pk; }).length;
+  }
+
   function renderEndLedger(seats) {
     var rows = [
-      { pol: game.players.p1.politician, type: 'You', n: seats.p1, color: COLORS.p1, win: game.winner === 'p1' },
-      { pol: game.players.p2.politician, type: aiSeatLabel(), n: seats.p2, color: COLORS.p2, win: game.winner === 'p2' }
+      { pol: game.players.p1.politician, type: 'You', n: seats.p1, ally: allySeatsBy('p1'), color: COLORS.p1, win: game.winner === 'p1' },
+      { pol: game.players.p2.politician, type: aiSeatLabel(), n: seats.p2, ally: allySeatsBy('p2'), color: COLORS.p2, win: game.winner === 'p2' }
     ];
     $('endSeats').innerHTML = rows.map(function (r) {
       return '<div class="ledger-row' + (r.win ? ' winner' : '') + '">' +
         '<img class="ledger-portrait" data-ledger-pol="' + r.pol.id + '" alt="">' +
         '<span class="ledger-dot" style="background:' + r.color + '"></span>' +
         '<span class="ledger-name">' + r.pol.name + ' <span class="ledger-type">(' + r.type + ')</span></span>' +
-        '<span class="ledger-seats">' + r.n + ' seats</span></div>';
+        '<span class="ledger-seats">' + r.n + ' seats' + (r.ally > 0 ? ' <span class="ledger-type">(' + r.ally + ' allied)</span>' : '') + '</span></div>';
     }).join('') +
       '<div class="ledger-row others">' +
       '<span class="ledger-dot" style="background:' + COLORS.others + '"></span>' +
@@ -3811,6 +3828,9 @@
       { label: 'Regions dominated', p1: groupsDominatedBy('p1'), p2: groupsDominatedBy('p2') },
       { label: 'Clean sweeps', p1: cleanSweepsBy('p1'), p2: cleanSweepsBy('p2') },
       { label: 'Agendas completed', p1: agendasCompletedBy('p1'), p2: agendasCompletedBy('p2') },
+      { label: 'Allies held', p1: alliesHeldBy('p1'), p2: alliesHeldBy('p2') },
+      { label: 'Allies left', p1: alliesLeftBy('p1'), p2: alliesLeftBy('p2') },
+      { label: 'Allied seats', p1: allySeatsBy('p1'), p2: allySeatsBy('p2') },
       { label: 'Special power used', p1: game.players.p1.usedSpecial ? 'Yes' : 'No', p2: game.players.p2.usedSpecial ? 'Yes' : 'No' },
       { label: 'Nationwide rally used', p1: game.players.p1.usedNationwide ? 'Yes' : 'No', p2: game.players.p2.usedNationwide ? 'Yes' : 'No' },
       { label: 'Final score', p1: p1Score.toLocaleString(), p2: p2Score.toLocaleString(), total: true }
@@ -4081,11 +4101,17 @@
     $('cardVsBar').hidden = false;
     setCardTitle(s.name);
     $('cardSeats').textContent = s.seats + ' seats · ₹' + E.investmentCostCr(s.seats, game.cfg.investment) + 'Cr';
+    // A claimed ally's slice of this state is drawn as its own hatched segment
+    // next to its owner's, taken out of the undecided part of the bar.
+    var eff = G.allyEffectivePop(game)[selectedId];
+    var a1 = eff.p1 - p.p1, a2 = eff.p2 - p.p2;
     $('cardP1Fill').style.width = (p.p1 / 100) + '%';
-    $('cardOthFill').style.width = (p.others / 100) + '%';
+    $('cardA1Fill').style.width = (a1 / 100) + '%';
+    $('cardOthFill').style.width = (eff.others / 100) + '%';
+    $('cardA2Fill').style.width = (a2 / 100) + '%';
     $('cardP2Fill').style.width = (p.p2 / 100) + '%';
-    $('cardP1Pct').textContent = fmtPct(p.p1);
-    $('cardP2Pct').textContent = fmtPct(p.p2);
+    $('cardP1Pct').textContent = fmtPct(p.p1) + (a1 >= 50 ? ' +' + fmtPct(a1) : '');
+    $('cardP2Pct').textContent = fmtPct(p.p2) + (a2 >= 50 ? ' +' + fmtPct(a2) : '');
     var groupsEl = $('cardGroups');
     groupsEl.dataset.key = ''; // cardGroups is shared; drop renderMemberCard's rebuild key
     groupsEl.className = 'info-groups';
@@ -4659,7 +4685,7 @@
   // Header / full render
   // ---------------------------------------------------------------------
   function renderHeader() {
-    var seats = E.nationalSeats(game.states, game.pop);
+    var seats = G.nationalSeatsWithAllies(game);
     // Skipped while a payout count-up owns the element (see rollFunds).
     if (!fundsRollToken.p1) $('p1Funds').textContent = '₹' + game.players.p1.fundsCr + 'Cr';
     if (!fundsRollToken.p2) $('p2Funds').textContent = '₹' + game.players.p2.fundsCr + 'Cr';
@@ -4741,11 +4767,121 @@
 
   }
 
+  // ---------------------------------------------------------------------
+  // Allies (design/allies-side-quests-spec.md): a card per ally still up for
+  // grabs, plus a one-at-a-time offer popup. The popup never pauses the timer
+  // or blocks the map. Module-level tracking, never on the game object.
+  // ---------------------------------------------------------------------
+  var allyUi = { game: null, owners: {}, tab: null, flipped: false, flipKey: null, html: null };
+
+  function allyGroup(a) { return game.groups.filter(function (g) { return g.key === a.groupKey; })[0]; }
+  function allyQuest(icon, verb, name, cls) {
+    return '<div class="ally-quest' + cls + '"><span class="qi">' + icon + '</span>' +
+      '<span class="qt"><small>' + verb + '</small> ' + name + '</span></div>';
+  }
+
+  // ALLIES panel: three tabs, always present, one per drawn ally. A tab is
+  // neutral grey while unclaimed and takes the colour of whoever holds the
+  // ally. The open tab shows the whole deal up front: the ONE way in (a group
+  // to dominate or a state to sweep to 100%) and the ONE agenda of yours that
+  // would make it leave. No pass button: Accept lights up when you qualify and
+  // reads "Defected" (greyed for good) once you have completed that agenda.
+  function renderAllies() {
+    var box = $('allyCards'), slot = $('allySlot');
+    if (allyUi.game !== game) allyUi = { game: game, owners: {}, tab: null, flipped: false, flipKey: null, html: null };
+    slot.hidden = !!(tutorialMode || replay || !game.allies || !game.allies.length);
+    if (slot.hidden) return;
+
+    // Joining or leaving is a big moment for both sides: full-screen burst +
+    // sound whenever an ally's owner changes (first render only records it).
+    game.allies.forEach(function (x) {
+      var prev = allyUi.owners[x.id];
+      allyUi.owners[x.id] = x.owner;
+      if (prev === undefined || prev === x.owner) return;
+      var side = (x.owner || prev) === 'p1' ? 'you' : 'your opponent';
+      if (x.owner) {
+        spawnPowerBurst(x.owner, 'Alliance Sealed', x.alias + ' joins ' + side, '🤝', 3200);
+        playSound('fanfare');
+      } else {
+        spawnPowerBurst(prev, 'Ally Defected', x.alias + ' walks out on ' + side, '💔', 3200);
+        playSound('invalid_action');
+      }
+    });
+
+    var seatsBy = G.allySeatsByAlly(game);
+    var sel = game.allies.filter(function (x) { return x.id === allyUi.tab; })[0] || game.allies[0];
+    allyUi.tab = sel.id;
+    var anyReady = false;
+
+    $('allyTabs').innerHTML = game.allies.map(function (x) {
+      var cls = 'ally-tab' + (x.owner === 'p1' ? ' mine' : x.owner === 'p2' ? ' theirs' : '') + (sel.id === x.id ? ' on' : '');
+      var ready = G.allyCanAccept(game, x, 'p1');
+      if (x.owner !== 'p1' && !x.owner && G.allyLocked(game, x, 'p1')) cls += ' locked'; // rejected or defected: dead to you for good
+      if (ready) { cls += ' alert'; anyReady = true; }
+      var seats = x.owner ? seatsBy[x.id] : G.allySliceSeats(game, x);
+      return '<div class="' + cls + '" data-tab="' + x.id + '" title="' + x.alias + '">' +
+        x.alias.replace('Ally ', 'A') + '<span class="n">' + seats + '</span></div>';
+    }).join('');
+    slot.classList.toggle('ready', anyReady);
+
+    var html;
+    if (sel.owner === 'p2') {
+      html = '<div class="ally-done">Allied with your opponent</div>';
+    } else {
+      var leave = sel.leaveAgenda.p1, lost = G.allyLocked(game, sel, 'p1');
+      var back = '<div class="ally-face back"><div class="ally-reward">💔 Leaves if</div>' +
+        allyQuest(AGENDA_ICONS[leave] || '📜', 'You complete', leave, lost ? ' fade' : '') + '</div>';
+      var front;
+      if (sel.owner === 'p1') {
+        // held: where the ally's support sits, top 5 states so every ally's card stays the same size
+        var shares = G.allyStateShares(game)[sel.id] || {};
+        var rows = sel.footprintSvgIds.map(function (id) { return { id: id, bps: shares[id] || 0 }; })
+          .sort(function (p, q) { return q.bps - p.bps; }).slice(0, 5);
+        var max = rows.length && rows[0].bps ? rows[0].bps : 1;
+        front = '<div class="ally-reward">' + seatsBy[sel.id] + '<small>seats</small></div>' + rows.map(function (r) {
+          return '<div class="ally-st" title="' + game.statesById[r.id].name + '"><b>' + r.id.slice(2) + '</b><div class="bar"><i style="width:' +
+            Math.round(r.bps / max * 100) + '%"></i></div><span>' + fmtPct(r.bps) + '</span></div>';
+        }).join('');
+      } else {
+        // chasing: both ways in; a route already earned stays ticked even if the opponent snipes it
+        var g = allyGroup(sel), via = sel.offeredVia.p1 || G.allyRoutes(game, sel, 'p1'), offer = sel.offered.p1;
+        front = '<div class="ally-reward">+' + G.allySliceSeats(game, sel) + '<small>seats</small></div>' +
+          '<div class="ally-reward">🤝 Joins if</div>' +
+          allyQuest(via.group ? '✅' : groupIconHtml(g, 'chip-icon'), 'Dominate', g.label, (via.group ? ' done' : '') + (offer && !via.group ? ' fade' : '')) +
+          '<div class="ally-or">OR</div>' +
+          allyQuest(via.sweep ? '✅' : '💯', 'Clean sweep', game.statesById[sel.sweepSvgId].name, (via.sweep ? ' done' : '') + (offer && !via.sweep ? ' fade' : ''));
+      }
+      html = '<div class="ally-flip"><div class="ally-flip-inner">' +
+        '<div class="ally-face front"><span class="ally-cue" title="Tap for what makes this ally leave">↻</span>' + front + '</div>' + back +
+        '</div></div>';
+    }
+    // Rebuild only when the content changed, so a flip in progress is not restarted
+    // by every unrelated re-render. A different tab or state shows its front.
+    var flipKey = allyUi.tab + '|' + (sel.owner || '');
+    if (allyUi.flipKey !== flipKey) { allyUi.flipKey = flipKey; allyUi.flipped = false; }
+    if (allyUi.html !== html) { allyUi.html = html; box.innerHTML = html; }
+    var flipEl = box.querySelector('.ally-flip');
+    if (flipEl) flipEl.classList.toggle('flipped', allyUi.flipped);
+
+    // One Accept button, always there. "Defected" = locked forever.
+    var btn = $('allyAcceptBtn'), locked = sel.owner !== 'p2' && G.allyLocked(game, sel, 'p1');
+    $('allyBtns').hidden = sel.owner === 'p2';
+    btn.textContent = sel.owner === 'p1' ? 'Allied' : locked ? (sel.defectedBy === 'p1' ? 'Defected' : 'Rejected') : 'Accept';
+    btn.disabled = !G.allyCanAccept(game, sel, 'p1');
+  }
+
+  function answerAlly() {
+    var r = G.acceptAlly(game, 'p1', allyUi.tab);
+    if (r.ok) playSound('bell_chime'); // ponytail: reuses the group-win chime, a distinct cue is a later polish
+    renderAll();
+  }
+
   function renderAll() {
     paintMap();
     updateCard();
     if (activeGroup) applyGroupHighlight();
     renderHeader();
+    renderAllies();
     $('endPhaseBtn').hidden = !!game.friendMatch;
     renderTokens();
     renderAgendas();
@@ -4822,6 +4958,19 @@
   fastTap($('delhiBtn'), function () { smallStateBtnTap('INDL', $('delhiBtn')); });
   fastTap($('goaBtn'), function () { smallStateBtnTap('INGA', $('goaBtn')); });
   fastTap($('keralaBtn'), function () { smallStateBtnTap('INKL', $('keralaBtn')); });
+  // Tapping the ally card spins it to show (or hide) what makes the ally leave.
+  fastTap($('allyCards'), function (e) {
+    var el = e.target.closest('.ally-flip'); if (!el) return;
+    allyUi.flipped = !allyUi.flipped;
+    el.classList.toggle('flipped', allyUi.flipped);
+  }, true);
+  // Tabs: open any of the three allies.
+  fastTap($('allyTabs'), function (e) {
+    var t = e.target.closest('[data-tab]'); if (!t) return;
+    allyUi.tab = t.dataset.tab;
+    renderAllies();
+  }, true);
+  fastTap($('allyAcceptBtn'), answerAlly);
   fastTap($('rallyBtn'), onRallyBtn);
   fastTap($('specialBtn'), onSpecialBtn);
   fastTap($('nationwideBtn'), onNationwideBtn);

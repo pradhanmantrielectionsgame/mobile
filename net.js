@@ -20,7 +20,7 @@
   // What a phone is allowed to send/apply. Anything else is ignored, so a
   // hand-crafted entry can't call arbitrary functions on the other phone.
   var ALLOWED_FNS = ['investCash', 'playRallyToken', 'tapAgenda', 'craftToken',
-    'activateNationwideRally', 'activatePower', 'endPhase', 'pause', 'resume'];
+    'activateNationwideRally', 'activatePower', 'acceptAlly', 'endPhase', 'pause', 'resume'];
 
   // ---------------------------------------------------------------------
   // Pure helpers

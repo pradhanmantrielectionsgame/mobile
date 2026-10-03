@@ -109,6 +109,159 @@
       "totalPhasesDefault": 10,
       "totalPhasesMin": 10,
       "totalPhasesMax": 15
+    },
+    "allies": {
+      "drawCount": 3,
+      "growthPerPhaseBps": 100,
+      "list": [
+        {
+          "id": "ally-1",
+          "alias": "Ally 1",
+          "groupKey": "WesternBorder",
+          "sweepState": "Odisha",
+          "targetSeats": 15,
+          "footprint": [
+            "Jammu And Kashmir",
+            "Ladakh",
+            "Punjab",
+            "Himachal Pradesh",
+            "Delhi",
+            "Haryana",
+            "Uttarakhand",
+            "Chandigarh",
+            "Rajasthan"
+          ]
+        },
+        {
+          "id": "ally-2",
+          "alias": "Ally 2",
+          "groupKey": "TribalLands",
+          "sweepState": "Rajasthan",
+          "targetSeats": 20,
+          "footprint": [
+            "Odisha",
+            "Jharkhand",
+            "Chhattisgarh",
+            "Andhra Pradesh",
+            "Telangana"
+          ]
+        },
+        {
+          "id": "ally-3",
+          "alias": "Ally 3",
+          "groupKey": "MinorityAreas",
+          "sweepState": "Andhra Pradesh",
+          "targetSeats": 21,
+          "footprint": [
+            "Punjab",
+            "Haryana",
+            "Himachal Pradesh",
+            "Chandigarh",
+            "Delhi",
+            "Rajasthan",
+            "Uttarakhand",
+            "Jammu And Kashmir"
+          ]
+        },
+        {
+          "id": "ally-4",
+          "alias": "Ally 4",
+          "groupKey": "NationalParksWildlife",
+          "sweepState": "Gujarat",
+          "targetSeats": 24,
+          "footprint": [
+            "Kerala",
+            "West Bengal",
+            "Tripura",
+            "Tamil Nadu"
+          ]
+        },
+        {
+          "id": "ally-5",
+          "alias": "Ally 5",
+          "groupKey": "SouthIndia",
+          "sweepState": "Karnataka",
+          "targetSeats": 25,
+          "footprint": [
+            "West Bengal",
+            "Assam",
+            "Jharkhand",
+            "Tripura",
+            "Odisha"
+          ]
+        },
+        {
+          "id": "ally-6",
+          "alias": "Ally 6",
+          "groupKey": "TravelAndTourism",
+          "sweepState": "Madhya Pradesh",
+          "targetSeats": 34,
+          "footprint": [
+            "Tamil Nadu",
+            "Puducherry",
+            "Karnataka",
+            "Kerala",
+            "Andhra Pradesh",
+            "Telangana"
+          ]
+        },
+        {
+          "id": "ally-7",
+          "alias": "Ally 7",
+          "groupKey": "EasternBorder",
+          "sweepState": "Tamil Nadu",
+          "targetSeats": 35,
+          "footprint": [
+            "Tamil Nadu",
+            "Puducherry",
+            "Karnataka",
+            "Kerala",
+            "Maharashtra"
+          ]
+        },
+        {
+          "id": "ally-8",
+          "alias": "Ally 8",
+          "groupKey": "Education",
+          "sweepState": "Bihar",
+          "targetSeats": 38,
+          "footprint": [
+            "Maharashtra",
+            "Goa",
+            "Gujarat",
+            "Madhya Pradesh",
+            "Karnataka",
+            "Chhattisgarh"
+          ]
+        },
+        {
+          "id": "ally-9",
+          "alias": "Ally 9",
+          "groupKey": "HindiHeartland",
+          "sweepState": "West Bengal",
+          "targetSeats": 39,
+          "footprint": [
+            "Uttar Pradesh",
+            "Uttarakhand",
+            "Bihar",
+            "Delhi",
+            "Haryana"
+          ]
+        },
+        {
+          "id": "ally-10",
+          "alias": "Ally 10",
+          "groupKey": "Manufacturing",
+          "sweepState": "Maharashtra",
+          "targetSeats": 40,
+          "footprint": [
+            "Bihar",
+            "Jharkhand",
+            "Uttar Pradesh",
+            "Odisha"
+          ]
+        }
+      ]
     }
   }
 }

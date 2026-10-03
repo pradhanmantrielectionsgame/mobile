@@ -126,6 +126,13 @@
   //                       The one dial that weakens the bot on purpose (group
   //                       capture snowballs otherwise). Only checked inside
   //                       smartGroupTarget+spreadInvest's live re-pick
+  //   chaseAllies(N)    - chase the N best-value allies (cheapest route per
+  //                       seat), accept any on offer, and never finish a leave
+  //                       agenda that would lose or lock one. Only in
+  //                       mobile/bot-bank.js's gen-4 experiment bots so far
+  //   takeAllies        - the lazy half of chaseAllies: no investment diverted,
+  //                       but accept any ally that comes on offer by accident
+  //                       and protect held allies' leave agendas
   function profileByKey(key) {
     return AI_PROFILES.filter(function (p) { return p.key === key; })[0] || null;
   }
@@ -389,6 +396,73 @@
     return best;
   }
 
+  // chaseAllies(N) profile flag: go after the N cheapest-per-seat allies still
+  // up for grabs. An ally's route is its group (every member state over the
+  // dominance threshold) OR its sweep state (100%) - whichever is cheaper to
+  // finish. Re-picked live, so an opponent claiming an ally rolls the bot onto
+  // the next one. Cost ignores per-tap decay, like costToThresholdCr: it only
+  // has to rank allies.
+  function allyRoute(game, a, playerKey) {
+    var pl = game.players[playerKey];
+    var members = game.states.filter(function (s) { return s.tags.indexOf(a.groupKey) !== -1; });
+    var groupCost = 0, groupIds = [], groupPer = {};
+    members.forEach(function (s) {
+      var c = costToThresholdCr(game, s, playerKey);
+      if (c > 0) { groupCost += c; groupIds.push(s.svgId); groupPer[s.svgId] = c; }
+    });
+    var sw = game.statesById[a.sweepSvgId];
+    var need = E.BPS - game.pop[sw.svgId][playerKey];
+    var boost = E.investmentBoostBps((pl.investmentTaps[sw.svgId] || 0) + 1, game.cfg.investment);
+    var sweepCost = need > 0 ? Math.ceil(need / boost) * E.investmentCostCr(sw.seats, game.cfg.investment) : 0;
+    if (groupCost <= sweepCost) return { cost: groupCost, svgIds: groupIds, perState: groupPer };
+    var sweepPer = {}; sweepPer[sw.svgId] = sweepCost;
+    return { cost: sweepCost, svgIds: [sw.svgId], perState: sweepPer };
+  }
+
+  // chaseAlliesSmart: the marginal price of a route is what it costs ON TOP of
+  // the group the bot is already paying for (states tagged with that group are
+  // spend it makes anyway). The ally is worth targetSeats at the bot's own
+  // exchange rate (crPerSeat, as in minAgendaTapSeats), halved for slice
+  // erosion and defection risk. Chase only a route that costs less than that,
+  // only one ally at a time, never one the opponent has already earned.
+  function smartChasedAlly(game, profile, playerKey, oppKey) {
+    var chased = pickBestValueGroup(game, playerKey, profile);
+    var crPerSeat = E.BPS * game.cfg.investment.costPerSeatCr / game.cfg.investment.boostStartBps;
+    var best = null, bestRatio = 0;
+    game.allies.forEach(function (a) {
+      if (a.owner || G().allyLocked(game, a, playerKey) || a.offered[oppKey]) return;
+      var r = allyRoute(game, a, playerKey);
+      if (r.cost <= 0) return;
+      var marginal = 0;
+      r.svgIds.forEach(function (id) {
+        var overlap = chased && game.statesById[id].tags.indexOf(chased.key) !== -1;
+        if (!overlap) marginal += r.perState[id];
+      });
+      var value = a.targetSeats * crPerSeat * 0.5;
+      if (marginal >= value) return;
+      var ratio = value / Math.max(marginal, 1);
+      if (ratio > bestRatio) { bestRatio = ratio; best = { ally: a, svgIds: r.svgIds, ratio: ratio }; }
+    });
+    return best ? [best] : [];
+  }
+
+  function chasedAllies(game, profile, playerKey) {
+    if (profile.chaseAlliesSmart && game.allies) return smartChasedAlly(game, profile, playerKey, playerKey === 'p1' ? 'p2' : 'p1');
+    if (!profile.chaseAllies || !game.allies) return [];
+    var pl = game.players[playerKey];
+    var phasesLeft = Math.max(0, game.cfg.totalPhases - game.phase);
+    var budget = pl.fundsCr + game.cfg.fundsRefreshPerPhaseCr * phasesLeft;
+    var cands = [];
+    game.allies.forEach(function (a) {
+      if (a.owner || G().allyLocked(game, a, playerKey)) return;
+      var r = allyRoute(game, a, playerKey);
+      if (r.cost <= 0 || r.cost > budget) return; // 0 = route already done (offer pending), too dear = skip
+      cands.push({ ally: a, svgIds: r.svgIds, ratio: a.targetSeats / r.cost });
+    });
+    cands.sort(function (x, y) { return y.ratio - x.ratio; });
+    return cands.slice(0, profile.chaseAllies);
+  }
+
   // Seats-per-crore is identical for every state, so the only real investment
   // lever is delivering the biggest boost per tap, i.e. tapping states whose
   // own glide path has not decayed yet, plus finishing a group that pays cash
@@ -465,9 +539,13 @@
     if (profile && profile.spreadInvest) {
       var chased = profile.smartGroupTarget ? pickBestValueGroup(game, playerKey, profile) : pl.aiTargetGroup;
       var chasedKey = chased ? chased.key : null;
+      var allyIds = {};
+      chasedAllies(game, profile, playerKey).forEach(function (c) { c.svgIds.forEach(function (id) { allyIds[id] = true; }); });
       var pick = null, pickScore = -Infinity;
       game.states.forEach(function (s) {
         var sc = scoreInvestStrong(game, pl, s, playerKey, oppKey, chasedKey);
+        // same weight as a chased group's laggards; the smart rule uses a gentler 2x
+        if (sc !== null && allyIds[s.svgId]) sc *= profile.chaseAlliesSmart ? 2 : 3;
         if (sc !== null && sc > pickScore) { pickScore = sc; pick = s; }
       });
       return pick;
@@ -560,6 +638,21 @@
       if (G().activateNationwideRally(game, playerKey).ok) return { type: 'nationwide', svgId: null, costCr: null };
     }
 
+    // chaseAllies: take any ally on offer at once (free, and the opponent can
+    // claim it). Then never FINISH the agenda that would make a held ally leave,
+    // or lock out one we are still chasing (completing it first locks it for good).
+    var keepAgendas = {};
+    if ((profile.chaseAllies || profile.chaseAlliesSmart || profile.takeAllies) && game.allies) {
+      game.allies.forEach(function (a) {
+        if (G().allyCanAccept(game, a, playerKey) && G().acceptAlly(game, playerKey, a.id).ok) {
+          keepAgendas[a.leaveAgenda[playerKey]] = true;
+        }
+      });
+      if (Object.keys(keepAgendas).length) return { type: 'ally', svgId: null, costCr: null };
+      game.allies.forEach(function (a) { if (a.owner === playerKey) keepAgendas[a.leaveAgenda[playerKey]] = true; });
+      chasedAllies(game, profile, playerKey).forEach(function (c) { keepAgendas[c.ally.leaveAgenda[playerKey]] = true; });
+    }
+
     var agendaValue = profile.seatRankedAgendas
       ? function (n) { return agendaTapValueSeats(game, playerKey, n); }
       : function (n) { return G().totalNetEffect(game, n); };
@@ -570,6 +663,7 @@
       var tapsThisPhase = pl.aiAgendaTapsThisPhase[name] || 0;
       if (tapsThisPhase >= profile.agendaTapCapPerPolicyPerPhase) continue;
       if ((pl.agendaProgress[name] || 0) >= game.cfg.agenda.tapsToComplete) continue;
+      if (keepAgendas[name] && (pl.agendaProgress[name] || 0) + 1 >= game.cfg.agenda.tapsToComplete) continue;
       if (pl.fundsCr < game.cfg.agenda.costPerTapCr) continue;
       if (profile.seatRankedAgendas && agendaValue(name) < minAgendaTapSeats(game)) continue;
       if (G().tapAgenda(game, playerKey, name).ok) {

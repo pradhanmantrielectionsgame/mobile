@@ -358,7 +358,7 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
 /* The inner rule: a hairline set in from each panel's own border, the same
    brass the ballot card and results seal already use. Decoration only, so it
    must never eat a tap. */
-.player-strip::after,.ne-actions::after,.se-actions::after,.ut-bar::after{
+.player-strip::after,.ne-actions::after,.se-actions::after,.ally-slot::after,.ut-bar::after{
   content:''; position:absolute; inset:2px; pointer-events:none;
   border: 1px solid rgba(156,122,30,.34);
   border-radius: calc(var(--radius-md) - 1px); }
@@ -429,7 +429,64 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
   border: 1px solid var(--tray-rule); border-radius:var(--radius-md);
   box-shadow: inset 0 1px 0 rgba(255,255,255,.95), var(--shadow-sm);
   display:flex; flex-direction:column; align-items:center; padding: 0.3rem; }
-.se-actions{ position:absolute; bottom: 5.625rem; right: 0.35rem; z-index:7;
+/* The RALLY tray and the ally cards share one bottom-right dock: cards stack
+   above the tray, so a variable card count never needs a measured offset. */
+.right-dock{ position:absolute; bottom: 0.35rem; right: 0.35rem; z-index:7; width: calc(5.8rem + 2px);
+  display:flex; flex-direction:column; align-items:stretch; gap: 0.3rem; }
+.ally-slot{ position:relative; padding: 0.2rem; align-items:stretch; font-size: var(--fs-1);
+  background:linear-gradient(180deg,var(--surface) 0%, var(--tray) 55%, var(--paper-dim) 100%);
+  border: 1px solid var(--tray-rule); border-radius:var(--radius-md);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.95), var(--shadow-sm); }
+.ally-slot[hidden]{ display:none; }
+.ally-slot.ready{ border-color:var(--saffron); box-shadow: 0 0 0 1px var(--saffron), var(--shadow-sm); }
+.ally-tabs[hidden]{ display:none; }
+.ally-tabs{ display:flex; gap: 0.05rem; margin: 0 -0.2rem 0.2rem; padding: 0.15rem 0.1rem 0; border-bottom: 1px solid var(--tray-rule); align-items:stretch; }
+.ally-tab{ flex:1 1 0; min-width:0; text-align:center; display:flex; flex-direction:column; justify-content:center; padding: 0.15rem 0.1rem 0.1rem; line-height:1.1; overflow:hidden; border: 1px solid var(--tray-rule); border-bottom:0; border-radius: 0.3rem 0.3rem 0 0;
+  background:var(--paper-dim); font-weight:800; color:var(--ink-soft); white-space:nowrap; position:relative; top:1px; cursor:pointer; }
+.ally-tab.on{ background:var(--surface); color:var(--ink); box-shadow: inset 0 2px 0 var(--saffron); }
+.ally-tab.mine{ color:#fff; background:var(--p1); border-color:var(--p1); }
+.ally-tab.mine.on{ background:var(--surface); color:var(--p1); box-shadow: inset 0 2px 0 var(--p1); }
+.ally-tab.theirs{ color:#fff; background:var(--p2); border-color:var(--p2); }
+.ally-tab.theirs.on{ background:var(--surface); color:var(--p2); box-shadow: inset 0 2px 0 var(--p2); }
+.ally-tab.alert:not(.on){ box-shadow: inset 0 2px 0 var(--saffron); }
+.ally-tab.locked{ opacity:.45; border-style:dashed; cursor:default; }
+.ally-tab .n{ font-variant-numeric:tabular-nums; display:block; font-weight:700; }
+.ally-st{ display:flex; align-items:center; gap: 0.2rem; margin-top: 0.15rem; font-weight:700; }
+.ally-st b{ width: 0.95rem; flex:none; font-weight:800; }
+.ally-st .bar{ flex:1; height: 0.4rem; border-radius: 0.2rem; background:var(--paper-dim); overflow:hidden; }
+.ally-st .bar i{ display:block; height:100%; background:repeating-linear-gradient(45deg,var(--p1) 0 3px,rgba(255,255,255,.6) 3px 6px); }
+.ally-st span{ width: 1.3rem; text-align:right; font-variant-numeric:tabular-nums; flex:none; }
+.ally-reward{ margin: 0.1rem 0 0.1rem; text-align:center; font-weight:800; font-size: var(--fs-3); line-height:1; color:var(--brass); font-variant-numeric:tabular-nums; }
+.ally-reward small{ font-size: var(--fs-1); color:var(--ink-soft); margin-left: 0.15rem; }
+.ally-quest{ display:flex; align-items:center; gap: 0.25rem; padding: 0.15rem 0.25rem; border: 1px solid var(--tray-rule); border-radius:var(--radius-sm); background:var(--surface); line-height:1.1; }
+.ally-quest.done{ border-color:var(--gain); }
+.ally-quest.fade{ opacity:.5; }
+.ally-quest .qi{ flex:none; width: 0.9rem; text-align:center; font-size: var(--fs-3); }
+.ally-quest .qt{ font-weight:800; min-width:0; }
+.ally-quest .qt small{ display:inline; margin-right: 0.2rem; font-size: var(--fs-1); font-weight:700; color:var(--ink-soft); letter-spacing:.02em; }
+.ally-quest .qt{ flex:1; }
+.ally-quest .it{ display:flex; align-items:center; gap: 0.2rem; margin-top: 0.1rem; }
+.ally-quest .ico{ flex:none; width: 0.9rem; text-align:center; font-size: var(--fs-3); }
+.ally-quest .orw{ display:block; margin: 0.05rem 0 0 1.1rem; }
+.ally-or{ display:flex; align-items:center; gap: 0.25rem; margin: 0.08rem 0; font-weight:800; line-height:1; color:var(--ink-soft); }
+.ally-or::before,.ally-or::after{ content:''; flex:1; height:1px; background:var(--tray-rule); }
+/* Flip card: front = how to win the ally, back = what makes it leave. Both
+   faces share one grid cell so the card is as tall as the taller face. */
+.ally-flip{ perspective: 600px; cursor:pointer; }
+.ally-flip-inner{ display:grid; grid-template-columns:minmax(0,1fr); transition: transform .45s; transform-style: preserve-3d; }
+.ally-flip.flipped .ally-flip-inner{ transform: rotateY(180deg); }
+.ally-face{ grid-area: 1 / 1; position:relative; min-width:0; overflow-wrap:anywhere; hyphens:auto; -webkit-hyphens:auto; -webkit-backface-visibility:hidden; backface-visibility:hidden;
+  padding: 0.2rem; border: 1px solid var(--tray-rule); border-radius:var(--radius-sm); background:var(--surface); }
+.ally-face.back{ transform: rotateY(180deg); background:var(--paper-dim); }
+.ally-cue{ position:absolute; top: 0.1rem; right: 0.2rem; font-size: var(--fs-2); color:var(--ink-soft); line-height:1; }
+@media (prefers-reduced-motion: reduce){ .ally-flip-inner{ transition:none; } }
+.ally-done{ text-align:center; color:var(--ink-soft); padding: 0.25rem 0; font-weight:700; }
+.ally-btns{ display:flex; gap: 0.2rem; margin-top: 0.2rem; }
+.ally-btns[hidden]{ display:none; }
+.ally-btns button{ flex:1; padding: 0.1rem 0; border-radius:var(--radius-sm); border: 1.5px solid var(--ink); background:var(--surface); font-weight:800; font-size: var(--fs-1); }
+.ally-btns button.yes{ background:var(--gain); color:#fff; border-color:var(--gain); }
+.ally-btns button:disabled{ opacity:.35; }
+.se-actions{ position:relative;
   background:linear-gradient(180deg,var(--surface) 0%, var(--tray) 55%, var(--paper-dim) 100%);
   border: 1px solid var(--tray-rule); border-radius:var(--radius-md);
   box-shadow: inset 0 1px 0 rgba(255,255,255,.95), var(--shadow-sm);
@@ -449,7 +506,8 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
    buttons themselves stay a fixed, modest size and spread out across that
    width (justify-content:space-between) rather than stretching to fill it
    — flex:1+aspect-ratio:1 made them balloon into oversized squares. */
-.ut-bar{ position:absolute; left: 0.35rem; right: 0.35rem; bottom: 0.35rem; z-index:7;
+/* right: leaves the bottom-right corner to .right-dock (ally + rally panels) */
+.ut-bar{ position:absolute; left: 0.35rem; right: 6.6rem; bottom: 0.35rem; z-index:7;
   display:flex; flex-direction:row; align-items:center; justify-content:space-between; padding: 0.25rem 0.35rem;
   background:linear-gradient(180deg,var(--surface) 0%, var(--tray) 55%, var(--paper-dim) 100%);
   border: 1px solid var(--tray-rule); border-radius:var(--radius-md);
@@ -658,6 +716,9 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
 .vs-label.p1{ color:var(--p1); } .vs-label.p2{ color:var(--p2); }
 .vs-track{ flex:1 1 auto; display:flex; height: 0.675rem; border: 2px solid var(--line); border-radius:var(--radius-sm); overflow:hidden; background:var(--track); }
 .vs-seg.p1{ background:var(--p1); } .vs-seg.p2{ background:var(--p2); } .vs-seg.oth{ background:transparent; }
+/* A claimed ally's slice: the owner's colour, hatched so it reads as borrowed support. */
+.vs-seg.ally1{ background:repeating-linear-gradient(45deg,var(--p1) 0 3px,rgba(255,255,255,.6) 3px 6px); }
+.vs-seg.ally2{ background:repeating-linear-gradient(45deg,var(--p2) 0 3px,rgba(255,255,255,.6) 3px 6px); }
 
 /* Group overview mode — takes over the same info-panel real estate as the
    single-state card (cardGroups + vs-bar) when a group chip is active. */
@@ -1841,6 +1902,13 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
       <span class="action-block-label">AGENDA</span>
       <div class="action-group" id="agendaTray"><!-- 4 buttons, populated per politician by main.js --></div>
     </div>
+    <div class="right-dock">
+    <div class="ally-slot action-block" id="allySlot">
+      <span class="action-block-label">ALLIES</span>
+      <div class="ally-tabs" id="allyTabs"></div>
+      <div id="allyCards"></div>
+      <div class="ally-btns" id="allyBtns"><button class="yes" id="allyAcceptBtn">Accept</button></div>
+    </div>
     <div class="se-actions action-block">
       <span class="action-block-label">RALLY</span>
       <div class="action-group" id="tokenTray">
@@ -1848,6 +1916,7 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
         <button class="action-btn" id="nationwideBtn" title="Nationwide Rally"><svg class="flag-icon" viewBox="0 0 36 24" aria-hidden="true"><rect width="36" height="8" fill="#FF9933"/><rect width="36" height="8" y="8" fill="#FAFAFA"/><rect width="36" height="8" y="16" fill="#138808"/><g fill="none" stroke="#0F1E6E" stroke-width="0.9"><circle cx="18" cy="12" r="4.2"/><circle cx="18" cy="12" r="0.6" fill="#0F1E6E" stroke="none"/><path d="M18 7.8V16.2M13.8 12H22.2M15.03 9.03L20.97 14.97M20.97 9.03L15.03 14.97"/></g></svg><span class="badge" id="nationwideBadge">5/12</span></button>
         <button class="action-btn action-btn-wide" id="specialBtn" title="Special Powerup">⭐<span class="special-label">Special Ability</span><span class="badge" id="specialBadge">5/6</span></button>
       </div>
+    </div>
     </div>
 
     <div class="ut-bar">
@@ -1877,7 +1946,7 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
     <div class="info-groups" id="cardGroups"></div>
     <div class="vs-bar" id="cardVsBar">
       <span class="vs-label p1"><span id="cardP1Symbol">🪷</span> <span id="cardP1Pct">—</span></span>
-      <div class="vs-track"><div class="vs-seg p1" id="cardP1Fill"></div><div class="vs-seg oth" id="cardOthFill"></div><div class="vs-seg p2" id="cardP2Fill"></div></div>
+      <div class="vs-track"><div class="vs-seg p1" id="cardP1Fill"></div><div class="vs-seg ally1" id="cardA1Fill"></div><div class="vs-seg oth" id="cardOthFill"></div><div class="vs-seg ally2" id="cardA2Fill"></div><div class="vs-seg p2" id="cardP2Fill"></div></div>
       <span class="vs-label p2"><span id="cardP2Pct">—</span> <span id="cardP2Symbol">✋</span></span>
     </div>
   </div>
