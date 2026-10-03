@@ -374,7 +374,7 @@
   // so total seats stay 543 and both sides can't both cross 272 on allies.
   // Per footprint state, what the ally holds, split by where it came from:
   //  - its base slice, from the undecided only (targetSeats' worth, as above)
-  //  - its accumulated lift (a.bonusBps[state], +1% a phase while allied),
+  //  - its accumulated lift (a.bonusBps[state], +2% a phase while allied),
   //    drawn proportionally from EVERYONE left in the state: p1, p2 (the owner
   //    included) and the undecided, so it never runs dry with the undecided
   //    pool. Integer bps, remainder to the bucket with the most left.

@@ -112,7 +112,7 @@
     },
     "allies": {
       "drawCount": 3,
-      "growthPerPhaseBps": 100,
+      "growthPerPhaseBps": 200,
       "list": [
         {
           "id": "ally-1",
