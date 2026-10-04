@@ -295,8 +295,25 @@
       }
       shuffled[pk] = names;
     });
+    // An agenda both politicians hold must make an ally leave for BOTH or for
+    // neither. The anchor (lower politician id, so a role-swapped guest game
+    // agrees) picks freely; the other side reuses any pick it also holds and
+    // fills the rest from names the anchor does not hold at all. That pool is
+    // always big enough: the anchor omits one of its four, so at most one
+    // shared name goes unused.
+    var anchor = game.players.p1.politician.id <= game.players.p2.politician.id ? 'p1' : 'p2';
+    var follower = anchor === 'p1' ? 'p2' : 'p1';
+    var anchorNames = shuffled[anchor].slice(0, 3);
+    var held = {};
+    shuffled[anchor].forEach(function (n) { held[n] = true; });
+    var followerHas = {};
+    shuffled[follower].forEach(function (n) { followerHas[n] = true; });
+    var spare = shuffled[follower].filter(function (n) { return !held[n]; });
+    var followerPick = anchorNames.map(function (n) { return followerHas[n] ? n : spare.shift(); });
     game.allies = chosen.map(function (a, idx) {
-      var leave = { p1: shuffled.p1[idx % 4], p2: shuffled.p2[idx % 4] };
+      var leave = {};
+      leave[anchor] = anchorNames[idx % 3];
+      leave[follower] = followerPick[idx % 3];
       return {
         id: a.id, alias: a.alias, groupKey: a.groupKey, sweepSvgId: idByName[a.sweepState],
         targetSeats: a.targetSeats, leaveAgenda: leave,

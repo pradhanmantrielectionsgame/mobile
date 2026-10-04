@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var E = window.PMEEngine, G = window.PMEGame;
-  var GAME_VERSION = '3.0.1';
+  var GAME_VERSION = '3.1.0';
   // Canonical public URL for the end-of-game "share result" link — hardcoded,
   // not location.href, so the shared link is always the clean site root and
   // never a /index.html deep link, a ?query string, or a Capacitor
@@ -1492,6 +1492,45 @@
     }, SPARKLE_MS + SPARKLE_STAGGER_MS + 100);
   }
 
+  // ---- rally fireworks ---------------------------------------------------
+  // Three small bursts, staggered, at random points inside the rallied state.
+  // Web Animations (transform/opacity only); particles are removed when done.
+  // Math.random on purpose, like the wave: decoration must not spend game.rng.
+  function spawnStateFireworks(svgId, pk, fallbackPt) {
+    var shape = document.getElementById(svgId), layer = $('fxLayer');
+    var spots = [];
+    var ok = shape && shape.getBBox && shape.getClientRects().length && shape.getScreenCTM();
+    var span = 24;
+    if (ok) {
+      var bb = shape.getBBox(), ctm = shape.getScreenCTM(), box = shape.getBoundingClientRect();
+      span = Math.min(box.width, box.height);
+      for (var t = 0; t < 60 && spots.length < 3; t++) {
+        var pt = new DOMPoint(bb.x + Math.random() * bb.width, bb.y + Math.random() * bb.height);
+        try { if (shape.isPointInFill && !shape.isPointInFill(pt)) continue; } catch (e) { /* box scatter */ }
+        var at = pt.matrixTransform(ctm); spots.push({ x: at.x, y: at.y });
+      }
+    }
+    if (!spots.length && fallbackPt) spots.push({ x: fallbackPt.x, y: fallbackPt.y }); // small UTs: burst on their button
+    var reach = Math.max(10, Math.min(34, span * 0.55));
+    spots.forEach(function (s, bi) {
+      setTimeout(function () {
+        for (var i = 0; i < 9; i++) {
+          var p = document.createElement('i');
+          p.className = 'fx-spark' + (pk === 'p2' ? ' p2' : '') + (i % 3 === 0 ? ' w' : '');
+          p.style.left = s.x + 'px'; p.style.top = s.y + 'px';
+          layer.appendChild(p);
+          var a = (i / 9) * Math.PI * 2 + Math.random() * 0.4, d = reach * (0.7 + Math.random() * 0.5);
+          var anim = p.animate([
+            { transform: 'translate(-50%,-50%) scale(1)', opacity: 1 },
+            { transform: 'translate(calc(-50% + ' + (Math.cos(a) * d).toFixed(1) + 'px), calc(-50% + ' + (Math.sin(a) * d).toFixed(1) + 'px)) scale(.3)', opacity: 0 }
+          ], { duration: 650, easing: 'cubic-bezier(.1,.7,.3,1)' });
+          anim.onfinish = (function (node) { return function () { node.remove(); }; })(p);
+          setTimeout((function (node) { return function () { node.remove(); }; })(p), 900); // hidden tabs never fire onfinish
+        }
+      }, bi * 260);
+    });
+  }
+
   // ---- rally shimmer -----------------------------------------------------
   // A band of the rallying player's colour sweeps across the state left to
   // right and back, stadium-wave style. It has to be a gradient living inside
@@ -1512,12 +1551,12 @@
   // The angle uses Math.random() deliberately, NOT game.rng: the seeded
   // generator drives replay determinism, and spending a draw on a decoration
   // would desync every recorded replay.
-  function buildRallyWave(ownerSvg, shape, color) {
+  function buildRallyWave(ownerSvg, shape, color, angle) {
     var bb = shape.getBBox();
     if (!bb.width || !bb.height) return null;
     var defs = ownerSvg.querySelector('defs');
     if (!defs) defs = ownerSvg.insertBefore(document.createElementNS(SVG_NS, 'defs'), ownerSvg.firstChild);
-    var ang = Math.random() * Math.PI * 2;
+    var ang = angle == null ? Math.random() * Math.PI * 2 : angle;
     var dx = Math.cos(ang), dy = Math.sin(ang);
     var cx = bb.x + bb.width / 2, cy = bb.y + bb.height / 2;
     // Half-diagonal: the only radius that spans the shape at EVERY angle, so a
@@ -1570,7 +1609,16 @@
   // Clones the map shape rather than styling the live one: renderAll() owns
   // that path's fill and rewrites it every render, so animating it directly
   // would fight the game's own colouring.
-  function spawnStateShimmer(svgId, colorClass) {
+  // opts (all optional): color overrides the player colour (a group capture
+  // sweeps WHITE, since the states are already the capturer's colour), angle
+  // fixes the direction, delay staggers the start.
+  function spawnStateShimmer(svgId, colorClass, opts) {
+    opts = opts || {};
+    if (opts.delay) {
+      var later = { color: opts.color, angle: opts.angle };
+      setTimeout(function () { spawnStateShimmer(svgId, colorClass, later); }, opts.delay);
+      return;
+    }
     var src = document.getElementById(svgId);
     // Small UTs are display:none on the map (played via the cluster button
     // instead), so there's no shape to light — skip rather than clone a
@@ -1584,9 +1632,9 @@
     var grad = null;
     try {
       // Read the live token — player colours are per-politician, not fixed.
-      var color = getComputedStyle(document.documentElement)
+      var color = opts.color || getComputedStyle(document.documentElement)
         .getPropertyValue(pk === 'p2' ? '--p2' : '--p1').trim();
-      grad = buildRallyWave(src.ownerSVGElement, src, color);
+      grad = buildRallyWave(src.ownerSVGElement, src, color, opts.angle);
       // Inline, not an attribute: the CSS flat-colour fallback below would
       // outrank an attribute, and this has to win when the gradient exists.
       if (grad) clone.style.fill = 'url(#' + grad.id + ')';
@@ -1985,6 +2033,31 @@
     return pts;
   }
 
+  // Mixes a #hex / rgb() colour toward white; falls back to the input if unparsable.
+  function lightenColor(c, amt) {
+    var rgb = null, h = /^#([0-9a-f]{6})$/i.exec(c);
+    if (h) rgb = [0, 2, 4].map(function (i) { return parseInt(h[1].substr(i, 2), 16); });
+    else { var r = /rgba?\((\d+)[ ,]+(\d+)[ ,]+(\d+)/.exec(c); if (r) rgb = [+r[1], +r[2], +r[3]]; }
+    if (!rgb) return c;
+    return 'rgb(' + rgb.map(function (v) { return Math.round(v + (255 - v) * amt); }).join(',') + ')';
+  }
+  // Group captured: a wave in a lighter tint of the capturer's colour rolls left to right across the member states
+  // (each state's own band, started in screen-x order so it reads as one wave).
+  function pulseGroupStates(ids, pk) {
+    var rows = [];
+    ids.forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el && el.getClientRects().length) rows.push({ id: id, x: el.getBoundingClientRect().left });
+    });
+    rows.sort(function (p, q) { return p.x - q.x; });
+    var step = Math.min(90, 800 / Math.max(1, rows.length));
+    var base = getComputedStyle(document.documentElement).getPropertyValue(pk === 'p2' ? '--p2' : '--p1').trim();
+    var tint = lightenColor(base, 0.55);
+    rows.forEach(function (r, i) {
+      spawnStateShimmer(r.id, pk, { color: tint, angle: 0, delay: Math.round(i * step) });
+    });
+  }
+
   // Shared by every payout that should feel like money arriving: regional
   // dominance, a clean sweep, and the phase-start income.
   function spawnPayoutCoins(pk, pts, payoutCr) {
@@ -2031,6 +2104,7 @@
         if (st.tags.indexOf(gkey) !== -1) ids.push(st.svgId);
       });
       spawnPayoutCoins(pk, mapPointsFor(ids), E.dominancePayoutCr(g, game.states, game.cfg.regionalDominance));
+      pulseGroupStates(ids, pk);
     });
     lastDominanceHeld = Object.assign({}, held);
 
@@ -3295,7 +3369,7 @@
       if (el && !el.getClientRects().length) el = $('utsBtn');
       var pt = viewportPoint(el);
       if (el && el.animate) el.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.03)' }, { transform: 'scale(1)' }], { duration: 220 });
-      if (action.type === 'rally') { spawnRallyBurst(pt.x, pt.y, pk); spawnStateShimmer(action.svgId, pk); }
+      if (action.type === 'rally') { spawnRallyBurst(pt.x, pt.y, pk); spawnStateFireworks(action.svgId, pk, pt); }
       else spawnFlash(pt.x, pt.y, pk);
       if (action.costCr) spawnMoneyText(pt.x, pt.y, action.costCr, -1, pk);
     }
@@ -3593,15 +3667,16 @@
     maybeRecordHighScore();
     updateLadderAfterMatch();
     var seats = game.finalSeats;
-    var seal, headline, sub;
+    var seal, headline, sub, atVerdict = [];
     if (game.winner === 'p1') {
       seal = '🏆'; headline = allySeatsBy('p1') > 0 ? 'Allied victory' : 'You won the election'; sub = 'You crossed 272 seats.';
       if (!game.friendMatch) recordWin(game.players.p1.politician.id);
       if (!game.friendMatch && unlockPolitician(game.players.p2.politician.id)) {
         sub += ' 🔓 ' + game.players.p2.politician.name + ' unlocked!';
-        spawnUnlockCelebration(game.players.p2.politician);
-        playSound('fanfare');
+        var unlocked = game.players.p2.politician;
+        atVerdict.push(function () { spawnUnlockCelebration(unlocked); });
       }
+      atVerdict.push(function () { playSound('fanfare'); });
     }
     else if (game.hungParliament) {
       seal = '⚖️';
@@ -3611,22 +3686,88 @@
     else {
       seal = '💔'; headline = 'You lost the election';
       sub = game.players.p2.politician.name + ' crossed 272 seats' + (allySeatsBy('p2') > 0 ? ' with allied support.' : '.');
+      atVerdict.push(function () { playSound('invalid_action'); });
     }
     // Re-trigger the slam animation on every win (the node is reused across
     // matches, so the animation only replays after a reflow).
     var stamp = $('declareStamp');
     stamp.hidden = game.winner !== 'p1';
-    if (!stamp.hidden) { stamp.style.animation = 'none'; void stamp.offsetWidth; stamp.style.animation = ''; }
     $('declareSeal').textContent = seal;
     $('endHeadline').textContent = headline;
     $('endSub').textContent = sub;
     renderEndWinnerPortrait();
     renderEndLedger(seats);
-    renderParliamentChart(seats);
     renderEndStats();
     $('playAgainBtn').style.background = COLORS.p1;
-    $('endOverlay').hidden = false;
+    // Hold everything back, then fill the chart seat by seat (see runEndReveal).
+    var ov = $('endOverlay');
+    ov.classList.add('revealing');
+    ov.classList.remove('r-verdict', 'r-details');
+    $('endCounting').textContent = 'Counting votes…';
+    ov.hidden = false;
     sounds.bg_music.pause();
+    renderParliamentChart(seats, function (circles, colors) { runEndReveal(circles, colors, atVerdict); });
+  }
+
+  // The result as a staged reveal: seats fill the hemicycle in order with a
+  // live tally, then the verdict (headline, portrait, stamp, sound) lands, then
+  // the ledger/stats/buttons. Tap anywhere to skip. The footer stays
+  // untappable until the end so Share can never screenshot a half-revealed
+  // card. Purely visual: game.winner is already settled before this runs.
+  var endRevealTimers = [];
+  function runEndReveal(circles, colors, atVerdict) {
+    var ov = $('endOverlay'), stamp = $('declareStamp');
+    function clearTimers() {
+      endRevealTimers.forEach(function (t) { clearTimeout(t); clearInterval(t); });
+      endRevealTimers = [];
+    }
+    function restartStamp() { stamp.style.animation = 'none'; void stamp.offsetWidth; stamp.style.animation = ''; }
+    clearTimers();
+    var n = circles.length, i = 0, c1 = 0, c2 = 0, done = false;
+    function tally() { $('endCounting').innerHTML = '<b class="p1">' + c1 + '</b> – <b class="p2">' + c2 + '</b>'; }
+    function details() {
+      ov.classList.add('r-details');
+      $('endCounting').textContent = '272 seats for a majority';
+    }
+    function verdict() {
+      ov.classList.add('r-verdict');
+      restartStamp();
+      atVerdict.forEach(function (f) { f(); });
+      endRevealTimers.push(setTimeout(details, 900));
+    }
+    function skip() {
+      if (done) return;
+      done = true;
+      clearTimers();
+      ov.removeEventListener('pointerdown', skip);
+      for (; i < n; i++) circles[i].style.fill = colors[i];
+      ov.classList.add('r-verdict', 'r-details');
+      $('endCounting').textContent = '272 seats for a majority';
+      restartStamp();
+      atVerdict.forEach(function (f) { f(); });
+    }
+    circles.forEach(function (c) { c.style.fill = '#E3DFD0'; });
+    tally();
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { skip(); return; }
+    ov.addEventListener('pointerdown', skip);
+    var step = Math.ceil(n / 50);
+    var tick = setInterval(function () {
+      for (var k = 0; k < step && i < n; k++, i++) {
+        circles[i].style.fill = colors[i];
+        if (colors[i] === COLORS.p1) c1++; else if (colors[i] === COLORS.p2) c2++;
+      }
+      tally();
+      if (i >= n) {
+        clearInterval(tick);
+        endRevealTimers.push(setTimeout(function () {
+          if (done) return;
+          done = true;
+          ov.removeEventListener('pointerdown', skip);
+          verdict();
+        }, 500));
+      }
+    }, 45);
+    endRevealTimers.push(tick);
   }
 
   // Framed as a challenge to a friend, not a stats dump — the point is to
@@ -3850,7 +3991,7 @@
   // approximates a clean left/center/right hemicycle split because that
   // SVG's seats are emitted in the same angular sweep order.
   var parliamentSvgText = null;
-  function renderParliamentChart(seats) {
+  function renderParliamentChart(seats, onPainted) {
     var container = $('endParliamentChart');
     function paint(svgText) {
       parliamentSvgText = svgText;
@@ -3869,10 +4010,11 @@
         { n: seats.others, color: COLORS.others },
         { n: seats.p2, color: COLORS.p2 }
       ];
-      var i = 0;
+      var i = 0, colors = [];
       blocks.forEach(function (b) {
-        for (var k = 0; k < b.n && i < circles.length; k++, i++) circles[i].style.fill = b.color;
+        for (var k = 0; k < b.n && i < circles.length; k++, i++) { circles[i].style.fill = b.color; colors[i] = b.color; }
       });
+      if (onPainted) onPainted(circles, colors);
     }
     if (parliamentSvgText) { paint(parliamentSvgText); return; }
     fetch('assets/icons/Parliament_diagram.svg')
@@ -4347,8 +4489,13 @@
 
   function renderAgendas() {
     var policies = game.players.p1.politician.policies;
+    // "Safe" = none of the allies still in play would leave if you completed it.
+    var risky = {};
+    (game.allies || []).forEach(function (a) { if (a.owner !== 'p2') risky[a.leaveAgenda.p1] = true; });
     policies.forEach(function (policy) {
       var name = policy.name, safeId = 'agenda' + name.replace(/[^a-zA-Z0-9]/g, '');
+      var safeEl = $(safeId);
+      if (safeEl) safeEl.classList.toggle('agenda-safe', !!game.allies && game.allies.length > 0 && !tutorialMode && !risky[name]);
       var taps = game.players.p1.agendaProgress[name] || 0;
       var done = taps >= game.cfg.agenda.tapsToComplete;
       var badgeEl = $(safeId + 'Badge'), btnEl = $(safeId), barEl = $(safeId + 'Bar');
@@ -4808,6 +4955,15 @@
       }
     });
 
+    // An ally that has just become acceptable pulls its tab open, so Accept is
+    // in front of you without hunting. Only on the false->true flip, so you can
+    // still browse the other tabs afterwards.
+    allyUi.ready = allyUi.ready || {};
+    game.allies.forEach(function (x) {
+      var r = G.allyCanAccept(game, x, 'p1');
+      if (r && !allyUi.ready[x.id]) allyUi.tab = x.id;
+      allyUi.ready[x.id] = r;
+    });
     var seatsBy = G.allySeatsByAlly(game);
     var sel = game.allies.filter(function (x) { return x.id === allyUi.tab; })[0] || game.allies[0];
     allyUi.tab = sel.id;

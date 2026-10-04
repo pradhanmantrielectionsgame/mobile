@@ -556,6 +556,8 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
    money or not, and only said so in a toast after the tap. */
 .uts-btn.cant-afford{ opacity:.45; filter:grayscale(1); box-shadow:none; }
 .action-btn.used .badge{ background:var(--ink-faint); }
+/* The one agenda no ally cares about: completing it can't make anyone leave. */
+.action-btn.agenda-safe{ border-color:var(--gain); box-shadow: var(--shadow-md), 0 0 0 2px var(--gain); }
 .action-btn.agenda-done{ opacity:.5; }
 .action-btn.agenda-done .badge{ background:var(--stamp); }
 @keyframes craft-pulse{
@@ -892,6 +894,20 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
   100%{ transform: scale(1) rotate(-14deg); opacity:.88; }
 }
 @media (prefers-reduced-motion: reduce){ .declare-stamp{ animation:none; transform: rotate(-14deg); } }
+/* ---- end-of-game reveal (runEndReveal in main.js): everything but the chart is
+   held back with opacity, so the card keeps its full size, then the verdict
+   and the details fade in. ---- */
+.end-counting{ font-family:var(--font-display); font-weight:700; font-size: var(--fs-4); color:var(--ink-soft);
+  min-height:1.5em; margin: 0.25rem 0 0.1rem; font-variant-numeric:tabular-nums; }
+.end-counting b.p1{ color:var(--p1); } .end-counting b.p2{ color:var(--p2); }
+.end-overlay .declare-crest, .end-overlay .headline, .end-overlay .sub,
+.end-overlay .declare-ledger, .end-overlay .declare-stats, .end-overlay .declare-url, .end-overlay .declare-footer{
+  transition: opacity .5s ease, transform .5s ease; }
+.end-overlay.revealing .declare-crest, .end-overlay.revealing .headline, .end-overlay.revealing .sub{ opacity:0; transform: translateY(0.5rem) scale(.96); }
+.end-overlay.revealing.r-verdict .declare-crest, .end-overlay.revealing.r-verdict .headline, .end-overlay.revealing.r-verdict .sub{ opacity:1; transform:none; }
+.end-overlay.revealing .declare-ledger, .end-overlay.revealing .declare-stats, .end-overlay.revealing .declare-url, .end-overlay.revealing .declare-footer{ opacity:0; pointer-events:none; }
+.end-overlay.revealing.r-details .declare-ledger, .end-overlay.revealing.r-details .declare-stats, .end-overlay.revealing.r-details .declare-url, .end-overlay.revealing.r-details .declare-footer{ opacity:1; pointer-events:auto; }
+.end-overlay.revealing:not(.r-verdict) .declare-stamp{ visibility:hidden; }
 .declare-crest{ display:flex; flex-direction:row; align-items:center; justify-content:center; gap: 0.9rem; margin-top: 0.6rem; }
 .declare-seal{ width: 3.75rem; height: 3.75rem; border-radius:50%; background:var(--ink); border: 2px solid #C9A227;
   display:flex; align-items:center; justify-content:center; font-size: 1.9rem; box-shadow: 0 0 0 2px rgba(0,0,0,.12); flex:0 0 auto; }
@@ -1217,6 +1233,11 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
   opacity:0; will-change:transform,opacity;
   animation:fx-sparkle-pop 1.4s ease-out both; }
 .fx-sparkle.p2{ color:var(--p2); }
+/* Rally fireworks: one particle of a burst; main.js animates it outward. */
+.fx-spark{ position:absolute; display:block; width:4px; height:4px; border-radius:50%;
+  color:var(--p1); background:currentColor; box-shadow:0 0 5px 1px currentColor; will-change:transform,opacity; }
+.fx-spark.p2{ color:var(--p2); }
+.fx-spark.w{ background:#fff; }
 @keyframes fx-sparkle-pop{
   0%{ opacity:0; transform:translate(-50%,-50%) scale(0) rotate(0deg); }
   25%{ opacity:1; transform:translate(-50%,-50%) scale(1.15) rotate(35deg); }
@@ -1622,6 +1643,7 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
     </div>
     <div class="headline" id="endHeadline">—</div>
     <div class="sub" id="endSub">—</div>
+    <div class="end-counting" id="endCounting"></div>
     <div class="end-parliament" id="endParliamentChart"></div>
     <div class="declare-ledger" id="endSeats"></div>
     <div class="declare-stats" id="endStats"></div>
