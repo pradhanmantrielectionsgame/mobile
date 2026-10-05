@@ -2593,8 +2593,9 @@
     }
     var btn = card.querySelector('.pol-play-btn');
     if (btn && !locked) {
-      btn.textContent = charge.cooldownMs ?'🧊 Cooldown: ' + formatCooldown(charge.cooldownMs) :
-        (friendMode && !friendEligible(p.id)) ? friendBlockLabel(p.id) :
+      // Label on top, the whole countdown on its own line below, so a long time never wraps mid-number.
+      if (charge.cooldownMs) btn.innerHTML = '🧊 Cooldown<span class="cd-time">' + formatCooldown(charge.cooldownMs) + '</span>';
+      else btn.textContent = (friendMode && !friendEligible(p.id)) ? friendBlockLabel(p.id) :
         'Play as ' + p.name.replace(/\s*\([^)]*\)\s*$/, '').split(' ').slice(-1)[0];
     }
     return charge;
