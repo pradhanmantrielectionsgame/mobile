@@ -129,7 +129,7 @@
 
   // Host: reserve a fresh code. The transaction refuses an occupied code, so
   // two hosts can't end up sharing one.
-  function createMatch(polId, settings) {
+  function createMatch(polId, settings, name) {
     return ensureFirebase().then(function () {
       function attempt(triesLeft) {
         var code = randomCode();
@@ -140,6 +140,7 @@
           seed: (Date.now() ^ (Math.random() * 1e9)) >>> 0,
           status: 'waiting', createdAt: root.firebase.database.ServerValue.TIMESTAMP
         };
+        if (name) record.hostName = name;
         return ref.transaction(function (cur) { return cur === null ? record : undefined; })
           .then(function (res) {
             if (res.committed) return { code: code, seed: record.seed };
@@ -157,14 +158,14 @@
     return ensureFirebase().then(function () { return matchRef(code).once('value'); }).then(function (snap) {
       var m = snap.val();
       if (!m || m.guestUid) throw new Error('No open match with that code');
-      return { hostPol: m.hostPol, phaseSeconds: m.phaseSeconds, totalPhases: m.totalPhases };
+      return { hostPol: m.hostPol, hostName: m.hostName, phaseSeconds: m.phaseSeconds, totalPhases: m.totalPhases };
     });
   }
 
   // Guest: claim the empty guest seat. Fails cleanly if the code is wrong or
   // someone already joined. Only the guestUid child is raced over (the
   // security rules don't allow rewriting the whole match node).
-  function joinMatch(code, polId) {
+  function joinMatch(code, polId, name) {
     var ref;
     return ensureFirebase().then(function () {
       ref = matchRef(code);
@@ -175,7 +176,7 @@
       return ref.child('guestUid').transaction(function (cur) { return cur === null ? fb.uid : undefined; });
     }).then(function (res) {
       if (!res.committed) throw new Error('No open match with that code');
-      return ref.child('guestPol').set(polId);
+      return ref.update(name ? { guestPol: polId, guestName: name } : { guestPol: polId });
     }).then(function () { return ref.once('value'); })
       .then(function (snap) { return snap.val(); });
   }
@@ -214,6 +215,13 @@
     return function () { ref.off('child_added', handler); };
   }
 
+  // Rematch handshake, written on the FINISHED match's record. Each side sets
+  // its own flag (rmH / rmG); once both are set the host picks a leader, makes
+  // a brand-new match and posts its code as nextCode for the guest to follow.
+  function requestRematch(code, side) { return matchRef(code).child(side === 'h' ? 'rmH' : 'rmG').set(true); }
+  function leaveMatch(code, side) { return matchRef(code).child('left').set(side); }
+  function announceNext(oldCode, newCode) { return matchRef(oldCode).child('nextCode').set(newCode); }
+
   function myUid() { return fb ? fb.uid : null; }
 
   root.PMENet = {
@@ -221,7 +229,8 @@
     normalizeCode: normalizeCode, ALLOWED_FNS: ALLOWED_FNS,
     ensureFirebase: ensureFirebase, createMatch: createMatch, joinMatch: joinMatch, peekMatch: peekMatch,
     watchMatch: watchMatch, publishPop0: publishPop0, pushEntry: pushEntry,
-    watchEntries: watchEntries, myUid: myUid
+    watchEntries: watchEntries, myUid: myUid,
+    requestRematch: requestRematch, leaveMatch: leaveMatch, announceNext: announceNext
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = root.PMENet;
 })(typeof window !== 'undefined' ? window : globalThis);

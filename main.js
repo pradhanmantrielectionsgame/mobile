@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var E = window.PMEEngine, G = window.PMEGame;
-  var GAME_VERSION = '3.2.0';
+  var GAME_VERSION = '3.3.0';
   // Canonical public URL for the end-of-game "share result" link — hardcoded,
   // not location.href, so the shared link is always the clean site root and
   // never a /index.html deep link, a ?query string, or a Capacitor
@@ -2385,7 +2385,8 @@
     var prev = loadHighScore();
     if (score <= prev) return;
     try { localStorage.setItem(HIGH_SCORE_KEY, String(score)); } catch (e) {}
-    if (prev > 0) { spawnHighScoreCelebration(score); playSound('fanfare'); }
+    // Played at the very end of the end-screen reveal, not here.
+    return prev > 0 ? function () { spawnHighScoreCelebration(score); playSound('fanfare'); } : null;
   }
   function shakeInvalid(el) {
     if (el) {
@@ -2592,8 +2593,7 @@
     }
     var btn = card.querySelector('.pol-play-btn');
     if (btn && !locked) {
-      // Friend matches spend no charge, so a cooldown never blocks them.
-      btn.textContent = (charge.cooldownMs && !friendMode) ? '🧊 Cooldown: ' + formatCooldown(charge.cooldownMs) :
+      btn.textContent = charge.cooldownMs ?'🧊 Cooldown: ' + formatCooldown(charge.cooldownMs) :
         (friendMode && !friendEligible(p.id)) ? friendBlockLabel(p.id) :
         'Play as ' + p.name.replace(/\s*\([^)]*\)\s*$/, '').split(' ').slice(-1)[0];
     }
@@ -2688,6 +2688,11 @@
     btn.textContent = locked ? '🔒 Defeat to unlock' : friendBlocked ? friendBlockLabel(p.id) : 'Play as ' + p.name.replace(/\s*\([^)]*\)\s*$/, '').split(' ').slice(-1)[0];
     btn.addEventListener('click', function () {
       if (friendMode && !locked) {
+        var friendCharge = chargeState(p.id);
+        if (friendCharge.cooldownMs) {
+          showToast(p.name + ' is in their Cooldown Period — available again in ' + formatCooldown(friendCharge.cooldownMs));
+          return;
+        }
         if (!friendEligible(p.id)) {
           showToast(p.id === friendMode.hostPol ? 'Your opponent already picked ' + p.name + ' — choose someone else'
             : 'You can\'t face your own party — pick a leader from a different party');
@@ -2928,6 +2933,13 @@
 
   function friendStatus(text) { $('friendStatus').textContent = text; }
 
+  // Optional label the other phone shows for you. No account behind it.
+  var FRIEND_NAME_KEY = 'pme_friend_name', FRIEND_NAME_ASKED_KEY = 'pme_friend_name_asked';
+  // Asked once per device (on the invite card), after that only editable in the friend menu.
+  function markNameAsked() { lsSet(FRIEND_NAME_ASKED_KEY, '1'); }
+  function myFriendName() { return String(lsGet(FRIEND_NAME_KEY, '')).trim().slice(0, 16); }
+  function oppLabel() { return (mp && mp.oppName) || 'Your friend'; }
+
   // The leader you picked, shown while you wait for the match to start.
   function paintFriendMeCard(polId, settings) {
     var p = polById(polId);
@@ -3048,6 +3060,8 @@
     // (iOS never does; Android only for the store build). Point installed-app
     // owners at the code instead.
     var inApp = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    $('friendInviteNameRow').hidden = !info || !!lsGet(FRIEND_NAME_ASKED_KEY, '');
+    $('friendNameInvite').value = myFriendName();
     $('friendInviteHint').hidden = !info || inApp;
     if (info) $('friendInviteHint').textContent = 'Already have the app? Open it, tap Play a Friend and enter code ' + pendingInvite.code + '.';
     startFriendTiles();
@@ -3087,6 +3101,7 @@
     var f = data.cfg.friendMatch;
     fillSelect('friendPhaseSecs', f.phaseSecondsMin, f.phaseSecondsMax, f.phaseSecondsStep, f.phaseSecondsDefault, ' sec');
     fillSelect('friendPhaseCount', f.totalPhasesMin, f.totalPhasesMax, 1, f.totalPhasesDefault, ' phases');
+    $('friendName').value = myFriendName();
     $('friendMenu').hidden = false;
     $('friendWait').hidden = true;
     $('friendOverlay').hidden = false;
@@ -3140,7 +3155,8 @@
     friendStatus('Connecting…');
     paintFriendMeCard(polId, mode.role === 'host' ? friendSettings(mode.settings) : friendSettings(mode));
     if (mode.role === 'host') {
-      PMENet.createMatch(polId, mode.settings).then(function (m) {
+      PMENet.createMatch(polId, mode.settings, myFriendName()).then(function (m) {
+        if (mode.rematchFrom) PMENet.announceNext(mode.rematchFrom, m.code);
         mp = { side: 'h', code: m.code, seed: m.seed, hostPol: polId, guestPol: null, pop0: null, unsubs: [], started: false, pauses: { h: 0, g: 0 } };
         mp.settings = friendSettings(mode.settings);
         showFriendWait(m.code);
@@ -3149,15 +3165,17 @@
           if (!mp || mp.started || !rec || !rec.guestUid || !rec.guestPol) return;
           mp.started = true;
           mp.guestPol = rec.guestPol;
+          mp.oppName = rec.guestName || '';
           // Host draws the starting map and shares it; the guest mirrors it.
           mp.pop0 = PMENet.copyPop(G.createGame(data, mp.hostPol, mp.guestPol, G.mulberry32(mp.seed), { human: true }).pop);
           PMENet.publishPop0(mp.code, mp.pop0).then(startFriendMatch, friendFail);
         }));
       }).catch(friendFail);
     } else {
-      PMENet.joinMatch(mode.code, polId).then(function (rec) {
+      PMENet.joinMatch(mode.code, polId, myFriendName()).then(function (rec) {
         mp = { side: 'g', code: mode.code, seed: rec.seed, hostPol: rec.hostPol, guestPol: polId, pop0: null, unsubs: [], started: false, pauses: { h: 0, g: 0 } };
         mp.settings = friendSettings(rec);
+        mp.oppName = rec.hostName || '';
         showFriendWait(mode.code);
         var hostP = polById(rec.hostPol);
         friendStatus('Joined — facing ' + (hostP ? hostP.name : 'your friend') + '. Starting…');
@@ -3199,6 +3217,8 @@
       if (e.fn === 'pause' || e.fn === 'resume') mpRemotePause(e);
       else mp.applier.add(e, false);
     }));
+    // Same ink/cooldown as single-player, spent only once the match really starts.
+    useCharge(mp.side === 'h' ? mp.hostPol : mp.guestPol);
     $('friendOverlay').hidden = true;
     $('selectOverlay').hidden = true;
     $('welcomeOverlay').hidden = true;
@@ -3327,7 +3347,79 @@
     mp = null;
   }
 
+  // ---- Rematch (end screen of a friend match) -----------------------------
+  // See net.js requestRematch. Roles never swap: the host always picks first
+  // and makes the next match, the guest follows its code.
+  function leaveToWelcome() {
+    mpLeave();
+    $('endOverlay').hidden = true;
+    $('friendOverlay').hidden = true;
+    $('selectOverlay').hidden = true;
+    $('welcomeOverlay').hidden = false;
+    switchMusic('intro_music');
+  }
+
+  function paintRematch(mine, theirs) {
+    var btn = $('rematchBtn'), name = oppLabel();
+    $('rematchBanner').hidden = !(theirs && !mine);
+    $('rematchBanner').textContent = '🔁 ' + name + ' wants a rematch';
+    btn.disabled = mine;
+    btn.classList.toggle('rematch-ready', !mine);
+    btn.innerHTML = mine ? '⏳ Waiting for ' + name + '…' : theirs ? '✅ Accept rematch' : '<span class="rm-ic">🔁</span> Rematch';
+  }
+
+  function setupRematchUI() {
+    var friend = !!(game.friendMatch && mp);
+    $('playAgainBtn').hidden = friend;
+    $('rematchBtn').hidden = $('leaveMatchBtn').hidden = !friend;
+    $('rematchBanner').hidden = true;
+    if (!friend) return;
+    var m = mp;
+    m.rematch = null; // null → 'waiting' (guest) / 'picking' (host)
+    paintRematch(false, false);
+    m.unsubs.push(PMENet.watchMatch(m.code, function (rec) {
+      if (mp !== m || !rec) return;
+      if (rec.left && rec.left !== m.side) { showToast(oppLabel() + ' left'); leaveToWelcome(); return; }
+      var mine = !!(m.side === 'h' ? rec.rmH : rec.rmG), theirs = !!(m.side === 'h' ? rec.rmG : rec.rmH);
+      if (!m.rematch) paintRematch(mine, theirs);
+      if (mine && theirs && !m.rematch) {
+        if (m.side === 'h') {
+          m.rematch = 'picking';
+          var settings = m.settings, from = m.code;
+          mpLeave();
+          $('endOverlay').hidden = true;
+          openFriendPicker({ role: 'host', settings: settings, rematchFrom: from });
+        } else {
+          m.rematch = 'waiting';
+          $('endOverlay').hidden = true;
+          $('friendMeCard').hidden = true;
+          showFriendWait('');
+          friendStatus('Waiting for ' + oppLabel() + ' to pick a leader…');
+        }
+      }
+      if (m.rematch === 'waiting' && rec.nextCode) {
+        var next = rec.nextCode;
+        mpLeave();
+        PMENet.peekMatch(next).then(function (info) {
+          openFriendPicker({ role: 'guest', code: next, hostPol: info.hostPol, phaseSeconds: info.phaseSeconds, totalPhases: info.totalPhases });
+        }, friendFail);
+      }
+    }));
+  }
+
   function wireFriendControls() {
+    ['friendName', 'friendNameInvite'].forEach(function (id) {
+      $(id).addEventListener('input', function () { lsSet(FRIEND_NAME_KEY, $(id).value.trim().slice(0, 16)); });
+    });
+    $('rematchBtn').addEventListener('click', function () {
+      if (!mp) return;
+      PMENet.requestRematch(mp.code, mp.side).catch(function () { showToast('Connection problem'); });
+      paintRematch(true, false); // the watcher repaints with the real state a moment later
+    });
+    $('leaveMatchBtn').addEventListener('click', function () {
+      if (mp) PMENet.leaveMatch(mp.code, mp.side).catch(function () {});
+      leaveToWelcome();
+    });
     // "NEW" tag on the welcome button for 5 days from the first time this browser
     // shows it, whether or not the player taps it. (If storage is unavailable
     // the stamp can't stick, so the tag just stays — harmless.)
@@ -3343,16 +3435,19 @@
       if (!pendingInvite) return;
       var i = pendingInvite.info;
       unlockSounds();
+      markNameAsked();
       openFriendPicker({ role: 'guest', code: pendingInvite.code, hostPol: i.hostPol, phaseSeconds: i.phaseSeconds, totalPhases: i.totalPhases });
     });
     $('friendDeclineBtn').addEventListener('click', function () { pendingInvite = null; $('friendOverlay').hidden = true; });
     $('friendBackBtn').addEventListener('click', function () { $('friendOverlay').hidden = true; });
     $('friendCreateBtn').addEventListener('click', function () {
+      markNameAsked();
       var settings = { phaseSeconds: Number($('friendPhaseSecs').value), totalPhases: Number($('friendPhaseCount').value) };
       PMENet.ensureFirebase().then(function () { openFriendPicker({ role: 'host', settings: settings }); }, friendFail);
     });
     function joinByCode(code) {
       if (code.length !== 6) { showToast('Enter the 6-character code'); return; }
+      markNameAsked();
       PMENet.peekMatch(code).then(function (info) {
         openFriendPicker({ role: 'guest', code: code, hostPol: info.hostPol, phaseSeconds: info.phaseSeconds, totalPhases: info.totalPhases });
       }, function (err) { showToast(err && err.message ? err.message : 'Connection problem'); });
@@ -3736,9 +3831,22 @@
     $('welcomeReplayBtn').hidden = !loadSavedReplay();
   }
 
+  // A rally/alliance/power effect started in the last seconds of the match must
+  // finish before the result card appears, or it plays on top of it. Every
+  // effect removes itself from #fxLayer; the cap guards against one that never does.
   function showEndOverlay() {
+    var waited = 0;
+    (function check() {
+      if ($('fxLayer').children.length === 0 || waited >= 6500) { renderEndOverlay(); return; }
+      waited += 150;
+      setTimeout(check, 150);
+    })();
+  }
+
+  function renderEndOverlay() {
     saveReplay();
-    maybeRecordHighScore();
+    var highScoreFx = maybeRecordHighScore(), unlockFx = null;
+    $('stampPile').innerHTML = '';
     updateLadderAfterMatch();
     var seats = game.finalSeats;
     var seal, headline, sub, atVerdict = [], newStamps = [];
@@ -3748,7 +3856,7 @@
       if (!game.friendMatch && unlockPolitician(game.players.p2.politician.id)) {
         sub += ' 🔓 ' + game.players.p2.politician.name + ' unlocked!';
         var unlocked = game.players.p2.politician;
-        atVerdict.push(function () { spawnUnlockCelebration(unlocked); });
+        unlockFx = function () { spawnUnlockCelebration(unlocked); };
       }
       atVerdict.push(function () { playSound('fanfare'); });
     }
@@ -3776,16 +3884,24 @@
     $('endSub').textContent = sub;
     renderEndWinnerPortrait();
     renderEndLedger(seats);
-    renderEndStats(newStamps);
+    renderEndStats();
     $('playAgainBtn').style.background = COLORS.p1;
+    setupRematchUI();
     // Hold everything back, then fill the chart seat by seat (see runEndReveal).
     var ov = $('endOverlay');
     ov.classList.add('revealing');
     ov.classList.remove('r-verdict', 'r-details');
-    $('endCounting').textContent = 'Counting votes…';
+    $('endCounting').textContent = '272 seats for a majority';
     ov.hidden = false;
     sounds.bg_music.pause();
-    renderParliamentChart(seats, function (circles, colors) { runEndReveal(circles, colors, atVerdict); });
+    var stampList = endStampList(newStamps);
+    // After everything else is on screen: stamps, then high score, then card unlock.
+    function finale() {
+      slamStamps(stampList, function () {
+        [highScoreFx, unlockFx].filter(Boolean).forEach(function (fx, i) { endRevealTimers.push(setTimeout(fx, i * 5200)); });
+      });
+    }
+    renderParliamentChart(seats, function (circles, colors) { runEndReveal(circles, colors, atVerdict, allySeatsBy('p1'), finale); });
   }
 
   // The result as a staged reveal: seats fill the hemicycle in order with a
@@ -3794,7 +3910,7 @@
   // untappable until the end so Share can never screenshot a half-revealed
   // card. Purely visual: game.winner is already settled before this runs.
   var endRevealTimers = [];
-  function runEndReveal(circles, colors, atVerdict) {
+  function runEndReveal(circles, colors, atVerdict, allyN, finale) {
     var ov = $('endOverlay'), stamp = $('declareStamp');
     function clearTimers() {
       endRevealTimers.forEach(function (t) { clearTimeout(t); clearInterval(t); });
@@ -3807,6 +3923,7 @@
     function details() {
       ov.classList.add('r-details');
       $('endCounting').textContent = '272 seats for a majority';
+      endRevealTimers.push(setTimeout(finale, 800));
     }
     function verdict() {
       ov.classList.add('r-verdict');
@@ -3824,29 +3941,51 @@
       $('endCounting').textContent = '272 seats for a majority';
       restartStamp();
       atVerdict.forEach(function (f) { f(); });
+      endRevealTimers.push(setTimeout(finale, 800));
     }
     circles.forEach(function (c) { c.style.fill = '#E3DFD0'; });
-    tally();
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { skip(); return; }
     ov.addEventListener('pointerdown', skip);
     var step = Math.ceil(n / 50);
-    var tick = setInterval(function () {
-      for (var k = 0; k < step && i < n; k++, i++) {
-        circles[i].style.fill = colors[i];
-        if (colors[i] === COLORS.p1) c1++; else if (colors[i] === COLORS.p2) c2++;
-      }
-      tally();
-      if (i >= n) {
-        clearInterval(tick);
-        endRevealTimers.push(setTimeout(function () {
+    // Order: 272 to win, counting votes, your votes, your allies (if any),
+    // then everyone else and the opponent, then the verdict. The hemicycle
+    // is laid out your seats (allies last), neutrals, opponent.
+    function say(text, ms, next) { $('endCounting').textContent = text; endRevealTimers.push(setTimeout(next, ms)); }
+    function fill(from, to, next) {
+      var k = from;
+      if (k >= to) { next(); return; }
+      var t = setInterval(function () {
+        for (var s = 0; s < step && k < to; s++, k++) {
+          circles[k].style.fill = colors[k];
+          if (colors[k] === COLORS.p1) c1++; else if (colors[k] === COLORS.p2) c2++;
+        }
+        i = k;
+        tally();
+        if (k >= to) { clearInterval(t); endRevealTimers.push(setTimeout(next, 500)); }
+      }, 45);
+      endRevealTimers.push(t);
+    }
+    var nP1 = colors.filter(function (c) { return c === COLORS.p1; }).length;
+    var nBase = Math.max(0, nP1 - (allyN || 0));
+    function opponent() {
+      say('Counting your opponent’s votes…', 900, function () {
+        fill(nP1, n, function () {
           if (done) return;
           done = true;
           ov.removeEventListener('pointerdown', skip);
           verdict();
-        }, 500));
-      }
-    }, 45);
-    endRevealTimers.push(tick);
+        });
+      });
+    }
+    say('272 seats for a majority', 1400, function () {
+      say('Counting votes…', 1000, function () {
+        tally();
+        fill(0, nBase, function () {
+          if (nP1 > nBase) say('Your allies join you…', 900, function () { fill(nBase, nP1, opponent); });
+          else opponent();
+        });
+      });
+    });
   }
 
   // Framed as a challenge to a friend, not a stats dump — the point is to
@@ -3973,7 +4112,7 @@
   // adaptive ladder may already have promoted the player by the time this
   // card renders; the game's own profile is what was actually played.
   function aiSeatLabel() {
-    if (game.friendMatch) return 'Friend';
+    if (game.friendMatch) return (mp && mp.oppName) || 'Friend';
     var pr = game.players.p2.aiProfile;
     if (!pr) return 'AI';
     var m = /^level-(\d+)$/.exec(pr.key);
@@ -4038,7 +4177,7 @@
     return game.states.filter(function (s) { return game.pop[s.svgId][pk] === E.BPS; }).length;
   }
 
-  function renderEndStats(newStamps) {
+  function renderEndStats() {
     var p1Score = game.score != null ? game.score : G.computeScore(game, 'p1').score;
     var p2Score = G.computeScore(game, 'p2').score;
     // "Final score" sits at the bottom styled like a table's total row — it
@@ -4046,7 +4185,7 @@
     var stats = [
       { label: 'Rallies deployed', p1: ralliesDeployedBy('p1'), p2: ralliesDeployedBy('p2') },
       { label: 'Regions dominated', p1: groupsDominatedBy('p1'), p2: groupsDominatedBy('p2') },
-      { label: 'Clean sweeps', p1: cleanSweepsBy('p1'), p2: cleanSweepsBy('p2') },
+      { label: 'States swept', p1: cleanSweepsBy('p1'), p2: cleanSweepsBy('p2') },
       { label: 'Agendas completed', p1: agendasCompletedBy('p1'), p2: agendasCompletedBy('p2') },
       { label: 'Allies held', p1: alliesHeldBy('p1'), p2: alliesHeldBy('p2') },
       { label: 'Allies left', p1: alliesLeftBy('p1'), p2: alliesLeftBy('p2') },
@@ -4060,19 +4199,33 @@
         '<span class="stat-val p1">' + s.p1 + '</span>' +
         '<span class="stat-label">' + s.label + '</span>' +
         '<span class="stat-val p2">' + s.p2 + '</span></div>';
-    }).join('') + endStampsHtml(newStamps || []);
+    }).join('');
   }
-  function endStampsHtml(newStamps) {
-    var chips = function (keys, cap) {
-      return '<div class="stamp-chips">' + keys.map(function (k) {
-        return '<div class="stamp-chip"><div class="stamp-art">' + stampSvg(k) + '</div><small>' + cap(k) + '</small></div>';
-      }).join('') + '</div>';
-    };
-    var oneOff = G.earnedStamps(game).badges, out = '';
-    if (newStamps.length) out += '<div class="pol-section-label">New stamp' + (newStamps.length > 1 ? 's' : '') + ' collected</div>' + chips(newStamps, function (k) { return STAMP_DEFS[k].name; });
-    if (oneOff.length) out += '<div class="pol-section-label">This game only</div>' + chips(oneOff, function (k) { return STAMP_DEFS[k].cap; });
-    return out;
+  // Every stamp to slam onto the finished card: new collectibles, then this game's one-off badges.
+  function endStampList(newStamps) {
+    var list = newStamps.map(function (k) { return { k: k, cap: STAMP_DEFS[k].name }; });
+    G.earnedStamps(game).badges.forEach(function (k) { list.push({ k: k, cap: STAMP_DEFS[k].name }); });
+    return list;
   }
+
+  // Slams each stamp onto a spot in the card's lower half, one every 650ms.
+  function slamStamps(list, done) {
+    var pile = $('stampPile');
+    pile.innerHTML = '';
+    function rand(lo, hi) { return lo + Math.random() * (hi - lo); }
+    list.forEach(function (s, i) {
+      var el = document.createElement('div');
+      el.className = 'pile-stamp';
+      el.style.left = (4 + (i % 3) * 31 + rand(-2, 2)) + '%';
+      el.style.top = Math.min(84, 50 + Math.floor(i / 3) * 14 + rand(-3, 3)) + '%';
+      el.style.setProperty('--rot', rand(-22, 22) + 'deg');
+      el.style.setProperty('--d', (i * 650) + 'ms');
+      el.innerHTML = '<div class="stamp-art">' + stampSvg(s.k) + '</div><small>' + s.cap + '</small>';
+      pile.appendChild(el);
+    });
+    endRevealTimers.push(setTimeout(done, list.length ? list.length * 650 + 900 : 0));
+  }
+
 
   // Desktop's end-game hemicycle, ported as-is: fetch the real 543-seat
   // parliamentarch SVG (assets/icons/Parliament_diagram.svg, unused until

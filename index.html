@@ -902,7 +902,7 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
 /* victory rubber stamp — slams onto the declare card's top-right when the
    human wins. Inline SVG (not an asset) so html2canvas ships it in the
    shared screenshot too. */
-.declare-stamp{ position:absolute; top: 1rem; right: 1.3rem; width: 6.5rem; height: 6.5rem;
+.declare-stamp{ position:absolute; top: -0.4rem; right: 0.4rem; width: 6.5rem; height: 6.5rem;
   pointer-events:none; mix-blend-mode:multiply; opacity:.88; z-index:3;
   animation: stamp-slam .5s cubic-bezier(.2,1.5,.4,1) .35s both; }
 .declare-stamp[hidden]{ display:none; }
@@ -914,6 +914,22 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
   100%{ transform: scale(1) rotate(-14deg); opacity:.88; }
 }
 @media (prefers-reduced-motion: reduce){ .declare-stamp{ animation:none; transform: rotate(-14deg); } }
+/* New stamps slam onto the finished card one by one (slamStamps in main.js).
+   Overlay only, so any number of them never adds scroll height. */
+.stamp-pile{ position:absolute; inset:0; pointer-events:none; z-index:4; overflow:hidden; }
+.pile-stamp{ position:absolute; width:5.6rem; text-align:center; mix-blend-mode:multiply;
+  animation: pile-slam .5s cubic-bezier(.2,1.5,.4,1) var(--d) both; }
+.pile-stamp .stamp-art{ width:5.6rem; height:5.6rem; margin:0; transform:none; }
+.pile-stamp small{ display:block; font-family:var(--font-display); font-weight:700; font-size:var(--fs-2); color:var(--ink);
+  text-shadow:0 0 3px var(--paper); animation: pile-cap 2.6s ease var(--d) both; }
+@keyframes pile-slam{
+  0%{ transform: scale(3.2) rotate(calc(var(--rot) - 25deg)); opacity:0; }
+  60%{ transform: scale(.92) rotate(var(--rot)); opacity:.95; }
+  80%{ transform: scale(1.05) rotate(var(--rot)); }
+  100%{ transform: scale(1) rotate(var(--rot)); opacity:.9; }
+}
+@keyframes pile-cap{ 0%,15%{ opacity:0; } 25%,70%{ opacity:1; } 100%{ opacity:0; } }
+@media (prefers-reduced-motion: reduce){ .pile-stamp, .pile-stamp small{ animation:none; } .pile-stamp{ transform:rotate(var(--rot)); } .pile-stamp small{ display:none; } }
 /* ---- end-of-game reveal (runEndReveal in main.js): everything but the chart is
    held back with opacity, so the card keeps its full size, then the verdict
    and the details fade in. ---- */
@@ -928,7 +944,7 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
 .end-overlay.revealing .declare-ledger, .end-overlay.revealing .declare-stats, .end-overlay.revealing .declare-url, .end-overlay.revealing .declare-footer{ opacity:0; pointer-events:none; }
 .end-overlay.revealing.r-details .declare-ledger, .end-overlay.revealing.r-details .declare-stats, .end-overlay.revealing.r-details .declare-url, .end-overlay.revealing.r-details .declare-footer{ opacity:1; pointer-events:auto; }
 .end-overlay.revealing:not(.r-verdict) .declare-stamp{ visibility:hidden; }
-.declare-crest{ display:flex; flex-direction:row; align-items:center; justify-content:center; gap: 0.9rem; margin-top: 0.6rem; }
+.declare-crest{ position:relative; width:100%; display:flex; flex-direction:row; align-items:center; justify-content:center; gap: 0.9rem; margin-top: 0.6rem; }
 .declare-seal{ width: 3.75rem; height: 3.75rem; border-radius:50%; background:var(--ink); border: 2px solid #C9A227;
   display:flex; align-items:center; justify-content:center; font-size: 1.9rem; box-shadow: 0 0 0 2px rgba(0,0,0,.12); flex:0 0 auto; }
 .end-winner-portrait{ width: 3.75rem; height: 3.75rem; border-radius:50%; object-fit:cover; background:#ccc;
@@ -962,6 +978,19 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
 .declare-url{ width:100%; padding: 0.55rem 1rem 0.1rem; text-align:center; font-family:var(--font-display);
   font-size: var(--fs-2); font-weight:700; letter-spacing:.01em; color:var(--brass); }
 .declare-footer{ width:100%; display:flex; flex-wrap:wrap; gap: 0.5rem; border-top: 1px solid rgba(20,22,28,.18); margin-top: 0.45rem; padding: 0.5rem 1.25rem 0.75rem; }
+.declare-footer [hidden]{ display:none; }
+#rematchBtn{ position:relative; overflow:hidden; }
+#rematchBtn .rm-ic{ display:inline-block; }
+#rematchBtn.rematch-ready{ animation: rm-pulse 1.8s ease-in-out infinite; }
+#rematchBtn.rematch-ready .rm-ic{ animation: rm-spin 3.6s ease-in-out infinite; }
+#rematchBtn.rematch-ready::after{ content:''; position:absolute; top:0; bottom:0; left:0; width:40%;
+  background:linear-gradient(105deg, transparent, rgba(255,255,255,.55), transparent); transform:translateX(-120%); animation: rm-shine 3.6s ease-in-out infinite; pointer-events:none; }
+@keyframes rm-pulse{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.04); } }
+@keyframes rm-spin{ 0%,60%{ transform:rotate(0); } 85%,100%{ transform:rotate(360deg); } }
+@keyframes rm-shine{ 0%,55%{ transform:translateX(-120%); } 85%,100%{ transform:translateX(320%); } }
+@media (prefers-reduced-motion: reduce){ #rematchBtn.rematch-ready, #rematchBtn.rematch-ready .rm-ic, #rematchBtn.rematch-ready::after{ animation:none; } }
+.rematch-banner{ flex:0 0 100%; text-align:center; font-size:var(--fs-3); font-weight:700; color:var(--brass); }
+.friend-setting input{ width:8rem; font-family:var(--font-display); font-weight:700; font-size:var(--fs-3); padding:0.3rem 0.4rem; border:2px solid var(--ink); border-radius:var(--radius-md); background:var(--surface); color:var(--ink); }
 .declare-footer .tip-link{ flex:0 0 100%; text-align:center; color:var(--ink-soft); }
 .end-overlay button{ flex:1; font-family:var(--font-display); background:var(--accent); color:var(--accent-ink); font-weight:700;
   padding: 0.6rem 0.75rem; border-radius: 2.5rem; font-size: var(--fs-4); border: 1.5px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); }
@@ -1569,6 +1598,7 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
   <div class="about-body">
     <div id="friendMenu">
       <p>You both need the game open. One of you creates a match and shares the code; the other joins with it.</p>
+      <div class="friend-setting"><label for="friendName">What should we call you?</label><input id="friendName" maxlength="16" placeholder="Optional" autocomplete="off"></div>
       <div class="friend-setting"><label for="friendPhaseSecs">Phase length</label><select id="friendPhaseSecs"></select></div>
       <div class="friend-setting"><label for="friendPhaseCount">Number of phases</label><select id="friendPhaseCount"></select></div>
       <button class="about-ok-btn" id="friendCreateBtn">Create a match</button>
@@ -1587,6 +1617,7 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
         <div class="friend-me-power" id="friendInvitePower"></div>
         <div class="friend-me-rules" id="friendInviteRules"></div>
       </div>
+      <div class="friend-setting" id="friendInviteNameRow" hidden><label for="friendNameInvite">What should we call you?</label><input id="friendNameInvite" maxlength="16" placeholder="Optional" autocomplete="off"></div>
       <button class="about-ok-btn" id="friendAcceptBtn">Accept invite</button>
       <button class="friend-link-btn" id="friendDeclineBtn">Not now</button>
       <div class="friend-or" id="friendInviteHint" hidden></div>
@@ -1636,35 +1667,35 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
 <div class="overlay end-overlay" id="endOverlay" hidden>
   <div class="declare-card">
     <div class="tricolor"><span class="saffron"></span><span class="white"></span><span class="green"></span></div>
-    <div class="declare-stamp" id="declareStamp" hidden aria-hidden="true">
-      <svg viewBox="0 0 120 120">
-        <defs>
-          <path id="stampArcTop" d="M60,60 m-39,0 a39,39 0 1,1 78,0" fill="none"></path>
-          <path id="stampArcBot" d="M60,60 m-39,0 a39,39 0 1,0 78,0" fill="none"></path>
-        </defs>
-        <g fill="none" stroke="#C0261B" stroke-width="3.5">
-          <circle cx="60" cy="60" r="55"></circle>
-          <circle cx="60" cy="60" r="47.5" stroke-width="1.8"></circle>
-        </g>
-        <text fill="#C0261B" font-family="Georgia,serif" font-weight="700" font-size="6.6" letter-spacing="0.15">
-          <textPath href="#stampArcTop" startOffset="50%" text-anchor="middle">ELECTION COMMISSION OF INDIA</textPath>
-        </text>
-        <text fill="#C0261B" font-family="Georgia,serif" font-weight="700" font-size="7" letter-spacing="0.55">
-          <textPath href="#stampArcBot" startOffset="50%" text-anchor="middle">RESULT DECLARED</textPath>
-        </text>
-        <rect x="16" y="49" width="88" height="24" rx="2" fill="none" stroke="#C0261B" stroke-width="2"></rect>
-        <text x="60" y="66" fill="#C0261B" font-family="Georgia,serif" font-weight="700" font-size="14"
-              letter-spacing="1.5" text-anchor="middle">ELECTED</text>
-      </svg>
-    </div>
+    <div class="end-counting" id="endCounting"></div>
+    <div class="end-parliament" id="endParliamentChart"></div>
     <div class="declare-crest">
+      <div class="declare-stamp" id="declareStamp" hidden aria-hidden="true">
+        <svg viewBox="0 0 120 120">
+          <defs>
+            <path id="stampArcTop" d="M60,60 m-39,0 a39,39 0 1,1 78,0" fill="none"></path>
+            <path id="stampArcBot" d="M60,60 m-39,0 a39,39 0 1,0 78,0" fill="none"></path>
+          </defs>
+          <g fill="none" stroke="#C0261B" stroke-width="3.5">
+            <circle cx="60" cy="60" r="55"></circle>
+            <circle cx="60" cy="60" r="47.5" stroke-width="1.8"></circle>
+          </g>
+          <text fill="#C0261B" font-family="Georgia,serif" font-weight="700" font-size="6.6" letter-spacing="0.15">
+            <textPath href="#stampArcTop" startOffset="50%" text-anchor="middle">ELECTION COMMISSION OF INDIA</textPath>
+          </text>
+          <text fill="#C0261B" font-family="Georgia,serif" font-weight="700" font-size="7" letter-spacing="0.55">
+            <textPath href="#stampArcBot" startOffset="50%" text-anchor="middle">RESULT DECLARED</textPath>
+          </text>
+          <rect x="16" y="49" width="88" height="24" rx="2" fill="none" stroke="#C0261B" stroke-width="2"></rect>
+          <text x="60" y="66" fill="#C0261B" font-family="Georgia,serif" font-weight="700" font-size="14"
+                letter-spacing="1.5" text-anchor="middle">ELECTED</text>
+        </svg>
+      </div>
       <div class="declare-seal" id="declareSeal">🏆</div>
       <img class="end-winner-portrait" id="endWinnerPortrait" alt="" hidden>
     </div>
     <div class="headline" id="endHeadline">—</div>
     <div class="sub" id="endSub">—</div>
-    <div class="end-counting" id="endCounting"></div>
-    <div class="end-parliament" id="endParliamentChart"></div>
     <div class="declare-ledger" id="endSeats"></div>
     <div class="declare-stats" id="endStats"></div>
     <!-- Inside the card (and outside .declare-footer, which html2canvas
@@ -1674,8 +1705,11 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
     <div class="declare-url" id="endUrl"></div>
     <div class="declare-footer">
       <button id="shareResultBtn" class="secondary">📤 Share result</button><button id="watchReplayBtn" class="secondary">▶ Watch replay</button><button id="playAgainBtn">Play again</button>
+      <div class="rematch-banner" id="rematchBanner" hidden></div>
+      <button id="rematchBtn" hidden>🔁 Rematch</button><button id="leaveMatchBtn" class="secondary" hidden>Leave match</button>
       <a class="tip-link" id="tipLinkEnd" href="#" target="_blank" rel="noopener">☕ Support the developer</a>
     </div>
+    <div class="stamp-pile" id="stampPile" aria-hidden="true"></div>
     <span class="ver-badge ver-badge-end" id="endVersion"></span>
   </div>
 </div>
