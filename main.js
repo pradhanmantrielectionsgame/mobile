@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var E = window.PMEEngine, G = window.PMEGame;
-  var GAME_VERSION = '3.1.0';
+  var GAME_VERSION = '3.2.0';
   // Canonical public URL for the end-of-game "share result" link — hardcoded,
   // not location.href, so the shared link is always the clean site root and
   // never a /index.html deep link, a ?query string, or a Capacitor
@@ -388,11 +388,85 @@
   function loadWonWith() {
     try { return JSON.parse(lsGet(WON_WITH_KEY, '[]')) || []; } catch (e) { return []; }
   }
-  function recordWin(id) {
-    var won = loadWonWith();
-    if (won.indexOf(id) !== -1) return;
-    won.push(id);
-    lsSet(WON_WITH_KEY, JSON.stringify(won));
+  // Collectible stamps per politician: { [id]: ['elected','allied',...] }.
+  // Replaces the old won-with list (kept only to migrate it: every past win
+  // counts as Elected). One-off badges (nail-biter etc.) are never stored.
+  var STAMPS_KEY = 'pme_stamps';
+  function loadStamps() {
+    var m = null;
+    try { m = JSON.parse(lsGet(STAMPS_KEY, 'null')); } catch (e) { /* fall through */ }
+    if (m) return m;
+    m = {};
+    loadWonWith().forEach(function (id) { m[id] = ['elected']; });
+    return m;
+  }
+  // Returns the stamps this call newly collected for that politician.
+  function recordStamps(id, keys) {
+    var m = loadStamps(), have = m[id] || [];
+    var fresh = keys.filter(function (k) { return have.indexOf(k) === -1; });
+    if (fresh.length || !m[id]) { m[id] = have.concat(fresh); lsSet(STAMPS_KEY, JSON.stringify(m)); }
+    return fresh;
+  }
+  // Stamp art: the declare-card's ring-and-box stamp, recoloured per stamp.
+  // The first six are permanent collectibles; the rest are one-off game badges.
+  var STAMP_DEFS = {
+    elected:   { name: 'ELECTED', col: '#C0261B', top: 'ELECTION COMMISSION OF INDIA', bot: 'RESULT DECLARED', box: 'ELECTED', fs: 14, rings: 1, hint: 'Win without any allied seats.' },
+    allied:    { name: 'ALLIED VICTORY', col: '#128807', top: 'ELECTION COMMISSION OF INDIA', bot: 'COALITION FORMED', box: 'ALLIED VICTORY', fs: 8, rings: 1, hint: 'Win with at least one ally on your side.' },
+    grand:     { name: 'GRAND ALLIANCE', col: '#0E7C86', top: 'ELECTION COMMISSION OF INDIA', bot: 'ALL 3 ALLIES HELD', box: 'GRAND ALLIANCE', fs: 7.6, rings: 3, hint: 'Win while still holding all 3 allies.' },
+    landslide: { name: 'LANDSLIDE', col: '#9C7A1E', top: 'MANDATE OF THE PEOPLE', bot: '300+ SEATS', box: 'LANDSLIDE', fs: 11.5, rings: 2, hint: 'Win with 300 or more seats.' },
+    super:     { name: 'SUPERMAJORITY', col: '#1B2A5C', top: 'MANDATE OF THE PEOPLE', bot: '400+ SEATS', box: 'SUPERMAJORITY', fs: 8.2, rings: 3, hint: 'Win with 400 or more seats.' },
+    dominance: { name: 'NATIONAL DOMINANCE', col: '#7A1F5C', top: 'NATIONAL', bot: 'ALL 15 REGIONS', box: 'DOMINANCE', fs: 11.5, rings: 3, hint: 'Win while holding all 15 regions.' },
+    nail:      { name: 'NAIL-BITER', col: '#C0261B', top: 'THIS GAME ONLY', bot: 'BY 5 OR FEWER', box: 'NAIL-BITER', fs: 12, rings: 1, cap: 'Won by 5 seats or fewer' },
+    comeback:  { name: 'COMEBACK', col: '#9C7A1E', top: 'THIS GAME ONLY', bot: 'FROM BEHIND', box: 'COMEBACK', fs: 13, rings: 1, cap: 'Behind at halfway, still won' },
+    defeated:  { name: 'DEFEATED', col: '#6B7280', top: 'THIS GAME ONLY', bot: 'RESULT DECLARED', box: 'DEFEATED', fs: 13, rings: 1, cap: 'Lost this one' }
+  };
+  var STAMP_ORDER = ['elected', 'allied', 'grand', 'landslide', 'super', 'dominance'];
+  var stampUid = 0;
+  function stampSvg(k) {
+    var d = STAMP_DEFS[k], id = 'stp' + (stampUid++), c = d.col;
+    // Unique arc ids per instance: a <textPath href> resolving into another
+    // <svg> root renders nothing in WebKit (same reason as the old card clone).
+    var rings = '<circle cx="60" cy="60" r="55" stroke-width="3.5"/><circle cx="60" cy="60" r="47.5" stroke-width="1.8"/>';
+    if (d.rings >= 2) rings += '<circle cx="60" cy="60" r="43" stroke-width="0.8" stroke-dasharray="1.6 2.2"/>';
+    var stars = d.rings === 3 ? '\u2605 \u2605 \u2605' : (d.rings === 2 ? '\u2605' : '');
+    return '<svg viewBox="0 0 120 120"><defs>' +
+      '<path id="' + id + 't" d="M60,60 m-39,0 a39,39 0 1,1 78,0" fill="none"/>' +
+      '<path id="' + id + 'b" d="M60,60 m-39,0 a39,39 0 1,0 78,0" fill="none"/></defs>' +
+      '<g fill="none" stroke="' + c + '">' + rings + '</g>' +
+      '<text fill="' + c + '" font-family="Georgia,serif" font-weight="700" font-size="6" letter-spacing="0.15"><textPath href="#' + id + 't" startOffset="50%" text-anchor="middle">' + d.top + '</textPath></text>' +
+      '<text fill="' + c + '" font-family="Georgia,serif" font-weight="700" font-size="7" letter-spacing="0.55"><textPath href="#' + id + 'b" startOffset="50%" text-anchor="middle">' + d.bot + '</textPath></text>' +
+      (stars ? '<text x="60" y="44" font-size="' + (d.rings === 3 ? 11 : 10) + '" text-anchor="middle" fill="' + c + '">' + stars + '</text>' : '') +
+      '<rect x="12" y="49" width="96" height="24" rx="2" fill="none" stroke="' + c + '" stroke-width="2"/>' +
+      '<text x="60" y="' + (65 + d.fs / 14 * 1.5) + '" fill="' + c + '" font-family="Georgia,serif" font-weight="700" font-size="' + d.fs + '" letter-spacing="1" text-anchor="middle">' + d.box + '</text></svg>';
+  }
+  // The "back of the card": that politician's stamp grid, shown by spinning the
+  // card half a turn (rotate to edge-on, swap faces, rotate back out).
+  function buildStampBack(p, ballot, have) {
+    var back = document.createElement('div');
+    back.className = 'pol-back';
+    back.innerHTML = '<h2><span>' + p.name + '</span><em>' + have.length + ' / ' + STAMP_ORDER.length + '</em></h2>' +
+      '<div class="stamp-slots">' + STAMP_ORDER.map(function (k) {
+        var on = have.indexOf(k) !== -1;
+        // An uncollected slot stays an empty dashed ring: the stamp only appears once earned.
+        return '<div class="stamp-slot ' + (on ? 'on' : 'off') + '"><div class="stamp-art">' + (on ? stampSvg(k) : '') + '</div>' +
+          '<b>' + STAMP_DEFS[k].name + '</b><small>' + STAMP_DEFS[k].hint + '</small></div>';
+      }).join('') + '</div>' +
+      '<button class="stamp-ok-btn">Ok</button>';
+    back.querySelector('.stamp-ok-btn').addEventListener('click', function (e) { e.stopPropagation(); flipCard(ballot, false); });
+    ballot.appendChild(back);
+  }
+  function flipCard(ballot, toBack) {
+    var still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var spin = function (from, to, ease, done) {
+      var a = ballot.animate([{ transform: 'perspective(1400px) rotateY(' + from + 'deg)' }, { transform: 'perspective(1400px) rotateY(' + to + 'deg)' }],
+        { duration: 230, easing: ease });
+      a.onfinish = done;
+    };
+    if (still || !ballot.animate) { ballot.classList.toggle('show-back', toBack); return; }
+    spin(0, toBack ? 90 : -90, 'ease-in', function () {
+      ballot.classList.toggle('show-back', toBack);
+      spin(toBack ? -90 : 90, 0, 'ease-out', function () {});
+    });
   }
 
   var CHARGES_KEY = 'pme_politician_charges';
@@ -2556,15 +2630,15 @@
     ballot.querySelector('.pol-art-img-slot').replaceWith(img);
     ballot.querySelector('.pol-seal-slot').replaceWith(partyBadge(p));
 
-    if (!locked && loadWonWith().indexOf(p.id) !== -1) {
-      var won = document.createElement('div');
-      won.className = 'pol-won-stamp';
-      won.setAttribute('aria-label', 'Won an election as ' + p.name);
-      // Each clone needs its own arc-path ids: a <textPath href="#..."> that
-      // resolves into a *different* <svg> root silently renders nothing in
-      // WebKit, so duplicate ids would blank the curved text on every card.
-      won.innerHTML = $('declareStamp').innerHTML.replace(/stampArc/g, 'stampArc' + p.id);
-      ballot.appendChild(won);
+    if (!locked) {
+      var have = loadStamps()[p.id] || [];
+      var btn = document.createElement('button');
+      btn.className = 'pol-stamp-btn';
+      btn.setAttribute('aria-label', 'Stamps for ' + p.name);
+      btn.textContent = '🏅 ' + have.length + '/' + STAMP_ORDER.length;
+      btn.addEventListener('click', function (e) { e.stopPropagation(); flipCard(ballot, true); });
+      ballot.querySelector('.pol-art').appendChild(btn);
+      buildStampBack(p, ballot, have);
     }
 
     var agList = ballot.querySelector('.pol-agendas');
@@ -3667,10 +3741,10 @@
     maybeRecordHighScore();
     updateLadderAfterMatch();
     var seats = game.finalSeats;
-    var seal, headline, sub, atVerdict = [];
+    var seal, headline, sub, atVerdict = [], newStamps = [];
     if (game.winner === 'p1') {
       seal = '🏆'; headline = allySeatsBy('p1') > 0 ? 'Allied victory' : 'You won the election'; sub = 'You crossed 272 seats.';
-      if (!game.friendMatch) recordWin(game.players.p1.politician.id);
+      if (!game.friendMatch) newStamps = recordStamps(game.players.p1.politician.id, G.earnedStamps(game).collect);
       if (!game.friendMatch && unlockPolitician(game.players.p2.politician.id)) {
         sub += ' 🔓 ' + game.players.p2.politician.name + ' unlocked!';
         var unlocked = game.players.p2.politician;
@@ -3692,12 +3766,17 @@
     // matches, so the animation only replays after a reflow).
     var stamp = $('declareStamp');
     stamp.hidden = game.winner !== 'p1';
+    if (!stamp.hidden) {
+      var got = G.earnedStamps(game).collect;
+      var best = ['dominance', 'super', 'grand', 'landslide', 'allied', 'elected'].filter(function (k) { return got.indexOf(k) !== -1; })[0];
+      stamp.innerHTML = stampSvg(best || 'elected');
+    }
     $('declareSeal').textContent = seal;
     $('endHeadline').textContent = headline;
     $('endSub').textContent = sub;
     renderEndWinnerPortrait();
     renderEndLedger(seats);
-    renderEndStats();
+    renderEndStats(newStamps);
     $('playAgainBtn').style.background = COLORS.p1;
     // Hold everything back, then fill the chart seat by seat (see runEndReveal).
     var ov = $('endOverlay');
@@ -3959,7 +4038,7 @@
     return game.states.filter(function (s) { return game.pop[s.svgId][pk] === E.BPS; }).length;
   }
 
-  function renderEndStats() {
+  function renderEndStats(newStamps) {
     var p1Score = game.score != null ? game.score : G.computeScore(game, 'p1').score;
     var p2Score = G.computeScore(game, 'p2').score;
     // "Final score" sits at the bottom styled like a table's total row — it
@@ -3981,7 +4060,18 @@
         '<span class="stat-val p1">' + s.p1 + '</span>' +
         '<span class="stat-label">' + s.label + '</span>' +
         '<span class="stat-val p2">' + s.p2 + '</span></div>';
-    }).join('');
+    }).join('') + endStampsHtml(newStamps || []);
+  }
+  function endStampsHtml(newStamps) {
+    var chips = function (keys, cap) {
+      return '<div class="stamp-chips">' + keys.map(function (k) {
+        return '<div class="stamp-chip"><div class="stamp-art">' + stampSvg(k) + '</div><small>' + cap(k) + '</small></div>';
+      }).join('') + '</div>';
+    };
+    var oneOff = G.earnedStamps(game).badges, out = '';
+    if (newStamps.length) out += '<div class="pol-section-label">New stamp' + (newStamps.length > 1 ? 's' : '') + ' collected</div>' + chips(newStamps, function (k) { return STAMP_DEFS[k].name; });
+    if (oneOff.length) out += '<div class="pol-section-label">This game only</div>' + chips(oneOff, function (k) { return STAMP_DEFS[k].cap; });
+    return out;
   }
 
   // Desktop's end-game hemicycle, ported as-is: fetch the real 543-seat

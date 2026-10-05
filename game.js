@@ -585,6 +585,8 @@
     if (game.winner) return game;
     recordAction(game, 'endPhase', null, []);
     if (game.phase >= game.cfg.totalPhases) { finalizeGame(game); return game; }
+    // Standing at the halfway point, for the one-off "Comeback" badge.
+    if (game.phase === Math.floor(game.cfg.totalPhases / 2)) game.halfSeats = nationalSeatsWithAllies(game);
     game.phase += 1;
     startPhase(game);
     return game;
@@ -618,6 +620,30 @@
     var s = computeScore(game, 'p1');
     game.score = s.score;
     game.scoreBreakdown = s.breakdown;
+  }
+
+  // Stamps player 1 earned in a finished game. `collect` are the permanent,
+  // per-politician collectibles (Elected = won with no ally seats; Allied =
+  // won with some; Grand Alliance = won holding all allies; Landslide/Supermajority by final seats incl. allies; National
+  // Dominance = every regional group held at the end). `badges` are one-off and
+  // shown only on that game's stats. Pure function of final state.
+  function earnedStamps(game) {
+    var seats = game.finalSeats, won = game.winner === 'p1';
+    var collect = [], badges = [];
+    if (won) {
+      var ally = seats.p1 - E.nationalSeats(game.states, game.pop).p1;
+      collect.push(ally > 0 ? 'allied' : 'elected');
+      // Grand Alliance: still holding every ally on the board at the end.
+      if (game.allies.length && game.allies.every(function (a) { return a.owner === 'p1'; })) collect.push('grand');
+      if (seats.p1 >= 300) collect.push('landslide');
+      if (seats.p1 >= 400) collect.push('super');
+      var th = game.cfg.regionalDominance.thresholdBps;
+      var all = game.groups.every(function (g) { return E.dominanceActive(g, game.states, game.pop, 'p1', th); });
+      if (all) collect.push('dominance');
+      if (seats.p1 - seats.p2 <= 5) badges.push('nail');
+      if (game.halfSeats && game.halfSeats.p1 < game.halfSeats.p2) badges.push('comeback');
+    } else if (game.winner === 'p2') badges.push('defeated');
+    return { collect: collect, badges: badges };
   }
 
   // Composite end-of-game score for one player — a pure function of final
@@ -1066,6 +1092,7 @@
     allyTakes: allyTakes,
     allyEffectivePop: allyEffectivePop,
     nationalSeatsWithAllies: nationalSeatsWithAllies,
+    earnedStamps: earnedStamps,
     allySliceSeats: allySliceSeats,
     allySeatsByAlly: allySeatsByAlly,
     allyStateShares: allyStateShares,
