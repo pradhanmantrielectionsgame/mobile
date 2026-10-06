@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var E = window.PMEEngine, G = window.PMEGame;
-  var GAME_VERSION = '3.3.0';
+  var GAME_VERSION = '3.4.0';
   // Canonical public URL for the end-of-game "share result" link — hardcoded,
   // not location.href, so the shared link is always the clean site root and
   // never a /index.html deep link, a ?query string, or a Capacitor
@@ -3704,7 +3704,7 @@
         : e.fn === 'investCash' ? 'invest'
           : e.fn === 'playRallyToken' ? 'rally'
             : e.fn === 'tapAgenda' ? 'agenda'
-              : e.fn === 'acceptAlly' ? 'ally' : 'craft';
+              : (e.fn === 'acceptAlly' || e.fn === 'giveAllyTokens') ? 'ally' : 'craft';
     return { type: type, pk: e.pk, svgId: svgId, costCr: r.cost || null };
   }
 
@@ -4904,9 +4904,10 @@
   function onRallyBtn() {
     activeAgenda = null; activeAction = 'rally'; updateCard();
     var blocked = rallyBlockedReason();
-    if (blocked) { showToast(blocked); shakeInvalid($('rallyBtn')); return; }
+    // Tokens sent to an ally skip the per-phase spend cap, so a held ally keeps the button usable.
+    if (blocked && !(game.players.p1.tokens.stateRally > 0 && heldAllyIds().length)) { showToast(blocked); shakeInvalid($('rallyBtn')); return; }
     setArmed('stateRally');
-    if (armed) showToast('Tap a state to deploy');
+    if (armed) showToast(heldAllyIds().length ? 'Tap a state, or an ally to send it a token' : 'Tap a state to deploy');
   }
 
   // Plain-English version of craftBlockedBadge, for the tap toast.
@@ -5270,6 +5271,25 @@
     btn.disabled = !G.allyCanAccept(game, sel, 'p1');
   }
 
+  function heldAllyIds() {
+    return (game.allies || []).filter(function (x) { return x.owner === 'p1'; }).map(function (x) { return x.id; });
+  }
+
+  // Rally button armed + tap one of your ally tabs = send it one token (it plays
+  // it in its most popular free state). Stays armed so repeat taps send more.
+  function sendAllyToken(id) {
+    var r = G.giveAllyTokens(game, 'p1', id, 1);
+    if (!r.ok) {
+      showToast(r.reason === 'ally_capped' ? 'That ally has rallied in every state' : r.reason === 'no_tokens' ? 'No State Rally tokens' : 'Only your own allies take tokens');
+      if (r.reason === 'no_tokens') armed = null;
+      return renderAll();
+    }
+    showToast('📢 Token sent to ' + game.allies.filter(function (x) { return x.id === id; })[0].alias + ' in ' + game.statesById[r.states[0]].name);
+    playSound('rally_sound');
+    if (game.players.p1.tokens.stateRally <= 0) armed = null;
+    renderAll();
+  }
+
   function answerAlly() {
     var r = G.acceptAlly(game, 'p1', allyUi.tab);
     if (r.ok) playSound('bell_chime'); // ponytail: reuses the group-win chime, a distinct cue is a later polish
@@ -5368,6 +5388,7 @@
   fastTap($('allyTabs'), function (e) {
     var t = e.target.closest('[data-tab]'); if (!t) return;
     allyUi.tab = t.dataset.tab;
+    if (armed === 'stateRally' && !actionsLocked() && heldAllyIds().indexOf(allyUi.tab) !== -1) { sendAllyToken(allyUi.tab); return; }
     renderAllies();
   }, true);
   fastTap($('allyAcceptBtn'), answerAlly);

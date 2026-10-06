@@ -282,43 +282,57 @@
     }
     var idByName = {};
     game.states.forEach(function (s) { idByName[s.name] = s.svgId; });
-    // Each player's four agendas are shuffled once (keyed on the politician, not
-    // p1/p2, so a mirrored friend-match game matches); ally i takes the i-th, so
-    // the three drawn allies always get three DIFFERENT leave agendas.
-    var shuffled = {};
-    ['p1', 'p2'].forEach(function (pk) {
-      var pol = game.players[pk].politician;
-      var names = pol.policies.map(function (p) { return p.name; });
-      var rs = mulberry32(hashString(pol.id, seed));
-      for (var k = names.length - 1; k > 0; k--) {
-        var m = Math.floor(rs() * (k + 1)), tmp = names[k]; names[k] = names[m]; names[m] = tmp;
-      }
-      shuffled[pk] = names;
-    });
+    // The leave agenda scales with the ally: the bigger the ally, the stronger
+    // (more net regional pull, totalNetEffect) the agenda a player must refuse
+    // to finish. Each player's four agendas are ranked weakest -> strongest
+    // (static, so a mirrored friend-match guest ranks them the same); ally n of
+    // the 10 aims for that rank's n-th step, and the three drawn allies take
+    // distinct agendas, biggest ally first, nearest free rank when one is taken.
+    function ranked(pk) {
+      return game.players[pk].politician.policies.map(function (p) { return p.name; })
+        .sort(function (x, y) { return totalNetEffect(game, x) - totalNetEffect(game, y) || (x < y ? -1 : 1); });
+    }
+    function wantPos(a, steps) { return acfg.list.indexOf(a) / (acfg.list.length - 1) * steps; }
+    function nearest(free, want) {
+      return free.slice().sort(function (x, y) { return Math.abs(x - want) - Math.abs(y - want) || x - y; })[0];
+    }
+    var bySize = chosen.map(function (a, i) { return i; })
+      .sort(function (x, y) { return wantPos(chosen[y], 1) - wantPos(chosen[x], 1); });
     // An agenda both politicians hold must make an ally leave for BOTH or for
     // neither. The anchor (lower politician id, so a role-swapped guest game
-    // agrees) picks freely; the other side reuses any pick it also holds and
-    // fills the rest from names the anchor does not hold at all. That pool is
-    // always big enough: the anchor omits one of its four, so at most one
-    // shared name goes unused.
+    // agrees) picks by rank; the follower reuses the anchor's pick when it also
+    // holds it, and fills the rest from names the anchor does not hold at all
+    // (strongest spare to the biggest ally). That pool is always big enough: the
+    // anchor omits one of its four, so at most one shared name goes unused.
     var anchor = game.players.p1.politician.id <= game.players.p2.politician.id ? 'p1' : 'p2';
     var follower = anchor === 'p1' ? 'p2' : 'p1';
-    var anchorNames = shuffled[anchor].slice(0, 3);
+    var aRank = ranked(anchor), fRank = ranked(follower);
+    var free = aRank.map(function (n, i) { return i; });
+    var anchorPick = [];
+    bySize.forEach(function (i) {
+      var pos = nearest(free, wantPos(chosen[i], aRank.length - 1));
+      free.splice(free.indexOf(pos), 1);
+      anchorPick[i] = aRank[pos];
+    });
     var held = {};
-    shuffled[anchor].forEach(function (n) { held[n] = true; });
+    aRank.forEach(function (n) { held[n] = true; });
     var followerHas = {};
-    shuffled[follower].forEach(function (n) { followerHas[n] = true; });
-    var spare = shuffled[follower].filter(function (n) { return !held[n]; });
-    var followerPick = anchorNames.map(function (n) { return followerHas[n] ? n : spare.shift(); });
+    fRank.forEach(function (n) { followerHas[n] = true; });
+    var spare = fRank.filter(function (n) { return !held[n]; }); // weakest first
+    var followerPick = [];
+    bySize.forEach(function (i) { // biggest ally first
+      followerPick[i] = followerHas[anchorPick[i]] ? anchorPick[i] : null;
+    });
+    bySize.forEach(function (i) { if (!followerPick[i]) followerPick[i] = spare.pop(); });
     game.allies = chosen.map(function (a, idx) {
       var leave = {};
-      leave[anchor] = anchorNames[idx % 3];
-      leave[follower] = followerPick[idx % 3];
+      leave[anchor] = anchorPick[idx];
+      leave[follower] = followerPick[idx];
       return {
         id: a.id, alias: a.alias, groupKey: a.groupKey, sweepSvgId: idByName[a.sweepState],
         targetSeats: a.targetSeats, leaveAgenda: leave,
         footprintSvgIds: a.footprint.map(function (n) { return idByName[n]; }),
-        owner: null, defectedBy: null, offered: { p1: false, p2: false }, offeredVia: { p1: null, p2: null }, bonusBps: {}
+        owner: null, defectedBy: null, offered: { p1: false, p2: false }, offeredVia: { p1: null, p2: null }, bonusBps: {}, rallied: {}
       };
     });
   }
@@ -369,6 +383,7 @@
       if (a.owner !== playerKey || a.leaveAgenda[playerKey] !== agendaName) return;
       a.owner = null;
       a.bonusBps = {};
+      a.rallied = {};
       a.defectedBy = playerKey;
       var other = playerKey === 'p1' ? 'p2' : 'p1';
       a.offered[other] = false; a.offeredVia[other] = null;
@@ -382,6 +397,33 @@
     recordAction(game, 'acceptAlly', playerKey, [allyId]);
     a.owner = playerKey;
     return { ok: true, allyId: a.id };
+  }
+
+  // Hand rally tokens to a held ally: it plays them itself, one per state, from
+  // its most popular footprint state down. Each is the same lift as a state
+  // rally (tokenBoostBps) added to the ally's bonusBps, so it is drawn from
+  // everyone in the state like phase growth. Exempt from the player's own
+  // per-phase spend cap and the shared per-state rally cap; the ally's own cap
+  // is one rally per state. Only as many tokens as there are free states are
+  // taken, so none are wasted.
+  function giveAllyTokens(game, playerKey, allyId, count) {
+    var a = allyById(game, allyId), pl = game.players[playerKey];
+    if (!a || a.owner !== playerKey) return { ok: false, reason: 'not_owner' };
+    var shares = allyStateShares(game)[a.id] || {};
+    var order = a.footprintSvgIds.filter(function (id) { return !a.rallied[id]; })
+      .sort(function (x, y) { return (shares[y] || 0) - (shares[x] || 0); });
+    var n = Math.min(count, pl.tokens.stateRally, order.length);
+    if (n < 1) return { ok: false, reason: pl.tokens.stateRally < 1 ? 'no_tokens' : 'ally_capped' };
+    recordAction(game, 'giveAllyTokens', playerKey, [allyId, count]);
+    order.slice(0, n).forEach(function (id) {
+      a.rallied[id] = true;
+      a.bonusBps[id] = Math.min(E.BPS, (a.bonusBps[id] || 0) + game.cfg.rally.tokenBoostBps);
+    });
+    pl.tokens.stateRally -= n;
+    pl.tokensSpentTotal += n;
+    pushLog(game, '📢 ' + who(game, playerKey) + ' sent ' + n + ' rally token' + (n > 1 ? 's' : '') + ' to ' + a.alias, true);
+    applyPayouts(game);
+    return { ok: true, used: n, states: order.slice(0, n) };
   }
 
   // pop with every stable owned ally's slice moved from others into its
@@ -1061,6 +1103,50 @@
     return { ok: true };
   }
 
+  // Dry run of activatePower for the AI's timing decisions: what the power
+  // would do right now, in raw units, without touching game state. `margin` is
+  // the change in (own seats - opponent seats) from its popularity effects,
+  // simulated on a copy of the map; the rest are flat Cr / token deltas for each
+  // side. The caller converts them to seats. Mirrors activatePower's effect
+  // list (including Nehru's fallback), so keep the two in step.
+  function previewPower(game, playerKey, opts) {
+    opts = opts || {};
+    var pl = game.players[playerKey], opp = E.otherPlayer(playerKey), oppPl = game.players[opp];
+    var power = pl.politician.power;
+    var out = { margin: 0, fundsSelf: 0, fundsOpp: 0, tokensSelf: 0, tokensOpp: 0, incomeStopped: false };
+    var effects = (power.costs || []).concat(power.benefits || []);
+    if (oppPl.usedSpecial) effects = effects.concat(power.fallbackBenefits || []);
+    var pop = deepCopyPop(game.pop);
+    var before = E.nationalSeats(game.states, pop);
+    effects.forEach(function (e) {
+      var self = e.target === 'self';
+      if (e.kind === 'funds') { if (self) out.fundsSelf += e.amountCr; else out.fundsOpp += e.amountCr; }
+      else if (e.kind === 'seizeFundsPct') out.fundsOpp -= Math.round(oppPl.fundsCr * e.pct / 100);
+      else if (e.kind === 'stealFundsPct') { var amt = Math.round(oppPl.fundsCr * e.pct / 100); out.fundsOpp -= amt; out.fundsSelf += amt; }
+      else if (e.kind === 'seizeTokens') out.tokensOpp -= oppPl.tokens[e.tokenType || 'stateRally'] || 0;
+      else if (e.kind === 'stealTokens') { var tk = oppPl.tokens[e.tokenType || 'stateRally'] || 0; out.tokensOpp -= tk; out.tokensSelf += tk; }
+      else if (e.kind === 'tokens') { if (self) out.tokensSelf += e.amount; else out.tokensOpp += e.amount; }
+      else if (e.kind === 'refundAgendaSpend') {
+        var taps = 0; Object.keys(pl.agendaProgress).forEach(function (k) { taps += pl.agendaProgress[k]; });
+        out.fundsSelf += taps * game.cfg.agenda.costPerTapCr;
+      }
+      else if (e.kind === 'refundTokensSpent') out.tokensSelf += pl.tokensSpentTotal;
+      else if (e.kind === 'stopTokenIncome') out.incomeStopped = true;
+      else if (e.kind === 'popularity') {
+        var actor = self ? playerKey : opp, source = e.source || 'both';
+        resolvePowerScope(game, playerKey, opp, e, opts).forEach(function (svgId) {
+          var delta = e.toBps != null ? Math.max(0, e.toBps - pop[svgId][actor]) : e.bps;
+          if (delta === 0) return;
+          if (source === 'both' && e.bps > 0) E.gainAt(pop[svgId], actor, delta, 'both');
+          else E.applySigned(pop[svgId], actor, delta, source);
+        });
+      }
+    });
+    var after = E.nationalSeats(game.states, pop), oppKey = opp;
+    out.margin = (after[playerKey] - after[oppKey]) - (before[playerKey] - before[oppKey]);
+    return out;
+  }
+
   var API = {
     setRecordHook: setRecordHook,
     mulberry32: mulberry32,
@@ -1085,7 +1171,9 @@
     activateNationwideRally: activateNationwideRally,
     tapAgenda: tapAgenda,
     activatePower: activatePower,
+    previewPower: previewPower,
     acceptAlly: acceptAlly,
+    giveAllyTokens: giveAllyTokens,
     allyCanAccept: allyCanAccept,
     allyLocked: allyLocked,
     allyRoutes: allyRoutes,

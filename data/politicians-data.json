@@ -82,11 +82,11 @@
       "specialPower": {
         "name": "Economic Reform",
         "effect": "+₹2,500 Cr instantly",
-        "cost": "-8% popularity in Agricultural Region states"
+        "cost": "-3% popularity in Agricultural Region states"
       },
       "power": {
         "name": "Economic Reform",
-        "description": "+2,500 Cr instantly, at the cost of -8% popularity in Agricultural Region states.",
+        "description": "+2,500 Cr instantly, at the cost of -3% popularity in Agricultural Region states.",
         "benefits": [
           {
             "kind": "funds",
@@ -102,7 +102,7 @@
             "tags": [
               "AgriculturalRegion"
             ],
-            "bps": -800
+            "bps": -300
           }
         ]
       }
@@ -1074,7 +1074,7 @@
           "bonus": 40
         },
         {
-          "name": "Sports and Entertainment",
+          "name": "State's Rights",
           "bonus": 30
         },
         {

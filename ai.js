@@ -34,7 +34,11 @@
   // means today. groupObsession's code stays live (see
   // pickAIInvestmentTarget) only because those archived rungs still use it;
   // nothing on the current ladder does.
-  var LADDER_BASE = { agendaTapCapPerPolicyPerPhase: 4, craftsTokens: true, groupFocus: false };
+  // takeAllies is on for every rung (2026-10-05): accept any ally that comes on
+  // offer, protect held allies' leave agendas, and feed held allies spare
+  // tokens. Measured a tie with level 10 (findings.md 2026-10-02); deliberate
+  // chasing (chaseAlliesSmart/chaseAllies) stays off the live ladder.
+  var LADDER_BASE = { agendaTapCapPerPolicyPerPhase: 4, craftsTokens: true, groupFocus: false, takeAllies: true };
   function rung(key, actionsPerSecond, flags) {
     var p = { key: key, actionsPerSecond: actionsPerSecond };
     Object.keys(LADDER_BASE).forEach(function (k) { p[k] = LADDER_BASE[k]; });
@@ -168,6 +172,15 @@
       }
       pl.aiObsessionGroups = picked;
     }
+    // A politician whose power lowers the win bar (Narasimha Rao) cannot know
+    // until late whether it will matter, so a token-disciplined AI playing one
+    // assumes it won't and hoards for two Nationwide Rallies, keeping the power
+    // as a last-two-phases option (see raoPlan). Measured +31 seat margin at
+    // level 10 (2026-10-05). Keyed on the effect, not the politician.
+    var lowersBar = (pl.politician.power.benefits || []).some(function (e) { return e.kind === 'lowerSeatsToWin'; });
+    if (lowersBar && pl.aiProfile.tokenDiscipline) {
+      pl.aiProfile = Object.assign({}, pl.aiProfile, { skipSpecialCraft: true, twoNationwide: true, raoPlan: true });
+    }
   }
 
   // ---------------------------------------------------------------------
@@ -184,7 +197,7 @@
   // it), the token is just left unspent for that phase rather than retried
   // elsewhere — it banks toward the auto-craft threshold in aiStep instead.
   function pickAIRallyTarget(game, profile, playerKey, oppKey) {
-    if (profile && profile.tokenDiscipline) return pickDisciplinedRallyTarget(game, playerKey, false);
+    if (profile && profile.tokenDiscipline) return pickDisciplinedRallyTarget(game, playerKey, false, profile);
     if (profile && profile.tokenDisciplineLite) return pickDisciplinedRallyTarget(game, playerKey, true);
     if (profile && profile.valueRallyTarget) return pickValueRallyTarget(game, playerKey, oppKey);
     var top10 = game.states.slice().sort(function (a, b) { return b.seats - a.seats; }).slice(0, 10);
@@ -260,12 +273,13 @@
   // is genuinely short - the bot reverts to free spending much sooner than
   // full discipline (which keeps saving to 18) but still hoards with real
   // intent early on, unlike rally=none.
-  function pickDisciplinedRallyTarget(game, playerKey, liteMode) {
+  function pickDisciplinedRallyTarget(game, playerKey, liteMode, profile) {
     var pl = game.players[playerKey];
     var owed = liteMode
       ? (pl.craftedSpecial || pl.usedSpecial ? 0 : game.cfg.rally.specialPowerupCraftCost)
       : (pl.craftedSpecial || pl.usedSpecial ? 0 : game.cfg.rally.specialPowerupCraftCost) +
         (pl.craftedNationwide || pl.usedNationwide ? 0 : game.cfg.rally.nationwideRallyCraftCost);
+    if (profile && profile.twoNationwide) owed = tokensOwed(game, pl, profile);
     var spare = pl.tokens.stateRally - owed;
     var pool = game.states.filter(function (s) {
       var plays = game.rallyPlaysByState[s.svgId] || [];
@@ -283,8 +297,135 @@
     return null; // every open target is worth less than banking the token
   }
 
+  // Tokens the bot is still saving toward its craft goals. Default goals: the
+  // Special Powerup, plus a Nationwide Rally for tokenDiscipline bots.
+  // skipSpecialCraft drops the power from the plan; twoNationwide saves for two
+  // Nationwide Rallies (24 of a match's 28 tokens, so it cannot also afford the
+  // power). Experiment flags, set only by bot-bank.js profiles.
+  function tokensOwed(game, pl, profile) {
+    var rally = game.cfg.rally, owed = 0;
+    if (!profile.skipSpecialCraft && !(pl.craftedSpecial || pl.usedSpecial)) owed += rally.specialPowerupCraftCost;
+    if (profile.twoNationwide) {
+      var remaining = Math.max(0, 2 - (pl.aiNationwideLaunches || 0) - (pl.craftedNationwide ? 1 : 0));
+      owed += remaining * rally.nationwideRallyCraftCost;
+    } else if (profile.tokenDiscipline && !(pl.craftedNationwide || pl.usedNationwide)) {
+      owed += rally.nationwideRallyCraftCost;
+    }
+    return owed;
+  }
+
+  // Send one spare token (beyond `owed`) to a held ally. True if one went.
+  function feedAllyToken(game, pl, playerKey, owed) {
+    if (!game.allies || pl.tokens.stateRally <= owed) return false;
+    return game.allies.filter(function (a) { return a.owner === playerKey; })
+      .some(function (a) { return G().giveAllyTokens(game, playerKey, a.id, 1).ok; });
+  }
+
+  // ---- When to fire the special power ------------------------------------
+  // Firing the moment it is affordable wastes powers whose payoff depends on
+  // the situation (a 20% floor when we are already above it, a funds seize when
+  // the opponent is broke, a nullify after they have already used theirs). So:
+  // value the power in seats right now (G().previewPower, converted at the
+  // bot's own exchange rates), and fire only when that beats a bar that shrinks
+  // to zero by the last phase, so a power with any positive value is never left
+  // unused. Powers whose payoff is about WHEN, not how much, get a timing rule
+  // keyed on what they do (effect kind), not on who owns them.
+  var POWER_MIN_SEATS = 8; // seats of net value wanted at phase 1; scales down to 0 at the end
+
+  function crPerSeat(game) { return E.BPS * game.cfg.investment.costPerSeatCr / game.cfg.investment.boostStartBps; }
+  function tokenSeats(game) {
+    var total = game.states.reduce(function (a, s) { return a + s.seats; }, 0);
+    return total * game.cfg.rally.nationwideRallyBoostBps / (E.BPS * game.cfg.rally.nationwideRallyCraftCost);
+  }
+  // Cash is worth less the less game is left to spend it in.
+  function cashSeats(game, cr) {
+    return cr / crPerSeat(game) * (game.cfg.totalPhases - game.phase + 1) / game.cfg.totalPhases;
+  }
+
+  function powerValueSeats(game, power, playerKey, opts) {
+    var pv = G().previewPower(game, playerKey, opts);
+    var v = pv.margin + cashSeats(game, pv.fundsSelf - pv.fundsOpp) + tokenSeats(game) * (pv.tokensSelf - pv.tokensOpp);
+    if (pv.incomeStopped) {
+      v -= game.cfg.rally.tokenIncomePerPhase * (game.cfg.totalPhases - game.phase) * tokenSeats(game);
+    }
+    return v;
+  }
+
+  function powerKinds(power) {
+    var k = {};
+    (power.benefits || []).concat(power.costs || []).forEach(function (e) { k[e.kind] = true; });
+    return k;
+  }
+
+  // True when a lowered win bar would flip the result: we sit between the new and
+  // old bar and the opponent is not already over the new one.
+  function bridgesWinBar(game, power, playerKey, oppKey) {
+    var lowered = power.benefits.filter(function (e) { return e.kind === 'lowerSeatsToWin'; })[0].seatsToWin;
+    var seats = G().nationalSeatsWithAllies(game);
+    return seats[playerKey] >= lowered && seats[playerKey] < game.cfg.seatsToWin && seats[oppKey] < lowered;
+  }
+
+  function powerTimingOk(game, power, playerKey, oppKey, opts) {
+    var pl = game.players[playerKey], oppPl = game.players[oppKey];
+    var total = game.cfg.totalPhases, phasesLeft = total - game.phase, kinds = powerKinds(power);
+
+    // Nullify: always fire at once. The opponent can craft and deploy in the same
+    // breath, so waiting for them to commit means arriving too late; and if theirs
+    // is already spent it pays the fallback cash, which is worth taking now.
+    if (kinds.nullifyOpponentPower) return true;
+
+    // A lowered win bar only matters if it flips a result: we sit between the
+    // new and old bar and the opponent is not already over the new one. The cost
+    // is cash, so wait for the last two phases when the outcome is clear.
+    if (kinds.lowerSeatsToWin) return phasesLeft <= 1 && bridgesWinBar(game, power, playerKey, oppKey);
+
+    // Arms a bonus on the Nationwide Rally: each phase waited adds to it, so go
+    // early, while a Nationwide Rally is still ahead of us.
+    if (kinds.armNationwideRallyBonus) {
+      if (pl.usedNationwide) return false;
+      var perPhase = power.benefits.filter(function (e) { return e.kind === 'armNationwideRallyBonus'; })[0].bpsPerPhase;
+      var tokensShort = Math.max(0, game.cfg.rally.nationwideRallyCraftCost - pl.tokens.stateRally);
+      var deployPhase = Math.max(game.cfg.rally.nationwideRallyMinPhase, game.phase + Math.ceil(tokensShort / game.cfg.rally.tokenIncomePerPhase));
+      var totalSeats = game.states.reduce(function (a, s) { return a + s.seats; }, 0);
+      var gain = (deployPhase - game.phase) * perPhase * totalSeats / E.BPS;
+      return deployPhase <= total && gain - cashSeats(game, -G().powerFundsCost(power)) >= POWER_MIN_SEATS;
+    }
+
+    // Refunded tokens are worth most as another Nationwide Rally (crafting has no
+    // per-phase cap), which needs 12 refunded and phase 6+. That is true right
+    // after the first Nationwide Rally (12 spent) on top of the earlier crafts, so
+    // hold until then. Only in the last two phases settle for what the capped
+    // state-rally slots can still use.
+    if (kinds.refundTokensSpent) {
+      var refund = pl.tokensSpentTotal;
+      if (refund >= game.cfg.rally.nationwideRallyCraftCost && game.phase >= game.cfg.rally.nationwideRallyMinPhase) return true;
+      return phasesLeft <= 1 && tokenSeats(game) * Math.min(refund, game.cfg.rally.maxTokenSpendPerPhase * (phasesLeft + 1)) > cashSeats(game, G().powerFundsCost(power));
+    }
+
+    // A cash seize is a phase-start play: the opponent has just been refilled and
+    // has not spent it yet. Fire the moment they hold a real pile; the seat-value
+    // gate undervalues it (denying their snowball, not just the Cr), and an AI
+    // opponent that spends down its cash every phase would otherwise never be
+    // worth hitting.
+    if (kinds.seizeFundsPct) return oppPl.fundsCr >= 2000;
+
+    var need = POWER_MIN_SEATS * phasesLeft / total;
+    return powerValueSeats(game, power, playerKey, opts) > Math.max(need, 0);
+  }
+
+  // Popularity-kill target: the state where the swing in seats is biggest, not
+  // merely where the opponent's share is biggest.
   function pickAIPowerTarget(game, power, playerKey, oppKey) {
     var effect = power.benefits[0];
+    if (effect.kind === 'popularity' && effect.scope === 'targetState') {
+      var bestSwing = null, bestSwingVal = -Infinity;
+      game.states.forEach(function (s) {
+        if (effect.constraint === 'smallUT' && G().SMALL_UT_IDS.indexOf(s.svgId) === -1) return;
+        var v = G().previewPower(game, playerKey, { targetStateSvgId: s.svgId }).margin;
+        if (v > bestSwingVal) { bestSwingVal = v; bestSwing = s; }
+      });
+      return bestSwing ? bestSwing.svgId : null;
+    }
     var constraint = effect.constraint;
     var pool = constraint === 'smallUT' ? game.states.filter(function (s) { return G().SMALL_UT_IDS.indexOf(s.svgId) !== -1; }) : game.states;
     var best = null, bestVal = -1;
@@ -593,6 +734,12 @@
     // AI to exactly one rally per phase regardless of that shared cap,
     // silently halving the AI's rally usage versus a human every game
     // (found 2026-08-26 from a user report of a lopsided AI-vs-human game).
+    // allyFeedFirst (experiment flag): ally tokens come before state rallies, and
+    // only the Special Powerup's cost is held back, not the Nationwide Rally's.
+    if (profile.allyFeedFirst && pl.tokens.stateRally > 0 &&
+        feedAllyToken(game, pl, playerKey, pl.craftedSpecial || pl.usedSpecial ? 0 : game.cfg.rally.specialPowerupCraftCost)) {
+      return { type: 'ally', svgId: null, costCr: null };
+    }
     if (pl.tokensSpentThisPhase < game.cfg.rally.maxTokenSpendPerPhase && pl.tokens.stateRally > 0) {
       var rallyTarget = pickAIRallyTarget(game, profile, playerKey, oppKey);
       if (rallyTarget && G().playRallyToken(game, playerKey, rallyTarget).ok) {
@@ -600,14 +747,35 @@
       }
     }
 
+    // takeAllies: no state rally landed this tick (spend cap hit, no worthwhile
+    // target, or every target capped), so send one spare token to a held ally.
+    // "Spare" = beyond what the craft goals still owe, so banked tokens are safe.
+    if (profile.takeAllies && pl.tokens.stateRally > 0 && feedAllyToken(game, pl, playerKey, tokensOwed(game, pl, profile))) {
+      return { type: 'ally', svgId: null, costCr: null };
+    }
+
     // Auto-craft + deploy the special power the moment 6 tokens are banked
     // — unconditional, not gated by AI personality, so every match the AI
     // reliably gets its own power online instead of draining tokens on
     // individual rally plays and never reaching the threshold.
-    if (!pl.craftedSpecial && !pl.usedSpecial && pl.tokens.stateRally >= game.cfg.rally.specialPowerupCraftCost) {
+    if (!profile.skipSpecialCraft && !pl.craftedSpecial && !pl.usedSpecial && pl.tokens.stateRally >= game.cfg.rally.specialPowerupCraftCost) {
       if (G().craftToken(game, playerKey, 'special').ok) return { type: 'craftSpecial', svgId: null, costCr: null };
     }
-    if (profile.craftsTokens && G().craftToken(game, playerKey, 'nationwide').ok) {
+    // raoPlan (experiment flag, for a lower-the-win-bar power): assume the power
+    // will not be needed and hoard for two Nationwide Rallies; only in the last
+    // two phases, if the result is close enough that the lowered bar would flip it,
+    // spend 6 of the saved tokens on the power instead of the second Nationwide.
+    var raoHold = false;
+    if (profile.raoPlan) {
+      var raoPower = pl.politician.power;
+      if (!pl.craftedSpecial && !pl.usedSpecial && game.phase >= game.cfg.totalPhases - 1 &&
+          pl.tokens.stateRally >= game.cfg.rally.specialPowerupCraftCost && bridgesWinBar(game, raoPower, playerKey, oppKey) &&
+          G().craftToken(game, playerKey, 'special').ok) {
+        return { type: 'craftSpecial', svgId: null, costCr: null };
+      }
+      raoHold = (pl.aiNationwideLaunches || 0) >= 1 && game.phase < game.cfg.totalPhases - 1;
+    }
+    if (profile.craftsTokens && !raoHold && G().craftToken(game, playerKey, 'nationwide').ok) {
       return { type: 'craftNationwide', svgId: null, costCr: null };
     }
 
@@ -627,7 +795,7 @@
         // spent", not "the effect landed". Carry the flag through so the FX
         // layer shows a fizzle instead of a full power burst, the way the
         // human path already does in finishActivatePower.
-        var res = targetsOk ? G().activatePower(game, playerKey, opts) : { ok: false };
+        var res = targetsOk && powerTimingOk(game, power, playerKey, oppKey, opts) ? G().activatePower(game, playerKey, opts) : { ok: false };
         if (res.ok) {
           return { type: 'power', svgId: opts.targetStateSvgId || null, costCr: null, nullified: !!res.nullified };
         }
@@ -635,7 +803,10 @@
     }
 
     if (pl.craftedNationwide) { // fires any crafted charge, first or second
-      if (G().activateNationwideRally(game, playerKey).ok) return { type: 'nationwide', svgId: null, costCr: null };
+      if (G().activateNationwideRally(game, playerKey).ok) {
+        pl.aiNationwideLaunches = (pl.aiNationwideLaunches || 0) + 1;
+        return { type: 'nationwide', svgId: null, costCr: null };
+      }
     }
 
     // chaseAllies: take any ally on offer at once (free, and the opponent can
