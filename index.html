@@ -33,70 +33,59 @@
 <link rel="apple-touch-icon" href="assets/icons/pme-icon-180.png">
 <style>
 /* ---------------------------------------------------------------------------
-   Self-hosted webfonts (2026-09-19). Replaces the old all-system-font stack,
-   which rendered as a different product on every OS — Rockwell in particular
-   did not exist on Windows or Android, so every heading there silently fell
-   back to Georgia.
-
-   Sora    — geometric sans, display only (headings, names, buttons).
-   Manrope — geometric sans, all UI text, labels and numbers.
-   Both are variable, so one file per subset covers every weight: four files,
-   ~77 KB. Replaced Bitter + Mukta on 2026-09-19 — the slab-serif heading sat
-   too heavy against the new icon art.
+   Self-hosted webfonts. Inter (2026-10-10 redesign), four static weights
+   (400/600/700/800), latin subset incl. the rupee sign (U+20B9), arrows and
+   the check mark. Replaced Sora + Manrope. One family for both --font and
+   --font-display: headings get weight 800 instead of a second face.
 
    Self-hosted rather than linked from the Google Fonts CDN: this ships as an
    installed PWA/TWA, so type has to work offline and must not cost a
    third-party connection on first paint.
 
-   latin-ext is NOT optional — the rupee sign (U+20B9) lives in that subset and
-   it appears on nearly every HUD screen.
-
    The 'assets/' prefixes are the literal form scripts/deploy-mobile.js
    string-matches when it flattens the build. Don't refactor them into a
    variable or the rewrite silently misses them and the fonts 404 in prod.
 --------------------------------------------------------------------------- */
-@font-face{ font-family:'Sora'; font-style:normal; font-weight:100 900; font-display:swap;
-  src:url(assets/fonts/sora-latin.woff2) format('woff2');
-  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
-@font-face{ font-family:'Sora'; font-style:normal; font-weight:100 900; font-display:swap;
-  src:url(assets/fonts/sora-latin-ext.woff2) format('woff2');
-  unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
-@font-face{ font-family:'Manrope'; font-style:normal; font-weight:100 900; font-display:swap;
-  src:url(assets/fonts/manrope-latin.woff2) format('woff2');
-  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
-@font-face{ font-family:'Manrope'; font-style:normal; font-weight:100 900; font-display:swap;
-  src:url(assets/fonts/manrope-latin-ext.woff2) format('woff2');
-  unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
+@font-face{ font-family:'Inter'; font-style:normal; font-weight:400; font-display:swap;
+  src:url(assets/fonts/inter-latin-Regular.woff2) format('woff2'); }
+@font-face{ font-family:'Inter'; font-style:normal; font-weight:600; font-display:swap;
+  src:url(assets/fonts/inter-latin-SemiBold.woff2) format('woff2'); }
+@font-face{ font-family:'Inter'; font-style:normal; font-weight:700; font-display:swap;
+  src:url(assets/fonts/inter-latin-Bold.woff2) format('woff2'); }
+@font-face{ font-family:'Inter'; font-style:normal; font-weight:800; font-display:swap;
+  src:url(assets/fonts/inter-latin-ExtraBold.woff2) format('woff2'); }
 
 :root{
-  --page:#EEF0F3; --surface:#FFFFFF; --surface2:#F7F8FA; --track:#E4E7EC;
-  --ink:#14161C; --ink-soft:#4B5160; --ink-faint:#8890A0;
-  --line:#14161C; --rule:#D8DCE3;
-  --accent:#2451D6; --accent-ink:#FFFFFF;
-  --stamp:#B3311D;
+  --page:#F0F2FA; --surface:#FFFFFF; --surface2:#F5F3FF; --track:#E2E6F6;
+  --ink:#17153B; --ink-soft:#4B4A73; --ink-faint:#9391B8;
+  --line:#DAD8F0; --rule:#E4E2F5;
+  --accent:#4F46E5; --accent-ink:#FFFFFF;
+  --stamp:#EC1D6E;
   --p1:#E8871C; --p2:#1C8A4B; --map-base:#AEB4C0; --map-stroke:#14161C;
   /* Two faces, no third. The old code-font token was doing duty as the app's
      real UI font (22 call sites against 3 for --font), which is why every
      label and figure in the HUD read as console output. It's all --font now. */
-  --font: 'Manrope', -apple-system, "Segoe UI", sans-serif;
-  --font-display: 'Sora', -apple-system, "Segoe UI", sans-serif;
+  --font: 'Inter', -apple-system, "Segoe UI", sans-serif;
+  --font-display: 'Inter', -apple-system, "Segoe UI", sans-serif;
   /* Ballot-card motif (politician select, end-of-game results) — a warm
      paper/brass/stamp world layered on top of the app's own ink/surface
      tokens above, not a separate theme: see design/prototypes/pol-card-mockup.html. */
-  --paper:#FBF8EF; --paper-dim:#F1EAD6; --brass:#9C7A1E; --seal-green:#128807; --saffron:#FF9933; --gain:#1C8A4B;
+  --paper:#FFFFFF; --paper-dim:#F3F0FF; --brass:#B45309; --seal-green:#128807; --saffron:#FF9933; --gain:#1C8A4B;
   /* Map-screen chrome. Every tray/panel is warm paper; the buttons sitting
      on them stay --surface white so they still read as tappable rather
      than dissolving into the tray. --tray-rule is the warm counterpart to
      --rule, which is a cool grey and goes muddy against cream. */
-  --tray:#FBF8EF; --tray-rule:#E6DEC6;
+  --tray:#FFFFFF; --tray-rule:#E4E2F5;
 
   /* Type/shape scale — now used app-wide (was HUD-only). Expressed in rem
      against the fluid root font-size set on :root below; the whole stylesheet
      was migrated off its old 2.5x px authoring onto this scale 2026-08-28.
      Icon glyph sizes (the big emoji inside uts-btn/action-btn) stay literal. */
   --fs-1:0.575rem; --fs-2:0.7rem; --fs-3:0.8rem; --fs-4:0.925rem; --fs-5:1.1rem; --fs-6:1.25rem; --fs-7:1.6rem;
-  --radius-sm:0.25rem; --radius-md:0.4rem; --radius-lg:0.625rem;
-  --shadow-sm:2px 2px 0 var(--line); --shadow-md:2px 2px 0 var(--line);
+  --radius-sm:0.5rem; --radius-md:0.8rem; --radius-lg:1.1rem;
+  --shadow-sm:0 1px 2px rgba(60,50,160,.10), 0 4px 10px rgba(60,50,160,.10);
+  --shadow-md:0 1px 2px rgba(60,50,160,.10), 0 10px 22px rgba(60,50,160,.14);
+  --shadow-lg:0 2px 4px rgba(60,50,160,.10), 0 18px 40px rgba(60,50,160,.20);
 
   /* VIEWPORT MIGRATION (2026-08-28): the app now ships a real <meta viewport>
      and is a centered, max-width column on anything wider than a phone —
@@ -451,11 +440,11 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
 .ally-tab.alert:not(.on){ box-shadow: inset 0 2px 0 var(--saffron); }
 .ally-tab.locked{ opacity:.45; border-style:dashed; cursor:default; }
 .ally-tab .n{ font-variant-numeric:tabular-nums; display:block; font-weight:700; }
-.ally-st{ display:flex; align-items:center; gap: 0.2rem; margin-top: 0.15rem; font-weight:700; }
-.ally-st b{ width: 0.95rem; flex:none; font-weight:800; }
-.ally-st .bar{ flex:1; height: 0.4rem; border-radius: 0.2rem; background:var(--paper-dim); overflow:hidden; }
+.ally-st{ display:flex; align-items:center; gap: 0.2rem; margin-top: 0.2rem; font-weight:700; font-size: var(--fs-2); line-height:1; }
+.ally-st b{ width: 1.1rem; flex:none; font-weight:800; }
+.ally-st .bar{ flex:1; min-width:0; height: 0.5rem; border-radius: 0.25rem; background:var(--paper-dim); overflow:hidden; }
 .ally-st .bar i{ display:block; height:100%; background:repeating-linear-gradient(45deg,var(--p1) 0 3px,rgba(255,255,255,.6) 3px 6px); }
-.ally-st span{ width: 1.3rem; text-align:right; font-variant-numeric:tabular-nums; flex:none; }
+.ally-st span{ width: 1.6rem; text-align:right; font-variant-numeric:tabular-nums; flex:none; }
 .ally-reward{ margin: 0.1rem 0 0.1rem; text-align:center; font-weight:800; font-size: var(--fs-3); line-height:1; color:var(--brass); font-variant-numeric:tabular-nums; }
 .ally-reward small{ font-size: var(--fs-1); color:var(--ink-soft); margin-left: 0.15rem; }
 .ally-quest{ display:flex; align-items:center; gap: 0.25rem; padding: 0.15rem 0.25rem; border: 1px solid var(--tray-rule); border-radius:var(--radius-sm); background:var(--surface); line-height:1.1; }
@@ -483,7 +472,7 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
 .ally-done{ text-align:center; color:var(--ink-soft); padding: 0.25rem 0; font-weight:700; }
 .ally-btns{ display:flex; gap: 0.2rem; margin-top: 0.2rem; }
 .ally-btns[hidden]{ display:none; }
-.ally-btns button{ flex:1; padding: 0.1rem 0; border-radius:var(--radius-sm); border: 1.5px solid var(--ink); background:var(--surface); font-weight:800; font-size: var(--fs-1); }
+.ally-btns button{ flex:1; padding: 0.1rem 0; border-radius:var(--radius-sm); border: 1px solid var(--line); background:var(--surface); font-weight:800; font-size: var(--fs-1); }
 .ally-btns button.yes{ background:var(--gain); color:#fff; border-color:var(--gain); }
 .ally-btns button:disabled{ opacity:.35; }
 .se-actions{ position:relative;
@@ -561,8 +550,8 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
 .action-btn.agenda-done{ opacity:.5; }
 .action-btn.agenda-done .badge{ background:var(--stamp); }
 @keyframes craft-pulse{
-  0%,100%{ box-shadow: 2px 2px 0 var(--line); }
-  50%{ box-shadow: 2px 2px 0 var(--line), 0 0 0 2.5px rgba(179,49,29,.35); }
+  0%,100%{ box-shadow: var(--shadow-md); }
+  50%{ box-shadow: var(--shadow-md), 0 0 0 2.5px rgba(179,49,29,.35); }
 }
 
 /* ---- rally token markers: a small colored dot per player left on the map
@@ -598,7 +587,7 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
    inside it is ever drawn. */
 .toast-bar{ position:absolute; top: calc(100% + 0.3rem); left:0; right: 5.9rem; z-index:65;
   display:flex; justify-content:center; pointer-events:none; }
-.toast{ min-height: 1.4rem; background:var(--ink); color:var(--page); font-size:var(--fs-3); font-weight:700; padding: 0.2rem 0.6rem; border-radius:var(--radius-md); box-shadow: 2px 2px 0 var(--accent); opacity:0; transition:opacity .25s ease; max-width:100%; width:max-content; text-align:center; display:flex; align-items:center; justify-content:center; }
+.toast{ min-height: 1.4rem; background:var(--ink); color:var(--page); font-size:var(--fs-3); font-weight:700; padding: 0.2rem 0.6rem; border-radius:var(--radius-md); box-shadow: var(--shadow-md); opacity:0; transition:opacity .25s ease; max-width:100%; width:max-content; text-align:center; display:flex; align-items:center; justify-content:center; }
 .toast.show{ opacity:1; }
 
 /* ---- info panel: fixed, non-interactive readout for the tapped state. One
@@ -638,7 +627,7 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
    some future one does, it scrolls instead of resizing the map again. ---- */
 .info-panel{ position:relative; flex:0 0 auto;
   height: calc(6.1rem + env(safe-area-inset-bottom,0px)); overflow-y:auto;
-  padding: 0.45rem calc(0.7rem + 1.5rem) calc(env(safe-area-inset-bottom,0px) + 0.3rem) 0.7rem;
+  padding: 0.45rem calc(0.7rem + 2.1rem) calc(env(safe-area-inset-bottom,0px) + 0.3rem) 0.7rem;
   /* White, where every other surface on this screen -- topstrip, group rail,
      player strip, both action trays, the UT bar -- is the cream tray. That is
      the whole differentiation: this panel is a readout, not a control, and
@@ -677,7 +666,7 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
 .pin-btn[hidden]{ display:none; }
 /* Invest sits in the OPPOSITE corner from the pin: top-right, level with the
    state's name, clear of the vs-bar's opponent symbol at the bottom right. */
-.pin-btn.top-right{ top: 0.45rem; bottom:auto; }
+.pin-btn.top-right{ top: 0.45rem; bottom:auto; width: 2.25rem; height: 2.25rem; font-size: var(--fs-5); }
 
 /* Always its own row below the name/seats line (never squeezed inline next
    to them) — a state's name length and its number of group tags both vary
@@ -765,11 +754,11 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
 .welcome-content{ position:relative; z-index:1; padding: 0 0.7rem calc(env(safe-area-inset-bottom,0px) + 1rem); text-align:center; }
 .welcome-content h1{ color:var(--accent-ink); font-size: var(--fs-6); margin: 0.4rem 0 0.65rem; text-shadow: 0 2px 8.5px rgba(0,0,0,.55); }
 .welcome-start-btn{ width:100%; max-width: 11rem; font-family:var(--font-display); color:var(--accent-ink); font-weight:700; font-size: var(--fs-3); padding: 0.5rem 0.8rem;
-  background:var(--accent); border-radius: 2.5rem; border: 1.5px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); }
+  background:var(--accent); border-radius: 2.5rem; border: 1px solid transparent; box-shadow: var(--shadow-md); }
 .welcome-howto-btn{ width:100%; max-width: 11rem; margin-top: 0.4rem; font-family:var(--font-display); color:var(--ink); font-weight:700; font-size: var(--fs-3); padding: 0.5rem 0.8rem;
-  background:var(--paper-dim); border-radius: 2.5rem; border: 1.5px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); }
+  background:var(--paper-dim); border-radius: 2.5rem; border: 1px solid var(--line); box-shadow: var(--shadow-md); }
 #friendBtn{ position:relative; }
-.new-badge{ position:absolute; top:-0.45rem; right:-0.2rem; padding:0.1rem 0.4rem; border-radius:1rem; background:var(--saffron); color:var(--accent-ink); border:1.5px solid var(--ink); font-size:var(--fs-1); font-weight:800; letter-spacing:0.08em; line-height:1.2; pointer-events:none; animation: new-badge-pop 2.4s ease-in-out infinite; }
+.new-badge{ position:absolute; top:-0.45rem; right:-0.2rem; padding:0.1rem 0.4rem; border-radius:1rem; background:var(--saffron); color:var(--accent-ink); border: 2px solid var(--surface); font-size:var(--fs-1); font-weight:800; letter-spacing:0.08em; line-height:1.2; pointer-events:none; animation: new-badge-pop 2.4s ease-in-out infinite; }
 .new-badge[hidden]{ display:none; }
 @keyframes new-badge-pop{ 0%,70%,100%{ transform:scale(1); } 80%{ transform:scale(1.18) rotate(-4deg); } 90%{ transform:scale(1) rotate(3deg); } }
 @media (prefers-reduced-motion: reduce){ .new-badge{ animation:none; } }
@@ -804,14 +793,14 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
    and rationale). Swipe/scroll-snap between them (native CSS, no drag JS). */
 #polCarousel{ flex:1 1 auto; min-height:0; display:flex; overflow-x:auto; overflow-y:hidden; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; }
 .pol-card{ flex:0 0 100%; scroll-snap-align:center; scroll-snap-stop:always; display:flex; flex-direction:column; overflow-y:auto; padding: 0.45rem 0.45rem 0.3rem; }
-.ballot-card{ position:relative; --acc:#999; flex:1 1 auto; min-height:0; zoom:.95; background:var(--paper); color:var(--ink); border-radius: 1.125rem; border: 2px solid var(--ink);
-  box-shadow: 3px 3px 0 var(--ink); overflow:hidden; display:flex; flex-direction:column; }
+.ballot-card{ position:relative; --acc:#999; flex:1 1 auto; min-height:0; zoom:.95; background:var(--paper); color:var(--ink); border-radius: 1.125rem; border: 1px solid var(--line);
+  box-shadow: var(--shadow-lg); overflow:hidden; display:flex; flex-direction:column; }
 
 /* "won with this politician" badge — same stamp art as the declare card's,
    shrunk and static (no slam) so the carousel stays calm. */
 /* Stamp menu button on the card art: opens that politician's stamp grid. */
 .pol-stamp-btn{ position:absolute; top:0.55rem; left:0.55rem; z-index:2; display:flex; align-items:center; gap:0.25rem; padding:0.3rem 0.55rem; border-radius:999px;
-  background:rgba(251,248,239,.92); border:1.5px solid var(--ink); font-size:var(--fs-2); font-weight:700; color:var(--ink); }
+  background:rgba(251,248,239,.92); border: 1px solid var(--line); font-size:var(--fs-2); font-weight:700; color:var(--ink); }
 .stamp-art svg{ width:100%; height:100%; display:block; }
 /* Back of the card (stamp grid): hidden until .show-back; the front's children are hidden then. */
 .pol-back{ display:none; flex:1 1 auto; min-height:0; overflow-y:auto; flex-direction:column; padding:0.9rem 0.9rem 0.7rem; background:var(--paper); }
@@ -836,6 +825,7 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
 .tricolor{ width:100%; height: 0.25rem; display:flex; flex:0 0 auto; }
 .tricolor span{ flex:1; }
 .tricolor .saffron{ background:var(--saffron); } .tricolor .white{ background:var(--paper); } .tricolor .green{ background:var(--seal-green); }
+.ballot-card .tricolor, .tutorial-slide .tricolor, .declare-card .tricolor, .about-card .tricolor, .overlay .tricolor{ display:none; } /* no stripe on cards/dialogs; welcome keeps its own */
 
 .pol-art{ position:relative; width:100%; flex:1 1 auto; min-height: 6.5rem; display:flex; align-items:center; justify-content:center; overflow:hidden;
   background:linear-gradient(160deg, var(--acc), var(--paper) 92%); }
@@ -848,32 +838,32 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
 .pol-bio{ flex:0 0 auto; padding: 0.5rem 1rem 0; }
 .pol-name-row{ display:flex; align-items:center; justify-content:space-between; gap: 0.5rem; margin-bottom: 0.25rem; }
 .pol-name{ font-family:var(--font-display); font-weight:700; font-size: var(--fs-6); margin:0; text-align:left; min-width:0; }
-.pol-seal{ width: 2.5rem; height: 2.5rem; border-radius:50%; flex:0 0 auto; border: 1.6px solid #C9A227;
-  display:flex; align-items:center; justify-content:center; font-size: var(--fs-5); overflow:hidden; box-shadow: 0 0 0 1.5px rgba(0,0,0,.15); }
+.pol-seal{ width: 2.5rem; height: 2.5rem; border-radius:50%; flex:0 0 auto; border: 2px solid var(--surface);
+  display:flex; align-items:center; justify-content:center; font-size: var(--fs-5); overflow:hidden; box-shadow: var(--shadow-md); }
 .pol-seal img{ width: 2.2rem; height: 2.2rem; object-fit:contain; }
 .party-symbol-icon{ width:1.15em; height:1.15em; object-fit:contain; vertical-align:-0.2em; flex:0 0 auto; }
-.pol-meta{ display:flex; justify-content:flex-start; align-items:center; gap: 0.5rem; margin-bottom: 0.15rem; font-size: var(--fs-2); font-family:var(--font); color:var(--brass); }
+.pol-meta{ display:flex; justify-content:flex-start; align-items:center; gap: 0.5rem; margin-bottom: 0.15rem; font-size: var(--fs-2); font-family:var(--font); color:var(--accent); }
 .pol-party-pill{ color:var(--ink); background:var(--paper-dim); font-weight:700; padding: 0.075rem 0.5rem; border-radius: var(--radius-sm); font-size: var(--fs-2); }
-.pol-section-label{ font-family:var(--font); font-size: var(--fs-1); font-weight:700; text-transform:uppercase; letter-spacing:.12em; color:var(--brass); margin: 0.45rem 0 0.2rem; padding-bottom: 0.25rem; border-bottom: 1px solid rgba(20,22,28,.15); }
+.pol-section-label{ font-family:var(--font); font-size: var(--fs-1); font-weight:700; text-transform:uppercase; letter-spacing:.12em; color:var(--accent); margin: 0.45rem 0 0.2rem; padding-bottom: 0.25rem; border-bottom: 1px solid var(--rule); }
 .pol-agendas{ display:flex; flex-direction:column; }
-.pol-agenda-chip{ width:100%; text-align:left; background:none; border-radius:0; padding: 0.325rem 0.125rem; display:flex; align-items:center; gap: 0.575rem; font-size: var(--fs-3); font-weight:600; min-width:0; border-bottom: 1px solid rgba(20,22,28,.15); }
+.pol-agenda-chip{ width:100%; text-align:left; background:none; border-radius:0; padding: 0.325rem 0.125rem; display:flex; align-items:center; gap: 0.575rem; font-size: var(--fs-3); font-weight:600; min-width:0; border-bottom: 1px solid var(--rule); }
 .pol-agenda-chip:nth-last-child(2){ border-bottom: none; }
 /* checklist look — the bullet is its own marker (a hollow punched
    ballot-stub circle, die-cut through the card stock) leading each row,
    ahead of the icon, not overlapping it. */
-.pol-agenda-chip .bullet{ width: 0.65rem; height: 0.65rem; border-radius:50%; background:var(--paper); border: 1.6px solid rgba(20,22,28,.35); flex:0 0 auto; }
+.pol-agenda-chip .bullet{ width: 0.65rem; height: 0.65rem; border-radius:50%; background:var(--paper); border: 1.6px solid var(--ink-faint); flex:0 0 auto; }
 .pol-agenda-chip .ic{ width: 1.625rem; height: 1.625rem; border-radius:50%; background:var(--paper-dim); display:flex; align-items:center; justify-content:center; font-size: var(--fs-4); flex:0 0 auto; }
 .pol-agenda-chip .nm{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.pol-agenda-chip .chev{ flex:0 0 auto; font-size: var(--fs-2); color:var(--brass); transition:transform .15s; }
+.pol-agenda-chip .chev{ flex:0 0 auto; font-size: var(--fs-2); color:var(--accent); transition:transform .15s; }
 .pol-agenda-chip.active .chev{ transform: rotate(90deg); color:var(--stamp); }
 .pol-agenda-detail{ display:none; flex-wrap:wrap; gap: 0.375rem; padding: 0.125rem 0.125rem 0.625rem 2.2rem; }
 .pol-agenda-detail.show{ display:flex; }
 .pol-eff-chip{ padding: 0.2rem 0.5rem; border-radius: 2.5rem; background:var(--paper-dim); border: 1px solid var(--rule); font-family:var(--font); font-weight:700; font-size: var(--fs-1); }
 .pol-eff-chip.eff-pos{ border-color:var(--gain); color:var(--gain); }
 .pol-eff-chip.eff-neg{ border-color:var(--stamp); color:var(--stamp); }
-.pol-power{ position:relative; width:100%; background:rgba(179,49,29,.06); border: 1px solid rgba(179,49,29,.4); border-radius: var(--radius-lg); padding: 0.45rem 0.75rem 0.45rem 2.5rem; margin-bottom: 0.45rem; }
+.pol-power{ position:relative; width:100%; background:var(--surface2); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 0.45rem 0.75rem 0.45rem 2.5rem; margin-bottom: 0.45rem; }
 .info-panel .pol-power{ padding: 0.3rem 0.6rem 0.3rem 2.4rem; margin-bottom:0; margin-top: 0.22rem; }
-.pow-seal{ position:absolute; left: 0.55rem; top: 0.45rem; width: 1.375rem; height: 1.375rem; border-radius:50%; background:var(--stamp); display:flex; align-items:center; justify-content:center; font-size: var(--fs-2); transform: rotate(-8deg); box-shadow: 0 1px 2.5px rgba(20,22,28,.3); }
+.pow-seal{ position:absolute; left: 0.55rem; top: 0.45rem; width: 1.375rem; height: 1.375rem; border-radius:50%; background:var(--accent); display:flex; align-items:center; justify-content:center; font-size: var(--fs-2); }
 .pow-name{ font-family:var(--font-display); font-weight:700; font-size: var(--fs-3); margin-bottom: 0.15rem; }
 .pow-benefit{ font-family:var(--font); font-size: var(--fs-1); color:var(--seal-green); font-weight:700; text-transform:uppercase; letter-spacing:.02em; margin-bottom: 0.15rem; }
 .pow-cost{ font-family:var(--font); font-size: var(--fs-1); color:var(--stamp); font-weight:700; text-transform:uppercase; letter-spacing:.02em; }
@@ -886,7 +876,7 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
 .pol-diamond{ font-size: 1rem; line-height:1; color:rgba(20,22,28,.25); }
 .pol-diamond.full{ color:var(--acc); }
 .pol-play-btn{ width:100%; max-width: 13rem; text-align:center; flex:0 0 auto; font-family:var(--font-display); color:var(--accent-ink); font-weight:700; font-size: var(--fs-5); padding: 0.7rem 1.125rem;
-  border-radius: 2.5rem; border: 1.5px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); }
+  border-radius: 2.5rem; border: 1px solid var(--line); box-shadow: var(--shadow-md); }
 .pol-play-btn .cd-time{ display:block; white-space:nowrap; }
 .pol-play-btn:active{ transform: translate(2px,2px); box-shadow: none; }
 .pol-locked .pol-art img, .pol-locked .pol-art-fallback{ filter:grayscale(1); opacity:.55; }
@@ -898,8 +888,8 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
 /* ---- end-of-game "declaration" card — same ballot-card materials as the
    select screen's, so the game opens and closes inside one visual world. ---- */
 .end-overlay{ align-items:center; justify-content:flex-start; text-align:center; gap:0; padding: 0.5rem; }
-.declare-card{ position:relative; width:100%; background:var(--paper); color:var(--ink); border-radius: 1.125rem; border: 2px solid var(--ink);
-  box-shadow: 3.5px 3.5px 0 var(--ink); overflow:hidden; display:flex; flex-direction:column; align-items:center; }
+.declare-card{ position:relative; width:100%; background:var(--paper); color:var(--ink); border-radius: 1.125rem; border: 1px solid var(--line);
+  box-shadow: var(--shadow-lg); overflow:hidden; display:flex; flex-direction:column; align-items:center; }
 /* victory rubber stamp — slams onto the declare card's top-right when the
    human wins. Inline SVG (not an asset) so html2canvas ships it in the
    shared screenshot too. */
@@ -963,7 +953,7 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
 .ledger-row:last-child{ border-bottom: none; }
 .ledger-row.winner{ font-weight:700; }
 .ledger-row.others{ color:var(--ink-soft); font-style:italic; }
-.ledger-portrait{ width: 1.75rem; height: 1.75rem; border-radius:50%; object-fit:cover; border: 1.6px solid var(--ink); background:#ccc; flex:0 0 auto; }
+.ledger-portrait{ width: 1.75rem; height: 1.75rem; border-radius:50%; object-fit:cover; border: 1.5px solid var(--line); background:#ccc; flex:0 0 auto; }
 .ledger-dot{ width: 0.55rem; height: 0.55rem; border-radius:50%; flex:0 0 auto; }
 .ledger-name{ flex:1; text-align:left; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .ledger-type{ color:var(--ink-soft); font-weight:600; font-size: var(--fs-1); }
@@ -991,10 +981,10 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
 @keyframes rm-shine{ 0%,55%{ transform:translateX(-120%); } 85%,100%{ transform:translateX(320%); } }
 @media (prefers-reduced-motion: reduce){ #rematchBtn.rematch-ready, #rematchBtn.rematch-ready .rm-ic, #rematchBtn.rematch-ready::after{ animation:none; } }
 .rematch-banner{ flex:0 0 100%; text-align:center; font-size:var(--fs-3); font-weight:700; color:var(--brass); }
-.friend-setting input{ width:8rem; font-family:var(--font-display); font-weight:700; font-size:var(--fs-3); padding:0.3rem 0.4rem; border:2px solid var(--ink); border-radius:var(--radius-md); background:var(--surface); color:var(--ink); }
+.friend-setting input{ width:8rem; font-family:var(--font-display); font-weight:700; font-size:var(--fs-3); padding:0.3rem 0.4rem; border: 1.5px solid var(--ink-faint); border-radius:var(--radius-md); background:var(--surface); color:var(--ink); }
 .declare-footer .tip-link{ flex:0 0 100%; text-align:center; color:var(--ink-soft); }
 .end-overlay button{ flex:1; font-family:var(--font-display); background:var(--accent); color:var(--accent-ink); font-weight:700;
-  padding: 0.6rem 0.75rem; border-radius: 2.5rem; font-size: var(--fs-4); border: 1.5px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); }
+  padding: 0.6rem 0.75rem; border-radius: 2.5rem; font-size: var(--fs-4); border: 1px solid transparent; box-shadow: var(--shadow-md); }
 .end-overlay button:active{ transform: translate(2px,2px); box-shadow: none; }
 .end-overlay button.secondary{ background:var(--paper-dim); color:var(--ink); }
 .target-banner{ position:fixed; top:0; left:0; right:0; z-index:60; background:var(--stamp); color:var(--accent-ink); text-align:center; font-size: 0.3125rem; font-weight:700; padding: 0.2rem; }
@@ -1004,7 +994,7 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
   padding: calc(env(safe-area-inset-top,0px) + 0.3rem) 0.6rem 0.3rem; background:var(--ink); color:var(--accent-ink); }
 .replay-bar[hidden]{ display:none; }
 .replay-bar button{ font-family:var(--font-display); font-weight:700; font-size:var(--fs-3); color:var(--ink); background:var(--paper);
-  border: 1.5px solid var(--ink); border-radius:var(--radius-sm); padding: 0.2rem 0.5rem; min-width: 1.9rem; }
+  border: 1px solid var(--line); border-radius:var(--radius-sm); padding: 0.2rem 0.5rem; min-width: 1.9rem; }
 .replay-bar button:active{ transform: translate(1px,1px); }
 .replay-progress{ flex:1; font-weight:700; font-size:var(--fs-3); }
 .replay-speeds{ display:flex; gap: 0.25rem; }
@@ -1019,7 +1009,7 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
 .install-gate-overlay{ z-index:100; align-items:center; justify-content:center; text-align:center; padding: 1rem; padding-top: calc(env(safe-area-inset-top,0px) + 2.25rem); }
 .install-gate-body{ max-width: 16rem; margin:0 auto; }
 .install-gate-body p{ font-size: var(--fs-5); line-height:1.5; margin: 0 0 0.75rem; }
-.install-gate-steps{ background:var(--paper-dim); border: 1.5px solid var(--ink); border-radius: 0.75rem; padding: 0.75rem 0.875rem; text-align:left; }
+.install-gate-steps{ background:var(--paper-dim); border: 1px solid var(--line); border-radius: 0.75rem; padding: 0.75rem 0.875rem; text-align:left; }
 .install-gate-steps p{ font-size: var(--fs-4); line-height:1.4; margin: 0 0 0.5rem; }
 .install-gate-steps p:last-child{ margin-bottom:0; }
 
@@ -1028,20 +1018,20 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
    it names. Sits above the welcome screen (z-index 55) but below the
    install gate (100), so a phone that has to install first sees that one. */
 .about-overlay{ z-index:60; align-items:center; justify-content:center; padding: 1rem; padding-top: calc(env(safe-area-inset-top,0px) + 2.25rem); }
-.about-body{ max-width: 19rem; margin:0 auto; padding: 1.1rem 1rem 1rem; border-radius: 1.125rem; border: 2px solid var(--ink); box-shadow: 5px 5px 0 var(--ink);
-  background: linear-gradient(90deg,var(--saffron) 0 33.3%,var(--paper) 33.3% 66.6%,var(--seal-green) 66.6% 100%) 0 0/100% 0.25rem no-repeat, var(--paper); }
+.about-body{ max-width: 19rem; margin:0 auto; padding: 1.1rem 1rem 1rem; border-radius: 1.125rem; border: 1px solid var(--line); box-shadow: var(--shadow-lg);
+  background: var(--paper); }
 .about-body p{ font-size: var(--fs-3); line-height:1.5; margin: 0 0 0.7rem; }
 .about-body p:last-of-type{ margin-bottom: 1rem; }
 .about-body a{ color:var(--ink); text-decoration:underline; }
 .about-ok-btn{ display:block; width:100%; max-width: 11rem; margin: 0 auto; font-family:var(--font-display); color:var(--accent-ink); font-weight:700; font-size: var(--fs-3); padding: 0.5rem 0.8rem;
-  background:var(--accent); border-radius: 2.5rem; border: 1.5px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); }
+  background:var(--accent); border-radius: 2.5rem; border: 1px solid transparent; box-shadow: var(--shadow-md); }
 .about-ok-btn:active{ transform: translate(2px,2px); box-shadow: none; }
 .friend-overlay{ z-index:65; }
 .friend-overlay [hidden]{ display:none !important; }
 .friend-overlay .about-body{ text-align:center; }
 .friend-overlay .about-ok-btn{ margin-top: 0.6rem; }
 .friend-setting{ display:flex; align-items:center; justify-content:space-between; gap:0.6rem; max-width: 16rem; margin: 0.5rem auto 0; font-size: var(--fs-3); color: var(--ink); }
-.friend-setting select{ font-family: var(--font-display); font-weight:700; font-size: var(--fs-3); padding: 0.3rem 0.4rem; border: 2px solid var(--ink); border-radius: var(--radius-md); background:var(--surface); color: var(--ink); }
+.friend-setting select{ font-family: var(--font-display); font-weight:700; font-size: var(--fs-3); padding: 0.3rem 0.4rem; border: 1.5px solid var(--ink-faint); border-radius: var(--radius-md); background:var(--surface); color: var(--ink); }
 .friend-wait-title{ font-family: var(--font-display); font-weight:800; font-size: var(--fs-5); color: var(--ink); margin-bottom: 0.6rem; }
 .friend-me{ max-width: 16rem; margin: 1rem auto 0; padding: 0.8rem 0.9rem 0.9rem; background:var(--paper-dim); border-radius: 0.8rem; border-top: 0.35rem solid var(--friend-me-color, var(--ink)); box-shadow: none; text-align:center; }
 .friend-me-label{ font-size: var(--fs-1); font-weight:700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-faint); }
@@ -1053,7 +1043,7 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
 .friend-me-rules{ font-size: var(--fs-2); font-weight:700; color: var(--ink); margin-top: 0.6rem; padding-top: 0.5rem; border-top: 1px dashed rgba(20,22,28,.25); }
 .friend-or{ margin: 1rem 0 0.4rem; font-size: var(--fs-2); color: var(--ink-soft); }
 .friend-code-input, .friend-code{ display:block; width:100%; max-width: 11rem; margin: 0 auto; text-align:center; font-family: var(--font-display); font-weight:800; letter-spacing: 0.3em; text-transform: uppercase; }
-.friend-code-input{ font-size: var(--fs-5); padding: 0.5rem 0.4rem; border: 2px solid var(--ink); border-radius: 0.5rem; background:var(--surface); color: var(--ink); }
+.friend-code-input{ font-size: var(--fs-5); padding: 0.5rem 0.4rem; border: 1.5px solid var(--ink-faint); border-radius: 0.5rem; background:var(--surface); color: var(--ink); }
 /* Waiting screen: pulsing dot beside the status, match code as a paper "ballot stub". */
 .friend-wait-title{ display:flex; align-items:center; justify-content:center; gap:0.5rem; }
 .friend-wait-title::before{ content:""; flex:0 0 auto; width:0.6rem; height:0.6rem; border-radius:50%; background:var(--brass); animation: friend-pulse 1.4s ease-in-out infinite; }
@@ -1066,9 +1056,9 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
 .friend-tiles{ position:fixed; left:-70%; right:-70%; top:-80%; bottom:0; z-index:-1; pointer-events:none; display:grid; grid-template-columns:repeat(15,1fr); grid-template-rows:repeat(14,1fr); gap:0.25rem; transform-origin:50% 100%; transform:perspective(38rem) rotateX(58deg); -webkit-mask-image:linear-gradient(to top,#000 55%,transparent 98%); mask-image:linear-gradient(to top,#000 55%,transparent 98%); }
 /* Pastel saffron / white / green, diagonally alternating; a hard bottom edge gives each tile thickness. */
 .friend-tiles i{ position:relative; border-radius:var(--radius-sm); opacity:.55; }
-.friend-tiles i.c0{ background:linear-gradient(145deg,#FFD9AE,#FFBF80); box-shadow:0 0.3rem 0 #E9A25A; }
-.friend-tiles i.c1{ background:linear-gradient(145deg,var(--surface),var(--paper-dim)); box-shadow:0 0.3rem 0 #CFC8B0; }
-.friend-tiles i.c2{ background:linear-gradient(145deg,#C4E6BC,#9ED393); box-shadow:0 0.3rem 0 #74B269; }
+.friend-tiles i.c0{ background:linear-gradient(145deg,#C7C2FF,#A59DF7); box-shadow:0 0.3rem 0 #7E73E6; }
+.friend-tiles i.c1{ background:linear-gradient(145deg,#fff,#EEEBFF); box-shadow:0 0.3rem 0 #CFCAF3; }
+.friend-tiles i.c2{ background:linear-gradient(145deg,#FFC6DD,#FF9CC2); box-shadow:0 0.3rem 0 #E26A9A; }
 .friend-tiles i::after{ content:""; position:absolute; inset:0; border-radius:inherit; background:radial-gradient(circle at 50% 50%, rgba(255,255,255,.95), rgba(255,255,255,0) 70%); opacity:0; }
 .friend-tiles i.lit{ animation: tile-spot 1s ease-out; }
 .friend-tiles i.lit::after{ animation: tile-spot-glow 1s ease-out; }
@@ -1093,12 +1083,12 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
 .friend-link-btn{ display:block; margin: 0.9rem auto 0; background:none; border:0; padding:0; font-size: var(--fs-2); color: var(--ink-soft); text-decoration: underline; }
 
 .tutorial-navbar{ position:fixed; top: calc(env(safe-area-inset-top,0px) + 0.35rem); left: calc(var(--gutter) + 0.35rem); z-index:62;
-  background:var(--paper); color:var(--ink); padding: 0.25rem 0.5rem; border-radius: 2.5rem; border: 1.5px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); }
+  background:var(--paper); color:var(--ink); padding: 0.25rem 0.5rem; border-radius: 2.5rem; border: 1px solid var(--line); box-shadow: var(--shadow-md); }
 .tutorial-navbar[hidden]{ display:none; }
 .tutorial-navbar-label{ font-family:var(--font-display); font-weight:700; font-size: var(--fs-2); letter-spacing: .5px; }
 .tutorial-step-counter{ font-family:var(--font); font-weight:700; font-size: var(--fs-1); color:var(--ink-faint); align-self:center; }
 .tutorial-nav-btn{ font-family:var(--font-display); font-weight:700; font-size: var(--fs-2); color:var(--accent-ink); background:var(--accent);
-  border: 1.5px solid var(--ink); border-radius: 2.5rem; padding: 0.35rem 0.7rem; flex:0 0 auto; box-shadow: 2px 2px 0 var(--ink); }
+  border: 1px solid transparent; border-radius: 2.5rem; padding: 0.35rem 0.7rem; flex:0 0 auto; box-shadow: var(--shadow-md); }
 .tutorial-nav-btn:active{ transform: translate(2px,2px); box-shadow: none; }
 .tutorial-nav-btn:disabled{ background:var(--paper-dim); color:var(--ink-faint); box-shadow: none; }
 #tutorialBackBtn, #tutorialStageBackBtn{ background:var(--paper-dim); color:var(--ink); }
@@ -1116,7 +1106,7 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
    it should already look like the rest of the game, not plain text on the
    page background. */
 .tutorial-slide{ width:100%; text-align:center; background:var(--paper); color:var(--ink);
-  border-radius: 1.125rem; border: 2px solid var(--ink); box-shadow: 5px 5px 0 var(--ink); overflow:hidden; }
+  border-radius: 1.125rem; border: 1px solid var(--line); box-shadow: var(--shadow-lg); overflow:hidden; }
 .tutorial-slide h2{ font-family:var(--font-display); font-size: 1.95rem; margin: 1.75rem 1.375rem 0.85rem; }
 .tutorial-slide p{ font-size: var(--fs-5); color:var(--ink); line-height:1.55; margin: 0 1.375rem 1.75rem; }
 .tutorial-slide .tutorial-coach-nav{ margin: 0 1.375rem 1.5rem; }
@@ -1124,7 +1114,7 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
 
 #selectOverlay.tutorial-locked .overlay-header{ padding-top: calc(env(safe-area-inset-top,0px) + 2.25rem); }
 .tutorial-coach{ flex:0 0 auto; margin: 0 0.6rem 0.35rem; padding: 0.55rem 0.7rem; background:var(--paper-dim); color:var(--ink);
-  border-radius:var(--radius-md); border: 1.5px solid var(--ink); box-shadow: var(--shadow-sm); text-align:center; }
+  border-radius:var(--radius-md); border: 1px solid var(--line); box-shadow: var(--shadow-sm); text-align:center; }
 .tutorial-coach[hidden]{ display:none; }
 .tutorial-coach-title{ font-family:var(--font-display); font-weight:700; font-size: 1rem; margin-bottom: 0.2rem; }
 .tutorial-coach-title[hidden]{ display:none; }
@@ -1143,7 +1133,7 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
 #polCarousel.tutorial-pulse-agendas .pol-agenda-chip{ animation:tutorial-chip-pulse 1.1s ease-in-out infinite; border-radius: var(--radius-sm); }
 @keyframes tutorial-power-pulse{ 0%,100%{ box-shadow: none; } 50%{ box-shadow: inset 0 0 0 2.5px var(--brass), 0 0 0 5.5px rgba(156,122,30,.4); } }
 #polCarousel.tutorial-pulse-power .pol-power{ animation:tutorial-power-pulse 1.1s ease-in-out infinite; }
-@keyframes tutorial-play-pulse{ 0%,100%{ box-shadow: 2px 2px 0 var(--ink); transform: scale(1); } 50%{ box-shadow: 2px 2px 0 var(--ink), 0 0 0 6px rgba(156,122,30,.5); transform: scale(1.03); } }
+@keyframes tutorial-play-pulse{ 0%,100%{ box-shadow: var(--shadow-md); transform: scale(1); } 50%{ box-shadow: var(--shadow-md), 0 0 0 6px rgba(156,122,30,.5); transform: scale(1.03); } }
 #polCarousel.tutorial-pulse-play .pol-card[data-pol-id="narendra-modi"] .pol-play-btn{ animation:tutorial-play-pulse 1s ease-in-out infinite; }
 
 /* small inline HUD text (phase/clock/funds/seats) needs a filled tint, not
@@ -1177,7 +1167,7 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
 
 /* ---- settings overlay ---- */
 .settings-body{ padding: 1rem; display:flex; flex-direction:column; gap: 0.625rem; width:100%; }
-.settings-row{ background:var(--paper); border: 2px solid var(--ink); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); padding: 0.875rem 1rem; font-size: var(--fs-4); font-weight:600; text-align:left; display:block; width:100%;
+.settings-row{ background:var(--paper); border: 1px solid var(--line); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); padding: 0.875rem 1rem; font-size: var(--fs-4); font-weight:600; text-align:left; display:block; width:100%;
   color:inherit; text-decoration:none; box-sizing:border-box; }
 .settings-slider input[type=range]{ display:block; width:100%; margin-top: 0.55rem; accent-color:var(--accent);
   /* The global touch-action:pan-x would let the browser claim a horizontal
@@ -1193,9 +1183,9 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
    over https instead gets the real OS share sheet with the image attached. ---- */
 .share-overlay{ position:fixed; inset:0; z-index:70; display:flex; align-items:flex-end; justify-content:center; }
 .share-overlay[hidden]{ display:none; }
-.share-backdrop{ position:absolute; inset:0; background:rgba(0,0,0,.45); }
-.share-sheet{ position:relative; width:100%; background:var(--surface); border-radius: 1rem 1rem 0 0;
-  padding: 0.5rem 0.75rem calc(env(safe-area-inset-bottom,0px) + 0.75rem); box-shadow: 0 -2.5px 12px rgba(0,0,0,.2);
+.share-backdrop{ position:absolute; inset:0; background:rgba(23,21,59,.5); }
+.share-sheet{ position:relative; width:100%; background:var(--surface); border-radius: 1.4rem 1.4rem 0 0;
+  padding: 0.5rem 0.75rem calc(env(safe-area-inset-bottom,0px) + 0.75rem); box-shadow: 0 -6px 24px rgba(60,50,160,.18);
   animation:shareSheetUp .22s ease-out; }
 @keyframes shareSheetUp{ from{ transform: translateY(100%); } to{ transform: translateY(0); } }
 .share-sheet-handle{ width: 1.75rem; height: 0.2rem; border-radius: 0.125rem; background:var(--rule); margin: 0 auto 0.625rem; }
@@ -1206,8 +1196,8 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
 .share-app[hidden]{ display:none; }
 .share-app-icon{ width: 2.5rem; height: 2.5rem; border-radius: var(--radius-lg); display:flex; align-items:center; justify-content:center;
   font-size: var(--fs-6); color:var(--accent-ink); box-shadow: var(--shadow-sm); }
-.share-cancel{ width:100%; background:var(--surface2); border-radius: var(--radius-lg); padding: 0.75rem; font-size: var(--fs-4); font-weight:700;
-  font-family:var(--font); color:var(--ink); border: none; }
+.share-cancel{ width:100%; background:var(--surface); border-radius: 999px; padding: 0.75rem; font-size: var(--fs-4); font-weight:700;
+  font-family:var(--font); color:var(--ink); border: 1px solid var(--line); box-shadow: var(--shadow-md); }
 .share-cancel:active{ opacity:.7; }
 
 /* ---- feedback fx layer: viewport-fixed so it works over both the map and
@@ -1436,8 +1426,8 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
    carries the celebration, and the two together read as visual noise. Special
    powers keep it. */
 .power-burst.no-rays .rays{ display:none; }
-.power-burst .card{ position:relative; background:var(--paper); border: 2.5px solid var(--ink); border-radius: 0.875rem;
-  box-shadow: 5px 5px 0 var(--ink); padding: 1.125rem 1.875rem; text-align:center; transform: scale(0);
+.power-burst .card{ position:relative; background:var(--paper); border: 1px solid var(--line); border-radius: 0.875rem;
+  box-shadow: var(--shadow-lg); padding: 1.125rem 1.875rem; text-align:center; transform: scale(0);
   animation:power-card-pop var(--burst-dur) cubic-bezier(.34,1.56,.64,1) forwards; }
 .power-burst .card .bolt{ font-size: 2.75rem; line-height:1; }
 .power-burst .card .name{ font-family:var(--font); font-weight:800; font-size: var(--fs-5); color:var(--ink);
@@ -1482,7 +1472,7 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
 
 .power-burst.unlock-burst{ perspective: 35rem; }
 .power-burst .unlock-card{ padding: 1.375rem 1.75rem; transform: scale(0); animation:unlock-card-spin 5s cubic-bezier(.34,1.56,.64,1) forwards; }
-.unlock-card-portrait{ width: 4.25rem; height: 4.25rem; border-radius:50%; object-fit:cover; border: 5px solid var(--ink); box-shadow: 0 3.5px 8.5px rgba(0,0,0,.3); display:block; margin:0 auto; }
+.unlock-card-portrait{ width: 4.25rem; height: 4.25rem; border-radius:50%; object-fit:cover; border: 5px solid var(--surface); box-shadow: 0 3.5px 8.5px rgba(0,0,0,.3); display:block; margin:0 auto; }
 .power-burst .unlock-card .name{ font-size: var(--fs-4); margin-top: 0.4rem; }
 .power-burst .unlock-card .who{ font-size: var(--fs-3); font-weight:800; color:var(--ink); margin-top: 0.1rem; }
 @keyframes unlock-card-spin{
@@ -1739,7 +1729,7 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
       <a class="share-app" id="shareSms" href="#">
         <span class="share-app-icon" style="background:#0B93F6">✉️</span>Messages</a>
       <button class="share-app" id="shareCopyBtn">
-        <span class="share-app-icon" style="background:#8E8E93">🔗</span>Copy</button>
+        <span class="share-app-icon" style="background:var(--accent)">🔗</span>Copy</button>
       <a class="share-app" id="shareSaveImageBtn" href="#" download="pme-result.png" hidden>
         <span class="share-app-icon" style="background:#5856D6">🖼️</span>Save image</a>
     </div>
