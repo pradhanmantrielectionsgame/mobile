@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var E = window.PMEEngine, G = window.PMEGame;
-  var GAME_VERSION = '3.7.0';
+  var GAME_VERSION = '3.8.0';
   // Canonical public URL for the end-of-game "share result" link — hardcoded,
   // not location.href, so the shared link is always the clean site root and
   // never a /index.html deep link, a ?query string, or a Capacitor
@@ -516,58 +516,39 @@
   // p1/p2 default to placeholder colors here but are overwritten in
   // startGame() with each politician's real party color (primaryColor).
   var COLORS = { p1: '#E8871C', p2: '#1C8A4B', others: '#AEB4C0' };
-  var PARTY_SYMBOLS = {
-    'BJP': '🪷', 'INC': '✋', 'AAP': '🧹', 'AITC': '💐',
-    'JD(U)': '🏹', 'AIADMK': '🍃', 'Independent': '🗳️'
-  };
-  function partySymbol(party) { return PARTY_SYMBOLS[party] || '🗳️'; }
+  // The 🇮🇳 flag emoji renders as bare "IN" letter tiles on Windows and some
+  // Android OEM fonts, so the Nationwide Rally uses the real flag image
+  // (assets/icons/flag-india.svg: Wikimedia Commons, public domain, drawn to
+  // the Flag Code of India). Same image as the static nationwideBtn in
+  // index.html. Used in innerHTML contexts; spawnPowerBurst takes 'img:<url>';
+  // toasts and the log are plain text and just drop the flag.
+  var NATIONWIDE_FLAG_SVG = '<img class="flag-icon" src="' + 'assets/icons/flag-india.svg' + '" alt="" draggable="false">';
 
-  // Same markup as the static nationwideBtn SVG in index.html — hand-drawn
-  // because the 🇮🇳 flag emoji renders as bare "IN" letter tiles on Windows
-  // and some Android OEM fonts (no composed flag glyph), not just a
-  // different art style like the rest of the accepted emoji variance. Used
-  // only in innerHTML contexts (agenda chips, card title) — pushLog/
-  // showToast/spawnPowerBurst render plain text and keep the emoji.
-  var NATIONWIDE_FLAG_SVG = '<svg class="flag-icon" viewBox="0 0 36 24" aria-hidden="true">' +
-    '<rect width="36" height="8" fill="#FF9933"/><rect width="36" height="8" y="8" fill="#FAFAFA"/>' +
-    '<rect width="36" height="8" y="16" fill="#138808"/><g fill="none" stroke="#0F1E6E" stroke-width="0.9">' +
-    '<circle cx="18" cy="12" r="4.2"/><circle cx="18" cy="12" r="0.6" fill="#0F1E6E" stroke="none"/>' +
-    '<path d="M18 7.8V16.2M13.8 12H22.2M15.03 9.03L20.97 14.97M20.97 9.03L15.03 14.97"/></g></svg>';
+  // Drawn UI badges (assets/icons/ui/<name>.webp): trophy, scales, broken-heart,
+  // medal, lock, unlock, ice, sweep. `cls` picks the size rule in index.html.
+  function uiIconHtml(name, cls) {
+    return '<img class="ui-ic ' + (cls || '') + '" src="' + 'assets/icons/ui/' + name + '.webp" alt="" draggable="false">';
+  }
 
-  // Real party logo (data/politicians-data.json's partyLogo) where one
-  // exists, falling back to the PARTY_SYMBOLS emoji otherwise/on load error.
+  // Every politician has a partyLogo (data/politicians-data.json); no emoji fallback.
   function partyBadge(p) {
     var wrap = document.createElement('span');
     wrap.className = 'pol-seal';
-    if (p.partyLogo) {
-      var img = document.createElement('img');
-      img.alt = p.party;
-      img.src = p.partyLogo;
-      img.onerror = function () { wrap.textContent = partySymbol(p.party); };
-      wrap.appendChild(img);
-    } else {
-      wrap.textContent = partySymbol(p.party);
-    }
+    var img = document.createElement('img');
+    img.alt = p.party;
+    img.src = p.partyLogo;
+    wrap.appendChild(img);
     return wrap;
   }
 
-  // Same real-logo-first fallback as partyBadge() above, but writes into an
-  // existing element instead of building a new .pol-seal wrapper — used for
-  // the in-game HUD/end-card party-symbol spans, which previously always
-  // showed the PARTY_SYMBOLS emoji even when a real partyLogo existed.
+  // Same, but writes into an existing element (the in-game HUD/end-card party-symbol spans).
   function setPartySymbol(el, p) {
     el.textContent = '';
-    el.classList.remove('party-symbol-icon');
-    if (p.partyLogo) {
-      var img = document.createElement('img');
-      img.className = 'party-symbol-icon';
-      img.alt = p.party;
-      img.src = p.partyLogo;
-      img.onerror = function () { el.textContent = partySymbol(p.party); };
-      el.appendChild(img);
-    } else {
-      el.textContent = partySymbol(p.party);
-    }
+    var img = document.createElement('img');
+    img.className = 'party-symbol-icon';
+    img.alt = p.party;
+    img.src = p.partyLogo;
+    el.appendChild(img);
   }
 
   // Sets a politician portrait <img>, falling back to a colored initial
@@ -2321,7 +2302,7 @@
   // its burst-plus-confetti pairing lives here rather than in two places where
   // one could later gain an effect the other misses.
   function spawnNationwideBurst(pk, politicianName) {
-    var el = spawnPowerBurst(pk, 'Nationwide Rally', politicianName, '🇮🇳', NATIONWIDE_SFX_MS);
+    var el = spawnPowerBurst(pk, 'Nationwide Rally', politicianName, 'img:' + 'assets/icons/flag-india.svg', NATIONWIDE_SFX_MS);
     el.classList.add('no-rays'); // confetti replaces the starburst here
     spawnConfetti(NATIONWIDE_SFX_MS);
   }
@@ -2339,7 +2320,7 @@
     var card = document.createElement('div'); card.className = 'card unlock-card';
     var portrait = document.createElement('img'); portrait.className = 'unlock-card-portrait';
     setPortrait(portrait, politician);
-    var headline = document.createElement('div'); headline.className = 'name'; headline.textContent = '🔓 New Card Unlocked!';
+    var headline = document.createElement('div'); headline.className = 'name'; headline.innerHTML = uiIconHtml('unlock') + ' New Card Unlocked!';
     var who = document.createElement('div'); who.className = 'who'; who.textContent = politician.name;
     card.appendChild(portrait); card.appendChild(headline); card.appendChild(who);
     el.appendChild(glow); el.appendChild(rays); el.appendChild(card);
@@ -2359,7 +2340,7 @@
     var glow = document.createElement('div'); glow.className = 'glow';
     var rays = document.createElement('div'); rays.className = 'rays';
     var card = document.createElement('div'); card.className = 'card';
-    var bolt = document.createElement('div'); bolt.className = 'bolt'; bolt.textContent = '🏆';
+    var bolt = document.createElement('div'); bolt.className = 'bolt'; bolt.innerHTML = uiIconHtml('trophy');
     var name = document.createElement('div'); name.className = 'name'; name.textContent = 'New High Score';
     var who = document.createElement('div'); who.className = 'who'; who.textContent = score.toLocaleString();
     card.appendChild(bolt); card.appendChild(name); card.appendChild(who);
@@ -2534,7 +2515,7 @@
     var chips = [];
     if (!policy) return chips;
     if (policy.nationwideBonus) {
-      chips.push({ cls: 'eff-pos', html: '🇮🇳 Nationwide +' + policy.nationwideBonus });
+      chips.push({ cls: 'eff-pos', html: NATIONWIDE_FLAG_SVG + ' Nationwide +' + policy.nationwideBonus });
       return chips;
     }
     var effects = policy.tagEffects || {};
@@ -2594,7 +2575,7 @@
     var btn = card.querySelector('.pol-play-btn');
     if (btn && !locked) {
       // Label on top, the whole countdown on its own line below, so a long time never wraps mid-number.
-      if (charge.cooldownMs) btn.innerHTML = '🧊 Cooldown<span class="cd-time">' + formatCooldown(charge.cooldownMs) + '</span>';
+      if (charge.cooldownMs) btn.innerHTML = uiIconHtml('ice') + ' Cooldown<span class="cd-time">' + formatCooldown(charge.cooldownMs) + '</span>';
       else btn.textContent = (friendMode && !friendEligible(p.id)) ? friendBlockLabel(p.id) :
         'Play as ' + p.name.replace(/\s*\([^)]*\)\s*$/, '').split(' ').slice(-1)[0];
     }
@@ -2636,7 +2617,7 @@
       var btn = document.createElement('button');
       btn.className = 'pol-stamp-btn';
       btn.setAttribute('aria-label', 'Stamps for ' + p.name);
-      btn.textContent = '🏅 ' + have.length + '/' + STAMP_ORDER.length;
+      btn.innerHTML = uiIconHtml('medal') + ' ' + have.length + '/' + STAMP_ORDER.length;
       btn.addEventListener('click', function (e) { e.stopPropagation(); flipCard(ballot, true); });
       ballot.querySelector('.pol-art').appendChild(btn);
       buildStampBack(p, ballot, have);
@@ -2686,7 +2667,8 @@
     btn.className = 'pol-play-btn';
     btn.style.background = color;
     var friendBlocked = !locked && friendMode && !friendEligible(p.id);
-    btn.textContent = locked ? '🔒 Defeat to unlock' : friendBlocked ? friendBlockLabel(p.id) : 'Play as ' + p.name.replace(/\s*\([^)]*\)\s*$/, '').split(' ').slice(-1)[0];
+    btn.textContent = locked ? '' : friendBlocked ? friendBlockLabel(p.id) : 'Play as ' + p.name.replace(/\s*\([^)]*\)\s*$/, '').split(' ').slice(-1)[0];
+    if (locked) btn.innerHTML = uiIconHtml('lock') + ' Defeat to unlock';
     btn.addEventListener('click', function () {
       if (friendMode && !locked) {
         var friendCharge = chargeState(p.id);
@@ -3852,22 +3834,22 @@
     var seats = game.finalSeats;
     var seal, headline, sub, atVerdict = [], newStamps = [];
     if (game.winner === 'p1') {
-      seal = '🏆'; headline = allySeatsBy('p1') > 0 ? 'Allied victory' : 'You won the election'; sub = 'You crossed 272 seats.';
+      seal = 'trophy'; headline = allySeatsBy('p1') > 0 ? 'Allied victory' : 'You won the election'; sub = 'You crossed 272 seats.';
       if (!game.friendMatch) newStamps = recordStamps(game.players.p1.politician.id, G.earnedStamps(game).collect);
       if (!game.friendMatch && unlockPolitician(game.players.p2.politician.id)) {
-        sub += ' 🔓 ' + game.players.p2.politician.name + ' unlocked!';
+        sub += ' ' + game.players.p2.politician.name + ' unlocked!';
         var unlocked = game.players.p2.politician;
         unlockFx = function () { spawnUnlockCelebration(unlocked); };
       }
       atVerdict.push(function () { playSound('fanfare'); });
     }
     else if (game.hungParliament) {
-      seal = '⚖️';
+      seal = 'scales';
       headline = 'Hung parliament — a draw';
       sub = 'Neither side reached 272 seats.';
     }
     else {
-      seal = '💔'; headline = 'You lost the election';
+      seal = 'broken-heart'; headline = 'You lost the election';
       sub = game.players.p2.politician.name + ' crossed 272 seats' + (allySeatsBy('p2') > 0 ? ' with allied support.' : '.');
       atVerdict.push(function () { playSound('invalid_action'); });
     }
@@ -3880,7 +3862,7 @@
       var best = ['dominance', 'super', 'grand', 'landslide', 'allied', 'elected'].filter(function (k) { return got.indexOf(k) !== -1; })[0];
       stamp.innerHTML = stampSvg(best || 'elected');
     }
-    $('declareSeal').textContent = seal;
+    $('declareSeal').innerHTML = uiIconHtml(seal);
     $('endHeadline').textContent = headline;
     $('endSub').textContent = sub;
     renderEndWinnerPortrait();
@@ -4120,10 +4102,9 @@
     return m ? 'AI ' + m[1] : 'AI ' + pr.key;
   }
 
-  // Seats an owner's stable allies added at the end of the match: final seats
-  // (which include allies) minus what the plain popularity split would give.
+  // Seats an owner's own stable allies added at the end of the match (never negative).
   function allySeatsBy(pk) {
-    return game.finalSeats[pk] - E.nationalSeats(game.states, game.pop)[pk];
+    return G.allySeatsOf(game, pk);
   }
   function alliesHeldBy(pk) {
     return game.allies.filter(function (a) { return a.owner === pk; }).length;
@@ -4410,7 +4391,7 @@
         (rc.tokenBoostBps / 100) + '% popularity there (max ' + rc.maxPlaysPerStateShared + ' plays/state, shared with your opponent).';
     } else if (kind === 'nationwide') {
       var nState = craftSlotState('nationwide');
-      setCardTitle('🇮🇳 Nationwide Rally');
+      setCardTitle(NATIONWIDE_FLAG_SVG + ' Nationwide Rally', true);
       $('cardSeats').textContent = nState === 'used' ? 'Used' : nState === 'ready' ? 'Ready' :
         game.players.p1.tokens.stateRally + '/' + rc.nationwideRallyCraftCost + ' tokens';
       el.textContent = 'Craft for ' + rc.nationwideRallyCraftCost + ' rally tokens (unlocks phase ' +
@@ -4767,14 +4748,20 @@
     }
   }
 
+  // Why a funds-spending tap failed, in words. Demonetization freezes funds
+  // outright, so a freeze must not read as a shortfall.
+  function fundsFailMessage(reason) {
+    return reason === 'funds_frozen' ? 'Your funds are frozen' : 'Not enough funds';
+  }
+
   function doTapAgenda(name) {
     var safeId = 'agenda' + name.replace(/[^a-zA-Z0-9]/g, '');
     activeAgenda = name; activeAction = null; // show what this agenda does in the info panel either way
     var groupEffects = G.agendaGroupEffects(game, name);
     var r = G.tapAgenda(game, 'p1', name);
     if (!r.ok) {
-      showToast(r.reason === 'insufficient_funds' ? 'Not enough funds' : 'Agenda already maxed');
-      if (r.reason === 'insufficient_funds') shakeInvalid($(safeId));
+      showToast(r.reason === 'already_maxed' ? 'Agenda already maxed' : fundsFailMessage(r.reason));
+      if (r.reason !== 'already_maxed') shakeInvalid($(safeId));
       updateCard();
       return;
     }
@@ -4974,14 +4961,14 @@
     if (state === 'craftable') {
       var r = G.craftToken(game, 'p1', 'nationwide');
       renderAll();
-      showToast(r.ok ? '🇮🇳 Nationwide Rally crafted — tap to activate' : (r.reason === 'too_early' ? 'Too early to craft (min phase ' + game.cfg.rally.nationwideRallyMinPhase + ')' : 'Cannot craft yet'));
+      showToast(r.ok ? 'Nationwide Rally crafted — tap to activate' : (r.reason === 'too_early' ? 'Too early to craft (min phase ' + game.cfg.rally.nationwideRallyMinPhase + ')' : 'Cannot craft yet'));
       return;
     }
     var r = G.activateNationwideRally(game, 'p1');
     renderAll();
     playNationwideAnthem();
     spawnNationwideBurst('p1', game.players.p1.politician.name);
-    showToast('🇮🇳 Nationwide Rally activated');
+    showToast('Nationwide Rally activated');
     if (tutorialMode && r.ok) { tutorialNationwideRallyLaunched = true; renderTutorialStageStep(); }
   }
 
@@ -4992,7 +4979,7 @@
     var el = document.getElementById(svgId);
     var pt = point || viewportPoint(el);
     var r = G.investCash(game, 'p1', svgId);
-    if (!r.ok) { showToast('Not enough funds'); shakeInvalid(el); return; }
+    if (!r.ok) { showToast(fundsFailMessage(r.reason)); shakeInvalid(el); return; }
     // Sound AND the tap FX both fire before renderAll(), not after —
     // renderAll() repaints the whole map and rebuilds the token layer, which
     // on real hardware is enough to make the feedback audibly/visibly lag the
@@ -5195,7 +5182,7 @@
         spawnPowerBurst(x.owner, 'Alliance Sealed', x.alias + ' joins ' + side, '🤝', 3200);
         playSound('fanfare');
       } else {
-        spawnPowerBurst(prev, 'Ally Defected', x.alias + ' walks out on ' + side, '💔', 3200);
+        spawnPowerBurst(prev, 'Ally Defected', x.alias + ' walks out on ' + side, 'img:' + 'assets/icons/ui/broken-heart.webp', 3200);
         playSound('invalid_action');
       }
     });
@@ -5230,7 +5217,7 @@
       html = '<div class="ally-done">Allied with your opponent</div>';
     } else {
       var leave = sel.leaveAgenda.p1, lost = G.allyLocked(game, sel, 'p1');
-      var back = '<div class="ally-face back"><div class="ally-reward">💔 Leaves if</div>' +
+      var back = '<div class="ally-face back"><div class="ally-reward">' + uiIconHtml('broken-heart') + ' Leaves if</div>' +
         allyQuest(agendaIconHtml(leave, 'aic-quest'), 'You complete', leave, lost ? ' fade' : '') + '</div>';
       var front;
       if (sel.owner === 'p1') {
@@ -5250,7 +5237,7 @@
           '<div class="ally-reward">🤝 Joins if</div>' +
           allyQuest(via.group ? '✅' : groupIconHtml(g, 'chip-icon'), 'Dominate', g.label, (via.group ? ' done' : '') + (offer && !via.group ? ' fade' : '')) +
           '<div class="ally-or">OR</div>' +
-          allyQuest(via.sweep ? '✅' : '💯', 'Clean sweep', game.statesById[sel.sweepSvgId].name, (via.sweep ? ' done' : '') + (offer && !via.sweep ? ' fade' : ''));
+          allyQuest(via.sweep ? '✅' : uiIconHtml('sweep', 'aic-quest'), 'Clean sweep', game.statesById[sel.sweepSvgId].name, (via.sweep ? ' done' : '') + (offer && !via.sweep ? ' fade' : ''));
       }
       html = '<div class="ally-flip"><div class="ally-flip-inner">' +
         '<div class="ally-face front"><span class="ally-cue" title="Tap for what makes this ally leave">↻</span>' + front + '</div>' + back +
@@ -5338,30 +5325,30 @@
   fastTap($('utsBtn'), function () {
     activeAgenda = null; activeAction = null; activeCluster = 'ALL_UTS'; updateCard();
     handleButtonTap('ALL_UTS', function () {
-      var pt = viewportPoint($('utsBtn')), any = false, totalCost = 0;
+      var pt = viewportPoint($('utsBtn')), any = false, totalCost = 0, failReason = null;
       G.SMALL_UT_IDS.forEach(function (id) {
         if (id === 'INDL' || id === 'INGA') return;
         var r = G.investCash(game, 'p1', id);
-        if (r.ok) { any = true; totalCost += r.cost; }
+        if (r.ok) { any = true; totalCost += r.cost; } else failReason = r.reason;
       });
       if (any) playSound('money_spent');
       renderAll();
       if (any) { spawnFlash(pt.x, pt.y); spawnMoneyText(pt.x, pt.y, totalCost, -1); showToast('Invested in all Small UTs'); }
-      else { shakeInvalid($('utsBtn')); showToast('Not enough funds'); }
+      else { shakeInvalid($('utsBtn')); showToast(fundsFailMessage(failReason)); }
     });
   });
   fastTap($('neBtn'), function () {
     activeAgenda = null; activeAction = null; activeCluster = 'ALL_NE'; updateCard();
     handleButtonTap('ALL_NE', function () {
-      var pt = viewportPoint($('neBtn')), any = false, totalCost = 0;
+      var pt = viewportPoint($('neBtn')), any = false, totalCost = 0, failReason = null;
       G.NORTHEAST_IDS.forEach(function (id) {
         var r = G.investCash(game, 'p1', id);
-        if (r.ok) { any = true; totalCost += r.cost; }
+        if (r.ok) { any = true; totalCost += r.cost; } else failReason = r.reason;
       });
       if (any) playSound('money_spent');
       renderAll();
       if (any) { spawnFlash(pt.x, pt.y); spawnMoneyText(pt.x, pt.y, totalCost, -1); showToast('Invested in all Northeast states'); }
-      else { shakeInvalid($('neBtn')); showToast('Not enough funds'); }
+      else { shakeInvalid($('neBtn')); showToast(fundsFailMessage(failReason)); }
     });
   });
   // Delhi/Goa/Kerala route through these buttons instead of a direct map tap

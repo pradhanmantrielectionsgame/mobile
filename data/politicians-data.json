@@ -614,7 +614,7 @@
       "archetype": "CONSTITUTIONAL ARCHITECT",
       "homeState": "Maharashtra",
       "image": "assets/images/Bhimrao_Ambedkar.webp",
-      "partyLogo": null,
+      "partyLogo": "assets/icons/party-independent.webp",
       "primaryColor": "#0033A0",
       "policies": [
         {
@@ -680,7 +680,7 @@
       "archetype": "WELFARE MATRIARCH",
       "homeState": "Tamil Nadu",
       "image": "assets/images/Jayalalithaa.webp",
-      "partyLogo": null,
+      "partyLogo": "assets/icons/AIADMK_two_leaves.svg",
       "primaryColor": "#00A651",
       "policies": [
         {
@@ -895,7 +895,7 @@
       "archetype": "CELEBRITY SUPERSTAR",
       "homeState": "Uttar Pradesh",
       "image": "assets/images/Amitabh_Bachchan.webp",
-      "partyLogo": null,
+      "partyLogo": "assets/icons/party-independent.webp",
       "primaryColor": "#B8860B",
       "policies": [
         {
@@ -949,7 +949,7 @@
       "archetype": "NATIONAL ICON",
       "homeState": "Maharashtra",
       "image": "assets/images/Sachin_Tendulkar.webp",
-      "partyLogo": null,
+      "partyLogo": "assets/icons/party-independent.webp",
       "primaryColor": "#004BA0",
       "policies": [
         {
@@ -1066,7 +1066,7 @@
       "archetype": "THALAIVAR OF THE MASSES",
       "homeState": "Tamil Nadu",
       "image": "assets/images/Rajinikanth.webp",
-      "partyLogo": null,
+      "partyLogo": "assets/icons/party-independent.webp",
       "primaryColor": "#8B0000",
       "policies": [
         {
@@ -1141,7 +1141,7 @@
       "archetype": "THE PEOPLE'S ONE-DAY CM",
       "homeState": "Maharashtra",
       "image": "assets/images/Sivaji_Rao.webp",
-      "partyLogo": null,
+      "partyLogo": "assets/icons/party-lokahit.webp",
       "primaryColor": "#00897B",
       "policies": [
         {

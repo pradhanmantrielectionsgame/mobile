@@ -697,13 +697,14 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
 .ally-quest .qi .gicon{ width:0.9rem; height:0.9rem; }
 .gicon.title-icon, .gicon.chip-icon{ display:inline-block; width:1.15em; height:1.15em; vertical-align:-0.28em; }
 
-/* Nationwide Rally's 🇮🇳 flag emoji replaced with hand-drawn inline SVG —
-   the two-letter regional-indicator pair Windows/some Android OEM fonts
-   render for flag emoji (no composed flag glyph) made it read as "IN" tiles
-   instead of a flag, not just a different art style like the rest of the
-   accepted per-OS emoji variance. Same markup lives in main.js's
-   NATIONWIDE_FLAG_SVG constant (JS-rendered call sites) — keep both in sync
-   if this ever changes. */
+/* Nationwide Rally's flag: the real flag image (assets/icons/flag-india.svg), not the 🇮🇳 emoji, which Windows/some Android fonts draw as bare "IN" tiles. */
+.share-ic{ display:inline-block; width:1.1em; height:1.1em; vertical-align:-0.17em; }
+/* Drawn UI badges replacing emoji (trophy, scales, heart, medal, locks, ice, sweep). */
+.ui-ic{ display:inline-block; width:1.15em; height:1.15em; vertical-align:-0.22em; object-fit:contain; pointer-events:none; }
+.declare-seal .ui-ic{ width:2.3rem; height:2.3rem; vertical-align:0; }
+.ally-reward .ui-ic{ width:1em; height:1em; }
+.pol-stamp-btn .ui-ic{ width:1.1rem; height:1.1rem; flex:none; }
+.ui-ic.aic-quest{ width:0.9rem; height:0.9rem; }
 .flag-icon{ display:inline-block; width:1.5em; height:1em; vertical-align:-0.15em; flex:none; }
 
 .info-groups{ display:flex; flex-wrap:wrap; gap: 0.25rem; width:100%; margin-top: 0.22rem; }
@@ -1536,7 +1537,7 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
   <div class="welcome-content">
     <div class="tricolor"><span class="saffron"></span><span class="white"></span><span class="green"></span></div>
     <h1>Pradhan Mantri Elections <span class="ver-badge" id="welcomeVersion"></span></h1>
-    <div class="welcome-highscore" id="welcomeHighScore" hidden>🏆 Best score <span id="welcomeHighScoreVal">0</span></div>
+    <div class="welcome-highscore" id="welcomeHighScore" hidden><img class="ui-ic" src="assets/icons/ui/trophy.webp" alt="" draggable="false"> Best score <span id="welcomeHighScoreVal">0</span></div>
     <div class="welcome-loading" id="welcomeLoading">
       <div class="welcome-loading-track"><div class="welcome-loading-fill"></div></div>
       <div class="welcome-loading-label">Loading…</div>
@@ -1694,7 +1695,7 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
                 letter-spacing="1.5" text-anchor="middle">ELECTED</text>
         </svg>
       </div>
-      <div class="declare-seal" id="declareSeal">🏆</div>
+      <div class="declare-seal" id="declareSeal"><img class="ui-ic" src="assets/icons/ui/trophy.webp" alt="" draggable="false"></div>
       <img class="end-winner-portrait" id="endWinnerPortrait" alt="" hidden>
     </div>
     <div class="headline" id="endHeadline">—</div>
@@ -1707,7 +1708,7 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
          third-hand recipient ever sees. -->
     <div class="declare-url" id="endUrl"></div>
     <div class="declare-footer">
-      <button id="shareResultBtn" class="secondary">📤 Share result</button><button id="watchReplayBtn" class="secondary">▶ Watch replay</button><button id="playAgainBtn">Play again</button>
+      <button id="shareResultBtn" class="secondary"><svg class="share-ic" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M2.5 20.5C3.5 12.5 8.5 8.6 15 8.4V3.5L22.5 10.6 15 17.7V12.8C9.6 13 5.6 15.4 2.5 20.5Z"/></svg> Share result</button><button id="watchReplayBtn" class="secondary">▶ Watch replay</button><button id="playAgainBtn">Play again</button>
       <div class="rematch-banner" id="rematchBanner" hidden></div>
       <button id="rematchBtn" hidden>🔁 Rematch</button><button id="leaveMatchBtn" class="secondary" hidden>Leave match</button>
       <a class="tip-link" id="tipLinkEnd" href="#" target="_blank" rel="noopener">☕ Support the developer</a>
@@ -1961,14 +1962,14 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
 
     <div class="player-strip">
       <div class="pstrip-row p1">
-        <span id="p1PartySymbol">🪷</span>
+        <span id="p1PartySymbol"></span>
         <img class="pstrip-portrait" id="p1Portrait" alt="">
         <span class="pname" id="p1Name"></span>
         <span class="pstrip-funds" id="p1Funds">₹2500Cr</span>
         <span class="pstrip-seats" id="p1Seats">— seats</span>
       </div>
       <div class="pstrip-row p2">
-        <span id="p2PartySymbol">✋</span>
+        <span id="p2PartySymbol"></span>
         <img class="pstrip-portrait" id="p2Portrait" alt="">
         <span class="pname" id="p2Name"></span>
         <span class="pstrip-funds" id="p2Funds">₹2500Cr</span>
@@ -1992,7 +1993,7 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
       <span class="action-block-label">RALLY</span>
       <div class="action-group" id="tokenTray">
         <button class="action-btn" id="rallyBtn" title="State Rally"><img class="hicon" src="assets/icons/hud/rally.webp" alt="" draggable="false"><span class="badge" id="rallyBadge">5</span></button>
-        <button class="action-btn" id="nationwideBtn" title="Nationwide Rally"><svg class="flag-icon" viewBox="0 0 36 24" aria-hidden="true"><rect width="36" height="8" fill="#FF9933"/><rect width="36" height="8" y="8" fill="#FAFAFA"/><rect width="36" height="8" y="16" fill="#138808"/><g fill="none" stroke="#0F1E6E" stroke-width="0.9"><circle cx="18" cy="12" r="4.2"/><circle cx="18" cy="12" r="0.6" fill="#0F1E6E" stroke="none"/><path d="M18 7.8V16.2M13.8 12H22.2M15.03 9.03L20.97 14.97M20.97 9.03L15.03 14.97"/></g></svg><span class="badge" id="nationwideBadge">5/12</span></button>
+        <button class="action-btn" id="nationwideBtn" title="Nationwide Rally"><img class="flag-icon" src="assets/icons/flag-india.svg" alt="" draggable="false"><span class="badge" id="nationwideBadge">5/12</span></button>
         <button class="action-btn action-btn-wide" id="specialBtn" title="Special Powerup"><img class="hicon" src="assets/icons/hud/special.webp" alt="" draggable="false"><span class="special-label">Special Ability</span><span class="badge" id="specialBadge">5/6</span></button>
       </div>
     </div>
@@ -2024,9 +2025,9 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
     </div>
     <div class="info-groups" id="cardGroups"></div>
     <div class="vs-bar" id="cardVsBar">
-      <span class="vs-label p1"><span id="cardP1Symbol">🪷</span> <span id="cardP1Pct">—</span></span>
+      <span class="vs-label p1"><span id="cardP1Symbol"></span> <span id="cardP1Pct">—</span></span>
       <div class="vs-track"><div class="vs-seg p1" id="cardP1Fill"></div><div class="vs-seg ally1" id="cardA1Fill"></div><div class="vs-seg oth" id="cardOthFill"></div><div class="vs-seg ally2" id="cardA2Fill"></div><div class="vs-seg p2" id="cardP2Fill"></div></div>
-      <span class="vs-label p2"><span id="cardP2Pct">—</span> <span id="cardP2Symbol">✋</span></span>
+      <span class="vs-label p2"><span id="cardP2Pct">—</span> <span id="cardP2Symbol"></span></span>
     </div>
   </div>
 </div>

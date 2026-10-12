@@ -460,10 +460,10 @@
     });
   }
 
-  function allyEffectivePop(game, after) {
+  function allyEffectivePop(game, after, only) {
     var eff = deepCopyPop(game.pop);
     game.allies.forEach(function (a) {
-      if (!a.owner) return;
+      if (!a.owner || (only && a.owner !== only)) return;
       var takes = allyTakes(game, a, eff);
       a.footprintSvgIds.forEach(function (id, i) {
         eff[id].p1 -= takes[i].p1; eff[id].p2 -= takes[i].p2; eff[id].others -= takes[i].others;
@@ -506,6 +506,14 @@
       eff[id].p1 += takes[i].total; eff[id].others -= takes[i].others;
     });
     return E.nationalSeats(game.states, eff).p1 - E.nationalSeats(game.states, game.pop).p1;
+  }
+
+  // Seats `owner`'s own allies add to them, ignoring what the other side's allies
+  // take back. Never negative: a player with no allies reads 0, not the seats
+  // they lost to the opponent's ally (the end-screen "Allied seats" row).
+  function allySeatsOf(game, owner) {
+    var plain = E.nationalSeats(game.states, game.pop)[owner];
+    return Math.max(0, E.nationalSeats(game.states, allyEffectivePop(game, null, owner))[owner] - plain);
   }
 
   function nationalSeatsWithAllies(game) {
@@ -673,7 +681,7 @@
     var seats = game.finalSeats, won = game.winner === 'p1';
     var collect = [], badges = [];
     if (won) {
-      var ally = seats.p1 - E.nationalSeats(game.states, game.pop).p1;
+      var ally = allySeatsOf(game, 'p1');
       collect.push(ally > 0 ? 'allied' : 'elected');
       // Grand Alliance: still holding every ally on the board at the end.
       if (game.allies.length && game.allies.every(function (a) { return a.owner === 'p1'; })) collect.push('grand');
@@ -1183,6 +1191,7 @@
     earnedStamps: earnedStamps,
     allySliceSeats: allySliceSeats,
     allySeatsByAlly: allySeatsByAlly,
+    allySeatsOf: allySeatsOf,
     allyStateShares: allyStateShares,
     canActivatePower: canActivatePower,
     totalNetEffect: totalNetEffect,
