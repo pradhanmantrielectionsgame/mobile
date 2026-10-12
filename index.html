@@ -356,7 +356,7 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
 .map-wrap::after{ content:''; position:absolute; inset:0; pointer-events:none; z-index:2;
   background: radial-gradient(115% 80% at 50% 42%, transparent 55%, rgba(20,22,28,.09) 100%); }
 @media (prefers-reduced-motion: reduce){ .map-wrap::before{ animation:none; } }
-.india-map{ position:absolute; inset:0; width:100%; height:100%; transform: scale(1.06); transform-origin:center;
+.india-map{ position:absolute; inset:0; width:100%; height:100%; transform: translateY(-3%) scale(1.06); transform-origin:center; /* 3% up: keeps the NE/peninsula tip clear of the ally dock and UT bar (2026-10-12) */
   /* Lifts the landmass off the background instead of it being painted on.
      Static, so it composites once — the per-state swept-* glows still apply
      on their own paths underneath this. */
@@ -626,7 +626,7 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
    overflow-y is a net, not a plan: no mode measured reaches the box, and if
    some future one does, it scrolls instead of resizing the map again. ---- */
 .info-panel{ position:relative; flex:0 0 auto;
-  height: calc(6.1rem + env(safe-area-inset-bottom,0px)); overflow-y:auto;
+  height: calc(7.3rem + env(safe-area-inset-bottom,0px)); overflow-y:auto; /* raised from the measured 6.1rem on 2026-10-12: ally/agenda content was clipping */
   padding: 0.45rem calc(0.7rem + 2.1rem) calc(env(safe-area-inset-bottom,0px) + 0.3rem) 0.7rem;
   /* White, where every other surface on this screen -- topstrip, group rail,
      player strip, both action trays, the UT bar -- is the cream tray. That is
@@ -678,6 +678,12 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
    emoji that rendered in a different font on every OS. One base rule plus a
    size modifier per context — the art is square with its own internal margin,
    so it only ever needs a box to sit in. */
+.hicon{ display:block; object-fit:contain; pointer-events:none; user-select:none; -webkit-user-drag:none; flex:none; }
+.action-btn .hicon{ width:1.25em; height:1.25em; }
+.action-btn-wide .hicon{ width:1.45em; height:1.45em; }
+.uts-btn .hicon{ width:1.5rem; height:1.5rem; }
+.pin-btn .hicon{ width:1.45em; height:1.45em; }
+.fx-rally b .hicon{ width:1.6rem; height:1.6rem; }
 .gicon{ display:block; object-fit:contain; user-select:none; -webkit-user-drag:none; pointer-events:none; }
 /* Fills the hex's content box, which the 3.5px ring border already insets —
    so the capture gauge still shows all the way round. */
@@ -686,6 +692,9 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
 /* Inline with text (card heading, agenda breakdown pills): sized off the text
    itself, nudged up so it sits on the optical centre of the line rather than
    the baseline. */
+.gicon.aic-btn{ width:1.25em; height:1.25em; }
+.pol-agenda-chip .ic .gicon{ width:1.15rem; height:1.15rem; }
+.ally-quest .qi .gicon{ width:0.9rem; height:0.9rem; }
 .gicon.title-icon, .gicon.chip-icon{ display:inline-block; width:1.15em; height:1.15em; vertical-align:-0.28em; }
 
 /* Nationwide Rally's 🇮🇳 flag emoji replaced with hand-drawn inline SVG —
@@ -864,6 +873,8 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
 .pol-power{ position:relative; width:100%; background:var(--surface2); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 0.45rem 0.75rem 0.45rem 2.5rem; margin-bottom: 0.45rem; }
 .info-panel .pol-power{ padding: 0.3rem 0.6rem 0.3rem 2.4rem; margin-bottom:0; margin-top: 0.22rem; }
 .pow-seal{ position:absolute; left: 0.55rem; top: 0.45rem; width: 1.375rem; height: 1.375rem; border-radius:50%; background:var(--accent); display:flex; align-items:center; justify-content:center; font-size: var(--fs-2); }
+.pow-seal.art{ background:none; border-radius:0; width:1.9rem; height:1.9rem; left:0.4rem; top:0.3rem; }
+.pow-seal .gicon{ width:100%; height:100%; }
 .pow-name{ font-family:var(--font-display); font-weight:700; font-size: var(--fs-3); margin-bottom: 0.15rem; }
 .pow-benefit{ font-family:var(--font); font-size: var(--fs-1); color:var(--seal-green); font-weight:700; text-transform:uppercase; letter-spacing:.02em; margin-bottom: 0.15rem; }
 .pow-cost{ font-family:var(--font); font-size: var(--fs-1); color:var(--stamp); font-weight:700; text-transform:uppercase; letter-spacing:.02em; }
@@ -1318,8 +1329,8 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
    read as a repeating pulse for as long as the megaphone is on screen. Nested
    inside the <b> so they inherit its float transform for free instead of
    needing a second copy of the same keyframes. */
-/* 📢's horn opens up-and-LEFT in Apple's emoji font, so the arcs live on that
-   side. They're authored pointing left directly (sweep-flag 0, radiating from
+/* The megaphone art (assets/icons/hud/rally.webp) opens its horn LEFT, so the
+   arcs live on that side. They're authored pointing left directly (sweep-flag 0, radiating from
    viewBox x=22) rather than drawn rightward and mirrored — the mirror made the
    true origin land mid-icon and was impossible to reason about. `right:100%`
    with no negative margin puts the svg's right edge exactly on the emoji's
@@ -1430,6 +1441,7 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
   box-shadow: var(--shadow-lg); padding: 1.125rem 1.875rem; text-align:center; transform: scale(0);
   animation:power-card-pop var(--burst-dur) cubic-bezier(.34,1.56,.64,1) forwards; }
 .power-burst .card .bolt{ font-size: 2.75rem; line-height:1; }
+.power-burst .card .bolt img{ width:5.5rem; height:5.5rem; object-fit:contain; display:block; margin:0 auto; }
 .power-burst .card .name{ font-family:var(--font); font-weight:800; font-size: var(--fs-5); color:var(--ink);
   margin-top: 0.3rem; text-transform:uppercase; letter-spacing:.03em; }
 .power-burst .card .who{ font-size: var(--fs-2); color:var(--ink-soft); margin-top: 0.2rem; font-weight:600; }
@@ -1979,24 +1991,24 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
     <div class="se-actions action-block">
       <span class="action-block-label">RALLY</span>
       <div class="action-group" id="tokenTray">
-        <button class="action-btn" id="rallyBtn" title="State Rally">📢<span class="badge" id="rallyBadge">5</span></button>
+        <button class="action-btn" id="rallyBtn" title="State Rally"><img class="hicon" src="assets/icons/hud/rally.webp" alt="" draggable="false"><span class="badge" id="rallyBadge">5</span></button>
         <button class="action-btn" id="nationwideBtn" title="Nationwide Rally"><svg class="flag-icon" viewBox="0 0 36 24" aria-hidden="true"><rect width="36" height="8" fill="#FF9933"/><rect width="36" height="8" y="8" fill="#FAFAFA"/><rect width="36" height="8" y="16" fill="#138808"/><g fill="none" stroke="#0F1E6E" stroke-width="0.9"><circle cx="18" cy="12" r="4.2"/><circle cx="18" cy="12" r="0.6" fill="#0F1E6E" stroke="none"/><path d="M18 7.8V16.2M13.8 12H22.2M15.03 9.03L20.97 14.97M20.97 9.03L15.03 14.97"/></g></svg><span class="badge" id="nationwideBadge">5/12</span></button>
-        <button class="action-btn action-btn-wide" id="specialBtn" title="Special Powerup">⭐<span class="special-label">Special Ability</span><span class="badge" id="specialBadge">5/6</span></button>
+        <button class="action-btn action-btn-wide" id="specialBtn" title="Special Powerup"><img class="hicon" src="assets/icons/hud/special.webp" alt="" draggable="false"><span class="special-label">Special Ability</span><span class="badge" id="specialBadge">5/6</span></button>
       </div>
     </div>
     </div>
 
     <div class="ut-bar">
       <div class="corner-top-left">
-        <button class="uts-btn" id="delhiBtn" title="Invest in Delhi — too small to tap reliably on the map">🏙️<span class="lb">DELHI</span></button>
+        <button class="uts-btn" id="delhiBtn" title="Invest in Delhi — too small to tap reliably on the map"><img class="hicon" src="assets/icons/hud/delhi.webp" alt="" draggable="false"><span class="lb">DELHI</span></button>
       </div>
       <div class="corner-left">
-        <button class="uts-btn" id="goaBtn" title="Invest in Goa — too small to tap reliably on the map">🌴<span class="lb">GOA</span></button>
-        <button class="uts-btn" id="keralaBtn" title="Invest in Kerala — narrow coastline is hard to tap reliably on the map">🥥<span class="lb">KERALA</span></button>
-        <button class="uts-btn" id="utsBtn" title="Invest in all Small UTs at once">🏛️<span class="lb">SMALL UTS</span></button>
+        <button class="uts-btn" id="goaBtn" title="Invest in Goa — too small to tap reliably on the map"><img class="hicon" src="assets/icons/hud/goa.webp" alt="" draggable="false"><span class="lb">GOA</span></button>
+        <button class="uts-btn" id="keralaBtn" title="Invest in Kerala — narrow coastline is hard to tap reliably on the map"><img class="hicon" src="assets/icons/hud/kerala.webp" alt="" draggable="false"><span class="lb">KERALA</span></button>
+        <button class="uts-btn" id="utsBtn" title="Invest in all Small UTs at once"><img class="hicon" src="assets/icons/hud/uts.webp" alt="" draggable="false"><span class="lb">SMALL UTS</span></button>
       </div>
       <div class="corner-top-right">
-        <button class="uts-btn" id="neBtn" title="Invest in all Northeast states at once">🌄<span class="lb">NE 8</span></button>
+        <button class="uts-btn" id="neBtn" title="Invest in all Northeast states at once"><img class="hicon" src="assets/icons/hud/northeast.webp" alt="" draggable="false"><span class="lb">NE 8</span></button>
       </div>
     </div>
   </div>
@@ -2008,7 +2020,7 @@ button:disabled:active, button[disabled]:active{ scale:none; transform:none; }
       <button class="pin-btn" id="cardPinBtn" title="Pin this group's view open" hidden>📌</button>
       <!-- Same reserved bottom-right gutter as the pin button; the two are
            never shown at once (pin = group cards, invest = state cards). -->
-      <button class="pin-btn top-right" id="cardInvestBtn" title="Invest in this state" hidden>💰</button>
+      <button class="pin-btn top-right" id="cardInvestBtn" title="Invest in this state" hidden><img class="hicon" src="assets/icons/hud/invest.webp" alt="" draggable="false"></button>
     </div>
     <div class="info-groups" id="cardGroups"></div>
     <div class="vs-bar" id="cardVsBar">

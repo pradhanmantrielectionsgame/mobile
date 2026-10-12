@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var E = window.PMEEngine, G = window.PMEGame;
-  var GAME_VERSION = '3.5.0';
+  var GAME_VERSION = '3.7.0';
   // Canonical public URL for the end-of-game "share result" link — hardcoded,
   // not location.href, so the shared link is always the clean site root and
   // never a /index.html deep link, a ?query string, or a Capacitor
@@ -588,18 +588,18 @@
       imgEl.replaceWith(span);
     };
   }
-  var AGENDA_ICONS = {
-    'Education': '🎓', 'Rural Development': '🌾', "Women's Empowerment": '👩', 'Healthcare': '⚕️',
-    'Land Reforms': '🗺️', 'Agricultural Reforms': '🚜', 'Water and Mineral Rights': '💧',
-    'Infrastructure': '🏗️', 'Economic Liberalization': '💹', 'Privatization': '🏦',
-    'Public Sector': '🏛️', 'Digital Transformation': '💻', 'Anti-Corruption': '🧹',
-    'Press Freedom': '📰', 'Law and Order': '👮', 'Hindi Language': '🅰️',
-    'Hindutva': '🕉️', 'Secularism': '☮️', 'Indigenous Rights': '🏹', 'Caste Reservation': '📋',
-    'Uniform Civil Code': '📜', "State's Rights": '🚩', 'National Defense': '🛡️',
-    'Administrative Reform': '🗄️', 'Coastal Economy': '⚓', 'Environmental Conservation': '🌳',
-    'Film and TV': '🎬', 'Food Security': '🍚', 'Foreign Policy & Diplomacy': '🤝',
-    'Heritage and Tourism': '📸', 'Nationalization': '🚂', 'Sports and Entertainment': '🏏'
-  };
+  // Agenda icons are drawn art (assets/icons/agendas/<slug>.webp, one per entry in
+  // data/policy-tags.json), not emoji. `cls` picks the size rule in index.html.
+  function agendaIconHtml(name, cls) {
+    var slug = String(name).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    return '<img class="gicon ' + (cls || '') + '" src="' + 'assets/icons/agendas/' + slug + '.webp" alt="" draggable="false">';
+  }
+
+  // Special-power art (assets/icons/powers/<politician-id>.webp, one per politician).
+  function powerArt(pol) { return 'img:' + 'assets/icons/powers/' + pol.id + '.webp'; }
+  function powerSealHtml(pol) {
+    return '<div class="pow-seal art"><img class="gicon" src="' + 'assets/icons/powers/' + pol.id + '.webp" alt="" draggable="false"></div>';
+  }
 
   // Every place the two players' identity is painted into the HUD: colors,
   // both party-symbol pairs (top strip AND the info card's vs-bar), portraits
@@ -1502,16 +1502,13 @@
   // must outlast the 2.15s CSS chain or it vanishes mid-sequence. The three
   // <path>s are the sound arcs — same origin (viewBox x=22, the icon's left
   // edge), growing radius, bulging left, staggered in CSS.
-  // The arcs sit on the emoji's LEFT because that's the way 📢's horn points in
-  // Apple's emoji font. Fonts that point it right (Segoe/Noto) therefore show
-  // the arcs behind it — an emoji's orientation isn't ours to control, and
-  // iPhone is this app's design target. Drawing our own megaphone path is the
-  // only real fix if that ever matters.
+  // The arcs sit on the megaphone's LEFT because assets/icons/hud/rally.webp
+  // opens its horn left (the old 📢 emoji pointed differently per OS font).
   function spawnRallyBurst(x, y, colorClass) {
     var el = document.createElement('div');
     el.className = 'fx-rally' + (colorClass ? ' ' + colorClass : '');
     el.style.left = x + 'px'; el.style.top = y + 'px';
-    el.innerHTML = '<b>📢<svg viewBox="0 0 24 24">' +
+    el.innerHTML = '<b><img class="hicon" src="assets/icons/hud/rally.webp" alt=""><svg viewBox="0 0 24 24">' +
       '<path d="M22 7a5 5 0 0 0 0 10"/>' +
       '<path d="M22 4a8 8 0 0 0 0 16"/>' +
       '<path d="M22 1a11 11 0 0 0 0 22"/></svg></b>';
@@ -2278,7 +2275,10 @@
     var glow = document.createElement('div'); glow.className = 'glow';
     var rays = document.createElement('div'); rays.className = 'rays';
     var card = document.createElement('div'); card.className = 'card';
-    var bolt = document.createElement('div'); bolt.className = 'bolt'; bolt.textContent = emoji || '⚡';
+    var bolt = document.createElement('div'); bolt.className = 'bolt'; if (emoji && emoji.indexOf('img:') === 0) {
+      var art = document.createElement('img'); art.src = emoji.slice(4); art.alt = ''; art.draggable = false;
+      bolt.appendChild(art);
+    } else bolt.textContent = emoji || '⚡';
     var name = document.createElement('div'); name.className = 'name'; name.textContent = powerName;
     var who = document.createElement('div'); who.className = 'who'; who.textContent = politicianName;
     card.appendChild(bolt); card.appendChild(name); card.appendChild(who);
@@ -2618,7 +2618,7 @@
         '<div class="pol-section-label">Agenda</div>' +
         '<div class="pol-agendas"></div>' +
         '<div class="pol-section-label">Special Ability</div>' +
-        '<div class="pol-power"><div class="pow-seal">⚡</div><div class="pow-name">' + p.power.name + '</div>' +
+        '<div class="pol-power">' + powerSealHtml(p) + '<div class="pow-name">' + p.power.name + '</div>' +
           '<div class="pow-benefit">Benefit: ' + p.specialPower.effect + '</div>' +
           '<div class="pow-cost">Cost: ' + p.specialPower.cost + '</div>' +
           '<div class="pow-unlock">Unlocks at: Phase ' + (p.power.requiresMinPhase || 1) + '</div>' +
@@ -2649,7 +2649,7 @@
       chip.type = 'button';
       chip.className = 'pol-agenda-chip';
       chip.innerHTML = '<span class="bullet"></span>' +
-        '<span class="ic">' + (AGENDA_ICONS[pl.name] || '📌') + '</span>' +
+        '<span class="ic">' + agendaIconHtml(pl.name, 'aic-chip') + '</span>' +
         '<span class="nm">' + pl.name + '</span>' +
         '<span class="chev">›</span>';
       // Each plank gets its own adjacent detail row (CSS ".active + .show"
@@ -3548,7 +3548,7 @@
         showToast(game.players[pk].politician.name + '’s power fizzled — you had nullified it');
       } else if (!powerIsSecret(game.players[pk].politician)) {
         if (withSound) playPowerSound(game.players[pk].politician.name);
-        spawnPowerBurst(pk, game.players[pk].politician.power.name, game.players[pk].politician.name);
+        spawnPowerBurst(pk, game.players[pk].politician.power.name, game.players[pk].politician.name, powerArt(game.players[pk].politician));
       }
     } else if (action.type === 'nationwide') {
       if (withSound) playNationwideAnthem();
@@ -4434,7 +4434,7 @@
       // is a fixed height and the special-power mode is the tallest of its
       // four content modes, so the row this saves is a row every other mode
       // was carrying empty.
-      el.innerHTML = '<div class="pow-seal">⚡</div>' +
+      el.innerHTML = powerSealHtml(pol) +
         '<div class="pow-benefit">Benefit: ' + pol.specialPower.effect + '</div>' +
         '<div class="pow-cost">Cost: ' + pol.specialPower.cost +
         ' <span class="pow-unlock">· Phase ' + (power.requiresMinPhase || 1) + '+</span></div>';
@@ -4449,7 +4449,7 @@
     var policy = game.policiesByName[name]; if (!policy) return;
     $('cardVsBar').hidden = true;
     $('cardPinBtn').hidden = true;
-    setCardTitle((AGENDA_ICONS[name] || '📜') + ' ' + name);
+    setCardTitle(agendaIconHtml(name, 'title-icon') + ' ' + name, true);
     var taps = game.players.p1.agendaProgress[name] || 0;
     var done = taps >= game.cfg.agenda.tapsToComplete;
     var seatsEl = $('cardSeats');
@@ -4723,7 +4723,7 @@
       var name = policy.name, safeId = 'agenda' + name.replace(/[^a-zA-Z0-9]/g, '');
       var btn = document.createElement('button');
       btn.className = 'action-btn'; btn.id = safeId; btn.title = name;
-      btn.innerHTML = (AGENDA_ICONS[name] || '📜') +
+      btn.innerHTML = agendaIconHtml(name, 'aic-btn') +
         '<span class="badge" id="' + safeId + 'Badge" hidden>✓</span>' +
         '<span class="agenda-bar" id="' + safeId + 'Bar">' + pips + '</span>';
       fastTap(btn, function () { handleAgendaTap(name); });
@@ -4959,7 +4959,7 @@
     if (!r.ok) { showToast('Cannot activate: ' + r.reason); shakeInvalid($('specialBtn')); return; }
     if (!r.nullified && !powerIsSecret(game.players.p1.politician)) {
       playPowerSound(game.players.p1.politician.name);
-      spawnPowerBurst('p1', game.players.p1.politician.power.name, game.players.p1.politician.name);
+      spawnPowerBurst('p1', game.players.p1.politician.power.name, game.players.p1.politician.name, powerArt(game.players.p1.politician));
     }
     showToast(r.nullified ? 'Your power fizzled — it had been secretly nullified' : '⚡ ' + game.players.p1.politician.power.name + ' activated');
     if (tutorialMode && !r.nullified) { tutorialPowerActivated = true; renderTutorialStageStep(); }
@@ -5231,7 +5231,7 @@
     } else {
       var leave = sel.leaveAgenda.p1, lost = G.allyLocked(game, sel, 'p1');
       var back = '<div class="ally-face back"><div class="ally-reward">💔 Leaves if</div>' +
-        allyQuest(AGENDA_ICONS[leave] || '📜', 'You complete', leave, lost ? ' fade' : '') + '</div>';
+        allyQuest(agendaIconHtml(leave, 'aic-quest'), 'You complete', leave, lost ? ' fade' : '') + '</div>';
       var front;
       if (sel.owner === 'p1') {
         // held: where the ally's support sits, top 5 states so every ally's card stays the same size
